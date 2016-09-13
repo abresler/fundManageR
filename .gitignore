@@ -2,3 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+packrat/
+.Rprofile
+.httr-oauth
+.DS_Store
+tests/
