@@ -65,13 +65,13 @@ The purpose of these functions are to perform calculations.  The function family
 ### `get_data_` Functions
 
 ```{r}
-fundManageR::get_data_adv_managers_summary_periods()
+fundManageR::get_data_adv_managers_periods_summaries(all_periods = F, only_most_recent = T)
 ````
 
 `get_data_ycombinator_alumni` -- 
 
 `get_data_adv_managers_filings` --
 `get_data_adv_managers_brochures` -- 
-`get_data_adv_managers_current_period_summary`--
+`get_data_adv_managers_periods_summaries`--
 
 ### Vignettes

@@ -5,7 +5,7 @@
 \title{Get ADV summary data for specified periods and filing types}
 \usage{
 get_data_adv_managers_periods_summaries(periods = c("2016-08"),
-  all_periods = T, is_exempt = F, only_most_recent = F,
+  all_periods = F, is_exempt = F, only_most_recent = F,
   file_directory = "Desktop/adv_data", remove_files = T, empty_trash = T)
 }
 \description{

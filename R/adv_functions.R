@@ -7289,7 +7289,7 @@ return_selected_adv_tables <-
 #' @export
 #' @import dplyr formattable httr lubridate purrr readr rvest stringi stringr tibble tidyr curlconverter
 #' @importFrom lazyeval as_name
-#' @importFrom curl curl
+#' @importFrom curl curl_download
 #' @importFrom urltools domain
 #' @importFrom magrittr %>%
 #' @examples
@@ -7705,20 +7705,23 @@ get_data_adv_managers_brochures <-
 #'
 #' @return
 #' @export
-#' @import rvest stringr dplyr tibble
+#' @import rvest stringr dplyr tibble httr
 #' @importFrom lubridate mdy
 #' @examples
 get_data_adv_period_urls <-
   function(return_wide = T) {
+    httr::set_config(config(ssl_verifypeer = 0L))
     page <-
-      'http://www.sec.gov/foia/iareports/inva-archive.htm' %>%
-      read_html
+      'https://www.sec.gov/foia/iareports/inva-archive.htm' %>%
+      GET %>%
+      content() %>%
+      suppressMessages()
 
     url_zip <-
       page %>%
       html_nodes('#main-content a:nth-child(1)') %>%
       html_attr('href') %>%
-      paste0('http://www.sec.gov', .)
+      paste0('https://www.sec.gov', .)
 
     date_data <-
       url_zip %>% basename() %>% str_replace_all('ia|.zip', '') %>% mdy
@@ -7727,7 +7730,7 @@ get_data_adv_period_urls <-
       page %>%
       html_nodes("#main-content a:nth-child(2)") %>%
       html_attr("href") %>%
-      paste0('http://www.sec.gov', .)
+      paste0('https://www.sec.gov', .)
 
     data_data_exempt <-
       url_exempt_zip %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% mdy
@@ -7738,7 +7741,8 @@ get_data_adv_period_urls <-
                urlZip = url_zip) %>%
         left_join(tibble(dateData = data_data_exempt,
                          urlZipExempt = url_exempt_zip)) %>%
-        mutate(periodData = dateData %>% format('%Y-%m'))
+        mutate(periodData = dateData %>% format('%Y-%m')) %>%
+        suppressMessages()
     } else {
       url_df <-
         tibble(dateData = date_data,
@@ -7757,6 +7761,848 @@ get_data_adv_period_urls <-
 
   }
 
+get_sec_adv_name_df <-
+  function() {
+    sec_name_df <-
+      data_frame(
+        nameSEC = c(
+          "SEC Region",
+          "Organization CRD#",
+          "SEC#",
+          "Firm Type",
+          "Primary Business Name",
+          "Legal Name",
+          "Main Office Street Address 1",
+          "Main Office Street Address 2",
+          "Main Office City",
+          "Main Office State",
+          "Main Office Country",
+          "Main Office Postal Code",
+          "Main Office Telephone Number",
+          "Main Office Facsimile Number",
+          "Mail Office Street Address 1",
+          "Mail Office Street Address 2",
+          "Mail Office City",
+          "Mail Office State",
+          "Mail Office Country",
+          "Mail Office Postal Code",
+          "SEC Current Status",
+          "SEC Status Effective Date",
+          "Jurisdiction Notice Filed-Effective Date",
+          "Latest ADV Filing Date",
+          "Form Version",
+          "1I",
+          "Website Address",
+          "1M",
+          "1N",
+          "CIK#",
+          "1O",
+          "1P",
+          "2A(1)",
+          "2A(2)",
+          "2A(3)",
+          "2A(4)",
+          "2A(5)",
+          "2A(6)",
+          "2A(7)",
+          "2A(8)",
+          "2A(9)",
+          "2A(10)",
+          "2A(11)",
+          "2A(12)",
+          "2A(13)",
+          "3A",
+          "3A-Other",
+          "3B",
+          "3C-State",
+          "3C-Country",
+          "5A",
+          "5B(1)",
+          "5B(2)",
+          "5B(3)",
+          "5B(4)",
+          "5B(5)",
+          "5B(6)",
+          "5C(1)",
+          "5C(1)-If more than 100, how many",
+          "5C(2)",
+          "5D(1)(a)",
+          "5D(1)(b)",
+          "5D(1)(c)",
+          "5D(1)(d)",
+          "5D(1)(e)",
+          "5D(1)(f)",
+          "5D(1)(g)",
+          "5D(1)(h)",
+          "5D(1)(i)",
+          "5D(1)(j)",
+          "5D(1)(k)",
+          "5D(1)(l)",
+          "5D(1)(m)",
+          "5D(1)(m)-Other",
+          "5D(2)(a)",
+          "5D(2)(b)",
+          "5D(2)(c)",
+          "5D(2)(d)",
+          "5D(2)(e)",
+          "5D(2)(f)",
+          "5D(2)(g)",
+          "5D(2)(h)",
+          "5D(2)(i)",
+          "5D(2)(j)",
+          "5D(2)(k)",
+          "5D(2)(l)",
+          "5D(2)(m)",
+          "5D(2)(m)-Other",
+          "5E(1)",
+          "5E(2)",
+          "5E(3)",
+          "5E(4)",
+          "5E(5)",
+          "5E(6)",
+          "5E(7)",
+          "5E(7)-Other",
+          "5F(1)",
+          "5F(2)(a)",
+          "5F(2)(b)",
+          "5F(2)(c)",
+          "5F(2)(d)",
+          "5F(2)(e)",
+          "5F(2)(f)",
+          "5G(1)",
+          "5G(2)",
+          "5G(3)",
+          "5G(4)",
+          "5G(5)",
+          "5G(6)",
+          "5G(7)",
+          "5G(8)",
+          "5G(9)",
+          "5G(10)",
+          "5G(11)",
+          "5G(12)",
+          "5G(12)-Other",
+          "5H",
+          "5H-If more than 500, how many",
+          "5I(1)",
+          "5I(2)",
+          "5J",
+          "6A(1)",
+          "6A(2)",
+          "6A(3)",
+          "6A(4)",
+          "6A(5)",
+          "6A(6)",
+          "6A(7)",
+          "6A(8)",
+          "6A(9)",
+          "6A(10)",
+          "6A(11)",
+          "6A(12)",
+          "6A(13)",
+          "6A(14)",
+          "6A(14)-Other",
+          "6B(1)",
+          "6B(2)",
+          "6B(3)",
+          "7A(1)",
+          "7A(2)",
+          "7A(3)",
+          "7A(4)",
+          "7A(5)",
+          "7A(6)",
+          "7A(7)",
+          "7A(8)",
+          "7A(9)",
+          "7A(10)",
+          "7A(11)",
+          "7A(12)",
+          "7A(13)",
+          "7A(14)",
+          "7A(15)",
+          "7A(16)",
+          "7B",
+          "8A(1)",
+          "8A(2)",
+          "8A(3)",
+          "8B(1)",
+          "8B(2)",
+          "8B(3)",
+          "8C(1)",
+          "8C(2)",
+          "8C(3)",
+          "8C(4)",
+          "8D",
+          "8E",
+          "8F",
+          "8G(1)",
+          "8G(2)",
+          "8H",
+          "8I",
+          "9A(1)(a)",
+          "9A(1)(b)",
+          "9A(2)(a)",
+          "9A(2)(b)",
+          "9B(1)(a)",
+          "9B(1)(b)",
+          "9B(2)(a)",
+          "9B(2)(b)",
+          "9C(1)",
+          "9C(2)",
+          "9C(3)",
+          "9C(4)",
+          "9D(1)",
+          "9D(2)",
+          "9E",
+          "9F",
+          "10A",
+          "11",
+          "11A(1)",
+          "11A(2)",
+          "11B(1)",
+          "11B(2)",
+          "11C(1)",
+          "11C(2)",
+          "11C(3)",
+          "11C(4)",
+          "11C(5)",
+          "11D(1)",
+          "11D(2)",
+          "11D(3)",
+          "11D(4)",
+          "11D(5)",
+          "11E(1)",
+          "11E(2)",
+          "11E(3)",
+          "11E(4)",
+          "11F",
+          "11G",
+          "11H(1)(a)",
+          "11H(1)(b)",
+          "11H(1)(c)",
+          "11H(2)",
+          "SEC Region Name",
+          "Organization CRD #",
+          "SEC #",
+          "Main Street Address 1",
+          "Main Street Address 2",
+          "Main Office City, State, Postal Code",
+          "Mail Office City, State, Postal Code",
+          "Contact Name",
+          "Telephone Number",
+          "Legal Status",
+          "Types of Advisory Activities",
+          "Regulator Status",
+          "Effective Date",
+          "Criminal Disclosures",
+          "Regulatory Action Disclosures",
+          "Civil Judicial Disclosures",
+          "Bankruptcy Disclosures",
+          "Judgment/Lien Disclosures",
+          "Bond Payout Disclosures",
+          "SEC Registration Status",
+          "Status Effective Date",
+          "World Wide Web Site Address",
+          "1L",
+          "5A-If more than 1,000, how many",
+          "5B(1)-If more than 1,000, how many",
+          "5B(2)-If more than 1,000, how many",
+          "5B(3)-If more than 1,000, how many",
+          "5C",
+          "5C-If more than 500, how many",
+          "5D(1)",
+          "5D(2)",
+          "5D(3)",
+          "5D(4)",
+          "5D(5)",
+          "5D(6)",
+          "5D(7)",
+          "5D(8)",
+          "5D(9)",
+          "5D(10)",
+          "5D(10)-Other",
+          "5G(10)-Other",
+          "6A(7)-Other",
+          "9A(1)",
+          "9A(2)",
+          "9B(1)",
+          "9B(2)",
+          "9C",
+          "10",
+          'Current Status',
+          'FINRA BD Status',
+          "2B(1)", "2B(2)", "2B(3)"
+        ),
+        nameActual = c(
+          "idRegionSEC",
+          "idCRD",
+          "idSEC",
+          "typeRegulationSEC",
+          "nameEntityManager",
+          "nameEntityManagerLegal",
+          "addressStreet1OfficePrimary",
+          "addressStreet2OfficePrimary",
+          "cityOfficePrimary",
+          "stateOfficePrimary",
+          "countryOfficePrimary",
+          "zipOfficePrimary",
+          "phoneOfficePrimary",
+          "faxOfficePrimary",
+          "addressStreet1OfficeMail",
+          "addressStreet2OfficeMail",
+          "cityOfficeMail",
+          "stateOfficeMail",
+          "countryOfficeMail",
+          "zipOfficeMail",
+          "statusSEC",
+          "dateStatusSEC",
+          "stateDateJurisdictionNotice",
+          "dateADVLatest",
+          "dateFormVersion",
+          "hasEntityMultipleURLs",
+          "urlManager",
+          "isForeignRegisteredEntity",
+          "isSECSection12_15Reporter",
+          "idCIK",
+          "hasAUMGreater1B",
+          "idLEI",
+          "hasAUMGreater100M",
+          "hasAUMUnder100MOver25m",
+          "hasPrincipalOfficeWY",
+          "hasPrincipalOfficeForeign",
+          "isAdviser1940InvestmentActCompany",
+          "isAdviserBusinessDevelopmentCompany25MInCapital",
+          "isAdviserPensionCapitalGreater200M",
+          "isAdviserRelated203A",
+          "isAdviserNew203A",
+          "isAdviserMultiState203A",
+          "isAdviserInternet",
+          "hasSECOrderProhibitingRegistration",
+          "isAdviserSECIneligible",
+          "typeEntity",
+          "typeEntityDetail",
+          "monthFiscalYearEnd",
+          "stateEntityOrganized",
+          "countryEntityOrganized",
+          "countEmployeesTotal",
+          "countEmployeesInvestmentAdvisory",
+          "countEmployeesBrokerDealer",
+          "countEmployeesStateRegisteredInvestmentAdviser",
+          "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities",
+          "countEmployeesLicensedInsuranceAgents",
+          "countEmployeesSolicitAdvisoryClients",
+          "rangeClients",
+          "countClientsOver100Rounded",
+          "pctClientsForeign",
+          "rangeClientsIndividualNonHighNetWorth",
+          "rangeClientsIndividualHighNetWorth",
+          "rangeClientsBankThrift",
+          "rangeClientsInvestmentCompany",
+          "rangeClientsBusinessDevelopmentCompany",
+          "rangeClientsPooledInvestmentVehicle",
+          "rangeClientsPensionPlan",
+          "rangeClientsCharitableOrganization",
+          "rangeClientsCorporationOther",
+          "rangeClientsStateMunicipalGovernment",
+          "rangeClientsInvestmentAdviserOther",
+          "rangeClientsInsuranceCompany",
+          "rangeClientsOther",
+          "typeClientsOther",
+          "rangeAUMIndividualNonHighNetWorth",
+          "rangeAUMIndividualHighNetWork",
+          "rangeAUMBankThrift",
+          "rangeAUMInvestmentCompany",
+          "rangeAUMBusinessDevelopmentCompany",
+          "rangeAUMPooledInvestmentVehicle",
+          "rangeAUMPensionPlan",
+          "rangeAUMCharitableOrganization",
+          "rangeAUMCorporationOthr",
+          "rangeAUMStateMunicipalGovernment",
+          "rangeAUMInvestmentAdviserOther",
+          "rangeAUMInsuranceCompany",
+          "rangeAUMOther",
+          "typeAUMOther",
+          "hasFeeAUM",
+          "hasFeeHourlyCharge",
+          "hasFeeSubscription",
+          "hasFeeFixed",
+          "hasFeeCommission",
+          "hasFeePerformance",
+          "hasFeeOther",
+          "typeFeeOther",
+          "isManagerSecuritiesPortfolio",
+          "amountAUMDiscretionary",
+          "amountAUMNonDiscretionary",
+          "amountAUMTotal",
+          "countAccountsDiscretionary",
+          "countAccountsNonDiscretionary",
+          "countAccountsTotal",
+          "hasFinancialPlanning",
+          "hasPortfolioManagementIndividualSmallBusiness",
+          "hasPortfolioManagementInvestmentCompanies",
+          "hasPortfolioManagementPooledInvestmentVehicles",
+          "hasPortfolioManagementInstitutionalClients",
+          "hasServicePensionConsulting",
+          "hasServiceInvestmentAdviserSelection",
+          "hasServicePeriodicalPublication",
+          "hasServiceSecurityRating",
+          "hasServiceMarketTiming",
+          "hasServiceEducationSeminars",
+          "hasServiceOther",
+          "typeServiceOther",
+          "rangeClientsFinancialPlanning",
+          "amountClientsFinancialPlanningOver500Rounded",
+          "hasFeeWrapSponsor",
+          "hasFeeWrapPortfolioManager",
+          "isAdviserLimitedInvestmentTypes",
+          "isBrokerDealer",
+          "isBrokerDealerRepresentative",
+          "isCommodityPoolOperator",
+          "isFuturesMerchant",
+          "isRealEstateBrokerDealerAgent",
+          "isInsuranceBrokerAgent",
+          "isBank",
+          "isTrustCompany",
+          "isRegisteredMunicipalAdviser",
+          "isRegisteredSecuritySwapDealer",
+          "isRegistredSecuritySwapParticipant",
+          "isAccountingFirm",
+          "isLawFirm",
+          "isOtherFinancialProductSalesperson",
+          "typeOtherFinancialProductSalesperson",
+          "isBusinessActiveNonListedActivity",
+          "typeBusinessActiveNonListedActivity",
+          "hasProductNonInvestmentAdvice",
+          "hasRelatedBrokerDealer",
+          "hasRelatedInvestmentAdviserOthr",
+          "hasRelatedRegisteredMunicipalAdviser",
+          "hasRelatedRegisteredSecuritySwapDealer",
+          "hasRelatedRegisteredSecuritySwapParticipant",
+          "hasRelatedRegisteredCommodityPoolOperator",
+          "hasRelatedRegisteredFuturesMerchant",
+          "hasRelatedBankThrift",
+          "hasRelatedTrust",
+          "hasRelatedAccountingFirm",
+          "hasRelatedLawFirm",
+          "hasRelatedInsuranceCompany",
+          "hasRelatedPensionConsultant",
+          "hasRelatedRealEstateBrokerDealer",
+          "hasRelatedLimitedPartnershipSyndicator",
+          "hasRelatedGeneralPartnerManagingMemberSyndicator",
+          "hasRelatedPrivateFundAdviser",
+          "isSecuritiesBuyerFromClientsForSelfToClientsFromOwned",
+          "isSecuritiesFirmBoughSoldClientRecommended",
+          "isSecuritiesClientRecommendedFirmOwnedSecurity",
+          "hasTradeExecutionClient",
+          "isSecuritiesUnderwriterPurchaserManagerClientRecommendedSecurity",
+          "hasRecommendedPurchaseSaleFirmOwnedSecurity",
+          "hasClientDiscretionBuySell",
+          "hasClientDiscretionBuySellAmount",
+          "hasClientDiscretionBrokerSelection",
+          "hasClientDiscretionCommisionCost",
+          "isClientBrokerRelatedParty",
+          "hasClientBrokerRecommendation",
+          "isClientBrokerRecommenationRelatedParty",
+          "isBrokerSoftDollarRecipient",
+          "isBrokerSoftDollarEligibleResearchService",
+          "hasCompensationForClientReferrals",
+          "isCompensatedForClientReferrals",
+          "hasCustodyClientCash",
+          "hasCustodyClientSecurities",
+          "amountAUMClientSecurities",
+          "countCustodyClients",
+          "hasAdvisoryCustodyClientCash",
+          "hasAdvisoryCustodyClientSecurities",
+          "amountAUMAdvisoryClientCash",
+          "countAdvisoryCustodyClientCash",
+          "hasQualifiedCustodianSendInvestorQuarterlyReports",
+          "hasIndependentAccountAuditPooledInvestments",
+          "hasIndependentAccountSurpriseAuditClientFunds",
+          "hasIndependentAccountantPrepareInternalControlReports",
+          "isQualifiedCustodian",
+          "hasRelatedQualifiedCustodian",
+          "monthYearLastSurpriseAudit",
+          "countQualifiedCustodians",
+          "hasControlPersonUnnamed",
+          "hasManagementSupervisedPersonEvent",
+          "hasManagerFelonyPleaConviction",
+          "hasManagerFelonyCharge",
+          "hasManagerMisdemeanorPleaConviction",
+          "hasManagerMisdemeanrCharge",
+          "hasManagerSEC_CFTCFalseStatementOmission",
+          "hasManagerSEC_CFTCStatuteViolation",
+          "hasManagerSEC_CFTCAuthorizationAction",
+          "hasManagerSEC_CFTCOrderAgainst",
+          "hasManagerSEC_CFCPenaltyCeaseDesist",
+          "hasManagerFederalStateForeignFalseStatement",
+          "hasManagerFederalStateForeignInvestmentViolation",
+          "hasManagerFederalStateForeignBusinessRevokeSuspended",
+          "hasManagerFederalStateForeignOrderAgainst",
+          "hasManagerFederalStateForeignLicenseRevoked",
+          "hasManagerSelfRegulatedBodyFalseStatement",
+          "hasManagerSelfRegulatedBodyRuleViolation",
+          "hasManagerSelfRegulatedBodyBusinessRevokeSuspension",
+          "hasManagerSelfRegulatedBodyActivityBan",
+          "hasManagerAttorneyAccountantFederalContractorPriorBanRevoke",
+          "isManagerSubjectToRegulatoryProceeding",
+          "hasManagerDomesticForeignCourtEnjoinedInvestmentActivity",
+          "hasManagerDomesticForeignCourtGuiltyStatuteViolation",
+          "hasManagerDomesticForeignCourtDismissedActionSettlementPursuant",
+          "isManagerDomesticForeignCourtSubjectToProceeding",
+          "nameSECRegion",
+          "idCRD",
+          "idSEC",
+          "addressStreet1OfficePrimary",
+          "addressStreet1OfficePrimary2",
+          "cityStateZipOfficePrimary",
+          "cityStateZipOfficeMail",
+          "nameContact",
+          "phoneOfficePrimary",
+          "typeEntity",
+          "descriptionManagerServices",
+          "statusSEC",
+          "dateStatusSEC",
+          "countCriminalDisclosures",
+          "countRegulatoryActions",
+          "countCivilDisclosures",
+          "countBankruptcyDisclosures",
+          "countJudgementLiens",
+          "countBondPayoutDisclosures",
+          "statusSEC",
+          "dateStatusSEC",
+          "urlManager",
+          "hasMultipleEntityURLs",
+          "countEmployeesTotalOver1000",
+          "countEmployeesInvestmentAdvisoryOver1000",
+          "countEmployeesBrokerDealerOver1000",
+          "countEmployeesStateRegisteredInvestmentAdviserOver1000",
+          "rangeClients",
+          "countClientsOver500",
+          "rangeClientsIndividualNonHighNetWorth",
+          "rangeClientsIndividualHighNetWorth",
+          "rangeClientsBankThrift",
+          "rangeClientsInvestmentCompany",
+          "rangeClientsBusinessDevelopmentCompany",
+          "rangeClientsPooledInvestmentVehicle",
+          "rangeClientsPensionPlan",
+          "rangeClientsCharitableOrganization",
+          "rangeClientsCorporationOther",
+          "rangeClientsStateMunicipalGovernment",
+          "rangeClientsInvestmentAdviserOther",
+          "typeServicesOther",
+          "typeBusinessOther",
+          "hasCustodyClientCash",
+          "hasCustodyClientSecurities",
+          "amountAUMAdvisoryClientCashSecurities",
+          "countAdvisoryCustodyClientCashSecurities",
+          "hasAdvisoryCustodyClientCashSecurities",
+          "hasControlPersonUnnamed",
+          'statusSEC',
+          'statusFINRA',
+          'hasExemeptionAsSolelyVentureAdviser',
+          'hasExemptionAsPrivateFundManagerUnder150MAUM',
+          'hasExemptionSoleyPrivateFundManagrAUMOver150M'
+        )
+      )
+    return(sec_name_df)
+  }
+
+parse_adv_excel_data <-
+  function(file_path = "/Users/alexbresler/Desktop/adv_data/ia080116.xlsx") {
+    excel_data <-
+      file_path %>%
+      readxl::read_excel() %>%
+      suppressWarnings()
+
+    return(excel_data)
+  }
+
+parse_adv_csv <-
+  function(file_path = "/Users/alexbresler/Desktop/adv_data/IA FOIA Download 7-30-10.CSV") {
+    data <-
+      file_path %>%
+      read_csv %>%
+      suppressWarnings()
+    return(data)
+  }
+parse_adv_txt_data <-
+  function(file_path = "/Users/alexbresler/Desktop/adv_data/5010912_10044_00050000_00050000.txt") {
+    data <-
+      file_path %>%
+      read_delim(delim = '|', col_names = T) %>%
+      dplyr::select(-matches("X26")) %>%
+      suppressWarnings()
+    return(data)
+  }
+
+parse_sec_adv_data_url <-
+  function(url = 'https://www.sec.gov/foia/iareports/ia090116.zip',
+           file_directory = 'Desktop/adv_data',
+           remove_files = T,
+           empty_trash = T) {
+    setwd("~")
+    options(scipen = 999999)
+    date_data <-
+      url %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% mdy
+
+    is_exempt <-
+      url %>% str_detect("exempt")
+
+    file <-
+      url %>% basename()
+
+    temp.dir <-
+      file_directory
+
+    file_path <-
+      temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
+    if (dir.exists(paths = file_path)) {
+      "rm -R " %>%
+        paste0(temp.dir) %>%
+        system()
+      if (empty_trash == T) {
+        system('rm -rf ~/.Trash/*')
+      }
+    }
+
+    if (!dir.exists(paths = file_path)) {
+      dir.create(temp.dir)
+    }
+
+    file <-
+      temp.dir %>%
+      paste0('/', file)
+    httr::set_config(config(ssl_verifypeer = 0L))
+
+    url %>%
+      curl_download(url = ., destfile = file)
+
+    file %>%
+      unzip(exdir = paste0(temp.dir, '/'))
+
+    dir_files <-
+      temp.dir %>%
+      list.files()
+
+    file_name <-
+      dir_files %>%
+      str_detect('CSV|csv|TXT|txt|XLS|XLSX|xlsx|xls') %>%
+      dir_files[.]
+
+    file_name <-
+      getwd() %>%
+      paste0('/', file_directory, '/', file_name)
+
+    if (file_name %>% str_detect("XLS|xls|xlsx|XLSX")) {
+      adv_data <-
+        file_name %>% parse_adv_excel_data()
+    }
+
+    if (file_name %>% str_detect("csv|CSV")) {
+      adv_data <-
+        file_name %>% parse_adv_csv() %>%
+        suppressWarnings()
+    }
+
+    if (file_name %>% str_detect("txt|TXT")) {
+      adv_data <-
+        file_name %>% parse_adv_txt_data()
+    }
+
+    sec_names_df <-
+      get_sec_adv_name_df()
+
+    adv_names <-
+      data_frame(nameSEC = names(adv_data)) %>%
+      mutate(idRow = 1:n()) %>%
+      group_by(nameSEC) %>%
+      dplyr::filter(idRow == min(idRow)) %>%
+      ungroup %>%
+      .$idRow
+
+    adv_data <-
+      adv_data[, adv_names]
+
+    df_names <-
+      names(adv_data) %>%
+      map(function(x) {
+        data_frame(nameActual = sec_names_df %>%
+                     dplyr::filter(nameSEC == x) %>%
+                     .$nameActual)
+      }) %>%
+      bind_rows %>%
+      .$nameActual
+
+    adv_data <-
+      adv_data %>%
+      set_names(df_names)
+
+    has_columns <-
+      (adv_data %>%
+         dplyr::select(-matches("country")) %>%
+         dplyr::select(matches("^count[A-Z]")) %>% ncol > 0) &
+      (adv_data %>%
+         dplyr::select(-matches("country")) %>%
+         dplyr::select(matches("^count[A-Z]")) %>%
+         map_df(class) %>%
+         gather(column, class) %>%
+         dplyr::filter(class == 'character') %>% nrow > 0)
+
+    if (has_columns) {
+      change_to_range_cols <-
+        adv_data %>%
+        dplyr::select(-matches("country")) %>%
+        dplyr::select(matches("^count[A-Z]")) %>%
+        map_df(class) %>%
+        gather(column, class) %>%
+        dplyr::filter(class == 'character') %>%
+        .$column
+      for (x in 1:length(change_to_range_cols)) {
+        name_loc <-
+          change_to_range_cols[x] %>% grep(names(adv_data)) %>% min
+
+        names(adv_data)[name_loc] <-
+          names(adv_data)[name_loc] %>% str_replace("count", 'range')
+      }
+    }
+    if (adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names %>% length > 0) {
+      adv_data <-
+        adv_data %>%
+        mutate_at(.cols =
+                    adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names,
+                  .funs = str_trim) %>%
+        mutate_at(.cols =
+                    adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names,
+                  funs(if_else(. == "Y", TRUE, FALSE))) %>%
+        suppressWarnings()
+    }
+
+    if (adv_data %>% dplyr::select(matches("^url[M]")) %>% names %>% length > 0) {
+      adv_data <-
+        adv_data %>%
+        mutate_at(.cols =
+                    adv_data %>% dplyr::select(matches("^url[M]")) %>% names,
+                  .funs = str_to_lower) %>%
+        suppressWarnings()
+    }
+
+    if (adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names %>% length > 0) {
+      adv_data <-
+        adv_data %>%
+        mutate_at(
+          .cols =
+            adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names,
+          .funs = str_to_lower
+        ) %>%
+        suppressWarnings()
+
+    }
+
+    if (adv_data %>%
+        dplyr::select(matches("^date")) %>%
+        keep(is.character) %>%
+        names %>% length > 0) {
+      char_col <-
+        adv_data %>%
+        dplyr::select(matches("^date")) %>%
+        keep(is.character) %>%
+        names
+
+      adv_data <-
+        adv_data %>%
+        mutate_at(char_col,
+                  lubridate::mdy) %>%
+        suppressWarnings()
+    }
+
+    adv_data <-
+      adv_data %>%
+      mutate_at(.cols =
+                  adv_data %>% dplyr::select(
+                    matches(
+                      "^type[A-Z]|^range[A-Z]|^address[A-Z]|^city[A-Z]|^zip[A-Z]|^fax[A-Z]|^name[A-Z]|^state[A-Z]|^status[A-Z]|monthYearLastSurpriseAudit|^date[A-Z]"
+                    )
+                  ) %>% names,
+                .funs = as.character) %>%
+      mutate(idCRD = idCRD %>% as.integer)
+
+    if ('idLEI' %in% names(adv_data)) {
+      if (adv_data$idLEI %>% class == 'numeric') {
+        adv_data <-
+          adv_data %>%
+          mutate(idLEI = idLEI %>% as.character)
+      }
+    }
+
+    if ('rangeClientsFinancialPlanning' %in% names(adv_data)) {
+      if (adv_data$rangeClientsFinancialPlanning %>% class == 'numeric') {
+        adv_data <-
+          adv_data %>%
+          mutate(rangeClientsFinancialPlanning = rangeClientsFinancialPlanning %>% as.character)
+      }
+    }
+
+    adv_data <-
+      adv_data %>%
+      mutate(dateDataADV = date_data,
+             isExempt = is_exempt) %>%
+      dplyr::select(dateDataADV, isExempt, everything())
+
+    if (remove_files == T) {
+      "rm -R " %>%
+        paste0(temp.dir) %>%
+        system()
+      if (empty_trash == T) {
+        system('rm -rf ~/.Trash/*')
+      }
+    }
+    return(adv_data)
+  }
+
+get_period_type_adv_data <-
+  function(period = "2016-08",
+           is_exempt = F,
+           only_most_recent = F,
+           file_directory = 'Desktop/adv_data',
+           remove_files = T,
+           empty_trash = T) {
+
+    setwd("~")
+    if (!'url_df' %>% exists){
+      url_df <-
+        get_data_adv_period_urls(return_wide = F)
+    }
+
+    if (only_most_recent) {
+      period <-
+        url_df %>% dplyr::filter(dateData == max(dateData)) %>% .$periodData %>% unique
+    }
+
+    if (!period %in% url_df$periodData) {
+      available_periods <-
+        url_df$periodData %>% unique
+
+      "\nSorry periods can only be:\n" %>%
+        paste0(paste0(available_periods, collapse = '\n')) %>%
+        stop()
+    }
+    url_data <-
+      url_df %>% dplyr::filter(periodData == period, isExempt == is_exempt) %>% .$urlZip
+
+    parse_sec_adv_data_url_safe <-
+      possibly(parse_sec_adv_data_url, otherwise = NULL)
+
+    adv_data <-
+      url_data %>%
+      parse_sec_adv_data_url(
+        file_directory = file_directory,
+        remove_files = remove_files,
+        empty_trash = empty_trash
+      )
+    return(adv_data)
+  }
+
+
 #' Get ADV summary data for specified periods and filing types
 #'
 #' @param periods
@@ -7767,854 +8613,19 @@ get_data_adv_period_urls <-
 #' @param remove_files
 #' @param empty_trash
 #' @import dplyr stringr lubridate readr readxl rvest purrr
-#' @importFrom curl curl
+#' @importFrom curl curl_download
 #' @return
 #' @export
 #'
 #' @examples
 get_data_adv_managers_periods_summaries <-
   function(periods = c("2016-08"),
-           all_periods = T,
+           all_periods = F,
            is_exempt = F,
            only_most_recent = F,
            file_directory = 'Desktop/adv_data',
            remove_files = T,
            empty_trash = T) {
-    get_sec_adv_name_df <-
-      function() {
-        sec_name_df <-
-          data_frame(
-            nameSEC = c(
-              "SEC Region",
-              "Organization CRD#",
-              "SEC#",
-              "Firm Type",
-              "Primary Business Name",
-              "Legal Name",
-              "Main Office Street Address 1",
-              "Main Office Street Address 2",
-              "Main Office City",
-              "Main Office State",
-              "Main Office Country",
-              "Main Office Postal Code",
-              "Main Office Telephone Number",
-              "Main Office Facsimile Number",
-              "Mail Office Street Address 1",
-              "Mail Office Street Address 2",
-              "Mail Office City",
-              "Mail Office State",
-              "Mail Office Country",
-              "Mail Office Postal Code",
-              "SEC Current Status",
-              "SEC Status Effective Date",
-              "Jurisdiction Notice Filed-Effective Date",
-              "Latest ADV Filing Date",
-              "Form Version",
-              "1I",
-              "Website Address",
-              "1M",
-              "1N",
-              "CIK#",
-              "1O",
-              "1P",
-              "2A(1)",
-              "2A(2)",
-              "2A(3)",
-              "2A(4)",
-              "2A(5)",
-              "2A(6)",
-              "2A(7)",
-              "2A(8)",
-              "2A(9)",
-              "2A(10)",
-              "2A(11)",
-              "2A(12)",
-              "2A(13)",
-              "3A",
-              "3A-Other",
-              "3B",
-              "3C-State",
-              "3C-Country",
-              "5A",
-              "5B(1)",
-              "5B(2)",
-              "5B(3)",
-              "5B(4)",
-              "5B(5)",
-              "5B(6)",
-              "5C(1)",
-              "5C(1)-If more than 100, how many",
-              "5C(2)",
-              "5D(1)(a)",
-              "5D(1)(b)",
-              "5D(1)(c)",
-              "5D(1)(d)",
-              "5D(1)(e)",
-              "5D(1)(f)",
-              "5D(1)(g)",
-              "5D(1)(h)",
-              "5D(1)(i)",
-              "5D(1)(j)",
-              "5D(1)(k)",
-              "5D(1)(l)",
-              "5D(1)(m)",
-              "5D(1)(m)-Other",
-              "5D(2)(a)",
-              "5D(2)(b)",
-              "5D(2)(c)",
-              "5D(2)(d)",
-              "5D(2)(e)",
-              "5D(2)(f)",
-              "5D(2)(g)",
-              "5D(2)(h)",
-              "5D(2)(i)",
-              "5D(2)(j)",
-              "5D(2)(k)",
-              "5D(2)(l)",
-              "5D(2)(m)",
-              "5D(2)(m)-Other",
-              "5E(1)",
-              "5E(2)",
-              "5E(3)",
-              "5E(4)",
-              "5E(5)",
-              "5E(6)",
-              "5E(7)",
-              "5E(7)-Other",
-              "5F(1)",
-              "5F(2)(a)",
-              "5F(2)(b)",
-              "5F(2)(c)",
-              "5F(2)(d)",
-              "5F(2)(e)",
-              "5F(2)(f)",
-              "5G(1)",
-              "5G(2)",
-              "5G(3)",
-              "5G(4)",
-              "5G(5)",
-              "5G(6)",
-              "5G(7)",
-              "5G(8)",
-              "5G(9)",
-              "5G(10)",
-              "5G(11)",
-              "5G(12)",
-              "5G(12)-Other",
-              "5H",
-              "5H-If more than 500, how many",
-              "5I(1)",
-              "5I(2)",
-              "5J",
-              "6A(1)",
-              "6A(2)",
-              "6A(3)",
-              "6A(4)",
-              "6A(5)",
-              "6A(6)",
-              "6A(7)",
-              "6A(8)",
-              "6A(9)",
-              "6A(10)",
-              "6A(11)",
-              "6A(12)",
-              "6A(13)",
-              "6A(14)",
-              "6A(14)-Other",
-              "6B(1)",
-              "6B(2)",
-              "6B(3)",
-              "7A(1)",
-              "7A(2)",
-              "7A(3)",
-              "7A(4)",
-              "7A(5)",
-              "7A(6)",
-              "7A(7)",
-              "7A(8)",
-              "7A(9)",
-              "7A(10)",
-              "7A(11)",
-              "7A(12)",
-              "7A(13)",
-              "7A(14)",
-              "7A(15)",
-              "7A(16)",
-              "7B",
-              "8A(1)",
-              "8A(2)",
-              "8A(3)",
-              "8B(1)",
-              "8B(2)",
-              "8B(3)",
-              "8C(1)",
-              "8C(2)",
-              "8C(3)",
-              "8C(4)",
-              "8D",
-              "8E",
-              "8F",
-              "8G(1)",
-              "8G(2)",
-              "8H",
-              "8I",
-              "9A(1)(a)",
-              "9A(1)(b)",
-              "9A(2)(a)",
-              "9A(2)(b)",
-              "9B(1)(a)",
-              "9B(1)(b)",
-              "9B(2)(a)",
-              "9B(2)(b)",
-              "9C(1)",
-              "9C(2)",
-              "9C(3)",
-              "9C(4)",
-              "9D(1)",
-              "9D(2)",
-              "9E",
-              "9F",
-              "10A",
-              "11",
-              "11A(1)",
-              "11A(2)",
-              "11B(1)",
-              "11B(2)",
-              "11C(1)",
-              "11C(2)",
-              "11C(3)",
-              "11C(4)",
-              "11C(5)",
-              "11D(1)",
-              "11D(2)",
-              "11D(3)",
-              "11D(4)",
-              "11D(5)",
-              "11E(1)",
-              "11E(2)",
-              "11E(3)",
-              "11E(4)",
-              "11F",
-              "11G",
-              "11H(1)(a)",
-              "11H(1)(b)",
-              "11H(1)(c)",
-              "11H(2)",
-              "SEC Region Name",
-              "Organization CRD #",
-              "SEC #",
-              "Main Street Address 1",
-              "Main Street Address 2",
-              "Main Office City, State, Postal Code",
-              "Mail Office City, State, Postal Code",
-              "Contact Name",
-              "Telephone Number",
-              "Legal Status",
-              "Types of Advisory Activities",
-              "Regulator Status",
-              "Effective Date",
-              "Criminal Disclosures",
-              "Regulatory Action Disclosures",
-              "Civil Judicial Disclosures",
-              "Bankruptcy Disclosures",
-              "Judgment/Lien Disclosures",
-              "Bond Payout Disclosures",
-              "SEC Registration Status",
-              "Status Effective Date",
-              "World Wide Web Site Address",
-              "1L",
-              "5A-If more than 1,000, how many",
-              "5B(1)-If more than 1,000, how many",
-              "5B(2)-If more than 1,000, how many",
-              "5B(3)-If more than 1,000, how many",
-              "5C",
-              "5C-If more than 500, how many",
-              "5D(1)",
-              "5D(2)",
-              "5D(3)",
-              "5D(4)",
-              "5D(5)",
-              "5D(6)",
-              "5D(7)",
-              "5D(8)",
-              "5D(9)",
-              "5D(10)",
-              "5D(10)-Other",
-              "5G(10)-Other",
-              "6A(7)-Other",
-              "9A(1)",
-              "9A(2)",
-              "9B(1)",
-              "9B(2)",
-              "9C",
-              "10",
-              'Current Status',
-              'FINRA BD Status',
-              "2B(1)", "2B(2)", "2B(3)"
-            ),
-            nameActual = c(
-              "idRegionSEC",
-              "idCRD",
-              "idSEC",
-              "typeRegulationSEC",
-              "nameEntityManager",
-              "nameEntityManagerLegal",
-              "addressStreet1OfficePrimary",
-              "addressStreet2OfficePrimary",
-              "cityOfficePrimary",
-              "stateOfficePrimary",
-              "countryOfficePrimary",
-              "zipOfficePrimary",
-              "phoneOfficePrimary",
-              "faxOfficePrimary",
-              "addressStreet1OfficeMail",
-              "addressStreet2OfficeMail",
-              "cityOfficeMail",
-              "stateOfficeMail",
-              "countryOfficeMail",
-              "zipOfficeMail",
-              "statusSEC",
-              "dateStatusSEC",
-              "stateDateJurisdictionNotice",
-              "dateADVLatest",
-              "dateFormVersion",
-              "hasEntityMultipleURLs",
-              "urlManager",
-              "isForeignRegisteredEntity",
-              "isSECSection12_15Reporter",
-              "idCIK",
-              "hasAUMGreater1B",
-              "idLEI",
-              "hasAUMGreater100M",
-              "hasAUMUnder100MOver25m",
-              "hasPrincipalOfficeWY",
-              "hasPrincipalOfficeForeign",
-              "isAdviser1940InvestmentActCompany",
-              "isAdviserBusinessDevelopmentCompany25MInCapital",
-              "isAdviserPensionCapitalGreater200M",
-              "isAdviserRelated203A",
-              "isAdviserNew203A",
-              "isAdviserMultiState203A",
-              "isAdviserInternet",
-              "hasSECOrderProhibitingRegistration",
-              "isAdviserSECIneligible",
-              "typeEntity",
-              "typeEntityDetail",
-              "monthFiscalYearEnd",
-              "stateEntityOrganized",
-              "countryEntityOrganized",
-              "countEmployeesTotal",
-              "countEmployeesInvestmentAdvisory",
-              "countEmployeesBrokerDealer",
-              "countEmployeesStateRegisteredInvestmentAdviser",
-              "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities",
-              "countEmployeesLicensedInsuranceAgents",
-              "countEmployeesSolicitAdvisoryClients",
-              "rangeClients",
-              "countClientsOver100Rounded",
-              "pctClientsForeign",
-              "rangeClientsIndividualNonHighNetWorth",
-              "rangeClientsIndividualHighNetWorth",
-              "rangeClientsBankThrift",
-              "rangeClientsInvestmentCompany",
-              "rangeClientsBusinessDevelopmentCompany",
-              "rangeClientsPooledInvestmentVehicle",
-              "rangeClientsPensionPlan",
-              "rangeClientsCharitableOrganization",
-              "rangeClientsCorporationOther",
-              "rangeClientsStateMunicipalGovernment",
-              "rangeClientsInvestmentAdviserOther",
-              "rangeClientsInsuranceCompany",
-              "rangeClientsOther",
-              "typeClientsOther",
-              "rangeAUMIndividualNonHighNetWorth",
-              "rangeAUMIndividualHighNetWork",
-              "rangeAUMBankThrift",
-              "rangeAUMInvestmentCompany",
-              "rangeAUMBusinessDevelopmentCompany",
-              "rangeAUMPooledInvestmentVehicle",
-              "rangeAUMPensionPlan",
-              "rangeAUMCharitableOrganization",
-              "rangeAUMCorporationOthr",
-              "rangeAUMStateMunicipalGovernment",
-              "rangeAUMInvestmentAdviserOther",
-              "rangeAUMInsuranceCompany",
-              "rangeAUMOther",
-              "typeAUMOther",
-              "hasFeeAUM",
-              "hasFeeHourlyCharge",
-              "hasFeeSubscription",
-              "hasFeeFixed",
-              "hasFeeCommission",
-              "hasFeePerformance",
-              "hasFeeOther",
-              "typeFeeOther",
-              "isManagerSecuritiesPortfolio",
-              "amountAUMDiscretionary",
-              "amountAUMNonDiscretionary",
-              "amountAUMTotal",
-              "countAccountsDiscretionary",
-              "countAccountsNonDiscretionary",
-              "countAccountsTotal",
-              "hasFinancialPlanning",
-              "hasPortfolioManagementIndividualSmallBusiness",
-              "hasPortfolioManagementInvestmentCompanies",
-              "hasPortfolioManagementPooledInvestmentVehicles",
-              "hasPortfolioManagementInstitutionalClients",
-              "hasServicePensionConsulting",
-              "hasServiceInvestmentAdviserSelection",
-              "hasServicePeriodicalPublication",
-              "hasServiceSecurityRating",
-              "hasServiceMarketTiming",
-              "hasServiceEducationSeminars",
-              "hasServiceOther",
-              "typeServiceOther",
-              "rangeClientsFinancialPlanning",
-              "amountClientsFinancialPlanningOver500Rounded",
-              "hasFeeWrapSponsor",
-              "hasFeeWrapPortfolioManager",
-              "isAdviserLimitedInvestmentTypes",
-              "isBrokerDealer",
-              "isBrokerDealerRepresentative",
-              "isCommodityPoolOperator",
-              "isFuturesMerchant",
-              "isRealEstateBrokerDealerAgent",
-              "isInsuranceBrokerAgent",
-              "isBank",
-              "isTrustCompany",
-              "isRegisteredMunicipalAdviser",
-              "isRegisteredSecuritySwapDealer",
-              "isRegistredSecuritySwapParticipant",
-              "isAccountingFirm",
-              "isLawFirm",
-              "isOtherFinancialProductSalesperson",
-              "typeOtherFinancialProductSalesperson",
-              "isBusinessActiveNonListedActivity",
-              "typeBusinessActiveNonListedActivity",
-              "hasProductNonInvestmentAdvice",
-              "hasRelatedBrokerDealer",
-              "hasRelatedInvestmentAdviserOthr",
-              "hasRelatedRegisteredMunicipalAdviser",
-              "hasRelatedRegisteredSecuritySwapDealer",
-              "hasRelatedRegisteredSecuritySwapParticipant",
-              "hasRelatedRegisteredCommodityPoolOperator",
-              "hasRelatedRegisteredFuturesMerchant",
-              "hasRelatedBankThrift",
-              "hasRelatedTrust",
-              "hasRelatedAccountingFirm",
-              "hasRelatedLawFirm",
-              "hasRelatedInsuranceCompany",
-              "hasRelatedPensionConsultant",
-              "hasRelatedRealEstateBrokerDealer",
-              "hasRelatedLimitedPartnershipSyndicator",
-              "hasRelatedGeneralPartnerManagingMemberSyndicator",
-              "hasRelatedPrivateFundAdviser",
-              "isSecuritiesBuyerFromClientsForSelfToClientsFromOwned",
-              "isSecuritiesFirmBoughSoldClientRecommended",
-              "isSecuritiesClientRecommendedFirmOwnedSecurity",
-              "hasTradeExecutionClient",
-              "isSecuritiesUnderwriterPurchaserManagerClientRecommendedSecurity",
-              "hasRecommendedPurchaseSaleFirmOwnedSecurity",
-              "hasClientDiscretionBuySell",
-              "hasClientDiscretionBuySellAmount",
-              "hasClientDiscretionBrokerSelection",
-              "hasClientDiscretionCommisionCost",
-              "isClientBrokerRelatedParty",
-              "hasClientBrokerRecommendation",
-              "isClientBrokerRecommenationRelatedParty",
-              "isBrokerSoftDollarRecipient",
-              "isBrokerSoftDollarEligibleResearchService",
-              "hasCompensationForClientReferrals",
-              "isCompensatedForClientReferrals",
-              "hasCustodyClientCash",
-              "hasCustodyClientSecurities",
-              "amountAUMClientSecurities",
-              "countCustodyClients",
-              "hasAdvisoryCustodyClientCash",
-              "hasAdvisoryCustodyClientSecurities",
-              "amountAUMAdvisoryClientCash",
-              "countAdvisoryCustodyClientCash",
-              "hasQualifiedCustodianSendInvestorQuarterlyReports",
-              "hasIndependentAccountAuditPooledInvestments",
-              "hasIndependentAccountSurpriseAuditClientFunds",
-              "hasIndependentAccountantPrepareInternalControlReports",
-              "isQualifiedCustodian",
-              "hasRelatedQualifiedCustodian",
-              "monthYearLastSurpriseAudit",
-              "countQualifiedCustodians",
-              "hasControlPersonUnnamed",
-              "hasManagementSupervisedPersonEvent",
-              "hasManagerFelonyPleaConviction",
-              "hasManagerFelonyCharge",
-              "hasManagerMisdemeanorPleaConviction",
-              "hasManagerMisdemeanrCharge",
-              "hasManagerSEC_CFTCFalseStatementOmission",
-              "hasManagerSEC_CFTCStatuteViolation",
-              "hasManagerSEC_CFTCAuthorizationAction",
-              "hasManagerSEC_CFTCOrderAgainst",
-              "hasManagerSEC_CFCPenaltyCeaseDesist",
-              "hasManagerFederalStateForeignFalseStatement",
-              "hasManagerFederalStateForeignInvestmentViolation",
-              "hasManagerFederalStateForeignBusinessRevokeSuspended",
-              "hasManagerFederalStateForeignOrderAgainst",
-              "hasManagerFederalStateForeignLicenseRevoked",
-              "hasManagerSelfRegulatedBodyFalseStatement",
-              "hasManagerSelfRegulatedBodyRuleViolation",
-              "hasManagerSelfRegulatedBodyBusinessRevokeSuspension",
-              "hasManagerSelfRegulatedBodyActivityBan",
-              "hasManagerAttorneyAccountantFederalContractorPriorBanRevoke",
-              "isManagerSubjectToRegulatoryProceeding",
-              "hasManagerDomesticForeignCourtEnjoinedInvestmentActivity",
-              "hasManagerDomesticForeignCourtGuiltyStatuteViolation",
-              "hasManagerDomesticForeignCourtDismissedActionSettlementPursuant",
-              "isManagerDomesticForeignCourtSubjectToProceeding",
-              "nameSECRegion",
-              "idCRD",
-              "idSEC",
-              "addressStreet1OfficePrimary",
-              "addressStreet1OfficePrimary2",
-              "cityStateZipOfficePrimary",
-              "cityStateZipOfficeMail",
-              "nameContact",
-              "phoneOfficePrimary",
-              "typeEntity",
-              "descriptionManagerServices",
-              "statusSEC",
-              "dateStatusSEC",
-              "countCriminalDisclosures",
-              "countRegulatoryActions",
-              "countCivilDisclosures",
-              "countBankruptcyDisclosures",
-              "countJudgementLiens",
-              "countBondPayoutDisclosures",
-              "statusSEC",
-              "dateStatusSEC",
-              "urlManager",
-              "hasMultipleEntityURLs",
-              "countEmployeesTotalOver1000",
-              "countEmployeesInvestmentAdvisoryOver1000",
-              "countEmployeesBrokerDealerOver1000",
-              "countEmployeesStateRegisteredInvestmentAdviserOver1000",
-              "rangeClients",
-              "countClientsOver500",
-              "rangeClientsIndividualNonHighNetWorth",
-              "rangeClientsIndividualHighNetWorth",
-              "rangeClientsBankThrift",
-              "rangeClientsInvestmentCompany",
-              "rangeClientsBusinessDevelopmentCompany",
-              "rangeClientsPooledInvestmentVehicle",
-              "rangeClientsPensionPlan",
-              "rangeClientsCharitableOrganization",
-              "rangeClientsCorporationOther",
-              "rangeClientsStateMunicipalGovernment",
-              "rangeClientsInvestmentAdviserOther",
-              "typeServicesOther",
-              "typeBusinessOther",
-              "hasCustodyClientCash",
-              "hasCustodyClientSecurities",
-              "amountAUMAdvisoryClientCashSecurities",
-              "countAdvisoryCustodyClientCashSecurities",
-              "hasAdvisoryCustodyClientCashSecurities",
-              "hasControlPersonUnnamed",
-              'statusSEC',
-              'statusFINRA',
-              'hasExemeptionAsSolelyVentureAdviser',
-              'hasExemptionAsPrivateFundManagerUnder150MAUM',
-              'hasExemptionSoleyPrivateFundManagrAUMOver150M'
-            )
-          )
-        return(sec_name_df)
-      }
-
-    get_period_type_adv_data <-
-      function(period = "2016-08",
-               is_exempt = F,
-               only_most_recent = F,
-               file_directory = 'Desktop/adv_data',
-               remove_files = T,
-               empty_trash = T) {
-        parse_adv_excel_data <-
-          function(file_path = "/Users/alexbresler/Desktop/adv_data/ia080116.xlsx") {
-            excel_data <-
-              file_path %>%
-              readxl::read_excel() %>%
-              suppressWarnings()
-
-            return(excel_data)
-          }
-
-        parse_adv_csv <-
-          function(file_path = "/Users/alexbresler/Desktop/adv_data/IA FOIA Download 7-30-10.CSV") {
-            data <-
-              file_path %>%
-              read_csv %>%
-              suppressWarnings()
-            return(data)
-          }
-        parse_adv_txt_data <-
-          function(file_path = "/Users/alexbresler/Desktop/adv_data/5010912_10044_00050000_00050000.txt") {
-            data <-
-              file_path %>%
-              read_delim(delim = '|', col_names = T) %>%
-              dplyr::select(-matches("X26")) %>%
-              suppressWarnings()
-            return(data)
-          }
-        parse_sec_adv_data_url <-
-          function(url = 'http://www.sec.gov/foia/iareports/ia080116.zip',
-                   file_directory = 'Desktop/adv_data',
-                   remove_files = T,
-                   empty_trash = T) {
-            setwd("~")
-            options(scipen = 999999)
-            date_data <-
-              url %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% mdy
-
-            is_exempt <-
-              url %>% str_detect("exempt")
-
-            file <-
-              url %>% basename()
-
-            temp.dir <-
-              file_directory
-
-            file_path <-
-              temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
-            if (dir.exists(paths = file_path)) {
-              "rm -R " %>%
-                paste0(temp.dir) %>%
-                system()
-              if (empty_trash == T) {
-                system('rm -rf ~/.Trash/*')
-              }
-            }
-
-            if (!dir.exists(paths = file_path)) {
-              dir.create(temp.dir)
-            }
-
-            file <-
-              temp.dir %>%
-              paste0('/', file)
-
-            url %>%
-              curl_download(url = ., destfile = file)
-
-            file %>%
-              unzip(exdir = paste0(temp.dir, '/'))
-
-            dir_files <-
-              temp.dir %>%
-              list.files()
-
-            file_name <-
-              dir_files %>%
-              str_detect('CSV|csv|TXT|txt|XLS|XLSX|xlsx|xls') %>%
-              dir_files[.]
-
-            file_name <-
-              getwd() %>%
-              paste0('/', file_directory, '/', file_name)
-
-            if (file_name %>% str_detect("XLS|xls|xlsx|XLSX")) {
-              adv_data <-
-                file_name %>% parse_adv_excel_data()
-            }
-
-            if (file_name %>% str_detect("csv|CSV")) {
-              adv_data <-
-                file_name %>% parse_adv_csv() %>%
-                suppressWarnings()
-            }
-
-            if (file_name %>% str_detect("txt|TXT")) {
-              adv_data <-
-                file_name %>% parse_adv_txt_data()
-            }
-
-            sec_names_df <-
-              get_sec_adv_name_df()
-
-            adv_names <-
-              data_frame(nameSEC = names(adv_data)) %>%
-              mutate(idRow = 1:n()) %>%
-              group_by(nameSEC) %>%
-              dplyr::filter(idRow == min(idRow)) %>%
-              ungroup %>%
-              .$idRow
-
-            adv_data <-
-              adv_data[, adv_names]
-
-            df_names <-
-              names(adv_data) %>%
-              map(function(x) {
-                data_frame(nameActual = sec_names_df %>%
-                             dplyr::filter(nameSEC == x) %>%
-                             .$nameActual)
-              }) %>%
-              bind_rows %>%
-              .$nameActual
-
-            adv_data <-
-              adv_data %>%
-              set_names(df_names)
-
-            has_columns <-
-              (adv_data %>%
-                 dplyr::select(-matches("country")) %>%
-                 dplyr::select(matches("^count[A-Z]")) %>% ncol > 0) &
-              (adv_data %>%
-                 dplyr::select(-matches("country")) %>%
-                 dplyr::select(matches("^count[A-Z]")) %>%
-                 map_df(class) %>%
-                 gather(column, class) %>%
-                 dplyr::filter(class == 'character') %>% nrow > 0)
-
-            if (has_columns) {
-              change_to_range_cols <-
-                adv_data %>%
-                dplyr::select(-matches("country")) %>%
-                dplyr::select(matches("^count[A-Z]")) %>%
-                map_df(class) %>%
-                gather(column, class) %>%
-                dplyr::filter(class == 'character') %>%
-                .$column
-              for (x in 1:length(change_to_range_cols)) {
-                name_loc <-
-                  change_to_range_cols[x] %>% grep(names(adv_data)) %>% min
-
-                names(adv_data)[name_loc] <-
-                  names(adv_data)[name_loc] %>% str_replace("count", 'range')
-              }
-            }
-            if (adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names %>% length > 0) {
-              adv_data <-
-                adv_data %>%
-                mutate_at(.cols =
-                            adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names,
-                          .funs = str_trim) %>%
-                mutate_at(.cols =
-                            adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names,
-                          funs(if_else(. == "Y", TRUE, FALSE))) %>%
-                suppressWarnings()
-            }
-
-            if (adv_data %>% dplyr::select(matches("^url[M]")) %>% names %>% length > 0) {
-              adv_data <-
-                adv_data %>%
-                mutate_at(.cols =
-                            adv_data %>% dplyr::select(matches("^url[M]")) %>% names,
-                          .funs = str_to_lower) %>%
-                suppressWarnings()
-            }
-
-            if (adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names %>% length > 0) {
-              adv_data <-
-                adv_data %>%
-                mutate_at(
-                  .cols =
-                    adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names,
-                  .funs = str_to_lower
-                ) %>%
-                suppressWarnings()
-
-            }
-
-            if (adv_data %>%
-                dplyr::select(matches("^date")) %>%
-                keep(is.character) %>%
-                names %>% length > 0) {
-              char_col <-
-                adv_data %>%
-                dplyr::select(matches("^date")) %>%
-                keep(is.character) %>%
-                names
-
-              adv_data <-
-                adv_data %>%
-                mutate_at(char_col,
-                          lubridate::mdy) %>%
-                suppressWarnings()
-            }
-
-            adv_data <-
-              adv_data %>%
-              mutate_at(.cols =
-                          adv_data %>% dplyr::select(
-                            matches(
-                              "^type[A-Z]|^range[A-Z]|^address[A-Z]|^city[A-Z]|^zip[A-Z]|^fax[A-Z]|^name[A-Z]|^state[A-Z]|^status[A-Z]|monthYearLastSurpriseAudit|^date[A-Z]"
-                            )
-                          ) %>% names,
-                        .funs = as.character) %>%
-              mutate(idCRD = idCRD %>% as.integer)
-
-            if ('idLEI' %in% names(adv_data)) {
-              if (adv_data$idLEI %>% class == 'numeric') {
-                adv_data <-
-                  adv_data %>%
-                  mutate(idLEI = idLEI %>% as.character)
-              }
-            }
-
-            if ('rangeClientsFinancialPlanning' %in% names(adv_data)) {
-              if (adv_data$rangeClientsFinancialPlanning %>% class == 'numeric') {
-                adv_data <-
-                  adv_data %>%
-                  mutate(rangeClientsFinancialPlanning = rangeClientsFinancialPlanning %>% as.character)
-              }
-            }
-
-            adv_data <-
-              adv_data %>%
-              mutate(dateDataADV = date_data,
-                     isExempt = is_exempt) %>%
-              dplyr::select(dateDataADV, isExempt, everything())
-
-            if (remove_files == T) {
-              "rm -R " %>%
-                paste0(temp.dir) %>%
-                system()
-              if (empty_trash == T) {
-                system('rm -rf ~/.Trash/*')
-              }
-            }
-            return(adv_data)
-          }
-        if (!'url_df' %>% exists){
-          url_df <-
-            get_data_adv_period_urls(return_wide = F)
-        }
-        if (only_most_recent) {
-          period <-
-            url_df %>% dplyr::filter(dateData == max(dateData)) %>% .$periodData %>% unique
-        }
-
-        if (!period %in% url_df$periodData) {
-          available_periods <-
-            url_df$periodData %>% unique
-
-          "\nSorry periods can only be:\n" %>%
-            paste0(paste0(available_periods, collapse = '\n')) %>%
-            stop()
-        }
-        url_data <-
-          url_df %>% dplyr::filter(periodData == period, isExempt == is_exempt) %>% .$urlZip
-        parse_sec_adv_data_url_safe <-
-          possibly(parse_sec_adv_data_url, otherwise = NULL)
-
-        adv_data <-
-          url_data %>%
-          parse_sec_adv_data_url_safe(
-            file_directory = file_directory,
-            remove_files = remove_files,
-            empty_trash = empty_trash
-          )
-        return(adv_data)
-      }
-
-
     if (all_periods) {
       periods <-
         get_data_adv_period_urls() %>% .$periodData %>% unique
@@ -8648,7 +8659,7 @@ get_data_adv_managers_periods_summaries <-
       mutate_at(
         .cols =
           all_adv_data %>% dplyr::select(matches(
-            "^name[E]|^address|^city|^status|^state|^type"
+            "^name[E]|^address|^city|^status|^state|^type|^country[A-Z]"
           )) %>% dplyr::select(-stateEntityOrganized) %>% names,
         .funs =
           str_to_upper
