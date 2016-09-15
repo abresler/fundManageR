@@ -174,7 +174,7 @@ parse_for_percentage <-
       x %>%
       parse_number()
 
-    if (value > 1) {
+    if (value >= 1) {
       value <-
         value /  100
     }

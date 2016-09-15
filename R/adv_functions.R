@@ -7529,8 +7529,9 @@ parse_manager_brochure_data <-
               str_trim()
 
             page_text <-
-              page_text %>% str_replace_all('Form ADV Part 2A: |Form ADV Part 2A Brochure', '') %>%
-              str_replace_all('Firm Brochure', '')
+              page_text %>% str_replace_all('Form ADV Part 2A: |Form ADV Part 2A Brochure|Part 2A of ADV: ', '') %>%
+              str_replace_all('Firm Brochure', '') %>%
+              str_trim
 
             page_text <-
               page_text[!page_text == '']
