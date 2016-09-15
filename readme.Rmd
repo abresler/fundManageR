@@ -57,6 +57,7 @@ devtools::install_github("abresler/fundManageR")
 
 
 ### `calculate_` Functions 
+The purpose of these functions are to perform calculations.  The function family includes pertinent functions specific to Real Estate, Private Equity and generally relevent functions that apply to Investment Managers in Hedge Funds, Real Estate Private Equity, Venture Capital and traditional private equity.  Additionally the package provides a suite of generalized financial functions some of which are already available in other R Packages. 
 
 
 ### `get_data_` Functions
