@@ -282,17 +282,6 @@ parse_finra_c_url <-
     return(html_page)
   }
 
-#' Title
-#'
-#' @param node_text
-#' @param hit_words
-#' @param off_set
-#' @param is_numeric_node
-#'
-#' @return
-#' @export
-#'
-#' @examples
 find_text_node <-
   function(node_text,
            hit_words = "Total Number of Clients",

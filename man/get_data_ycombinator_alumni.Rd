@@ -2,7 +2,7 @@
 % Please edit documentation in R/venture_data_functions.R
 \name{get_data_ycombinator_alumni}
 \alias{get_data_ycombinator_alumni}
-\title{Get data on all YCombinator graduates}
+\title{Get data on Y-Combinator alumni companies}
 \usage{
 get_data_ycombinator_alumni(return_message = T)
 }
@@ -10,6 +10,6 @@ get_data_ycombinator_alumni(return_message = T)
 \item{return_message}{}
 }
 \description{
-Get data on all YCombinator graduates
+Get data on Y-Combinator alumni companies
 }
 
