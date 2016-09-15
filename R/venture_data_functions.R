@@ -1,5 +1,6 @@
 # ycombinator -------------------------------------------------------------
-#' Get data on all YCombinator graduates
+
+#' Get data on Y-Combinator alumni companies
 #'
 #' @param return_message
 #'

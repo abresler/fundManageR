@@ -1,6 +1,6 @@
 Package: fundManageR
 Type: Package
-Title: An R interface to the world of Asset Management: because one should never use Excel. 
+Title: An R toolkit for Investment Management. Because you shouldn't be doing this type of work in Excel
 Version: 0.1.0
 Authors@R: person("Alex", "Bresler", email = "abresler@asbcllc.com", role = c("aut", "cre"))
 License: MIT + file LICENSE
@@ -22,7 +22,6 @@ Imports:
     xml2,
     tibble,
     formattable,
-    FinCal,
     quantmod,
     RcppBDT
 RoxygenNote: 5.0.1
