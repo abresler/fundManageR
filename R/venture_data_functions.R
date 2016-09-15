@@ -6,7 +6,8 @@
 #'
 #' @return
 #' @export
-#' @import jsonlite stringr dplyr readr
+#' @import stringr dplyr readr
+#' @importFrom jsonlite fromJSON
 #' @examples
 get_data_ycombinator_alumni <-
   function(return_message = T) {

@@ -7287,7 +7287,10 @@ return_selected_adv_tables <-
 #'
 #' @return
 #' @export
-#' @import curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble tidyr urltools curlconverter
+#' @import dplyr formattable httr lubridate purrr readr rvest stringi stringr tibble tidyr urltools curlconverter
+#' @importFrom lazyeval as_name
+#' @importFrom curl curl
+#' @importFrom magrittr %>%
 #' @examples
 get_data_adv_managers_filings <-
   function(search_names = c('Blackstone Real Estate'),
@@ -8706,7 +8709,7 @@ get_data_adv_managers_summary_periods <-
 #' @export
 #'
 #' @examples
-get_data_adv_managers_current_period <-
+get_data_adv_managers_current_period_summary <-
   function(file_directory = 'Desktop/adv_data') {
     all_data <-
       get_data_adv_summary_periods(

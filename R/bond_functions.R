@@ -455,7 +455,7 @@ if (values %>%  length > 1) {
 #' @param purchase_price
 #' @param bond_coupon
 #' @param use_currency
-#' @param unnest data
+#' @param unnest_data
 #'
 #' @return
 #' @export

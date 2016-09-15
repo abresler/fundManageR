@@ -11,7 +11,7 @@ calculate_irr_bond_future(face_value = 1e+06, date_purchase = "2013-01-10",
   unnest_data = F)
 }
 \arguments{
-\item{unnest}{data}
+\item{unnest_data}{}
 }
 \description{
 Get bond data data frame

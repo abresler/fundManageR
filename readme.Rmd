@@ -64,5 +64,10 @@ The purpose of these functions are to perform calculations.  The function family
 
 ### `get_data_` Functions
 
+```{r}
+fundManageR::get_data_adv_managers_current_period()
+````
+`get_data_ycombinator_alumni` -- 
+`get_data_adv_managers_brochures` -- 
 
 ### Vignettes
