@@ -1,14 +1,3 @@
-gdeltr2::load_needed_packages(c('dplyr', 'magrittr', 'listviewer','purrr', 'httr', 'readr', 'tidyr', 'rvest', 'xml2',
-                                'readxl', 'curl', 'lubridate',
-                                'jsonlite', 'lubridate', 'stringr', 'RcppBDT', 'quantmod', 'formattable'))
-
-# helper_functions --------------------------------------------------------
-
-#' Get Settlment DF
-#'
-#' @return
-#'
-#' @examples
 get_setttlement_type_df <-
   function() {
     settlement_type_df <-
@@ -32,16 +21,7 @@ get_setttlement_type_df <-
     return(settlement_type_df)
   }
 
-#' Parse Settlment date
-#'
-#' @param date
-#' @param settlement_id
-#'
-#' @return
-#' @importFrom  RcppBDT getNthDayOfWeek
-#' @importFrom RQuantLib adjust
-#' @importFrom tis lastBusinessDayOfMonth
-#' @examples
+
 parse_settlement_date <-
   function(date = "2016-09-01",
            settlement_id = '2_PRIOR_LAST_WED') {
@@ -73,13 +53,7 @@ parse_settlement_date <-
     return(settlement_date)
   }
 
-#' Get Split Title
-#'
-#' @param x
-#'
-#' @return
-#'
-#' @examples
+
 get_split_mixed_char_title <-
   function(x = 'namePersonActor') {
     full_title <-
@@ -92,14 +66,7 @@ get_split_mixed_char_title <-
 
   }
 
-#' Is All Cap Word
-#'
-#' @param x
-#'
-#' @return
-#' @export
-#'
-#' @examples
+
 is_all_cap_word <-
   function(x = "md") {
     if (x %>% nchar == 2) {
@@ -132,9 +99,9 @@ fix_names <-
           name_vec[1] %>% str_to_lower() %>%
           paste0(name_vec[2] %>% is_all_cap_word())
       } else {
-      new_name <-
-        name_vec[2] %>% str_to_lower() %>%
-        paste0(name_vec[1] %>% is_all_cap_word())
+        new_name <-
+          name_vec[2] %>% str_to_lower() %>%
+          paste0(name_vec[1] %>% is_all_cap_word())
       }
     }
     if (name_vec %>% length > 2) {
@@ -156,18 +123,18 @@ fix_names <-
           paste0(other_words)
       } else {
         first_word <-
-        name_vec[first_no] %>% str_to_lower()
+          name_vec[first_no] %>% str_to_lower()
 
-      other_words <-
-        1:(first_no - 1) %>%
-        purrr::map(function(x)
-          is_all_cap_word(name_vec[x])) %>%
-        flatten_chr %>%
-        paste0(collapse = '')
+        other_words <-
+          1:(first_no - 1) %>%
+          purrr::map(function(x)
+            is_all_cap_word(name_vec[x])) %>%
+          flatten_chr %>%
+          paste0(collapse = '')
 
-      new_name <-
-        first_word %>%
-        paste0(other_words)
+        new_name <-
+          first_word %>%
+          paste0(other_words)
       }
 
     }
@@ -192,20 +159,18 @@ get_cme_floating_rate_summary_df <-
         urlOption = 'http://www.cmegroup.com' %>% paste0(optionUri),
         expirationDate = expirationDate %>% ymd
       ) %>%
+      dplyr::select(-(c(
+        updated, uri, highLowLimits, optionUri, escapedQuoteCode
+      ))) %>%
       dplyr::select(
-        -(c(
-          updated, uri, highLowLimits, optionUri, escapedQuoteCode
-        ))) %>%
-          dplyr::select(
-            productId,
-            expirationMonth,
-            expirationDate,
-            productName,
-            productCode,
-            last:low,
-            volume,
-            everything(
-            )
+        productId,
+        expirationMonth,
+        expirationDate,
+        productName,
+        productCode,
+        last:low,
+        volume,
+        everything()
       )
 
     futures_df <-
@@ -350,7 +315,7 @@ parse_futures_data <-
 
     rate_data <-
       rate_data %>%
-      mutate_each_(funs(extract_numeric),
+      mutate_each_(funs(parse_number),
                    vars =
                      rate_data %>% dplyr::select(matches("value")) %>% names) %>%
       dplyr::select(-dateTimeData) %>%
@@ -366,8 +331,7 @@ parse_futures_data <-
         remove = F
       ) %>%
       unite(periodExpiry, month, year, sep = ' 1 ') %>%
-      mutate(
-        periodExpiry = periodExpiry %>% mdy)
+      mutate(periodExpiry = periodExpiry %>% mdy)
 
     rate_data <-
       rate_data %>%
@@ -384,7 +348,7 @@ parse_futures_data <-
 
     expiration_dates <-
       seq_len(rate_data %>% nrow) %>%
-      purrr::map(function(x){
+      purrr::map(function(x) {
         parse_settlement_date(date = rate_data$periodExpiry[x],
                               settlement_id = rate_data$idSettlementType[x])
       }) %>%
@@ -431,7 +395,7 @@ parse_futures_data <-
 #' @import formattable
 #' @examples
 
-get_data_current_libor <-
+get_data_libor_current <-
   function(return_wide = T) {
     url <-
       'http://www.wsj.com/mdc/public/page/2_3020-libor.html'
@@ -440,34 +404,29 @@ get_data_current_libor <-
       url %>%
       read_html
 
-    rates <-
-      page %>%
-      html_nodes('.mdcTable .text') %>%
-      html_text
-
     valueCurrent <-
       page %>%
       html_nodes('.text+ .num') %>%
       html_text %>%
-      extract_numeric()
+      readr::parse_number()
 
     valueLastWeek <-
       page %>%
       html_nodes('.num:nth-child(3)') %>%
       html_text %>%
-      extract_numeric()
+      readr::parse_number()
 
     value52WeekHigh <-
       page %>%
       html_nodes('.num:nth-child(4)') %>%
       html_text %>%
-      extract_numeric()
+      readr::parse_number()
 
     value52WeekLow <-
       page %>%
       html_nodes('.num:nth-child(5)') %>%
       html_text %>%
-      extract_numeric()
+      readr::parse_number()
 
     libor_df <-
       data_frame(
@@ -497,6 +456,187 @@ get_data_current_libor <-
     return(libor_df)
   }
 
+
+parse_futures_data <-
+  function(url = 'http://www.cmegroup.com/trading/interest-rates/stir/eurodollar.html',
+           return_wide = T) {
+    options(digits = 5)
+    page <-
+      url %>%
+      read_html()
+
+    product_type <-
+      page %>%
+      html_nodes('#productName') %>%
+      html_text %>%
+      str_trim
+
+    if (product_type %>% str_detect("Eurodollar")) {
+      settlement_id <-
+        "2_PRIOR_LAST_WED"
+    }
+
+
+    rate_data <-
+      page %>% html_table(fill = T) %>%
+      data.frame() %>%
+      tbl_df
+
+    rate_data <-
+      rate_data %>%
+      slice(-1) %>%
+      dplyr::select(1:11) %>%
+      dplyr::select(-matches('Options|Charts|NA.'))
+
+    names(rate_data) <-
+      c(
+        'monthYearExpiry',
+        'valueCurrent',
+        'valueChange',
+        'valuePrior',
+        'valueOpen',
+        'valueHigh',
+        'valueLow',
+        'valueVolume',
+        'dateTimeData'
+      )
+
+    rate_data <-
+      rate_data %>%
+      mutate_each_(funs(parse_number),
+                   vars =
+                     rate_data %>% dplyr::select(matches("value")) %>% names) %>%
+      dplyr::select(-dateTimeData) %>%
+      mutate(dateTimeData = Sys.time()) %>%
+      suppressWarnings()
+
+    rate_data <-
+      rate_data %>%
+      separate(
+        monthYearExpiry,
+        into = c('month', 'year'),
+        sep = '\\ ',
+        remove = F
+      ) %>%
+      unite(periodExpiry, month, year, sep = ' 1 ') %>%
+      mutate(periodExpiry = periodExpiry %>% mdy)
+
+    rate_data <-
+      rate_data %>%
+      mutate(
+        indexFuture = ifelse(valueCurrent %>% is.na, valuePrior, valueCurrent),
+        rateFuture = 100 - indexFuture,
+        rateFuturePrior = 100 - valuePrior
+      ) %>%
+      dplyr::select(monthYearExpiry, rateFuture, rateFuturePrior, everything())
+
+    rate_data <-
+      rate_data %>%
+      mutate(idSettlementType = settlement_id)
+
+    expiration_dates <-
+      seq_len(rate_data %>% nrow) %>%
+      purrr::map(function(x) {
+        parse_settlement_date(date = rate_data$periodExpiry[x],
+                              settlement_id = rate_data$idSettlementType[x])
+      }) %>%
+      flatten_chr %>%
+      ymd
+
+
+    rate_data <-
+      rate_data %>%
+      mutate(dateExpiry = expiration_dates) %>%
+      dplyr::select(monthYearExpiry, dateExpiry, everything()) %>%
+      dplyr::select(-c(periodExpiry))
+
+    if (return_wide == F) {
+      rate_data <-
+        rate_data %>%
+        gather(item,
+               value,
+               -c(monthYearExpiry, dateExpiry, dateTimeData),
+               na.rm = T)
+    }
+
+    return(rate_data)
+  }
+
+get_data_index_future <-
+  function(futures_index_name = '1 Month Libor',
+           return_wide = T) {
+    options(scipen = 99999)
+    futures_name_df <-
+      data_frame(
+        nameIndex = c('30 Day Fed Funds', 'Eurodollars', '1 Month Libor', 'Euribor'),
+        slugPage = c(
+          '30-day-federal-fund',
+          'eurodollar',
+          '1-month-libor',
+          'euribor'
+        ),
+        urlPage = paste0(
+          'http://www.cmegroup.com/trading/interest-rates/stir/',
+          slugPage,
+          '.html'
+        )
+      )
+    if (!futures_index_name %in% futures_name_df$nameIndex) {
+      stop("Index futures options are limited to:\n" %>% paste0(paste0(
+        futures_name_df$nameIndex, collapse = '\n'
+      )))
+    }
+    parse_futures_data_safe <-
+      possibly(parse_futures_data, NULL)
+    selection_df <-
+      futures_name_df %>%
+      dplyr::filter(nameIndex == futures_index_name)
+
+    future_df <-
+      selection_df$urlPage %>%
+      map_df(function(x) {
+        parse_futures_data_safe(url = x, return_wide = return_wide)
+      }) %>%
+      mutate(nameIndex = futures_index_name) %>%
+      dplyr::select(nameIndex, everything())
+
+    if (!return_wide) {
+      future_df <-
+        future_df %>%
+        gather(item,
+               data,
+               -c(nameIndex, monthYearExpiry, idSettlementType, dateExpiry))
+    }
+
+    return(future_df)
+
+
+  }
+
+#' Get futures data for specified index
+#'
+#' @param future_indicies
+#' @param return_wide
+#'
+#' @return
+#' @export
+#' @import rvest purrr readr RcppBDT dplyr
+#' @examples
+get_data_futures_indicies <-
+  function(future_indicies = c("30 Day Fed Funds", "Eurodollars", "1 Month Libor", "Euribor"),
+           return_wide = F) {
+    get_data_index_future_safe <-
+      possibly(get_data_index_future, NULL)
+
+    futures_df <-
+      future_indicies %>%
+      map_df(function(x) {
+        get_data_index_future_safe(futures_index_name = x,
+                              return_wide = return_wide)
+      })
+
+    return(futures_df)
+  }
 
 get_fred_index_symbol_df <-
   function() {
@@ -560,7 +700,7 @@ get_fred_index_symbol_df <-
     return(symbol_df)
   }
 
-#' Get FRED Index Data
+#' Get FRED index time series data
 #'
 #' @param symbol
 #' @param return_wide
@@ -569,7 +709,7 @@ get_fred_index_symbol_df <-
 #' @export
 #' @importFrom quantmod getSymbols
 #' @examples
-get_data_index_symbol <-
+get_data_index_symbol_time_series <-
   function(symbol = 'DGS10',
            return_wide = F) {
     time_series_data <-
@@ -596,7 +736,7 @@ get_data_index_symbol <-
     return(ts_data)
   }
 
-#' Title
+#' Get current specified index value
 #'
 #' @param symbol
 #' @param return_wide
@@ -604,8 +744,8 @@ get_data_index_symbol <-
 #' @return
 #' @export
 #' @importFrom quantmod getQuote
-#' @examples
-get_data_index_symbol_current <-
+#' @examples get_data_index_symbol_current_value("^TNX")
+get_data_index_symbol_current_value <-
   function(symbol = "^TNX",
            return_wide = F) {
     time_series_data <-
@@ -625,20 +765,11 @@ get_data_index_symbol_current <-
   }
 
 
-#' Gets Monthly Period DF
-#'
-#' @param start_date
-#' @param term_years
-#' @param term_months
-#'
-#' @return
-#' @export
-#'
-#' @examples
 get_data_monthly_periods <-
   function(start_date = "2016-06-01",
            term_years = 25,
-           term_months = 0) {
+           term_months = 0){
+
     periods <-
       term_years * 12 + term_months
 
@@ -716,10 +847,8 @@ get_data_monthly_periods <-
 #' @export
 #'
 #' @examples
-calculate_data_loan_payments <-
+calculate_loan_payment <-
   function(loan_start_date = "2016-06-01",
-           cash_flow_data = NA,
-           override_monthly_interest = T,
            amount_initial_draw = 3000,
            is_interest_only = F,
            interest_only_periods = 24,
@@ -731,6 +860,7 @@ calculate_data_loan_payments <-
            term_months = 0,
            pct_loan_fee = 0,
            balloon_year = 10,
+           override_monthly_interest = F,
            interest_reserve_period = 0,
            balloon_month = 0,
            return_annual_summary = F) {
@@ -774,14 +904,6 @@ calculate_data_loan_payments <-
         amountInitialDraw = ifelse(idPeriod == 0, amount_initial_draw, 0),
         amountLoanFee = amountInitialDraw * pct_loan_fee
       )
-
-    if (cash_flow_data %>% is.na()) {
-      loan_period_df <-
-        loan_period_df %>%
-        mutate(amountAdditionalDraw = 0)
-    } else {
-      ## fix
-    }
 
     loan_period_df <-
       loan_period_df %>%

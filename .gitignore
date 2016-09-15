@@ -7,3 +7,4 @@ packrat/
 .httr-oauth
 .DS_Store
 tests/
+.Rprofile

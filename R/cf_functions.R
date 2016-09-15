@@ -1,4 +1,4 @@
-calculate_data_periods_irr <-
+calculate_periods_irr <-
   function(dates = c(
     "2016-06-01",
     "2017-05-31",
@@ -159,462 +159,284 @@ calculate_data_periods_irr <-
     return(data)
   }
 
-get_10yrUST_conversion_factor_df <-
-  function(bond_coupon = 3.3375,
-           date_maturity = '2019-11-15',
-           date_delivery = '2009-12-01',
-           return_message = T) {
-    options(scipen = 999)
-    options(digits = 5)
-
-    bond_coupon <-
-      bond_coupon / 100
-
-    date_maturity <-
-      date_maturity %>% ymd
-
-    date_delivery <-
-      date_delivery %>% ymd
-
-    days <-
-      as.numeric((date_maturity - date_delivery))
-
-    year <-
-      floor(days / 365.25)
-
-    month <-
-      floor((days / 365.25 - year) * 365 / 30)
-
-
-
-    n <-
-      year
-
-    if (month %in% c(0, 1, 2)) {
-      z <- 0
-    }
-    if (month %in% c(3, 4, 5)) {
-      z <-
-        3
-    }
-    if (month %in% c(6, 7, 8)) {
-      z <-
-        6
-    }
-    if (month %in% c(9, 10, 11, 12)) {
-      z <-
-        9
-    }
-
-
-    if (z < 7) {
-      v <-
-        z
-    } else {
-      v <-
-        3
-    }
-
-    a <-
-      (1 / 1.03) ^ (v / 6)
-    b <-
-      (bond_coupon / 2) * ((6 - v) / 6)
-    if (z < 7) {
-      c1 <-
-        (1 / 1.03) ^ (2 * n)
-    }  else {
-      c1 <-
-        (1 / 1.03) ^ ((2 * n) + 1)
-    }
-
-    d <-
-      (bond_coupon / 0.06) * (1 - c1)
-
-    conversion_factor <-
-      a * ((bond_coupon / 2) + c1 + d) - b
-
-    cfactor_df <-
-      data_frame(
-        dateDelivery = date_delivery,
-        dateMaturity = date_maturity,
-        pctConversionFactor = conversion_factor
-      )
-
-    if (return_message == T) {
-      conversion_factor %>%
-        paste0(
-          ' conversion factor for the bond maturing on ',
-          date_maturity,
-          ' delivered on ',
-          date_delivery,
-          ' with a ',
-          bond_coupon * 100,
-          '% coupon'
-        )
-    }
-
-    return(cfactor_df)
-  }
-
-
-elapsed_months <- function(end_date, start_date) {
-  ed <- as.POSIXlt(end_date)
-  sd <- as.POSIXlt(start_date)
-  12 * (ed$year - sd$year) + (ed$mon - sd$mon)
+parse_for_currency_value <-
+  function(x) {
+  value <-
+    x %>%
+    readr::parse_number() %>%
+    currency
+  return(value)
 }
 
-get_b <- function(v = 4, bond_coupon = .015) {
-  b <-
-    (bond_coupon  /  2)  *  (6 - v)  /  6
-  return(b)
-}
+parse_for_percentage <-
+  function(x) {
+    value <-
+      x %>%
+      parse_number()
 
-get_c <- function(z = 10, n = 1) {
-  if (z > 7) {
-    c_val <-
-      (1 / (1.03 ^ (2 * n + 1)))
-  } else {
-    c_val <-
-      (1 / (1.03 ^ (2 * n)))
-  }
-  return(c_val)
-}
-
-get_v <-
-  function(z = 10, n = 9) {
-    if (n > 5 & z >= 7) {
-      v <-
-        3
+    if (value > 1) {
+      value <-
+        value /  100
     }
-    if (n <= 5 & z >= 7) {
-      v <-
-        z - 6
+    value <-
+      value %>%
+      percent()
+
+    return(value)
+  }
+
+parse_multiple <-
+  function(x) {
+   value <-
+     x %>%
+      parse_number
+
+   return(value)
+  }
+
+cap_rate_valuation <-
+  function(cap_rate = .0615, net_operating_income = "$27,500,000",
+         cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T) {
+
+    noi <-
+      net_operating_income %>%
+      parse_for_currency_value
+
+    debt <-
+      debt_balance %>%
+      parse_for_currency_value()
+
+    pct_cap_rate <-
+      cap_rate %>%
+      parse_for_percentage()
+
+    pct_sale_cost <-
+      cost_of_sale %>%
+      parse_for_percentage()
+
+    amountValuationGross <-
+      noi  / cap_rate
+
+    amountCostSale <-
+      -((pct_sale_cost %>% as.numeric) * amountValuationGross)
+
+    amountValuationNet <-
+      amountValuationGross + amountCostSale
+
+    amountDebtRepayment <-
+      -min(amountValuationNet, debt)
+
+    amountEquityDistribution <-
+      -max(0, amountValuationNet + amountDebtRepayment) %>% currency
+
+    cash_check <-
+    !amountValuationGross + amountCostSale + amountDebtRepayment + amountEquityDistribution == 0
+
+    if (cash_check) {
+      stop("Cash waterfall does not tie")
     }
-    if (n <= 5 & z < 7) {
-      v <-
-        3
+
+    value_df <-
+      data_frame(pctCapRate = pct_cap_rate,
+               pctCostSale = pct_sale_cost,
+               amountNetOperatingIncome = noi,
+               amountDebtBalance = debt,
+               amountValuationGross,
+               amountCostSale,
+               amountValuationNet,
+               amountDebtRepayment,
+               amountEquityDistribution)
+
+    if (!return_wide) {
+      value_df <-
+        value_df %>%
+        dplyr::select(-amountValuationNet) %>%
+        gather(item, value, -c(pctCapRate, amountNetOperatingIncome, amountDebtBalance, pctCostSale)) %>%
+        mutate(value = value %>% currency(digits = 2)) %>%
+        suppressWarnings()
     }
-    return(v)
+    return(value_df)
   }
 
-get_a <- function(v = 4) {
-  a <-
-    (1 / 1.03) ^ (v / 6)
-  return(a)
-}
-get_d <-
-  function(bond_coupon = .015,
-           c_val = 0.915142) {
-    d <-
-      (bond_coupon / .06) * (1 - c_val)
-    return(d)
+ebtida_multiple_value <-
+  function(ebitda_multiple = 10, ebitda = "$27,500,000",
+           cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T) {
+
+    ebitda <-
+      ebitda %>%
+      parse_for_currency_value
+
+    debt <-
+      debt_balance %>%
+      parse_for_currency_value()
+
+    multipleEBITDA <-
+      ebitda_multiple %>%
+      parse_multiple()
+
+    pct_sale_cost <-
+      cost_of_sale %>%
+      parse_for_percentage()
+
+    amountValuationGross <-
+      ebitda * multipleEBITDA
+
+    amountCostSale <-
+      -((pct_sale_cost %>% as.numeric) * amountValuationGross)
+
+    amountValuationNet <-
+      amountValuationGross + amountCostSale
+
+    amountDebtRepayment <-
+      -min(amountValuationNet, debt)
+
+    amountEquityDistribution <-
+      -max(0, amountValuationNet + amountDebtRepayment) %>% currency
+
+    cash_check <-
+      !amountValuationGross + amountCostSale + amountDebtRepayment + amountEquityDistribution == 0
+
+    if (cash_check) {
+      stop("Cash waterfall does not tie")
+    }
+
+    value_df <-
+      data_frame(multipleEBITDA,
+                 pctCostSale = pct_sale_cost,
+                 amountEBITDA = ebitda,
+                 amountDebtBalance = debt,
+                 amountValuationGross,
+                 amountCostSale,
+                 amountValuationNet,
+                 amountDebtRepayment,
+                 amountEquityDistribution)
+
+    if (!return_wide) {
+      value_df <-
+        value_df %>%
+        dplyr::select(-amountValuationNet) %>%
+        gather(item, value, -c(multipleEBITDA, amountEBITDA, amountDebtBalance, pctCostSale)) %>%
+        mutate(value = value %>% currency(digits = 2)) %>%
+        suppressWarnings()
+    }
+    return(value_df)
   }
 
-
-get_factor_val <-
-  function(a = 0.980487,
-           b = 0.000025,
-           bond_coupon = .015,
-           c_val = 0.915142,
-           d = 0.0212146) {
-    factor_val <-
-      (a  *  ((bond_coupon  /  2)  +  c_val  +  d))  -  b
-    return(factor_val)
-  }
-
-
-#' Get conversion factor for US treasury futures curve
+#' Calculate residual value
 #'
-#' @param date_delivery
-#' @param date_maturity
-#' @param bond_coupon
-#' @param return_df
-#'
+#' @param cap_rates Vector of Capitalization Rates in percent or character percent form
+#' @param net_operating_income Vector of Net Operating Income in numeric or character numeric/currency form
+#' @param cost_of_sale Vector of Cost of Sale in percent or character percent form
+#' @param debt_balance Vector of anticipated Debt Balance at sale in numeric or character numeric/currency form
+#' @param return_wide
+#' @import readr dplyr purrr formattable
 #' @return
 #' @export
-#' @importFrom lubridate ymd
-#' @importFrom dplyr data_frame
+#'
 #' @examples
+calculate_residual_valuation_cap_rates <-
+  function(cap_rates = c(.05, .0525, .06, .2),
+           net_operating_income = "$27,500,000",
+           cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T) {
 
-calculate_ust_futures_conversion_factor <-
-  function(date_delivery = "2009-03-01",
-           date_maturity = "2012-01-15",
-           bond_coupon  = 1.125,
-           return_df = T) {
-    options(digits = 5)
-    date_delivery <-
-      date_delivery %>% ymd
+    scenario_matrix <-
+      expand.grid(cap_rate = cap_rates,
+                noi = net_operating_income,
+                cost_sale = cost_of_sale,
+                debt = debt_balance,
+                stringsAsFactors = F) %>%
+      as_data_frame
 
-    date_maturity <-
-      date_maturity %>% ymd
-
-    bond_coupon <-
-      bond_coupon / 100
-
-    days <-
-      as.numeric((date_maturity - date_delivery))
-
-    n <- # year
-      floor(days / 365.25)
-
-    days_through <-
-      (1 - (days / 365.2 - n)) * 365.25
-
-    months_remaining <-
-      (365.25 - days_through) / (365.25 / 12)
-
-    z <-
-      months_remaining %>% floor
-
-    v <-
-      z %>%
-      get_v(n = n)
-
-    a <-
-      v %>%
-      get_a
-    b <-
-      v %>%
-      get_b(bond_coupon = bond_coupon)
-    c_val <-
-      get_c(z = z, n = n)
-
-    d <-
-      get_d(bond_coupon = bond_coupon, c_val = c_val)
-
-    factor_value <-
-      get_factor_val(
-        a = a,
-        b = b,
-        bond_coupon = bond_coupon,
-        c_val = c_val,
-        d = d
-      )
-
-    if (return_df == T) {
-      factor_value <-
-        data_frame(
-          dateDelivery = date_delivery,
-          dateMaturity = date_maturity,
-          rateCoupon = bond_coupon,
-          pctFactor = factor_value
+    scenario_df <-
+      1:nrow(scenario_matrix) %>%
+      map_df(function(x) {
+        cap_rate_valuation(
+          cap_rate = scenario_matrix$cap_rate[[x]],
+          net_operating_income = scenario_matrix$noi[[x]],
+          cost_of_sale = scenario_matrix$cost_sale[[x]],
+          debt_balance = scenario_matrix$debt[[x]],
+          return_wide = T
         )
+      }) %>%
+      mutate(idScenario = 1:n()) %>%
+      dplyr::select(idScenario, everything())
+
+    scenario_df <-
+      scenario_df %>%
+      mutate_at(.cols =
+                  scenario_df %>% dplyr::select(matches("^pct")) %>% names,
+                funs(. %>% percent(digits = 2))) %>%
+      mutate_at(.cols =
+                  scenario_df %>% dplyr::select(matches("^amount")) %>% names,
+                funs(. %>% currency(digits = 2)))
+    if (!return_wide) {
+      scenario_df <-
+        scenario_df %>%
+        dplyr::select(-amountValuationNet) %>%
+        gather(item, value, -c(idScenario, pctCapRate, amountNetOperatingIncome, amountDebtBalance, pctCostSale)) %>%
+        mutate(value = value %>% currency(digits = 2)) %>%
+        suppressWarnings()
     }
-    return(factor_value)
+
+    return(scenario_df)
   }
 
 
-parse_purchase_price <- function(price = "97-18+", market = "cash") {
-  if (!market %in% c("cash", "futures")) {
-    stop("Market can only be cash or futures")
-  }
-  options(digits = 7)
-  base <-
-    price %>% substr(1, 2) %>% readr::parse_number
-
-  values <-
-    price %>% str_split('\\-') %>% flatten_chr()
-
-
-if (values %>%  length > 1) {
-  ratio_32s <-
-    values[2] %>% readr::parse_number() / 32
-
-  if (price %>% str_detect("\\+")) {
-    ratio_32s <-
-      (1 / 64) + ratio_32s
-  }
-  if (values[2] %>% readr::parse_number() > 100) {
-    base_ratio <-
-      values[2] %>%  substr(1, 2) %>% readr::parse_number()
-    frac_ratio <-
-      values[2] %>% substr(3, 3) %>% readr::parse_number() / 8
-
-    ratio_32s <-
-      (base_ratio / 32) + (frac_ratio * (1 / 32))
-    price <-
-      base + ratio_32s %>% digits(7)
-  } else {
-    price <-
-      base + ratio_32s
-  }
-} else{
-  price <-
-    base
-}
-
-  return(price)
-}
-
-#' Get bond data data frame
+#' Calculate residual value for a set of given EBITDA based inputs
 #'
-#' @param face_value
-#' @param date_purchase
-#' @param date_issue
-#' @param bond_duration_years
-#' @param purchase_price
-#' @param bond_coupon
-#' @param use_currency
-#' @param unnest data
-#'
+#' @param ebitda_multiples Vector of EBITDA Multiples in numeric or character
+#' @param ebitda Vector of EBITDA in numeric or character numeric/currency form
+#' @param cost_of_sale Vector of Cost of Sale in percent or character percent form
+#' @param debt_balance Vector of anticipated Debt Balance at sale in numeric or character numeric/currency form
+#' @param return_wide Return data in wide or long form
+#' @import readr dplyr purrr formattable
 #' @return
 #' @export
-#' @importFrom tidyr unnest
-#' @importFrom RQuantLib Schedule
-#' @import formattable lubridate dplyr
+#'
 #' @examples
-#' calculate_data_bond_future_irr(face_value = 1000000, date_purchase = "2013-01-10", id_period_type = "S", date_issue = "2012-11-15", bond_duration_years = 10, purchase_price = "97-18+", bond_coupon =  1 + (5 / 8), use_currency = T)
-calculate_data_bond_future_irr <-
-  function(face_value = 1000000,
-           date_purchase = "2013-01-10",
-           id_period_type = "S",
-           assign_to_environment = T,
-           date_issue = "2012-11-15",
-           bond_duration_years = 10,
-           purchase_price = "97-18+",
-           bond_coupon =  1 + (5 / 8),
-           use_currency = T,
-           unnest_data = F) {
-    options(digits = 6)
+calculate_residual_valuation_ebitda_multiples <-
+  function(ebitda_multiples = c(5, 10, 15, 20),
+           ebitda = "$27,500,000",
+           cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T) {
 
-    period_df <-
-      dplyr::data_frame(
-      idPeriodType = c("D", "W", "M", "S", "Y"),
-      period = c("Day", "Week", "Month", "Semiannual", "year")
-    )
+    scenario_matrix <-
+      expand.grid(ebitda_multiple = ebitda_multiples,
+                  ebitda = ebitda,
+                  cost_sale = cost_of_sale,
+                  debt = debt_balance,
+                  stringsAsFactors = F) %>%
+      as_data_frame
 
-    period_type <-
-      period_df %>%
-      dplyr::filter(id_period_type == idPeriodType) %>%
-      .$period
+    scenario_df <-
+      1:nrow(scenario_matrix) %>%
+      map_df(function(x) {
+        ebtida_multiple_value(
+          ebitda_multiple = scenario_matrix$ebitda_multiple[[x]],
+          ebitda = scenario_matrix$ebitda[[x]],
+          cost_of_sale = scenario_matrix$cost_sale[[x]],
+          debt_balance = scenario_matrix$debt[[x]],
+          return_wide = T
+        )
+      }) %>%
+      mutate(idScenario = 1:n()) %>%
+      dplyr::select(idScenario, everything())
 
-    date_purchase <-
-      date_purchase %>% ymd
-
-    date_issue <-
-      date_issue %>% ymd
-
-    date_expiry <-
-      date_issue + months((12 * bond_duration_years))
-
-    params <- list(
-      effectiveDate = date_issue,
-      maturityDate = date_expiry,
-      period = period_type,
-      calendar = 'UnitedStates/GovernmentBond',
-      businessDayConvention = 'Unadjusted',
-      terminationDateConvention = 'Unadjusted',
-      dateGeneration = 'Forward',
-      endOfMonth = 1
-    )
-    payment_dates <-
-      RQuantLib::Schedule(params)
-
-    upcoming_payments <-
-      payment_dates[!date_purchase > payment_dates]
-    date_next_coupon <-
-      upcoming_payments %>% .[[1]]
-    pct_coupon <-
-      bond_coupon / 100
-    purchase_value <-
-      purchase_price %>% parse_purchase_price()
-    purchase_amount <-
-      purchase_value / 100 * face_value
-    if (use_currency == T) {
-      purchase_amount <-
-        purchase_amount %>% formattable::currency(digits = 2)
+    scenario_df <-
+      scenario_df %>%
+      mutate_at(.cols =
+                  scenario_df %>% dplyr::select(matches("^pct")) %>% names,
+                funs(. %>% percent(digits = 2))) %>%
+      mutate_at(.cols =
+                  scenario_df %>% dplyr::select(matches("^amount")) %>% names,
+                funs(. %>% currency(digits = 2)))
+    if (!return_wide) {
+      scenario_df <-
+        scenario_df %>%
+        dplyr::select(-amountValuationNet) %>%
+        gather(item, value, -c(multipleEBITDA, amountEBITDA, amountDebtBalance, pctCostSale)) %>%
+        mutate(value = value %>% currency(digits = 2)) %>%
+        suppressWarnings()
     }
 
-
-    ## accrued interest
-
-    accrued_days <-
-      as.numeric(date_purchase - date_issue) + 1
-
-    accrued_period <-
-      as.numeric(date_next_coupon - date_issue)
-
-    accrued_interest <-
-      (pct_coupon * (face_value) / 2) * (accrued_days / accrued_period)
-
-    if (use_currency == T) {
-      accrued_interest <-
-        accrued_interest %>% formattable::currency(digits = 2)
-    }
-
-    bond_price <-
-      purchase_amount + accrued_interest
-
-    metadata_df <-
-      bond_df <-
-      data_frame(
-        amountBond = purchase_amount,
-        amountAccruedInterest = accrued_interest,
-        amountTotal = amountBond + amountAccruedInterest
-      )
-
-    pmt_data <-
-      data_frame(dateCF = c(date_purchase, upcoming_payments)) %>%
-      mutate(
-        idPeriod = 1:n() - 1,
-        days = as.numeric(dateCF - dplyr::lag(dateCF)),
-        amountPurchase = ifelse(idPeriod == min(idPeriod), -bond_price, 0),
-        amountInterest = ifelse(idPeriod > 0,
-                                pct_coupon / 365 * days * face_value, 0),
-        amountRepayment = ifelse(idPeriod == max(idPeriod), face_value, 0),
-        amountCF =  amountPurchase + amountInterest + amountRepayment
-      ) %>%
-      dplyr::select(idPeriod, everything()) %>%
-      suppressWarnings()
-
-    if (use_currency) {
-      pmt_data <-
-        pmt_data %>%
-        mutate_each_(funs(currency(., digits = 2)),
-                     vars = pmt_data %>% dplyr::select(matches("amount")) %>% names)
-    }
-
-    bond_df <-
-      data_frame(
-        amountBond = purchase_amount,
-        amountAccruedInterest = accrued_interest,
-        amountTotal = amountBond + amountAccruedInterest
-      ) %>%
-      bind_cols(calculate_data_periods_irr(cash_flows = pmt_data$amountCF, dates = pmt_data$dateCF))
-
-    data <-
-      data_frame(nameTable = c('Metadata', 'Payment Data'),
-                 dataTable = list(metadata_df = bond_df, payment_df = pmt_data))
-
-    if (assign_to_environment) {
-      data <-
-        data %>%
-        left_join(
-          data_frame(nameTable = c('Metadata', 'Payment Data'),
-                     idDF = c('metdataBond', 'payymentDataBond')
-          )
-        ) %>%
-        suppressMessages()
-
-      for(x in 1:nrow(data)){
-        table_data <-
-          data$dataTable[[x]]
-        df_name <-
-          data$idDF[[x]]
-
-        assign(x = df_name, eval(table_data), env = .GlobalEnv)
-      }
-      data <-
-        data %>%
-        dplyr::select(-idDF)
-    }
-
-    if (unnest_data) {
-      data <-
-        data %>%
-        unnest
-    }
-
-    return(data)
-
+    return(scenario_df)
   }

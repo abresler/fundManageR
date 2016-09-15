@@ -16,7 +16,7 @@
 #' @export
 #'
 #' @examples
-calculate_data_periods_irr <-
+calculate_irr_periods <-
   function(dates = c(
     "2016-06-01",
     "2017-05-31",
@@ -192,7 +192,7 @@ calculate_data_periods_irr <-
 #' @export
 #'
 #' @examples
-get_data_dates_cash_flow <-
+calculate_cash_flow_dates <-
   function(dates = c(
     "2016-09-01",
     "2017-08-31",
@@ -398,7 +398,7 @@ get_data_dates_cash_flow <-
 #' @export
 #'
 #' @examples
-calculate_data_cash_flows_returns <-
+calculate_cash_flows_returns <-
   function(dates = c(
     "2016-09-01",
     "2017-08-31",
@@ -428,7 +428,7 @@ calculate_data_cash_flows_returns <-
   return_df = T,
   return_message = T) {
     cf_data <-
-      get_data_dates_cash_flow(
+      calculate_cash_flow_dates(
         dates = dates,
         cash_flows = cash_flows,
         working_capital = working_capital,
@@ -437,7 +437,7 @@ calculate_data_cash_flows_returns <-
       )
 
     cf_return_data <-
-      calculate_data_periods_irr(
+      calculate_irr_periods(
         dates = cf_data$date,
         cash_flows = -cf_data$capitalCF,
         date_format = date_format,
@@ -524,7 +524,7 @@ parse_promote_structure <-
 #'
 #' @return
 #' @export
-#'
+#' @importFrom formattable percent
 #' @examples
 #' get_data_promote_structure(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"), return_wide = T)
 get_data_promote_structure <-
@@ -554,14 +554,24 @@ get_data_promote_structure <-
       promote_data <-
         promote_data %>%
         mutate_at(.cols =
-                  promote_data %>% dplyr::select(matches("^pct[A-Z]|ratio[A-Z]")) %>% names,
-                .funs = as.numeric)
+                    promote_data %>% dplyr::select(matches("^pct[A-Z]|ratio[A-Z]")) %>% names,
+                  funs(. %>% as.numeric)) %>%
+        mutate_at(.cols =
+                    promote_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
+                  funs(. %>% percent))
 
     } else {
       promote_data <-
         promote_data %>%
         mutate(nameTier = promote_structures) %>%
         dplyr::select(tierWaterfall, nameTier, everything())
+
+      promote_data <-
+        promote_data %>%
+        mutate_at(.cols =
+                  promote_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
+                funs(. %>% percent)) %>%
+        dplyr::select(tierWaterfall, nameTier, typeHurdle, matches("pctPref|ratioCapitalMultiple"), pctPromote)
     }
 
     return(promote_data)
@@ -741,7 +751,7 @@ get_initial_equity_df <-
 #' @export
 #'
 #' @examples
-calculate_data_cash_flow_waterfall <-
+calculate_cash_flow_waterfall <-
   function(dates =
              c("2015-03-11", "2015-11-20", "2016-10-15"),
            cash_flows = c(-100000, -200000, 698906.76849),
@@ -755,7 +765,7 @@ calculate_data_cash_flow_waterfall <-
            widen_waterfall = F) {
     options(scipen = 999999)
     cf_data <-
-      get_data_dates_cash_flow(
+      calculate_cash_flow_dates(
         dates = dates,
         cash_flows = cash_flows,
         remove_cumulative_cols = T,
@@ -773,7 +783,7 @@ calculate_data_cash_flow_waterfall <-
 
     promote_df <-
       get_data_promote_structure(promote_structures = promote_structure,
-                       return_wide = widen_promote_structure)
+                                 return_wide = widen_promote_structure)
 
     waterfall_periods <-
       waterfall_data$idPeriod
@@ -1397,8 +1407,8 @@ calculate_data_cash_flow_waterfall <-
 #' @export
 #'
 #' @examples
-#' calculate_data_partnerships_cash_flow_waterfall(dates =c("2016-09-01", "2017-08-31"), cash_flows = c(-1500000, 105000000), working_capital = 200000, promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"), general_partner_pct = .05, gp_promote_share = 1, unnest_data = F, exclude_partnership_total = F, distribution_frequency = 'annually', is_actual_360 = T, widen_promote_structure = F, bind_to_cf = F, remove_zero_cols = T, widen_waterfall = F)
-calculate_data_partnerships_cash_flow_waterfall <-
+#' calculate_cash_flow_waterfall_partnership(dates =c("2016-09-01", "2017-08-31"), cash_flows = c(-1500000, 105000000), working_capital = 200000, promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"), general_partner_pct = .05, gp_promote_share = 1, unnest_data = F, exclude_partnership_total = F, distribution_frequency = 'annually', is_actual_360 = T, widen_promote_structure = F, bind_to_cf = F, remove_zero_cols = T, widen_waterfall = F)
+calculate_cash_flow_waterfall_partnership <-
   function(dates =
              c("2016-09-01",
                "2017-08-31"),
@@ -1434,13 +1444,13 @@ calculate_data_partnerships_cash_flow_waterfall <-
                  nameTier = "Return of Equity") %>%
       bind_rows(
         get_data_promote_structure(promote_structures = promote_structure,
-                         return_wide = F) %>%
+                                   return_wide = F) %>%
           mutate(tierWaterfall = tierWaterfall + 1) %>%
           dplyr::select(tierWaterfall, nameTier)
       )
 
     waterfall_data <-
-      calculate_data_cash_flow_waterfall(
+      calculate_cash_flow_waterfall(
         dates = dates,
         cash_flows = cash_flows,
         working_capital = working_capital,
@@ -1502,7 +1512,7 @@ calculate_data_partnerships_cash_flow_waterfall <-
       summarise(totalCF = sum(toLP))
 
     total_return_df <-
-      calculate_data_periods_irr(
+      calculate_irr_periods(
         dates = entity_cf$date,
         cash_flows = entity_cf$totalCF,
         return_percentage = T,
@@ -1512,7 +1522,7 @@ calculate_data_partnerships_cash_flow_waterfall <-
       dplyr::select(typeEntity, everything())
 
     gp_return_df <-
-      calculate_data_periods_irr(
+      calculate_irr_periods(
         dates = gp_cf$date,
         cash_flows = gp_cf$totalCF,
         return_percentage = T,
@@ -1522,7 +1532,7 @@ calculate_data_partnerships_cash_flow_waterfall <-
       dplyr::select(typeEntity, everything())
 
     lp_return_df <-
-      calculate_data_periods_irr(
+      calculate_irr_periods(
         dates = lp_cf$date,
         cash_flows = lp_cf$totalCF,
         return_percentage = T,
@@ -1536,8 +1546,14 @@ calculate_data_partnerships_cash_flow_waterfall <-
       bind_rows(list(lp_return_df, total_return_df)) %>%
       mutate_at(.cols = c('pctIRR'),
                 .funs = percent) %>%
-      mutate_at(.cols = c("equityContributions", "equityDistributions", "valueProfit"),
-                .funs = currency)
+      mutate_at(
+        .cols = c(
+          "equityContributions",
+          "equityDistributions",
+          "valueProfit"
+        ),
+        .funs = currency
+      )
 
     if (exclude_partnership_total) {
       partnership_return_summary <-
@@ -1564,24 +1580,32 @@ calculate_data_partnerships_cash_flow_waterfall <-
     if (assign_to_environment) {
       data <-
         data %>%
-        left_join(
-          data_frame(nameTable = c("Cash Flow Waterfall", "Entity Waterfall", "Partnership Return Summary"),
-                     idDF = c('cashflowWaterfall', 'entityWaterfall', 'partnershipReturns')
+        left_join(data_frame(
+          nameTable = c(
+            "Cash Flow Waterfall",
+            "Entity Waterfall",
+            "Partnership Return Summary"
+          ),
+          idDF = c(
+            'cashflowWaterfall',
+            'entityWaterfall',
+            'partnershipReturns'
           )
-        ) %>%
+        )) %>%
         suppressMessages()
 
-      for(x in 1:nrow(data)){
+      1:nrow(data) %>%
+        map(function(x) {
         table_data <-
-            data$dataTable[[x]]
-          df_name <-
-            data$idDF[[x]]
+          data$dataTable[[x]]
+        df_name <-
+          data$idDF[[x]]
 
-          assign(x = df_name, eval(table_data), env = .GlobalEnv)
-      }
-     data <-
-       data %>%
-       dplyr::select(-idDF)
+        assign(x = df_name, eval(table_data), env = .GlobalEnv)
+      })
+      data <-
+        data %>%
+        dplyr::select(-idDF)
     }
 
     if (unnest_data) {
@@ -1591,6 +1615,4 @@ calculate_data_partnerships_cash_flow_waterfall <-
     }
 
     return(data)
-
-
   }

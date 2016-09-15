@@ -1,12 +1,5 @@
-
-
-# fintech -----------------------------------------------------------------
-
-
-
-
 # ycombinator -------------------------------------------------------------
-#' Get YCombinator Graduate Data
+#' Get data on all YCombinator graduates
 #'
 #' @param return_message
 #'
@@ -14,7 +7,7 @@
 #' @export
 #' @import jsonlite stringr dplyr readr
 #' @examples
-get_data_all_ycombinator_graduates <-
+get_data_ycombinator_alumni <-
   function(return_message = T) {
     url <-
       'https://api.ycombinator.com/companies/export.json?callback=setupCompanies'
@@ -29,14 +22,16 @@ get_data_all_ycombinator_graduates <-
                             stop = json_nodes %>% nchar - 2) %>%
       fromJSON(simplifyDataFrame = T, flatten = T) %>%
       as_data_frame() %>%
-      set_names(c(
-        'nameCompany',
-        'urlCompany',
-        'batchYC',
-        'verticalCompany',
-        'descriptionCompany',
-        'isCompanyDead'
-      ))
+      set_names(
+        c(
+          'nameCompany',
+          'urlCompany',
+          'batchYC',
+          'verticalCompany',
+          'descriptionCompany',
+          'isCompanyDead'
+        )
+      )
 
 
     json_data <-
@@ -51,7 +46,12 @@ get_data_all_ycombinator_graduates <-
         nameSeasonYC = c('Winter', 'Summer')
       )) %>%
       dplyr::select(-idSeasonYC) %>%
-      dplyr::select(nameCompany, isCompanyDead, batchYC, yearYC, nameSeasonYC, everything()) %>%
+      dplyr::select(nameCompany,
+                    isCompanyDead,
+                    batchYC,
+                    yearYC,
+                    nameSeasonYC,
+                    everything()) %>%
       suppressMessages() %>%
       arrange(desc(yearYC), nameSeasonYC)
 
@@ -89,3 +89,8 @@ get_data_all_ycombinator_graduates <-
 
     return(json_data)
   }
+
+
+
+
+# fintech -----------------------------------------------------------------
