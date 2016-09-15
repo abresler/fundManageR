@@ -383,7 +383,7 @@ parse_futures_data <-
 #' @return
 #' @export
 #' @importFrom magrittr %>%
-#' @import dplyr tidyr xml2 rvest httr purrr lubridate formattable magrittr
+#' @import dplyr tidyr xml2 rvest httr purrr lubridate formattable
 
 get_data_libor_current <-
   function(return_wide = T) {

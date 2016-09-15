@@ -7,7 +7,7 @@
 #' @param return_percentage Return percentages
 #' @param return_df Return a data frame
 #' @param return_message
-#' @import magrittr
+#' @importFrom magrittr %>%
 #' @importFrom formattable digits currency percent
 #' @importFrom lubridate ymd
 #' @importFrom dplyr data_frame
@@ -187,7 +187,9 @@ calculate_irr_periods <-
 #' @param remove_cumulative_cols
 #' @param include_final_day
 #' @param distribution_frequency
-#' @import lubridate tidyr dplyr magrittr stringr tidyr formattable
+#' @import tidyr dplyr stringr formattable
+#' @importFrom magrittr %>%
+#' @importFrom lubridate ymd
 #' @return
 #' @export
 #'

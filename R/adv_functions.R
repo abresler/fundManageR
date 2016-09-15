@@ -7287,9 +7287,10 @@ return_selected_adv_tables <-
 #'
 #' @return
 #' @export
-#' @import dplyr formattable httr lubridate purrr readr rvest stringi stringr tibble tidyr urltools curlconverter
+#' @import dplyr formattable httr lubridate purrr readr rvest stringi stringr tibble tidyr curlconverter
 #' @importFrom lazyeval as_name
 #' @importFrom curl curl
+#' @importFrom urltools domain
 #' @importFrom magrittr %>%
 #' @examples
 get_data_adv_managers_filings <-
@@ -7765,12 +7766,13 @@ get_data_adv_period_urls <-
 #' @param file_directory
 #' @param remove_files
 #' @param empty_trash
-#' @import dplyr stringr lubridate curl readr readxl rvest purrr
+#' @import dplyr stringr lubridate readr readxl rvest purrr
+#' @importFrom curl curl
 #' @return
 #' @export
 #'
 #' @examples
-get_data_adv_managers_summary_periods <-
+get_data_adv_managers_periods_summaries <-
   function(periods = c("2016-08"),
            all_periods = T,
            is_exempt = F,
@@ -8709,10 +8711,11 @@ get_data_adv_managers_summary_periods <-
 #' @export
 #'
 #' @examples
+
 get_data_adv_managers_current_period_summary <-
   function(file_directory = 'Desktop/adv_data') {
     all_data <-
-      get_data_adv_summary_periods(
+      get_data_adv_managers_periods_summaries(
         only_most_recent = T,
         all_periods = F,
         is_exempt = c(F, T),

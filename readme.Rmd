@@ -25,7 +25,7 @@ Excel, while convenient for some, is poorly suited for important data analysis a
 
 My second motivation for creating this package is to provide easy access to some of the industry's [dark data](http://www.gartner.com/it-glossary/dark-data), hidden APIs, and public APIs to enable more transparency around one of the United States' most important industries.  As the old saying goes, when in doubt <strong>`Follow the Money`</strong>, this package should help you do just that.
 
-### Package Dependancies 
+### Package Dependencies 
 In order for this package to work you need the following packages installed if they aren't already.  You can run this code to install the packages.
 
 For `pdftools` you may need to follow the installation instructions [here](https://github.com/ropensci/pdftools).
@@ -65,9 +65,13 @@ The purpose of these functions are to perform calculations.  The function family
 ### `get_data_` Functions
 
 ```{r}
-fundManageR::get_data_adv_managers_current_period()
+fundManageR::get_data_adv_managers_summary_periods()
 ````
+
 `get_data_ycombinator_alumni` -- 
+
+`get_data_adv_managers_filings` --
 `get_data_adv_managers_brochures` -- 
+`get_data_adv_managers_current_period_summary`--
 
 ### Vignettes
