@@ -553,7 +553,7 @@ parse_futures_data <-
   }
 
 get_data_index_future <-
-  function(futures_index_name = '1 Month Libor',
+  function(futures_index_name = 'Eurodollars',
            return_wide = T) {
     options(scipen = 99999)
     futures_name_df <-
@@ -593,9 +593,10 @@ get_data_index_future <-
     if (!return_wide) {
       future_df <-
         future_df %>%
+        dplyr::select(-matches("idSettlementType")) %>%
         gather(item,
                data,
-               -c(nameIndex, monthYearExpiry, idSettlementType, dateExpiry))
+               -c(nameIndex, monthYearExpiry, dateExpiry))
     }
 
     return(future_df)
@@ -610,14 +611,14 @@ get_data_index_future <-
 #'
 #' @return
 #' @export
-#' @import rvest purrr readr dplyr
+#' @import rvest purrr readr dplyr RcppBDT
 #' @importFrom RcppBDT getNthDayOfWeek
 #' @importFrom tis lastBusinessDayOfMonth
 #' @importFrom RQuantLib adjust
 #' @examples
 get_data_futures_indicies <-
   function(future_indicies = c("30 Day Fed Funds", "Eurodollars", "1 Month Libor", "Euribor"),
-           return_wide = F) {
+           return_wide = T) {
     get_data_index_future_safe <-
       possibly(get_data_index_future, NULL)
 

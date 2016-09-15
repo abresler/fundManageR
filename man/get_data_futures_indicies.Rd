@@ -5,7 +5,7 @@
 \title{Get futures data for specified index}
 \usage{
 get_data_futures_indicies(future_indicies = c("30 Day Fed Funds",
-  "Eurodollars", "1 Month Libor", "Euribor"), return_wide = F)
+  "Eurodollars", "1 Month Libor", "Euribor"), return_wide = T)
 }
 \arguments{
 \item{return_wide}{}

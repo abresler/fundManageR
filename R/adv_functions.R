@@ -8,21 +8,21 @@
 #'
 #' @return
 #' @export
-#' @import dplyr readr tidyr
+#' @import dplyr readr tidyr stringr
 #' @examples
 get_data_cik_codes <-
   function(return_message = T) {
     url <- 'https://www.sec.gov/edgar/NYU/cik.coleft.c'
     cik_data <-
       url %>%
-      read_table(col_names = F)
+      readr::read_table(col_names = F)
 
     cik_data <-
       cik_data %>%
-      separate(X1,
+      tidyr::separate(X1,
                into = c('nameEntity', 'codeCIK'),
                sep = '\\:[0][0]') %>%
-      mutate(codeCIK = codeCIK %>% str_replace('\\:', ''),
+      mutate(codeCIK = codeCIK %>% stringr::str_replace('\\:', ''),
              codeCIK = "00" %>% paste0(codeCIK),
              idCIK = codeCIK %>% as.numeric) %>%
       mutate(datetimeData = Sys.time()) %>%
@@ -8594,7 +8594,7 @@ get_period_type_adv_data <-
 
     adv_data <-
       url_data %>%
-      parse_sec_adv_data_url(
+      parse_sec_adv_data_url_safe(
         file_directory = file_directory,
         remove_files = remove_files,
         empty_trash = empty_trash
