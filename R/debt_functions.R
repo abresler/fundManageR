@@ -604,18 +604,6 @@ get_data_index_future <-
 
   }
 
-#' Get futures data for specified index
-#'
-#' @param future_indicies
-#' @param return_wide
-#'
-#' @return
-#' @export
-#' @import rvest purrr readr dplyr RcppBDT
-#' @importFrom RcppBDT getNthDayOfWeek
-#' @importFrom tis lastBusinessDayOfMonth
-#' @importFrom RQuantLib adjust
-#' @examples
 get_data_futures_indicies <-
   function(future_indicies = c("30 Day Fed Funds", "Eurodollars", "1 Month Libor", "Euribor"),
            return_wide = T) {

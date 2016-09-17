@@ -322,20 +322,6 @@ get_factor_val <-
     return(factor_val)
   }
 
-
-#' Get conversion factor for US treasury futures curve
-#'
-#' @param date_delivery
-#' @param date_maturity
-#' @param bond_coupon
-#' @param return_df
-#'
-#' @return
-#' @export
-#' @importFrom lubridate ymd
-#' @importFrom dplyr data_frame
-#' @examples
-
 calculate_ust_futures_conversion_factor <-
   function(date_delivery = "2009-03-01",
            date_maturity = "2012-01-15",
@@ -446,24 +432,6 @@ if (values %>%  length > 1) {
   return(price)
 }
 
-#' Get bond data data frame
-#'
-#' @param face_value
-#' @param date_purchase
-#' @param date_issue
-#' @param bond_duration_years
-#' @param purchase_price
-#' @param bond_coupon
-#' @param use_currency
-#' @param unnest_data
-#'
-#' @return
-#' @export
-#' @importFrom tidyr unnest
-#' @importFrom RQuantLib Schedule
-#' @import formattable lubridate dplyr
-#' @examples
-#' calculate_irr_bond_future(face_value = 1000000, date_purchase = "2013-01-10", id_period_type = "S", date_issue = "2012-11-15", bond_duration_years = 10, purchase_price = "97-18+", bond_coupon =  1 + (5 / 8), use_currency = T)
 calculate_irr_bond_future <-
   function(face_value = 1000000,
            date_purchase = "2013-01-10",

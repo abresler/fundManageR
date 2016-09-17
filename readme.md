@@ -7,7 +7,7 @@ fundManageR
 
 #### <strong>What is fundManageR?</strong>
 
-Outside of a few isolated pockets, the participants in the $67,0000,000,000 + United States investment management are largely trapped in Excel. Whether you are talking about Private Equity, Venture Capital, Real Estate Private Equity or Hedge Funds, industry professionals are executing important business functions dangerously and inefficiently in myriad of spreadsheets. The purpose of this package is to provide R proficient industry professionals a generalized framework that provides out-of-the-box access to functions that perform many of the industry's most important calculations. As an added bonus this package also wraps access to a growing array of data silos, including the first full wrapper of the [SEC's Investment Adviser Public Disclosure](https://adviserinfo.sec.gov/) in any of the major progamming languages. It's my hope that this package's data acquisition functionality will be of use to industry professionals, academics, journalists, or anyone who enjoys exploring interesting data sets.
+Outside of a few isolated pockets, the participants in the $67,0000,000,000 + United States investment management are largely trapped in Excel. Whether you are talking about Private Equity, Venture Capital, Real Estate Private Equity or Hedge Funds, industry professionals are executing important business functions dangerously and inefficiently in myriad of spreadsheets. The purpose of this package is to provide R proficient industry professionals a generalized framework that provides out-of-the-box access to functions that perform many of the industry's most important calculations. As an added bonus this package also wraps access to a growing array of data silos, including the first full wrapper of the [SEC's Investment Adviser Public Disclosure](https://adviserinfo.sec.gov/) in any of the major programming languages. It's my hope that this package's data acquisition functionality will be of use to industry professionals, academics, journalists, or anyone who enjoys exploring interesting data sets.
 
 #### <strong>Why fundManageR?</strong>
 
@@ -48,26 +48,19 @@ In the future there may be a third family of functions that would allow one to e
 
 ### `calculate_` Functions
 
-The purpose of these functions are to perform calculations. The function family includes pertinent functions specific to Real Estate, Private Equity and generally relevent functions that apply to Investment Managers in Hedge Funds, Real Estate Private Equity, Venture Capital and traditional private equity. Additionally the package provides a suite of generalized financial functions some of which are already available in other R Packages.
-
--   `calculate_cash_flow_dates` --
--   `calculate_cash_flows_returns` --
--   `calculate_cash_flow_waterfall` --
--   `calculate_cash_flow_waterfall_partnership` --
--   `calculate_irr_periods` --
--   `calculate_irr_bond_future` --
--   `calculate_loan_payment` --
--   `calculate_residual_valuation_ebitda_multiples` --
--   `calculate_residual_valuation_cap_rates` --
--   `calculate_ust_futures_conversion_factor` --
+-   `calculate_cash_flow_dates` -- Calculates
+-   `calculate_cash_flows_returns` -- Calculates
+-   `calculate_cash_flow_waterfall` -- Calculates
+-   `calculate_cash_flow_waterfall_partnership` -- Calculates
+-   `calculate_irr_periods` -- Calculates
+-   `calculate_loan_payment` -- Calculates
+-   `calculate_residual_valuation_ebitda_multiples` -- Calculates
+-   `calculate_residual_valuation_cap_rates` -- Calculates
 
 ### `get_data_` Functions
 
-This set of functions perfoms data collection
-
--   `get_data_ycombinator_alumni` -- Retrieves data on [YCombinator]() graduates
+-   `get_data_ycombinator_alumni` -- Retrieves data on [YCombinator](http://www.ycombinator.com/) graduates
 -   `get_data_libor_current` --Retrieves
--   `get_data_futures_indicies` -- Retrieves
 -   `get_data_promote_structure` -- Returns a [carried/promoted interest](https://en.wikipedia.org/wiki/Carried_interest) given promote syntax
 -   `get_data_index_symbol_time_series` -- Retrieves
 -   `get_data_index_symbol_current_value` -- Retrieves

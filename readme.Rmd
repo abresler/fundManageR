@@ -59,22 +59,19 @@ In the future there may be a third family of functions that would allow one to e
 
 ### `calculate_` Functions 
 
-* `calculate_cash_flow_dates` --
-* `calculate_cash_flows_returns` --
-* `calculate_cash_flow_waterfall` --
-* `calculate_cash_flow_waterfall_partnership` --
-* `calculate_irr_periods` -- 
-* `calculate_irr_bond_future` --
-* `calculate_loan_payment` -- 
-* `calculate_residual_valuation_ebitda_multiples` -- 
-* `calculate_residual_valuation_cap_rates` --
-* `calculate_ust_futures_conversion_factor`  --
+* `calculate_cash_flow_dates` -- Calculates
+* `calculate_cash_flows_returns` -- Calculates
+* `calculate_cash_flow_waterfall` -- Calculates
+* `calculate_cash_flow_waterfall_partnership` -- Calculates
+* `calculate_irr_periods` -- Calculates 
+* `calculate_loan_payment` -- Calculates 
+* `calculate_residual_valuation_ebitda_multiples` -- Calculates 
+* `calculate_residual_valuation_cap_rates` -- Calculates
 
 ### `get_data_` Functions
 
 * `get_data_ycombinator_alumni` -- Retrieves data on [YCombinator](http://www.ycombinator.com/) graduates
 * `get_data_libor_current` --Retrieves
-* `get_data_futures_indicies` -- Retrieves
 * `get_data_promote_structure` -- Returns a [carried/promoted interest](https://en.wikipedia.org/wiki/Carried_interest) given promote syntax
 * `get_data_index_symbol_time_series` -- Retrieves
 * `get_data_index_symbol_current_value` -- Retrieves
