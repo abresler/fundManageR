@@ -67,6 +67,7 @@ In the future there may be a third family of functions that would allow one to e
 * `calculate_loan_payment` -- Calculates 
 * `calculate_residual_valuation_ebitda_multiples` -- Calculates 
 * `calculate_residual_valuation_cap_rates` -- Calculates
+* `calculate_valuation_post_money` -- Calculates
 * `calculate_days_accrued_pref` -- Calculates
 
 ### `get_data_` Functions

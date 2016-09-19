@@ -397,7 +397,8 @@ calculate_residual_valuation_cap_rates <-
 calculate_residual_valuation_ebitda_multiples <-
   function(ebitda_multiples = c(5, 10, 15, 20),
            ebitda = "$27,500,000",
-           cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T) {
+           cost_of_sale = "5%", debt_balance = "$350,000,000",
+           return_wide = T) {
 
     scenario_matrix <-
       expand.grid(ebitda_multiple = ebitda_multiples,
@@ -438,5 +439,87 @@ calculate_residual_valuation_ebitda_multiples <-
         suppressWarnings()
     }
 
+    return(scenario_df)
+  }
+
+
+post_money_valuation <-
+  function(pre_money_valuation = "$45,000,000",
+   percent_sold = "10%") {
+    options(scipen = 999999)
+    pre_money <-
+      pre_money_valuation %>%
+      parse_for_currency_value()
+
+    pct_sold <-
+      percent_sold %>%
+      parse_for_percentage() %>%
+      as.numeric
+
+    new_capital <-
+      (pct_sold * pre_money) %>% currency
+
+    total_val <-
+      pre_money + new_capital
+
+    valuation_data <-
+      data_frame(valuationPreMoney = pre_money,
+                 amountCapitalInvestment = new_capital) %>%
+      mutate(
+        pctOwnershipExistingShareholders = (pre_money / total_val) %>% percent,
+        pctOwnershipNewInvestment = (new_capital / total_val) %>% percent
+      )
+    return(valuation_data)
+  }
+
+#' Calculates range of post investment valuations
+#'
+#' @param pre_money_valuation  Vector of of valuations in numeric or character
+#' @param percent_sold  Vector of of amount of business sold in percent or character percent form
+#' @param return_wide
+#' @param return_wide Return data in wide or long form
+#' @import readr dplyr purrr formattable
+#' @return
+#' @export
+#'
+#' @examples
+calculate_valuation_post_money <-
+  function(pre_money_valuation = "$45,000,000",
+           percent_sold = "10%",
+           return_wide = T) {
+
+    scenario_matrix <-
+      expand.grid(pre_money_valuation = pre_money_valuation,
+                  percent_sold = percent_sold,
+                  stringsAsFactors = F) %>%
+      as_data_frame
+
+    scenario_df <-
+      1:nrow(scenario_matrix) %>%
+      map_df(function(x) {
+        post_money_valuation(
+          pre_money_valuation = scenario_matrix$pre_money_valuation[[x]],
+          percent_sold = scenario_matrix$percent_sold[[x]]
+        )
+      }) %>%
+      mutate(idScenario = 1:n()) %>%
+      dplyr::select(idScenario, everything())
+
+    scenario_df <-
+      scenario_df %>%
+      mutate_at(.cols =
+                  scenario_df %>% dplyr::select(matches("^pct")) %>% names,
+                funs(. %>% percent(digits = 2))) %>%
+      mutate_at(.cols =
+                  scenario_df %>% dplyr::select(matches("^amount|valuation")) %>% names,
+                funs(. %>% currency(digits = 2)))
+    if (!return_wide) {
+      scenario_df <-
+        scenario_df %>%
+        dplyr::select(-matches("pct")) %>%
+        gather(item, value, -c(idScenario)) %>%
+        mutate(value = value %>% currency(digits = 2)) %>%
+        suppressWarnings()
+    }
     return(scenario_df)
   }
