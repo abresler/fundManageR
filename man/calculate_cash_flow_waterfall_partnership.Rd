@@ -9,7 +9,7 @@ calculate_cash_flow_waterfall_partnership(dates = c("2016-09-01",
   working_capital = 2e+05, promote_structure = c("20 over 12", "30 over 20",
   "50 over 3.5x", "100 over 10x"), assign_to_environment = T,
   general_partner_pct = 0.05, gp_promote_share = 1, unnest_data = F,
-  exclude_partnership_total = F, distribution_frequency = "annually",
+  exclude_partnership_total = F, distribution_frequency = NA,
   is_actual_360 = T, widen_promote_structure = F, bind_to_cf = F,
   remove_zero_cols = T, widen_waterfall = F)
 }

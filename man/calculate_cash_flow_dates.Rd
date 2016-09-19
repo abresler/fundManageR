@@ -9,7 +9,7 @@ calculate_cash_flow_dates(dates = c("2016-09-01", "2017-08-31", "2018-08-31",
   cash_flows = c(-4151601, 119499.036215643, 257186.036215643,
   447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166,
   8788626.76409155), working_capital = 125000, remove_cumulative_cols = T,
-  include_final_day = T, distribution_frequency = "annually")
+  include_final_day = T, distribution_frequency = NA)
 }
 \description{
 Get Cash Flows for Given Dates

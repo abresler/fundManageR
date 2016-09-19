@@ -8617,7 +8617,7 @@ get_period_type_adv_data <-
 #'
 #' @examples
 get_data_adv_managers_periods_summaries <-
-  function(periods = c("2016-08"),
+  function(periods = c("2006-06"),
            all_periods = F,
            is_exempt = F,
            only_most_recent = F,
@@ -8636,10 +8636,13 @@ get_data_adv_managers_periods_summaries <-
                   stringsAsFactors = F) %>%
       as_data_frame()
 
+    get_period_type_adv_data_safe <-
+      possibly(get_period_type_adv_data, NULL)
+
     all_adv_data <-
       1:nrow(input_df) %>%
       purrr::map_df(function(x) {
-        get_period_type_adv_data(
+        get_period_type_adv_data_safe(
           period = input_df$period[x],
           is_exempt = input_df$exempt[x],
           only_most_recent = input_df$only_most_recent[x],
@@ -8649,6 +8652,7 @@ get_data_adv_managers_periods_summaries <-
         )
       })
 
+    if (all_adv_data %>% nrow > 0) {
     all_adv_data <-
       all_adv_data %>%
       mutate_at(.cols =
@@ -8658,7 +8662,7 @@ get_data_adv_managers_periods_summaries <-
         .cols =
           all_adv_data %>% dplyr::select(matches(
             "^name[E]|^address|^city|^status|^state|^type|^country[A-Z]"
-          )) %>% dplyr::select(-stateEntityOrganized) %>% names,
+          )) %>% dplyr::select(-matches("stateEntityOrganized")) %>% names,
         .funs =
           str_to_upper
       )
@@ -8672,20 +8676,29 @@ get_data_adv_managers_periods_summaries <-
           formattable::comma
       )
 
+    if (names(all_adv_data) %>% str_count('^amount') %>% sum > 0) {
+      all_adv_data <-
+        all_adv_data %>%
+        mutate_at(
+          .cols =
+            all_adv_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names,
+          .funs =
+            funs(. %>% as.numeric %>% formattable::currency)
+        ) %>%
+        arrange(dateDataADV, desc(amountAUMTotal))
+    }
+
     all_adv_data <-
       all_adv_data %>%
-      mutate_at(
-        .cols =
-          all_adv_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names,
-        .funs =
-          funs(. %>% as.numeric %>% formattable::currency)
-      ) %>%
       dplyr::rename(nameEntityManagerBusiness = nameEntityManager) %>%
       mutate(nameEntityManager = nameEntityManagerLegal) %>%
-      dplyr::select(dateDataADV:typeRegulationSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, everything()) %>%
-      suppressMessages() %>%
-      arrange(dateDataADV, desc(amountAUMTotal)) %>%
-      mutate(urlManager = urlManager %>% str_replace_all('http:/./','http://'),
+      dplyr::select(dateDataADV:idSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, everything()) %>%
+      suppressMessages()
+
+    if (names(all_adv_data) %>% str_count('^url') %>% sum > 0) {
+      all_adv_data <-
+        all_adv_data %>%
+      mutate(urlManager = urlManager %>% str_replace_all('http:/./|http//:|http:','http://'),
              hasHTTP = urlManager %>% str_detect('^http'),
              urlManager = ifelse(hasHTTP == F, 'http://' %>% paste0(urlManager), urlManager)) %>%
       separate(urlManager, into = c('urlManager', 'crap'), sep = '\\(') %>%
@@ -8726,7 +8739,9 @@ get_data_adv_managers_periods_summaries <-
     all_adv_data <-
       all_adv_data %>%
       left_join(domains_df) %>%
-      dplyr::select(-idURL)
+      dplyr::select(-idURL) %>%
+      suppressMessages()
+    }
 
     all_adv_data <-
       all_adv_data %>%
@@ -8734,6 +8749,7 @@ get_data_adv_managers_periods_summaries <-
                   all_adv_data %>% dplyr::select(matches("^address|^country[A-Z]|^city^state")) %>% names,
                 .funs = str_to_upper)
 
+    if (names(all_adv_data) %>% str_count('^addressStreet2OfficePrimary') %>% sum > 0) {
     locationOfficePrimary <-
       all_adv_data %>%
       replace_na(list(addressStreet2OfficePrimary = '', stateOfficePrimary = '')) %>%
@@ -8745,6 +8761,8 @@ get_data_adv_managers_periods_summaries <-
       all_adv_data %>%
       mutate(locationOfficePrimary) %>%
       dplyr::select(dateDataADV:typeRegulationSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, locationOfficePrimary, everything())
+    }
+    }
 
     return(all_adv_data)
   }

@@ -218,9 +218,10 @@ calculate_cash_flow_dates <-
   working_capital = 125000,
   remove_cumulative_cols = T,
   include_final_day = T,
-  distribution_frequency = 'annually') {
+  distribution_frequency = NA) {
     distribution_frequencies <-
-      c('weekly',
+      c(NA,
+        'weekly',
         'monthly',
         'quarterly',
         'yearly',
@@ -244,7 +245,7 @@ calculate_cash_flow_dates <-
       as.numeric((dates[2] - dates[1] + 1)) %%
       364 == 1
 
-    if (distribution_frequency == 'sale') {
+    if (distribution_frequency %in% c(NA, 'sale')) {
       is_at_sale <-
         T
     } else {
@@ -275,7 +276,8 @@ calculate_cash_flow_dates <-
             NA ~ F
           ),
         isDistribution = if_else(isDistribution %>% is.na, F, T) %>% as.numeric,
-        isDistribution = if_else(idPeriod == max(idPeriod), T, F) %>% as.numeric
+        isDistribution = if_else(idPeriod == max(idPeriod), T, F) %>% as.numeric,
+        isDistribution = if_else(distribution_frequency %>% is.na, T, F,)  %>% as.numeric
       )
 
     if (working_capital > 0) {
@@ -571,8 +573,8 @@ get_data_promote_structure <-
       promote_data <-
         promote_data %>%
         mutate_at(.cols =
-                  promote_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
-                funs(. %>% percent)) %>%
+                    promote_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
+                  funs(. %>% percent)) %>%
         dplyr::select(tierWaterfall, nameTier, typeHurdle, matches("pctPref|ratioCapitalMultiple"), pctPromote)
     }
 
@@ -610,7 +612,7 @@ calculate_days_accrued_pref <-
       (equity_bb  + pref_accrued_bb) %>% currency(digits = 2)
 
     accrued_pref <-
-      ((pct_pref / accrual_days) * days * calc_basis) * formattable::currency()
+      ((pct_pref / accrual_days) * days * calc_basis)
     return(accrued_pref)
   }
 
@@ -772,7 +774,7 @@ calculate_cash_flow_waterfall <-
            cash_flows = c(-100000, -200000, 698906.76849),
            working_capital = 0,
            promote_structure = c("20 / 12", "30 / 18"),
-           distribution_frequency = 'annually',
+           distribution_frequency = NA,
            is_actual_360 = T,
            widen_promote_structure = F,
            bind_to_cf = F,
@@ -1436,7 +1438,7 @@ calculate_cash_flow_waterfall_partnership <-
            gp_promote_share = 1,
            unnest_data = F,
            exclude_partnership_total = F,
-           distribution_frequency = 'annually',
+           distribution_frequency = NA,
            is_actual_360 = T,
            widen_promote_structure = F,
            bind_to_cf = F,
@@ -1473,7 +1475,9 @@ calculate_cash_flow_waterfall_partnership <-
         promote_structure = promote_structure,
         bind_to_cf = F,
         widen_promote_structure = F
-      )
+      ) %>%
+      dplyr::select(idPeriod:tierWaterfall,
+                    equityDraw,toEquity, everything())
 
     entity_waterfall <-
       waterfall_data %>%
@@ -1611,13 +1615,13 @@ calculate_cash_flow_waterfall_partnership <-
 
       1:nrow(data) %>%
         map(function(x) {
-        table_data <-
-          data$dataTable[[x]]
-        df_name <-
-          data$idDF[[x]]
+          table_data <-
+            data$dataTable[[x]]
+          df_name <-
+            data$idDF[[x]]
 
-        assign(x = df_name, eval(table_data), env = .GlobalEnv)
-      })
+          assign(x = df_name, eval(table_data), env = .GlobalEnv)
+        })
       data <-
         data %>%
         dplyr::select(-idDF)

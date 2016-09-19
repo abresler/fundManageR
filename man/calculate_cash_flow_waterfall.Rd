@@ -7,7 +7,7 @@
 calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20",
   "2016-10-15"), cash_flows = c(-1e+05, -2e+05, 698906.76849),
   working_capital = 0, promote_structure = c("20 / 12", "30 / 18"),
-  distribution_frequency = "annually", is_actual_360 = T,
+  distribution_frequency = NA, is_actual_360 = T,
   widen_promote_structure = F, bind_to_cf = F, remove_zero_cols = T,
   widen_waterfall = F)
 }

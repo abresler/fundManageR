@@ -523,3 +523,20 @@ calculate_valuation_post_money <-
     }
     return(scenario_df)
   }
+
+
+#' Calculate proceeds from share sale
+#'
+#' @param price
+#' @param shares
+#'
+#' @return
+#' @export
+#' @importFrom formattable currency
+#' @examples
+calculate_share_proceeds <-
+  function(price, shares) {
+    proceeds <-
+      (price * shares) %>% currency()
+    return(proceeds)
+  }
