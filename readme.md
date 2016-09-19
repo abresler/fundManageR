@@ -25,7 +25,7 @@ For `pdftools` you may need to follow the installation instructions [here](https
 packages <- 
   c("curl", "curlconverter", "dplyr", "formattable", "httr", "jsonlite", 
     "lazyeval", "lubridate", "magrittr", "pdftools", "purrr", "readr", 
-    "readxl", "rvest", "stringi", "stringr", "tibble", "tidyr", "urltools", 
+    "readxl", "rvest", "stringi", "stringr", "tibble", "tidyr",
     "xml2")
 
 lapply(packages, install.packages)
@@ -56,6 +56,7 @@ In the future there may be a third family of functions that would allow one to e
 -   `calculate_loan_payment` -- Calculates
 -   `calculate_residual_valuation_ebitda_multiples` -- Calculates
 -   `calculate_residual_valuation_cap_rates` -- Calculates
+-   `calculate_days_accrued_pref` -- Calculates
 
 ### `get_data_` Functions
 

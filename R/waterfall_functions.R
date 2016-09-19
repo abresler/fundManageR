@@ -579,7 +579,20 @@ get_data_promote_structure <-
     return(promote_data)
   }
 
-get_days_accrued_pref <-
+#' Calculate accrued preference for a stated period of days
+#'
+#' @param pct_pref
+#' @param is_actual_360
+#' @param days
+#' @param equity_bb
+#' @param pref_accrued_bb
+#'
+#' @return
+#' @export
+#' @import dplyr
+#' @importFrom formattable currency
+#' @examples
+calculate_days_accrued_pref <-
   function(pct_pref = .1,
            is_actual_360 = T,
            days = 31,
@@ -597,7 +610,7 @@ get_days_accrued_pref <-
       (equity_bb  + pref_accrued_bb) %>% currency(digits = 2)
 
     accrued_pref <-
-      (pct_pref / accrual_days) * days * calc_basis
+      ((pct_pref / accrual_days) * days * calc_basis) * formattable::currency()
     return(accrued_pref)
   }
 
@@ -865,7 +878,7 @@ calculate_cash_flow_waterfall <-
               promote_df %>% dplyr::filter(tierWaterfall == tier) %>% .$pctPref
 
             accruedPref <-
-              get_days_accrued_pref(
+              calculate_days_accrued_pref(
                 pct_pref = tierPref,
                 is_actual_360 = is_actual_360,
                 days = days,
@@ -930,7 +943,7 @@ calculate_cash_flow_waterfall <-
                     dplyr::filter(tierWaterfall == tier + 1) %>% .$bbAccruedPref
 
                   prefAccruedNext <-
-                    get_days_accrued_pref(
+                    calculate_days_accrued_pref(
                       pct_pref = nextPref,
                       is_actual_360 = is_actual_360,
                       days = days,
@@ -1036,7 +1049,7 @@ calculate_cash_flow_waterfall <-
                     dplyr::filter(tierWaterfall == tier + 1) %>% .$bbAccruedPref
 
                   prefAccruedNext <-
-                    get_days_accrued_pref(
+                    calculate_days_accrued_pref(
                       pct_pref = nextPref,
                       is_actual_360 = is_actual_360,
                       days = days,

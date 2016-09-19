@@ -7290,7 +7290,6 @@ return_selected_adv_tables <-
 #' @import dplyr formattable httr lubridate purrr readr rvest stringi stringr tibble tidyr curlconverter
 #' @importFrom lazyeval as_name
 #' @importFrom curl curl_download
-#' @importFrom urltools domain
 #' @importFrom magrittr %>%
 #' @examples
 get_data_adv_managers_filings <-
@@ -7327,7 +7326,6 @@ get_data_adv_managers_filings <-
         "stringr",
         "tibble",
         "tidyr",
-        "urltools",
         'curlconverter'
       )
     suppressMessages(lapply(packages, library, character.only = T))
@@ -7671,7 +7669,6 @@ get_data_adv_managers_brochures <-
         "tibble",
         'pdftools',
         "tidyr",
-        "urltools",
         'curlconverter'
       )
     suppressMessages(lapply(packages, library, character.only = T))
@@ -8683,16 +8680,53 @@ get_data_adv_managers_periods_summaries <-
         .funs =
           funs(. %>% as.numeric %>% formattable::currency)
       ) %>%
-      mutate(
-        domainManager = urltools::domain(urlManager) %>%
-          str_replace_all('\\^http|\\^www.|\\^www2.', ''),
-        domainManager = domainManager %>% gsub('\\www.', '', .)
-      ) %>%
       dplyr::rename(nameEntityManagerBusiness = nameEntityManager) %>%
       mutate(nameEntityManager = nameEntityManagerLegal) %>%
       dplyr::select(dateDataADV:typeRegulationSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, everything()) %>%
       suppressMessages() %>%
-      arrange(dateDataADV, desc(amountAUMTotal))
+      arrange(dateDataADV, desc(amountAUMTotal)) %>%
+      mutate(urlManager = urlManager %>% str_replace_all('http:/./','http://'),
+             hasHTTP = urlManager %>% str_detect('^http'),
+             urlManager = ifelse(hasHTTP == F, 'http://' %>% paste0(urlManager), urlManager)) %>%
+      separate(urlManager, into = c('urlManager', 'crap'), sep = '\\(') %>%
+      mutate(urlManager = urlManager %>% str_trim %>% str_replace_all('\\www.', '')) %>%
+      dplyr::select(-c(hasHTTP, crap)) %>%
+      suppressWarnings()
+
+    domain_df <-
+      all_adv_data %>%
+      dplyr::select(urlManager) %>%
+      distinct() %>%
+      mutate(idURL = 1:n())
+
+    all_adv_data <-
+      all_adv_data %>%
+      left_join(domain_df) %>%
+      suppressMessages()
+
+    domains_df <-
+      1:nrow(domain_df) %>%
+      map_df(function(x){
+        urlManager <-
+          domain_df$urlManager[[x]]
+        if (urlManager %>% is.na) {
+          domainManager = NA
+        } else {
+          if (!urlManager %>% str_detect('^http')) {
+            urlManager <-
+              'http://' %>% paste0(urlManager)
+          }
+          domainManager <-
+            urlManager %>% parse_url() %>% flatten_df %>% .$hostname
+        }
+        data_frame(idURL = x, domainManager)
+      })
+
+
+    all_adv_data <-
+      all_adv_data %>%
+      left_join(domains_df) %>%
+      dplyr::select(-idURL)
 
     all_adv_data <-
       all_adv_data %>%
