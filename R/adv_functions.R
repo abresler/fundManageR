@@ -8619,7 +8619,7 @@ get_period_type_adv_data <-
 get_data_adv_managers_periods_summaries <-
   function(periods = c("2006-06"),
            all_periods = F,
-           is_exempt = F,
+           is_exempt = c(F,T),
            only_most_recent = F,
            file_directory = 'Desktop/adv_data',
            remove_files = T,
@@ -8650,9 +8650,11 @@ get_data_adv_managers_periods_summaries <-
           remove_files = remove_files,
           empty_trash = empty_trash
         )
-      })
-
-    if (all_adv_data %>% nrow > 0) {
+      }) %>%
+      suppressWarnings()
+    has_data <-
+      all_adv_data %>% nrow > 0
+    if (has_data) {
     all_adv_data <-
       all_adv_data %>%
       mutate_at(.cols =
@@ -8676,7 +8678,10 @@ get_data_adv_managers_periods_summaries <-
           formattable::comma
       )
 
-    if (names(all_adv_data) %>% str_count('^amount') %>% sum > 0) {
+    has_amounts <-
+      names(all_adv_data) %>% str_count('^amount') %>% sum > 0
+
+    if (has_amounts) {
       all_adv_data <-
         all_adv_data %>%
         mutate_at(
@@ -8685,7 +8690,8 @@ get_data_adv_managers_periods_summaries <-
           .funs =
             funs(. %>% as.numeric %>% formattable::currency)
         ) %>%
-        arrange(dateDataADV, desc(amountAUMTotal))
+        arrange(dateDataADV, desc(amountAUMTotal)) %>%
+        suppressWarnings()
     }
 
     all_adv_data <-
@@ -8694,54 +8700,6 @@ get_data_adv_managers_periods_summaries <-
       mutate(nameEntityManager = nameEntityManagerLegal) %>%
       dplyr::select(dateDataADV:idSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, everything()) %>%
       suppressMessages()
-
-    if (names(all_adv_data) %>% str_count('^url') %>% sum > 0) {
-      all_adv_data <-
-        all_adv_data %>%
-      mutate(urlManager = urlManager %>% str_replace_all('http:/./|http//:|http:','http://'),
-             hasHTTP = urlManager %>% str_detect('^http'),
-             urlManager = ifelse(hasHTTP == F, 'http://' %>% paste0(urlManager), urlManager)) %>%
-      separate(urlManager, into = c('urlManager', 'crap'), sep = '\\(') %>%
-      mutate(urlManager = urlManager %>% str_trim %>% str_replace_all('\\www.', '')) %>%
-      dplyr::select(-c(hasHTTP, crap)) %>%
-      suppressWarnings()
-
-    domain_df <-
-      all_adv_data %>%
-      dplyr::select(urlManager) %>%
-      distinct() %>%
-      mutate(idURL = 1:n())
-
-    all_adv_data <-
-      all_adv_data %>%
-      left_join(domain_df) %>%
-      suppressMessages()
-
-    domains_df <-
-      1:nrow(domain_df) %>%
-      map_df(function(x){
-        urlManager <-
-          domain_df$urlManager[[x]]
-        if (urlManager %>% is.na) {
-          domainManager = NA
-        } else {
-          if (!urlManager %>% str_detect('^http')) {
-            urlManager <-
-              'http://' %>% paste0(urlManager)
-          }
-          domainManager <-
-            urlManager %>% parse_url() %>% flatten_df %>% .$hostname
-        }
-        data_frame(idURL = x, domainManager)
-      })
-
-
-    all_adv_data <-
-      all_adv_data %>%
-      left_join(domains_df) %>%
-      dplyr::select(-idURL) %>%
-      suppressMessages()
-    }
 
     all_adv_data <-
       all_adv_data %>%
