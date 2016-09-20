@@ -9,3 +9,4 @@ packrat/
 tests/
 old/
 .Rprofile
+rsconnect/

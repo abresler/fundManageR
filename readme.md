@@ -1,7 +1,7 @@
 fundManageR
 ================
 
-<strong>`fundManageR` — R's toolkit for the investment management</strong>
+<strong>`fundManageR` — R's toolkit for the investment management<br>Because real financial wizards don't use Excel</strong>
 
 <img src = 'http://i.imgur.com/ryDGtVV.jpg' alt="fundManageR">
 
@@ -24,7 +24,7 @@ For `pdftools` you may need to follow the installation instructions [here](https
 ``` r
 packages <- 
   c("curl", "curlconverter", "dplyr", "formattable", "httr", "jsonlite", 
-    "lazyeval", "lubridate", "magrittr", "pdftools", "purrr", "readr", 
+    "lazyeval", "lubridate", "magrittr", "pdftools", "purrr", "readr",  'quantmod',
     "readxl", "rvest", "stringi", "stringr", "tibble", "tidyr",
     "xml2")
 
@@ -48,29 +48,46 @@ In the future there may be a third family of functions that would allow one to e
 
 ### `calculate_` Functions
 
--   `calculate_cash_flow_dates` -- Calculates
--   `calculate_cash_flows_returns` -- Calculates
--   `calculate_cash_flow_waterfall` -- Calculates
--   `calculate_cash_flow_waterfall_partnership` -- Calculates
--   `calculate_irr_periods` -- Calculates
--   `calculate_loan_payment` -- Calculates
--   `calculate_residual_valuation_ebitda_multiples` -- Calculates
--   `calculate_residual_valuation_cap_rates` -- Calculates
--   `calculate_days_accrued_pref` -- Calculates
+-   `calculate_cash_flow_dates` -- Calculates summary cash flows for a specified dates and cash flows
+-   `calculate_irr_periods` -- Calculates [interal rate of return]() for specified dates and cash flows
+-   `calculate_cash_flows_returns` -- Calculates investment returns for specified dates and cash flows
+-   `calculate_cash_flow_waterfall` -- Calculates a cash flow waterfall given specified dates, cash flows and promote structure
+-   `calculate_cash_flow_waterfall_partnership` -- Calculates partnership level returns given specified equity splits, promote structure, and cash flows.
+-   `calculate_loan_payment` -- Calculates loan repayment data given specified parameters
+-   `calculate_residual_valuation_ebitda_multiples` -- Calculates residual values given specified [EBITDA](https://en.wikipedia.org/wiki/Earnings_before_interest,_taxes,_depreciation,_and_amortization) and [EBITDA Multiples](http://www.investopedia.com/terms/e/ev-ebitda.asp)
+-   `calculate_residual_valuation_cap_rates` -- Calculates residual value given specified [Net Operating Income](http://www.investopedia.com/terms/n/noi.asp) and [Capitalization Rates](http://www.investopedia.com/terms/c/capitalizationrate.asp)
+-   `calculate_valuation_post_money` -- Calculates entity ownership post investment
+-   `calculate_days_accrued_pref` -- Calculates accrued preference/interest for a specified period.
 
 ### `get_data_` Functions
 
 -   `get_data_ycombinator_alumni` -- Retrieves data on [YCombinator](http://www.ycombinator.com/) graduates
--   `get_data_libor_current` --Retrieves
+-   `get_data_libor_current` --Retrieves most recent [LIBOR](https://en.wikipedia.org/wiki/Libor) by duration
 -   `get_data_promote_structure` -- Returns a [carried/promoted interest](https://en.wikipedia.org/wiki/Carried_interest) given promote syntax
--   `get_data_index_symbol_time_series` -- Retrieves
--   `get_data_index_symbol_current_value` -- Retrieves
--   `get_data_cik_codes` -- Retrieves
+-   `get_data_fred_index_symbol_time_series` -- Retrieves time series data for specified index from the [FRED Database](https://en.wikipedia.org/wiki/Federal_Reserve_Economic_Data)
+-   `get_data_index_symbol_current_value` -- Retrieves current value for a specified symbol
+-   `get_data_cik_codes` -- Retrieves all entities with a registered [Central Index Key](https://en.wikipedia.org/wiki/Central_Index_Key)
 
--   `get_data_adv_period_urls` -- Retrieves
--   `get_data_adv_managers_filings` -- Retrieves
--   `get_data_adv_managers_brochures` -- Retrieves
--   `get_data_adv_managers_current_period_summary` -- Retrieves
--   `get_data_adv_managers_periods_summaries`-- Retrieves
+### ADV Specific
+
+-   `get_data_adv_period_urls` -- Retrieves all possible ADV summary periods
+-   `get_data_adv_managers_current_period_summary` -- Retrieves summary data for ADV filing managers from the most recent monthly filing period.
+-   `get_data_adv_managers_periods_summaries`-- Retrieves summary ADV filings for specified periods and filing type.
+-   `get_data_sec_adv_manager_sitemap`-- Retrieves a data frame with the possible detailed ADV sections and their descriptions.
+-   `get_data_adv_managers_filings` -- Retrieves detailed ADV filing for specified [Central Registration Depository ID](http://www.finra.org/industry/crd) \[CRD\] and/or company name by ADV section.
+-   `get_data_adv_managers_brochures` -- Retrieves and [OCRs](https://en.wikipedia.org/wiki/Optical_character_recognition) for SEC mandated annual [Uniform Requirements for the Investment Adviser Brochure and Brochure Supplements](https://www.sec.gov/about/forms/formadv-part2.pdf) for specified CRDs and/or company names.
 
 ### Vignettes
+
+-   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/210829_4a31d2634ccb46ecbf8ac749fca3c06b.html)
+-   [ADV Functionality]()
+
+### Coming Soon
+
+-   [Openopencorporates]('https://opencorporates.com/) wrapper
+-   [Form D](https://en.wikipedia.org/wiki/Form_D) wrapper
+-   Delaware, Cayman Island, and Nevada entity registration wrappr.
+-   Mergers and Acquisition data
+-   Integrated leveraged cash flow analysis calculations
+-   Catch-up calculations in promote structures
+-   [XBRL](https://www.xbrl.org/) wrapper

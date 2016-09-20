@@ -2,7 +2,6 @@
 title: "fundManageR Cash Flow Waterfall\nHypothetical Facebook Seed Investment"
 author: "Alex Bresler"
 date: "`r Sys.Date()`"
-fontsize: 10pt
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
@@ -63,7 +62,7 @@ initial_data <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 initial_data %>% 
-  knitr::kable()
+  formattable::formattable()
 ```
 
 #### Waterfall Structure and Equity Splits.
@@ -90,7 +89,7 @@ promote_df <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 promote_df %>% 
-  knitr::kable()
+  formattable::formattable()
 ```
 
 ### Conversion to Common Shares
@@ -129,7 +128,7 @@ conversion_data <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 conversion_data %>% 
-  knitr::kable()
+  formattable::formattable()
 ```
 
 #### Initial Public Offering Liquidation Event
@@ -194,7 +193,7 @@ cash_flow_df <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 cash_flow_df %>% 
-  knitr::kable()
+  formattable::formattable()
 ```
 
 Now we are ready to feed the necessary inputs to `fundManageR`'s `calculate_cash_flow_waterfall_partnership` function which will perform the requisite waterfall calculations and return a nested list of data frames summarizing:
@@ -218,23 +217,23 @@ fb_investment_data <-
 
 <h5><center>Partnership Cash Flow Waterfall by Period</h5></center>
 
-```{r results='asis', eval=TRUE, echo=FALSE}
+```{r cash_flow, results='asis', eval=TRUE, echo=FALSE}
 cashflowWaterfall %>% 
-  knitr::kable()
+  formattable::formattable()
 ```
 
 <h5><center>Waterfall by Tier and Period</h5></center>
 
-```{r results='asis', eval=TRUE, echo=FALSE}
+```{r entity_watrfall, results='asis', eval=TRUE, echo=FALSE}
 entityWaterfall %>% 
-  knitr::kable()
+  formattable::formattable()
 ```
 
 <h5><center>Summarised Partnership Total Returns</center></h5>
 
-```{r results='asis', eval=TRUE, echo=FALSE}
+```{r partnership, results='asis', eval=TRUE, echo=FALSE}
 partnershipReturns %>% 
-  knitr::kable()
+  formattable::formattable()
 ```
 
 #### Parting Notes
