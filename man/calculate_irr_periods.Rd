@@ -2,7 +2,7 @@
 % Please edit documentation in R/waterfall_functions.R
 \name{calculate_irr_periods}
 \alias{calculate_irr_periods}
-\title{Get an IRR for a set of cash flows}
+\title{Caclulate an Interal Rate of Return given a vectors of dates and cash flows.}
 \usage{
 calculate_irr_periods(dates = c("2016-06-01", "2017-05-31", "2018-05-31",
   "2019-05-31", "2020-05-31", "2021-05-31", "2022-05-31", "2023-05-31",
@@ -27,6 +27,12 @@ calculate_irr_periods(dates = c("2016-06-01", "2017-05-31", "2018-05-31",
 \item{return_df}{Return a data frame}
 }
 \description{
-Get an IRR for a set of cash flows
+Caclulate an Interal Rate of Return given a vectors of dates and cash flows.
+}
+\examples{
+calculate_irr_periods(dates = c("2016-06-01","2017-05-31", "2018-05-31", "2019-05-31", "2020-05-31", "2021-05-31",
+"2022-05-31", "2023-05-31", "2024-05-31", "2025-05-31", "2026-05-31"), cash_flows = c( -3000, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242,
+478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547278 ), date_format = '\%Y-\%m-\%d', scale_to_100 = F,
+return_percentage = F, return_df = T, return_wide = T, return_message = T)
 }
 

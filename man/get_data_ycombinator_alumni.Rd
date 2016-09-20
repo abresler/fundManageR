@@ -7,9 +7,12 @@
 get_data_ycombinator_alumni(return_message = T)
 }
 \arguments{
-\item{return_message}{}
+\item{return_message}{Return a fun message}
 }
 \description{
 Get data on Y-Combinator alumni companies
+}
+\examples{
+get_data_ycombinator_alumni()
 }
 

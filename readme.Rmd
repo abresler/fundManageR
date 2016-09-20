@@ -33,7 +33,7 @@ For `pdftools` you may need to follow the installation instructions [here](https
 ```{r eval=FALSE}
 packages <- 
   c("curl", "curlconverter", "dplyr", "formattable", "httr", "jsonlite", 
-    "lazyeval", "lubridate", "magrittr", "pdftools", "purrr", "readr", 
+    "lazyeval", "lubridate", "magrittr", "pdftools", "purrr", "readr",  'quantmod',
     "readxl", "rvest", "stringi", "stringr", "tibble", "tidyr",
     "xml2")
 
@@ -75,10 +75,11 @@ In the future there may be a third family of functions that would allow one to e
 * `get_data_ycombinator_alumni` -- Retrieves data on [YCombinator](http://www.ycombinator.com/) graduates
 * `get_data_libor_current` --Retrieves
 * `get_data_promote_structure` -- Returns a [carried/promoted interest](https://en.wikipedia.org/wiki/Carried_interest) given promote syntax
-* `get_data_index_symbol_time_series` -- Retrieves
+* `get_data_fred_index_symbol_time_series` -- Retrieves
 * `get_data_index_symbol_current_value` -- Retrieves
 * `get_data_cik_codes` -- Retrieves
 
+### ADV Specific
 
 * `get_data_adv_period_urls` -- Retrieves
 * `get_data_adv_managers_filings` -- Retrieves

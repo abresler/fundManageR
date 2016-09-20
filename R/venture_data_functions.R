@@ -2,13 +2,13 @@
 
 #' Get data on Y-Combinator alumni companies
 #'
-#' @param return_message
+#' @param return_message Return a fun message
 #'
 #' @return
 #' @export
 #' @import stringr dplyr readr
 #' @importFrom jsonlite fromJSON
-#' @examples
+#' @examples get_data_ycombinator_alumni()
 get_data_ycombinator_alumni <-
   function(return_message = T) {
     url <-
@@ -92,10 +92,7 @@ get_data_ycombinator_alumni <-
     return(json_data)
   }
 
-
-
-
-# fintech -----------------------------------------------------------------
+# fintech transactions -----------------------------------------------------------------
  # http://db.ftpartners.com/transactionsearch
 
 get_ft_partners_sector_df <-
@@ -313,9 +310,7 @@ get_ft_partners_transaction_data <-
     base <-
       'http://db.ftpartners.com/TransactionSearch'
 
-
-
-    table_data <-
+   table_data <-
       url %>%
       parse_ftpartners_page_for_data()
 }

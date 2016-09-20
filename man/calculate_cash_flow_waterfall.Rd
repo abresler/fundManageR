@@ -2,7 +2,7 @@
 % Please edit documentation in R/waterfall_functions.R
 \name{calculate_cash_flow_waterfall}
 \alias{calculate_cash_flow_waterfall}
-\title{Get cash flow waterfall data for given periods and cash flows}
+\title{Calculate a cash flow waterfall for a given set of dates, cash flows and promote structure}
 \usage{
 calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20",
   "2016-10-15"), cash_flows = c(-1e+05, -2e+05, 698906.76849),
@@ -21,8 +21,21 @@ calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20",
 \item{promote_structure}{Vector of promte structures}
 
 \item{is_actual_360}{Is the rate of return actual 360}
+
+\item{widen_promote_structure}{Widen the promote structure}
+
+\item{bind_to_cf}{Bind results to data frame}
+
+\item{remove_zero_cols}{remove zeroed columns}
+
+\item{widen_waterfall}{Return waterfall in wide form}
 }
 \description{
-Get cash flow waterfall data for given periods and cash flows
+Calculate a cash flow waterfall for a given set of dates, cash flows and promote structure
+}
+\examples{
+calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20", "2016-10-15"), cash_flows = c(-100000, -200000, 698906.76849), working_capital = 0,
+promote_structure = c("20 / 12", "30 / 18"), distribution_frequency = NA, is_actual_360 = T, widen_promote_structure = F, bind_to_cf = F,
+remove_zero_cols = T, widen_waterfall = F)
 }
 

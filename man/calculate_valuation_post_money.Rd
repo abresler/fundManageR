@@ -17,4 +17,7 @@ calculate_valuation_post_money(pre_money_valuation = "$45,000,000",
 \description{
 Calculates range of post investment valuations
 }
+\examples{
+calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold = "10\%", return_wide = T)
+}
 

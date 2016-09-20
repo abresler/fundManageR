@@ -2,7 +2,7 @@
 % Please edit documentation in R/waterfall_functions.R
 \name{calculate_cash_flow_dates}
 \alias{calculate_cash_flow_dates}
-\title{Get Cash Flows for Given Dates}
+\title{Calculate summary cash flows given a vector of dates and cash flows}
 \usage{
 calculate_cash_flow_dates(dates = c("2016-09-01", "2017-08-31", "2018-08-31",
   "2019-08-31", "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31"),
@@ -11,7 +11,25 @@ calculate_cash_flow_dates(dates = c("2016-09-01", "2017-08-31", "2018-08-31",
   8788626.76409155), working_capital = 125000, remove_cumulative_cols = T,
   include_final_day = T, distribution_frequency = NA)
 }
+\arguments{
+\item{dates}{vector of dates}
+
+\item{cash_flows}{Vector of cash flows}
+
+\item{working_capital}{Amount of working capital, minimum cash}
+
+\item{remove_cumulative_cols}{Remove summary columns}
+
+\item{include_final_day}{Include the final day in calculation}
+
+\item{distribution_frequency}{When is the cash distributed}
+}
 \description{
-Get Cash Flows for Given Dates
+Calculate summary cash flows given a vector of dates and cash flows
+}
+\examples{
+calculate_cash_flow_dates(dates = c( "2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31", "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31" ),
+cash_flows = c( -4151601, 119499.036215643, 257186.036215643, 447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166, 8788626.7640915 ),
+working_capital = 125000, remove_cumulative_cols = T, include_final_day = T, distribution_frequency = NA)
 }
 

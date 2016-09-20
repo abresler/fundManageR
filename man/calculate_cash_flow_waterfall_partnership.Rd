@@ -2,7 +2,7 @@
 % Please edit documentation in R/waterfall_functions.R
 \name{calculate_cash_flow_waterfall_partnership}
 \alias{calculate_cash_flow_waterfall_partnership}
-\title{Get a Partnership's Waterfall data}
+\title{Calculate partership's waterfall and cash flow splits given a set of parameters}
 \usage{
 calculate_cash_flow_waterfall_partnership(dates = c("2016-09-01",
   "2017-08-31"), cash_flows = c(-1500000, 1.05e+08),
@@ -22,10 +22,24 @@ calculate_cash_flow_waterfall_partnership(dates = c("2016-09-01",
 
 \item{promote_structure}{Vector of structures}
 
-\item{widen_waterfall}{}
+\item{general_partner_pct}{Percentage of capital provided by GP}
+
+\item{gp_promote_share}{Share of promote to GP}
+
+\item{unnest_data}{Unnest final results}
+
+\item{exclude_partnership_total}{Exclude total column}
+
+\item{is_actual_360}{Is interest calculated on actual/360 method}
+
+\item{bind_to_cf}{Bind results to data frame}
+
+\item{remove_zero_cols}{remove zeroed columns}
+
+\item{widen_waterfall}{Return waterfall in wide form}
 }
 \description{
-Get a Partnership's Waterfall data
+Calculate partership's waterfall and cash flow splits given a set of parameters
 }
 \examples{
 calculate_cash_flow_waterfall_partnership(dates =c("2016-09-01", "2017-08-31"), cash_flows = c(-1500000, 105000000), working_capital = 200000, promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"), general_partner_pct = .05, gp_promote_share = 1, unnest_data = F, exclude_partnership_total = F, distribution_frequency = 'annually', is_actual_360 = T, widen_promote_structure = F, bind_to_cf = F, remove_zero_cols = T, widen_waterfall = F)

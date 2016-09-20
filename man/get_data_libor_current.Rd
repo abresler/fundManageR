@@ -12,4 +12,7 @@ get_data_libor_current(return_wide = T)
 \description{
 Get current LIBOR data
 }
+\examples{
+get_data_libor_current()
+}
 

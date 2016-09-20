@@ -13,4 +13,7 @@ calculate_days_accrued_pref(pct_pref = 0.1, is_actual_360 = T, days = 31,
 \description{
 Calculate accrued preference for a stated period of days
 }
+\examples{
+calculate_days_accrued_pref(pct_pref = .1, is_actual_360 = T, days = 31, equity_bb = 1700000.00, pref_accrued_bb = 0)
+}
 

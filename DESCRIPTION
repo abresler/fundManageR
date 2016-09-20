@@ -18,6 +18,7 @@ Imports:
   magrittr,
   pdftools,
   purrr,
+  quantmod,
   readr,
   readxl,
   rvest,

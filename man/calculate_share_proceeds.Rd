@@ -2,14 +2,17 @@
 % Please edit documentation in R/cf_functions.R
 \name{calculate_share_proceeds}
 \alias{calculate_share_proceeds}
-\title{Calculate proceeds from share sale}
+\title{Calculate proceeds from share sale given specified price and share amount}
 \usage{
-calculate_share_proceeds(price, shares)
+calculate_share_proceeds(price = 10, shares = 1e+06)
 }
 \arguments{
 \item{shares}{}
 }
 \description{
-Calculate proceeds from share sale
+Calculate proceeds from share sale given specified price and share amount
+}
+\examples{
+calculate_share_proceeds(price = 9, shares = 150000)
 }
 

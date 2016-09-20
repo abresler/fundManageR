@@ -161,12 +161,12 @@ calculate_periods_irr <-
 
 parse_for_currency_value <-
   function(x) {
-  value <-
-    x %>%
-    readr::parse_number() %>%
-    currency
-  return(value)
-}
+    value <-
+      x %>%
+      readr::parse_number() %>%
+      currency
+    return(value)
+  }
 
 parse_for_percentage <-
   function(x) {
@@ -187,17 +187,19 @@ parse_for_percentage <-
 
 parse_multiple <-
   function(x) {
-   value <-
-     x %>%
+    value <-
+      x %>%
       parse_number
 
-   return(value)
+    return(value)
   }
 
 cap_rate_valuation <-
-  function(cap_rate = .0615, net_operating_income = "$27,500,000",
-         cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T) {
-
+  function(cap_rate = .0615,
+           net_operating_income = "$27,500,000",
+           cost_of_sale = "5%",
+           debt_balance = "$350,000,000",
+           return_wide = T) {
     noi <-
       net_operating_income %>%
       parse_for_currency_value
@@ -230,28 +232,39 @@ cap_rate_valuation <-
       -max(0, amountValuationNet + amountDebtRepayment) %>% currency
 
     cash_check <-
-    !amountValuationGross + amountCostSale + amountDebtRepayment + amountEquityDistribution == 0
+      !amountValuationGross + amountCostSale + amountDebtRepayment + amountEquityDistribution == 0
 
     if (cash_check) {
       stop("Cash waterfall does not tie")
     }
 
     value_df <-
-      data_frame(pctCapRate = pct_cap_rate,
-               pctCostSale = pct_sale_cost,
-               amountNetOperatingIncome = noi,
-               amountDebtBalance = debt,
-               amountValuationGross,
-               amountCostSale,
-               amountValuationNet,
-               amountDebtRepayment,
-               amountEquityDistribution)
+      data_frame(
+        pctCapRate = pct_cap_rate,
+        pctCostSale = pct_sale_cost,
+        amountNetOperatingIncome = noi,
+        amountDebtBalance = debt,
+        amountValuationGross,
+        amountCostSale,
+        amountValuationNet,
+        amountDebtRepayment,
+        amountEquityDistribution
+      )
 
     if (!return_wide) {
       value_df <-
         value_df %>%
         dplyr::select(-amountValuationNet) %>%
-        gather(item, value, -c(pctCapRate, amountNetOperatingIncome, amountDebtBalance, pctCostSale)) %>%
+        gather(
+          item,
+          value,
+          -c(
+            pctCapRate,
+            amountNetOperatingIncome,
+            amountDebtBalance,
+            pctCostSale
+          )
+        ) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
     }
@@ -259,9 +272,11 @@ cap_rate_valuation <-
   }
 
 ebtida_multiple_value <-
-  function(ebitda_multiple = 10, ebitda = "$27,500,000",
-           cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T) {
-
+  function(ebitda_multiple = 10,
+           ebitda = "$27,500,000",
+           cost_of_sale = "5%",
+           debt_balance = "$350,000,000",
+           return_wide = T) {
     ebitda <-
       ebitda %>%
       parse_for_currency_value
@@ -301,21 +316,30 @@ ebtida_multiple_value <-
     }
 
     value_df <-
-      data_frame(multipleEBITDA,
-                 pctCostSale = pct_sale_cost,
-                 amountEBITDA = ebitda,
-                 amountDebtBalance = debt,
-                 amountValuationGross,
-                 amountCostSale,
-                 amountValuationNet,
-                 amountDebtRepayment,
-                 amountEquityDistribution)
+      data_frame(
+        multipleEBITDA,
+        pctCostSale = pct_sale_cost,
+        amountEBITDA = ebitda,
+        amountDebtBalance = debt,
+        amountValuationGross,
+        amountCostSale,
+        amountValuationNet,
+        amountDebtRepayment,
+        amountEquityDistribution
+      )
 
     if (!return_wide) {
       value_df <-
         value_df %>%
         dplyr::select(-amountValuationNet) %>%
-        gather(item, value, -c(multipleEBITDA, amountEBITDA, amountDebtBalance, pctCostSale)) %>%
+        gather(item,
+               value,
+               -c(
+                 multipleEBITDA,
+                 amountEBITDA,
+                 amountDebtBalance,
+                 pctCostSale
+               )) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
     }
@@ -334,17 +358,21 @@ ebtida_multiple_value <-
 #' @export
 #'
 #' @examples
+#' calculate_residual_valuation_cap_rates()
 calculate_residual_valuation_cap_rates <-
   function(cap_rates = c(.05, .0525, .06, .2),
            net_operating_income = "$27,500,000",
-           cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T) {
-
+           cost_of_sale = "5%",
+           debt_balance = "$350,000,000",
+           return_wide = T) {
     scenario_matrix <-
-      expand.grid(cap_rate = cap_rates,
-                noi = net_operating_income,
-                cost_sale = cost_of_sale,
-                debt = debt_balance,
-                stringsAsFactors = F) %>%
+      expand.grid(
+        cap_rate = cap_rates,
+        noi = net_operating_income,
+        cost_sale = cost_of_sale,
+        debt = debt_balance,
+        stringsAsFactors = F
+      ) %>%
       as_data_frame
 
     scenario_df <-
@@ -373,7 +401,17 @@ calculate_residual_valuation_cap_rates <-
       scenario_df <-
         scenario_df %>%
         dplyr::select(-amountValuationNet) %>%
-        gather(item, value, -c(idScenario, pctCapRate, amountNetOperatingIncome, amountDebtBalance, pctCostSale)) %>%
+        gather(
+          item,
+          value,
+          -c(
+            idScenario,
+            pctCapRate,
+            amountNetOperatingIncome,
+            amountDebtBalance,
+            pctCostSale
+          )
+        ) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
     }
@@ -394,18 +432,21 @@ calculate_residual_valuation_cap_rates <-
 #' @export
 #'
 #' @examples
+#' calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20), ebitda = "$27,500,000", cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T)
 calculate_residual_valuation_ebitda_multiples <-
   function(ebitda_multiples = c(5, 10, 15, 20),
            ebitda = "$27,500,000",
-           cost_of_sale = "5%", debt_balance = "$350,000,000",
+           cost_of_sale = "5%",
+           debt_balance = "$350,000,000",
            return_wide = T) {
-
     scenario_matrix <-
-      expand.grid(ebitda_multiple = ebitda_multiples,
-                  ebitda = ebitda,
-                  cost_sale = cost_of_sale,
-                  debt = debt_balance,
-                  stringsAsFactors = F) %>%
+      expand.grid(
+        ebitda_multiple = ebitda_multiples,
+        ebitda = ebitda,
+        cost_sale = cost_of_sale,
+        debt = debt_balance,
+        stringsAsFactors = F
+      ) %>%
       as_data_frame
 
     scenario_df <-
@@ -434,7 +475,14 @@ calculate_residual_valuation_ebitda_multiples <-
       scenario_df <-
         scenario_df %>%
         dplyr::select(-amountValuationNet) %>%
-        gather(item, value, -c(multipleEBITDA, amountEBITDA, amountDebtBalance, pctCostSale)) %>%
+        gather(item,
+               value,
+               -c(
+                 multipleEBITDA,
+                 amountEBITDA,
+                 amountDebtBalance,
+                 pctCostSale
+               )) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
     }
@@ -445,7 +493,7 @@ calculate_residual_valuation_ebitda_multiples <-
 
 post_money_valuation <-
   function(pre_money_valuation = "$45,000,000",
-   percent_sold = "10%") {
+           percent_sold = "10%") {
     options(scipen = 999999)
     pre_money <-
       pre_money_valuation %>%
@@ -483,15 +531,17 @@ post_money_valuation <-
 #' @export
 #'
 #' @examples
+#' calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold = "10%", return_wide = T)
 calculate_valuation_post_money <-
   function(pre_money_valuation = "$45,000,000",
            percent_sold = "10%",
            return_wide = T) {
-
     scenario_matrix <-
-      expand.grid(pre_money_valuation = pre_money_valuation,
-                  percent_sold = percent_sold,
-                  stringsAsFactors = F) %>%
+      expand.grid(
+        pre_money_valuation = pre_money_valuation,
+        percent_sold = percent_sold,
+        stringsAsFactors = F
+      ) %>%
       as_data_frame
 
     scenario_df <-
@@ -525,7 +575,7 @@ calculate_valuation_post_money <-
   }
 
 
-#' Calculate proceeds from share sale
+#' Calculate proceeds from share sale given specified price and share amount
 #'
 #' @param price
 #' @param shares
@@ -534,8 +584,9 @@ calculate_valuation_post_money <-
 #' @export
 #' @importFrom formattable currency
 #' @examples
+#' calculate_share_proceeds(price = 9, shares = 150000)
 calculate_share_proceeds <-
-  function(price, shares) {
+  function(price = 10, shares = 1000000) {
     proceeds <-
       (price * shares) %>% currency()
     return(proceeds)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/debt_functions.R
 \name{calculate_loan_payment}
 \alias{calculate_loan_payment}
-\title{Get's Loan Payment data}
+\title{Calculate loan repayment data given a set of parameters}
 \usage{
 calculate_loan_payment(loan_start_date = "2016-06-01",
   amount_initial_draw = 3000, is_interest_only = F,
@@ -13,9 +13,38 @@ calculate_loan_payment(loan_start_date = "2016-06-01",
   balloon_month = 0, return_annual_summary = F)
 }
 \arguments{
-\item{return_annual_summary}{}
+\item{loan_start_date}{Date loan starts}
+
+\item{amount_initial_draw}{Initial draw amount}
+
+\item{is_interest_only}{Is loan interest only}
+
+\item{interest_only_periods}{If loan is interest only, for how many periods}
+
+\item{interest_rate}{Intrest rate in decimal or numeric form}
+
+\item{is_actual_360}{Does loan accrue interest on an Actual/360 schedule}
+
+\item{term_years}{Term of the loan in years}
+
+\item{term_months}{Extra months on loan}
+
+\item{pct_loan_fee}{Percent loan fee}
+
+\item{balloon_year}{Year loan baloons}
+
+\item{interest_reserve_period}{Periods of interest reserve}
+
+\item{balloon_month}{Month loan balloons}
+
+\item{return_annual_summary}{Return an annual summary}
 }
 \description{
-Get's Loan Payment data
+Calculate loan repayment data given a set of parameters
+}
+\examples{
+calculate_loan_payment(loan_start_date = "2016-06-01", amount_initial_draw = 3000, is_interest_only = F, interest_only_periods = 24,
+interest_rate = 10, is_actual_360 = T, amortization_years = 10, amortization_months = 0, term_years = 10, term_months = 0,
+pct_loan_fee = 0, balloon_year = 10, override_monthly_interest = F, interest_reserve_period = 0, balloon_month = 0, return_annual_summary = F)
 }
 

@@ -20,4 +20,7 @@ calculate_residual_valuation_cap_rates(cap_rates = c(0.05, 0.0525, 0.06, 0.2),
 \description{
 Calculate residual value
 }
+\examples{
+calculate_residual_valuation_cap_rates()
+}
 

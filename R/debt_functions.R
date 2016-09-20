@@ -384,6 +384,7 @@ parse_futures_data <-
 #' @export
 #' @importFrom magrittr %>%
 #' @import dplyr tidyr xml2 rvest httr purrr lubridate formattable
+#' @examples get_data_libor_current()
 
 get_data_libor_current <-
   function(return_wide = T) {
@@ -682,7 +683,7 @@ get_fred_index_symbol_df <-
     return(symbol_df)
   }
 
-#' Get FRED index time series data
+#' Get time series data for a given FRED symbol
 #'
 #' @param symbol
 #' @param return_wide
@@ -691,7 +692,9 @@ get_fred_index_symbol_df <-
 #' @export
 #' @importFrom quantmod getSymbols
 #' @examples
-get_data_index_symbol_time_series <-
+#' get_data_fred_index_symbol_time_series(symbol = 'DGS10',return_wide = F)
+
+get_data_fred_index_symbol_time_series <-
   function(symbol = 'DGS10',
            return_wide = F) {
     time_series_data <-
@@ -718,7 +721,7 @@ get_data_index_symbol_time_series <-
     return(ts_data)
   }
 
-#' Get current specified index value
+#' Get current data given a specified index value
 #'
 #' @param symbol
 #' @param return_wide
@@ -727,6 +730,7 @@ get_data_index_symbol_time_series <-
 #' @export
 #' @importFrom quantmod getQuote
 #' @examples get_data_index_symbol_current_value("^TNX")
+
 get_data_index_symbol_current_value <-
   function(symbol = "^TNX",
            return_wide = F) {
@@ -807,28 +811,28 @@ get_data_monthly_periods <-
     return(all_periods)
   }
 
-#' Get's Loan Payment data
+#' Calculate loan repayment data given a set of parameters
 #'
-#' @param loan_start_date
-#' @param cash_flow_data
-#' @param override_monthly_interest
-#' @param amount_initial_draw
-#' @param is_interest_only
-#' @param interest_only_periods
-#' @param interest_rate
-#' @param is_actual_360
-#' @param term_years
-#' @param term_months
-#' @param pct_loan_fee
-#' @param balloon_year
-#' @param interest_reserve_period
-#' @param balloon_month
-#' @param return_annual_summary
+#' @param loan_start_date Date loan starts
+#' @param amount_initial_draw Initial draw amount
+#' @param is_interest_only Is loan interest only
+#' @param interest_only_periods If loan is interest only, for how many periods
+#' @param interest_rate Intrest rate in decimal or numeric form
+#' @param is_actual_360 Does loan accrue interest on an Actual/360 schedule
+#' @param term_years Term of the loan in years
+#' @param term_months Extra months on loan
+#' @param pct_loan_fee Percent loan fee
+#' @param balloon_year Year loan baloons
+#' @param interest_reserve_period Periods of interest reserve
+#' @param balloon_month Month loan balloons
+#' @param return_annual_summary Return an annual summary
 #'
 #' @return
 #' @export
 #'
-#' @examples
+#' @examples calculate_loan_payment(loan_start_date = "2016-06-01", amount_initial_draw = 3000, is_interest_only = F, interest_only_periods = 24,
+#' interest_rate = 10, is_actual_360 = T, amortization_years = 10, amortization_months = 0, term_years = 10, term_months = 0,
+#' pct_loan_fee = 0, balloon_year = 10, override_monthly_interest = F, interest_reserve_period = 0, balloon_month = 0, return_annual_summary = F)
 calculate_loan_payment <-
   function(loan_start_date = "2016-06-01",
            amount_initial_draw = 3000,

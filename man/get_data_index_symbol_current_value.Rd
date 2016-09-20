@@ -2,7 +2,7 @@
 % Please edit documentation in R/debt_functions.R
 \name{get_data_index_symbol_current_value}
 \alias{get_data_index_symbol_current_value}
-\title{Get current specified index value}
+\title{Get current data given a specified index value}
 \usage{
 get_data_index_symbol_current_value(symbol = "^TNX", return_wide = F)
 }
@@ -10,7 +10,7 @@ get_data_index_symbol_current_value(symbol = "^TNX", return_wide = F)
 \item{return_wide}{}
 }
 \description{
-Get current specified index value
+Get current data given a specified index value
 }
 \examples{
 get_data_index_symbol_current_value("^TNX")

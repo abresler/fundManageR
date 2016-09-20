@@ -22,4 +22,7 @@ calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15,
 \description{
 Calculate residual value for a set of given EBITDA based inputs
 }
+\examples{
+calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20), ebitda = "$27,500,000", cost_of_sale = "5\%", debt_balance = "$350,000,000", return_wide = T)
+}
 
