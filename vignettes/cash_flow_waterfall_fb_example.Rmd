@@ -63,7 +63,7 @@ initial_data <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 initial_data %>% 
-  formattable::formattable()
+  knitr::kable()
 ```
 
 #### Waterfall Structure and Equity Splits.
@@ -90,7 +90,7 @@ promote_df <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 promote_df %>% 
-  formattable::formattable()
+  knitr::kable()
 ```
 
 ### Conversion to Common Shares
@@ -129,7 +129,7 @@ conversion_data <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 conversion_data %>% 
-  formattable::formattable()
+  knitr::kable()
 ```
 
 #### Initial Public Offering Liquidation Event
@@ -194,7 +194,7 @@ cash_flow_df <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 cash_flow_df %>% 
-  formattable::formattable()
+  knitr::kable()
 ```
 
 Now we are ready to feed the necessary inputs to `fundManageR`'s `calculate_cash_flow_waterfall_partnership` function which will perform the requisite waterfall calculations and return a nested list of data frames summarizing:
@@ -220,21 +220,21 @@ fb_investment_data <-
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 cashflowWaterfall %>% 
-  formattable::formattable()
+  knitr::kable()
 ```
 
 <h5><center>Waterfall by Tier and Period</h5></center>
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 entityWaterfall %>% 
-  formattable::formattable()
+  knitr::kable()
 ```
 
 <h5><center>Summarised Partnership Total Returns</center></h5>
 
 ```{r results='asis', eval=TRUE, echo=FALSE}
 partnershipReturns %>% 
-  formattable::formattable()
+  knitr::kable()
 ```
 
 #### Parting Notes
