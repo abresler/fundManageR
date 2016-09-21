@@ -7109,10 +7109,8 @@ return_selected_adv_tables <-
            all_sections,
            table_names,
            gather_data) {
-    if (all_sections) {
       table_names <-
         data$nameTable %>% unique
-    }
     return_selected_adv_table <-
       function(data,
                table_name,
@@ -7308,7 +7306,7 @@ return_selected_adv_tables <-
       possibly(return_selected_adv_table, NULL)
     table_names %>%
       map(function(x) {
-        return_selected_adv_table(data = data,
+        return_selected_adv_table_safe(data = data,
                                   table_name = x,
                                   gather_data = gather_data)
       })
@@ -7389,6 +7387,8 @@ get_data_adv_managers_filings <-
           flatten_tables = flatten_tables
         )
       })
+    return_selected_adv_tables_safe <-
+      possibly(return_selected_adv_tables, NULL)
 
     if (assign_to_enviornment) {
       all_data %>%
