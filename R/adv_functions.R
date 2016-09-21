@@ -20,8 +20,8 @@ get_data_cik_codes <-
     cik_data <-
       cik_data %>%
       tidyr::separate(X1,
-               into = c('nameEntity', 'codeCIK'),
-               sep = '\\:[0][0]') %>%
+                      into = c('nameEntity', 'codeCIK'),
+                      sep = '\\:[0][0]') %>%
       mutate(codeCIK = codeCIK %>% stringr::str_replace('\\:', ''),
              codeCIK = "00" %>% paste0(codeCIK),
              idCIK = codeCIK %>% as.numeric) %>%
@@ -30,7 +30,7 @@ get_data_cik_codes <-
 
     if (return_message) {
       "You returned " %>%
-        paste0(cik_data %>% nrow,' entities with regisitered CIK codes')
+        paste0(cik_data %>% nrow,' entities with registered CIK codes')
     }
     return(cik_data)
   }
@@ -107,15 +107,15 @@ get_item_name_yes_no_df <-
   function(item_name = 'hasCustodyClientCash') {
     item_name_df <-
       1:length(item_name) %>%
-    map_df(function(x) {
-      data_frame(nameItem = rep(item_name[x], 2),
-                 valueItem = c(T, F)) %>%
-        unite(fullnameItem,
-              nameItem,
-              valueItem,
-              sep = '.',
-              remove = F)
-    })
+      map_df(function(x) {
+        data_frame(nameItem = rep(item_name[x], 2),
+                   valueItem = c(T, F)) %>%
+          unite(fullnameItem,
+                nameItem,
+                valueItem,
+                sep = '.',
+                remove = F)
+      })
     return(item_name_df)
   }
 
@@ -123,11 +123,11 @@ has_item_check_name <-
   function(item_name = 'hasQuarterlyStatemnt') {
     item_name_df <-
       1:length(item_name) %>%
-    map_df(function(x) {
-      data_frame(nameItem = rep(item_name[x], 1),
-                 valueItem = T) %>%
-        mutate(fullnameItem = nameItem)
-    })
+      map_df(function(x) {
+        data_frame(nameItem = rep(item_name[x], 1),
+                   valueItem = T) %>%
+          mutate(fullnameItem = nameItem)
+      })
     return(item_name_df)
   }
 
@@ -2252,9 +2252,9 @@ get_section_1_data <-
               'cityOfficePrimary',
               'stateOfficePrimary',
               'countryOfficePrimary',
-              'zipOfficePrimaryary',
+              'zipOfficePrimary',
               'hoursOffice',
-              'phoneOfficePrimaryimary',
+              'phoneOfficePrimary',
               'idLEI'
             ),
             hit_words = c(
@@ -2322,8 +2322,8 @@ get_section_1_data <-
         if (names(business_data_df) %>% str_count('^address|^city|^country|^state') %>% sum >= 4) {
           business_data_df <-
             business_data_df %>%
-            mutate(locationOffice = addressStreet1OfficePrimary %>% paste0(' ', cityOfficePrimary, ', ', stateOfficePrimary, ' ', countryOfficePrimary, ' ', zipOfficePrimaryary),
-                   locationOffice = locationOffice %>% str_to_upper)
+            mutate(locationOfficePrimary = addressStreet1OfficePrimary %>% paste0(' ', cityOfficePrimary, ', ', stateOfficePrimary, ' ', countryOfficePrimary, ' ', zipOfficePrimary),
+                   locationOfficePrimary = locationOffice %>% str_to_upper)
         }
         if (business_data_df$idLEI == 'A legal entity identifier') {
           business_data_df <-
@@ -4537,7 +4537,6 @@ get_schedule_a_data <-
       url %>%
       get_pk_url_crd()
 
-
     page <-
       url %>%
       get_html_page()
@@ -4558,7 +4557,8 @@ get_schedule_a_data <-
             html_table(fill = T, header = F) %>%
             data.frame(stringsAsFactors = F) %>%
             as_data_frame() %>%
-            slice(-1)
+            slice(-1) %>%
+            mutate(X1 = X1 %>% str_to_upper())
 
           names(table_data) <-
             c(
@@ -4764,7 +4764,8 @@ get_schedule_b_data <-
             html_table(fill = T, header = F) %>%
             data.frame(stringsAsFactors = F) %>%
             as_data_frame() %>%
-            slice(-1)
+            slice(-1) %>%
+            mutate(X1 = X1 %>% str_to_upper())
 
           names(table_data) <-
             c(
@@ -5177,6 +5178,11 @@ get_schedule_d_data <-
                 }
               }
 
+              all_locations <-
+                all_locations %>%
+                dplyr::select(-matches("^NA")) %>%
+                dplyr::select(idCRD, nameEntityManager, countItem)
+
               if (return_wide) {
                 all_locations <-
                   all_locations %>%
@@ -5290,7 +5296,8 @@ get_schedule_d_data <-
                       nameLegalRelatedEntity,
                       idCRDRelatedEntity
                     ) %>%
-                    mutate(nameBusinessRelatedEntity = if_else(nameBusinessRelatedEntity == "SAME", nameLegalRelatedEntity, nameBusinessRelatedEntity))
+                    mutate(nameBusinessRelatedEntity = if_else(nameBusinessRelatedEntity == "SAME", nameLegalRelatedEntity, nameBusinessRelatedEntity),
+                           idCRDRelatedEntity = idCRDRelatedEntity %>% as.numeric)
                   has_image_check_box <-
                     page %>%
                     html_nodes(related_adviser_node_df$cssNode[x]) %>%
@@ -5528,6 +5535,39 @@ get_schedule_d_data <-
                 mutate(nameEntityManager = name_entity_manager) %>%
                 dplyr::select(nameEntityManager, everything())
 
+              control_person_df <-
+                control_person_df %>%
+                mutate_at(.cols =
+                            control_person_df %>% dplyr::select(matches("^date")) %>% names,
+                          .funs = mdy) %>%
+                mutate_at(.cols =
+                            control_person_df %>% dplyr::select(matches("^country[A-Z]|^name|^state|^city")) %>% names,
+                          .funs = str_to_upper) %>%
+                dplyr::select(nameEntityManager, nameControlPerson, descriptionControlPerson, everything())
+
+              if (names(control_person_df) %>% str_count('^address|^city|^country|^state') %>% sum >= 4) {
+                control_person_df <-
+                  control_person_df %>%
+                  mutate(locationControlPerson = addressStreet1ControlPerson %>% paste0(' ', cityControlPerson, ', ', stateControlPerson, ' ', countryControlPerson, ' ', zipControlPerson)) %>%
+                  dplyr::select(nameEntityManager:countItem, locationControlPerson, everything())
+              }
+
+              if ('nameControlPerson' %in% names(control_person_df)) {
+                name_df <-
+                  control_person_df$nameControlPerson %>%
+                  map_df(parse_manager_owner_name)
+
+                names(name_df) <-
+                  names(name_df) %>%
+                  str_replace_all('EntityManagerOwner|EntityOwnerManager','ControlPerson')
+
+                control_person_df <-
+                  control_person_df %>%
+                  left_join(name_df) %>%
+                  suppressMessages() %>%
+                  dplyr::select(nameEntityManager, nameCommonControlPerson, descriptionControlPerson, everything())
+
+              }
               if (return_wide) {
                 control_person_df <-
                   control_person_df %>%
@@ -7399,14 +7439,14 @@ parse_manager_brochure_data <-
           html_nodes('.main td a') %>%
           html_attr('href') %>% length > 0
         if (has_brochure) {
-        url_brochure_pdf <-
-          brochure_page %>%
-          html_nodes('.main td a') %>%
-          html_attr('href') %>%
-          paste0('https://www.adviserinfo.sec.gov',.)
+          url_brochure_pdf <-
+            brochure_page %>%
+            html_nodes('.main td a') %>%
+            html_attr('href') %>%
+            paste0('https://www.adviserinfo.sec.gov',.)
         } else {
-        url_brochure_pdf <-
-          NA
+          url_brochure_pdf <-
+            NA
         }
         return(url_brochure_pdf)
       }
@@ -8655,71 +8695,71 @@ get_data_adv_managers_periods_summaries <-
     has_data <-
       all_adv_data %>% nrow > 0
     if (has_data) {
-    all_adv_data <-
-      all_adv_data %>%
-      mutate_at(.cols =
-                  all_adv_data %>% dplyr::select(matches("^date[A-Z]")) %>% names,
-                .funs = ymd) %>%
-      mutate_at(
-        .cols =
-          all_adv_data %>% dplyr::select(matches(
-            "^name[E]|^address|^city|^status|^state|^type|^country[A-Z]"
-          )) %>% dplyr::select(-matches("stateEntityOrganized")) %>% names,
-        .funs =
-          str_to_upper
-      )
+      all_adv_data <-
+        all_adv_data %>%
+        mutate_at(.cols =
+                    all_adv_data %>% dplyr::select(matches("^date[A-Z]")) %>% names,
+                  .funs = ymd) %>%
+        mutate_at(
+          .cols =
+            all_adv_data %>% dplyr::select(matches(
+              "^name[E]|^address|^city|^status|^state|^type|^country[A-Z]"
+            )) %>% dplyr::select(-matches("stateEntityOrganized")) %>% names,
+          .funs =
+            str_to_upper
+        )
 
-    all_adv_data <-
-      all_adv_data %>%
-      mutate_at(
-        .cols =
-          all_adv_data %>% dplyr::select(matches("^count[A-Z]"), -matches("country")) %>% names,
-        .funs =
-          formattable::comma
-      )
-
-    has_amounts <-
-      names(all_adv_data) %>% str_count('^amount') %>% sum > 0
-
-    if (has_amounts) {
       all_adv_data <-
         all_adv_data %>%
         mutate_at(
           .cols =
-            all_adv_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names,
+            all_adv_data %>% dplyr::select(matches("^count[A-Z]"), -matches("country")) %>% names,
           .funs =
-            funs(. %>% as.numeric %>% formattable::currency)
-        ) %>%
-        arrange(dateDataADV, desc(amountAUMTotal)) %>%
-        suppressWarnings()
-    }
+            formattable::comma
+        )
 
-    all_adv_data <-
-      all_adv_data %>%
-      dplyr::rename(nameEntityManagerBusiness = nameEntityManager) %>%
-      mutate(nameEntityManager = nameEntityManagerLegal) %>%
-      dplyr::select(dateDataADV:idSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, everything()) %>%
-      suppressMessages()
+      has_amounts <-
+        names(all_adv_data) %>% str_count('^amount') %>% sum > 0
 
-    all_adv_data <-
-      all_adv_data %>%
-      mutate_at(.cols =
-                  all_adv_data %>% dplyr::select(matches("^address|^country[A-Z]|^city^state")) %>% names,
-                .funs = str_to_upper)
+      if (has_amounts) {
+        all_adv_data <-
+          all_adv_data %>%
+          mutate_at(
+            .cols =
+              all_adv_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names,
+            .funs =
+              funs(. %>% as.numeric %>% formattable::currency)
+          ) %>%
+          arrange(dateDataADV, desc(amountAUMTotal)) %>%
+          suppressWarnings()
+      }
 
-    if (names(all_adv_data) %>% str_count('^addressStreet2OfficePrimary') %>% sum > 0) {
-    locationOfficePrimary <-
-      all_adv_data %>%
-      replace_na(list(addressStreet2OfficePrimary = '', stateOfficePrimary = '')) %>%
-      mutate(locationOfficePrimary =
-               addressStreet1OfficePrimary %>% paste0(' ', addressStreet2OfficePrimary, ' ', cityOfficePrimary, ', ', stateOfficePrimary, ', ', countryOfficePrimary) %>% str_trim) %>%
-      .$locationOfficePrimary
+      all_adv_data <-
+        all_adv_data %>%
+        dplyr::rename(nameEntityManagerBusiness = nameEntityManager) %>%
+        mutate(nameEntityManager = nameEntityManagerLegal) %>%
+        dplyr::select(dateDataADV:idSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, everything()) %>%
+        suppressMessages()
 
-    all_adv_data <-
-      all_adv_data %>%
-      mutate(locationOfficePrimary) %>%
-      dplyr::select(dateDataADV:typeRegulationSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, locationOfficePrimary, everything())
-    }
+      all_adv_data <-
+        all_adv_data %>%
+        mutate_at(.cols =
+                    all_adv_data %>% dplyr::select(matches("^address|^country[A-Z]|^city^state")) %>% names,
+                  .funs = str_to_upper)
+
+      if (names(all_adv_data) %>% str_count('^addressStreet2OfficePrimary') %>% sum > 0) {
+        locationOfficePrimary <-
+          all_adv_data %>%
+          replace_na(list(addressStreet2OfficePrimary = '', stateOfficePrimary = '')) %>%
+          mutate(locationOfficePrimary =
+                   addressStreet1OfficePrimary %>% paste0(' ', addressStreet2OfficePrimary, ' ', cityOfficePrimary, ', ', stateOfficePrimary, ', ', countryOfficePrimary) %>% str_trim) %>%
+          .$locationOfficePrimary
+
+        all_adv_data <-
+          all_adv_data %>%
+          mutate(locationOfficePrimary) %>%
+          dplyr::select(dateDataADV:typeRegulationSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, locationOfficePrimary, everything())
+      }
     }
 
     return(all_adv_data)

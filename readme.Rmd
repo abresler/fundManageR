@@ -98,11 +98,11 @@ In the future there may be a third family of functions that would allow one to e
 
 ### Vignettes
 
-* [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/210829_4a31d2634ccb46ecbf8ac749fca3c06b.html)
-* [ADV Functionality]()
+* [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/210924_c49b0e612aee41bea1d3812fed93266a.html)
+* [ADV Function Tutorial -- Where is the money and sleuthing Blackstone](http://rstudio-pubs-static.s3.amazonaws.com/211145_0a649d99d5da4b219c2bd498f8c25430.html)
 
 ### Coming Soon
-* [Openopencorporates]('https://opencorporates.com/) wrapper
+* [Open Corporates]('https://opencorporates.com/) wrapper
 * [Form D](https://en.wikipedia.org/wiki/Form_D) wrapper
 * Delaware, Cayman Island, and Nevada entity registration wrappr.
 * Mergers and Acquisition data

@@ -7,11 +7,19 @@ fundManageR
 
 #### <strong>What is fundManageR?</strong>
 
-Outside of a few isolated pockets, the participants in the $67,0000,000,000 + United States investment management are largely trapped in Excel. Whether you are talking about Private Equity, Venture Capital, Real Estate Private Equity or Hedge Funds, industry professionals are executing important business functions dangerously and inefficiently in myriad of spreadsheets. The purpose of this package is to provide R proficient industry professionals a generalized framework that provides out-of-the-box access to functions that perform many of the industry's most important calculations. As an added bonus this package also wraps access to a growing array of data silos, including the first full wrapper of the [SEC's Investment Adviser Public Disclosure](https://adviserinfo.sec.gov/) in any of the major programming languages. It's my hope that this package's data acquisition functionality will be of use to industry professionals, academics, journalists, or anyone who enjoys exploring interesting data sets.
+Outside of a few isolated pockets, the participants in the $67,0000,000,000 + United States investment management are trapped in Excel-centric universe. This is a dangerous state of being
+
+Whether you are talking about [Private Equity](https://en.wikipedia.org/wiki/Private_equity), [Venture Capital](https://en.wikipedia.org/wiki/Venture_capital), [Real Estate Private Equity](https://en.wikipedia.org/wiki/Private_equity_real_estate) or [Hedge Funds](https://en.wikipedia.org/wiki/Hedge_fund), industry professionals are executing important business functions dangerously and inefficiently through a maze of Excel spreadsheets.
+
+The purpose of this package is to provide R proficient industry professionals a generalized framework that provides out-of-the-box access to functions that perform many standardizable industry pertinent calculations.
+
+As an added bonus this package also wraps access to a growing array of data silos, including the first full wrapper of the [SEC's Investment Adviser Public Disclosure](https://adviserinfo.sec.gov/) database in any of the major programming languages. It's my hope that this package's data acquisition functionality will be of use to industry professionals, academics, journalists, or anyone who enjoys exploring interesting data sets.
 
 #### <strong>Why fundManageR?</strong>
 
-Excel, while convenient for some, is poorly suited for important data analysis and modelling. Countless billions of dollars have been lost throughout the investment management universe as a direct result of uncaught Excel errors. Additionally, for many of the most common calculations, there is countless duplication of methods to perform some of the industries most commonly important calculations. `fundManageR`, though in its extreme infancy, is my attempt to provide an easy to use framework for all of these important calculations to be performed in R. These calculations have fault checks to ensure correct calculations and can be mapped and iterated to perform complex iterations of these calculations that would be extremely difficult to replicate in Excel.
+Excel, while convenient for some, is poorly suited for important data analysis and modelling. Countless billions of dollars have been lost throughout the investment management universe as a direct result of uncaught Excel errors. Additionally, for many of the most common calculations, there is countless duplication of methods to perform common calculations, and in many cases formulas are left uncheck and errors end up having extreme consequences down the line.
+
+`fundManageR`, though in its extreme infancy, is my attempt to provide an easy to use framework for these calculations to be performed in R, through an open and readable API. These calculations have fault checks to ensure accuracy and can be mapped and iterated to perform calculations that would be impossible in Excel.
 
 My second motivation for creating this package is to provide easy access to some of the industry's [dark data](http://www.gartner.com/it-glossary/dark-data), hidden APIs, and public APIs to enable more transparency around one of the United States' most important industries. As the old saying goes, when in doubt <strong>`Follow the Money`</strong>, this package should help you do just that.
 
@@ -31,7 +39,7 @@ packages <-
 lapply(packages, install.packages)
 ```
 
-#### <strong>Installation</strong>
+#### <strong>Package Installation</strong>
 
 ``` r
 devtools::install_github("abresler/fundManageR")
@@ -79,12 +87,12 @@ In the future there may be a third family of functions that would allow one to e
 
 ### Vignettes
 
--   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/210829_4a31d2634ccb46ecbf8ac749fca3c06b.html)
--   [ADV Functionality]()
+-   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/210924_c49b0e612aee41bea1d3812fed93266a.html)
+-   [ADV Function Tutorial -- Where is the money and sleuthing Blackstone](http://rstudio-pubs-static.s3.amazonaws.com/211145_0a649d99d5da4b219c2bd498f8c25430.html)
 
 ### Coming Soon
 
--   [Openopencorporates]('https://opencorporates.com/) wrapper
+-   [Open Corporates]('https://opencorporates.com/) wrapper
 -   [Form D](https://en.wikipedia.org/wiki/Form_D) wrapper
 -   Delaware, Cayman Island, and Nevada entity registration wrappr.
 -   Mergers and Acquisition data
