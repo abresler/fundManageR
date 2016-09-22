@@ -6,7 +6,9 @@ Authors@R: person("Alex", "Bresler", email = "abresler@asbcllc.com", role = c("a
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Requires: tidyverse
 Imports:
+  tidyverse,
   curl,
   curlconverter,
   dplyr, 

@@ -80,14 +80,15 @@ In the future there may be a third family of functions that would allow one to e
 
 -   `get_data_adv_period_urls` -- Retrieves all possible ADV summary periods
 -   `get_data_adv_managers_current_period_summary` -- Retrieves summary data for ADV filing managers from the most recent monthly filing period.
--   `get_data_adv_managers_periods_summaries`-- Retrieves summary ADV filings for specified periods and filing type.
+-   `get_data_adv_managers_periods_summaries`-- Retrieves summary ADV filings for specified periods and filing type. You must specify a directory and a folder name. The default folder name is set to adv\_data and if no directory is set the data will be downloaded into your working directory.
 -   `get_data_sec_adv_manager_sitemap`-- Retrieves a data frame with the possible detailed ADV sections and their descriptions.
+-   `get_data_adv_managers_metadata` -- Retrieves metadata for specified search name or CRD ID, fastest to search for managers you want to explore further.
 -   `get_data_adv_managers_filings` -- Retrieves detailed ADV filing for specified [Central Registration Depository ID](http://www.finra.org/industry/crd) \[CRD\] and/or company name by ADV section.
 -   `get_data_adv_managers_brochures` -- Retrieves and [OCRs](https://en.wikipedia.org/wiki/Optical_character_recognition) for SEC mandated annual [Uniform Requirements for the Investment Adviser Brochure and Brochure Supplements](https://www.sec.gov/about/forms/formadv-part2.pdf) for specified CRDs and/or company names.
 
 ### Vignettes
 
--   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/210924_c49b0e612aee41bea1d3812fed93266a.html)
+-   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/211239_5ea9091444cd4200a998055ffde4ba94.html)
 -   [ADV Function Tutorial -- Where's the Money and Sleuthing Blackstone](http://rstudio-pubs-static.s3.amazonaws.com/211145_0a649d99d5da4b219c2bd498f8c25430.html)
 
 ### Coming Soon

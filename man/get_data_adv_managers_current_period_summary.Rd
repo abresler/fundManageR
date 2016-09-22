@@ -4,13 +4,22 @@
 \alias{get_data_adv_managers_current_period_summary}
 \title{Get ADV filing data for the most recent filing period}
 \usage{
-
-  get_data_adv_managers_current_period_summary(file_directory = "Desktop/adv_data")
+get_data_adv_managers_current_period_summary(file_directory = NULL,
+  folder_name = "adv_data", remove_files = T, empty_trash = T)
 }
 \arguments{
-\item{file_directory}{}
+\item{file_directory}{Location of the directory you want to save your data into}
+
+\item{folder_name}{Name of the folder you want the data to be downloaded into}
+
+\item{remove_files}{Remove the files from the folders}
+
+\item{empty_trash}{Do you wish to empty the trash after being read into R}
 }
 \description{
 Get ADV filing data for the most recent filing period
+}
+\examples{
+get_data_adv_managers_current_period_summary(ile_directory = NULL, folder_name = 'adv_data', remove_files = T, empty_trash = T)
 }
 

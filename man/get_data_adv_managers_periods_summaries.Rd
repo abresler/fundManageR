@@ -6,9 +6,31 @@
 \usage{
 get_data_adv_managers_periods_summaries(periods = c("2006-06"),
   all_periods = F, is_exempt = c(F, T), only_most_recent = F,
-  file_directory = "Desktop/adv_data", remove_files = T, empty_trash = T)
+  file_directory = NULL, folder_name = "adv_data",
+  remove_existing_folder = F, remove_files = T, empty_trash = T)
+}
+\arguments{
+\item{periods}{Selected periods in Year-Month form}
+
+\item{all_periods}{Do you want all periods}
+
+\item{is_exempt}{Do you want to exempt, non-exempt or both types of filers}
+
+\item{only_most_recent}{Select only the most recent period}
+
+\item{file_directory}{Location of the directory you want to save your data into}
+
+\item{folder_name}{Name of the folder you want the data to be downloaded into}
+
+\item{remove_files}{Remove the files from the folders}
+
+\item{empty_trash}{Do you wish to empty the trash after being read into R}
 }
 \description{
 Get ADV summary data for specified periods and filing types
+}
+\examples{
+get_data_adv_managers_periods_summaries(periods = c("2006-06"), all_periods = F, is_exempt = c(F,T), only_most_recent = F,
+file_directory = NULL, folder_name = 'adv_data', remove_existing_folder = F, remove_files = T, empty_trash = T)
 }
 

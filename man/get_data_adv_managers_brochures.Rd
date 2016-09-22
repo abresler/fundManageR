@@ -8,9 +8,16 @@ get_data_adv_managers_brochures(search_names = c("137 Ventures", "Divco"),
   crd_ids = NULL, split_pages = T)
 }
 \arguments{
-\item{split_pages}{}
+\item{search_names}{Names of the companies you want to search}
+
+\item{crd_ids}{CRD IDs you want to search}
+
+\item{split_pages}{Do you want the brochure as 1 text blob or multiple pages}
 }
 \description{
 Get manager ADV brochure
+}
+\examples{
+get_data_adv_managers_brochures(search_names = c('137 Ventures', 'Divco'), crd_ids = NULL, split_pages = T))
 }
 

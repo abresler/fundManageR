@@ -2,7 +2,7 @@
 
 #' Get all data for all CIK registered entities
 #'
-#' @param return_message
+#' @param return_message Return a message
 #'
 #' @return
 #' @export
@@ -785,9 +785,20 @@ get_manager_sec_page <-
   }
 
 
-get_managers_adv_metadata <-
-  function(crd_ids = 131940,
-           search_names =  NULL,
+#' Get ADV metadata for specified ADV or search name
+#'
+#' @param search_names Names of the entities you want to search
+#' @param crd_ids CRD ids you want to search
+#' @param return_message
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' get_data_adv_managers_metadata(search_names = c('Divco'))
+get_data_adv_managers_metadata <-
+  function(search_names =  'Divco',
+           crd_ids = NULL,
            return_message = T) {
     if (!crd_ids %>% is_null) {
       crd_urls <-
@@ -1160,8 +1171,8 @@ parse_adv_manager_sitemap_df <-
 get_managers_adv_sitemap_adv <-
   function(idCRDs = c(109110),
            search_names =  NULL) {
-    get_managers_adv_metadata_safe <-
-      possibly(get_managers_adv_metadata, NULL)
+    get_data_adv_managers_metadata_safe <-
+      possibly(get_data_adv_managers_metadata, NULL)
     parse_adv_manager_sitemap_df_safe <-
       possibly(parse_adv_manager_sitemap_df, NULL)
 
@@ -1175,7 +1186,7 @@ get_managers_adv_sitemap_adv <-
       manager_data <-
         search_names %>%
         map_df(function(x) {
-          get_managers_adv_metadata_safe(crd_ids = idCRDs, search_names = x, return_message = T)
+          get_data_adv_managers_metadata_safe(crd_ids = idCRDs, search_names = x, return_message = T)
         })
 
       manager_data <-
@@ -1195,7 +1206,7 @@ get_managers_adv_sitemap_adv <-
 
     if ('urls' %>% exists & search_names %>% is_null) {
       manager_data <-
-        get_managers_adv_metadata_safe(crd_ids = idCRDs, search_names = NULL)
+        get_data_adv_managers_metadata_safe(crd_ids = idCRDs, search_names = NULL)
 
       name_entity_manager <-
         manager_data$nameEntityManager
@@ -5130,7 +5141,7 @@ get_schedule_d_data <-
               }) %>%
               dplyr::filter(
                 !itemvalueNode %>% str_detect(
-                  'Name of entity where books|Facis|Facsimile|NAME OF THE INDEPENDENT|SUCH NON-US FUNDS|ITEM|item|Item|SCHEDULE|NVESTMENT ACQUISITION|THE ANALYSIS AND MANAGEMEN'
+                  'Name of entity where books|Facis|Facsimile|NAME OF THE INDEPENDENT|SUCH NON-US FUNDS|ITEM|item|Item|SCHEDULE|NVESTMENT ACQUISITION|THE ANALYSIS AND MANAGEMEN|MAIL STOP'
                 )
               ) %>%
               dplyr::filter(!itemvalueNode %>% str_detect('NOTE: |Name of the')) %>%
@@ -5539,7 +5550,7 @@ get_schedule_d_data <-
                 control_person_df %>%
                 mutate_at(.cols =
                             control_person_df %>% dplyr::select(matches("^date")) %>% names,
-                          funs(lubridate::mdy(.))) %>%
+                          funs(. %>% lubridate::mdy())) %>%
                 mutate_at(.cols =
                             control_person_df %>% dplyr::select(matches("^country[A-Z]|^name|^state|^city")) %>% names,
                           .funs = str_to_upper) %>%
@@ -5596,7 +5607,7 @@ get_schedule_d_data <-
                   mutate_at(
                     .cols =
                       control_person_df %>% dplyr::select(matches("^date")) %>% names,
-                    funs(lubridate::mdy(.))
+                    funs(. %>% lubridate::mdy())
                   )
               }
             } else {
@@ -5704,25 +5715,40 @@ get_schedule_d_data <-
           page %>%
           parse_record_locations_safe(all_table_node_df = all_table_node_df,
                                       return_wide = return_wide)
+        parse_related_advisor_safe <-
+          possibly(parse_related_advisor, NULL)
 
         related_adviser_df <-
           page %>%
-          parse_related_advisor(return_wide = F)
+          parse_related_advisor_safe(return_wide = F)
+
+        parse_control_person_data_safe <-
+          possibly(parse_control_person_data, NULL)
 
         control_person_df <-
           page %>%
-          parse_control_person_data(return_wide = return_wide)
+          parse_control_person_data_safe(return_wide = return_wide)
+
+        parse_for_manager_website_data_safe <-
+          possibly(parse_for_manager_website_data, NULL)
 
         website_df <-
           page %>%
-          parse_for_manager_website_data()
+          parse_for_manager_website_data_safe()
+
+        parse_public_control_persons_safe <-
+          possibily(parse_public_control_persons, NULL)
 
         public_control_df <-
-          page %>% parse_public_control_persons(all_table_node_df = all_table_node_df)
+          page %>%
+          parse_public_control_persons_safe(all_table_node_df = all_table_node_df)
+
+        parse_other_disclosures_safe <-
+          possibly(parse_other_disclosures, NULL)
 
         other_data_df <-
           page %>%
-          parse_other_disclosures(return_wide = return_wide)
+          parse_other_disclosures_safe(return_wide = return_wide)
 
         if (join_data) {
           section_data <-
@@ -6814,6 +6840,20 @@ get_crd_sections_data <-
       suppressWarnings() %>%
       suppressMessages()
 
+    section_null <-
+      section_names %>% is_null
+
+    if (all_sections) {
+      name_section_actual <-
+        sitemap_df$nameSectionActual
+    }
+
+    if (selection_null & all_sections == F) {
+      stop("You must select a section, possibilties for this search are:\n" %>%
+             paste0(paste0(sitemap_df$nameSectionActual,collapse = '\n')))
+    }
+
+
     get_adv_sections <-
       function(sitemap_df, all_sections) {
         get_manager_sec_page_safe <-
@@ -7073,7 +7113,7 @@ get_search_crd_ids <-
       search_name_df <-
         search_names %>%
         map_df(function(x) {
-          get_managers_adv_metadata(
+          get_data_adv_managers_metadata(
             crd_ids = NULL,
             search_names = x,
             return_message = T
@@ -7315,13 +7355,13 @@ return_selected_adv_tables <-
 
 #' Get detailed ADV form data for specified search name or CRD id
 #'
-#' @param search_names
-#' @param crd_ids
-#' @param all_sections
-#' @param section_names
-#' @param flatten_tables
-#' @param gather_data
-#' @param assign_to_enviornment
+#' @param search_names Names of the entities you want to search
+#' @param crd_ids CRD ids you want to search
+#' @param all_sections Do you want to search all ADV Sections
+#' @param section_names If not all sections, which sections
+#' @param flatten_tables Do you want the data the data with singular values flattened into a single data frame
+#' @param gather_data Do you want the data in gathered form
+#' @param assign_to_enviornment Do you want to save the invidual data frames to your global environment
 #'
 #' @return
 #' @export
@@ -7332,6 +7372,7 @@ return_selected_adv_tables <-
 #' @importFrom lubridate mdy
 #' @importFrom lubridate ymd
 #' @examples
+#' get_data_adv_managers_filings(search_names = c('Blackstone Real Estate'), crd_ids = NULL, all_sections = T,  section_names = NULL, flatten_tables = T, gather_data = F, assign_to_enviornment = T)
 get_data_adv_managers_filings <-
   function(search_names = c('Blackstone Real Estate'),
            crd_ids = NULL,
@@ -7352,6 +7393,7 @@ get_data_adv_managers_filings <-
            assign_to_enviornment = T) {
     packages <-
       c(
+        'tidyverse',
         "curl",
         "dplyr",
         "formattable",
@@ -7682,14 +7724,15 @@ get_manager_brochure_data <-
 
 #' Get manager ADV brochure
 #'
-#' @param search_names
-#' @param crd_ids
-#' @param split_pages
+#' @param search_names Names of the companies you want to search
+#' @param crd_ids CRD IDs you want to search
+#' @param split_pages Do you want the brochure as 1 text blob or multiple pages
 #'
 #' @return
 #' @export
 #' @import pdftools stringr stringi dplyr purrr tidyr
 #' @examples
+#' get_data_adv_managers_brochures(search_names = c('137 Ventures', 'Divco'), crd_ids = NULL, split_pages = T))
 get_data_adv_managers_brochures <-
   function(search_names = c('137 Ventures', 'Divco'),
            crd_ids = NULL,
@@ -8377,11 +8420,30 @@ parse_adv_txt_data <-
 
 parse_sec_adv_data_url <-
   function(url = 'https://www.sec.gov/foia/iareports/ia090116.zip',
-           file_directory = 'Desktop/adv_data',
+           file_directory = NULL,
+           folder_name = 'adv_data',
+           remove_existing_folder = F,
            remove_files = T,
            empty_trash = T) {
-    setwd("~")
     options(scipen = 999999)
+
+    no_folder_directories <-
+      file_directory %>% is_null & folder_name %>% is_null
+
+    if (no_folder_directories) {
+      stop("Please identify a file directory and or a folder name")
+    }
+    only_folder <-
+      !folder_name %>% is_null & file_directory %>% is_null
+    if (only_folder) {
+      file_directory <-
+        getwd()
+    }
+
+    file_directory <-
+      file_directory %>%
+      paste0('/', folder_name)
+
     date_data <-
       url %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% lubridate::mdy()
 
@@ -8396,12 +8458,14 @@ parse_sec_adv_data_url <-
 
     file_path <-
       temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
-    if (dir.exists(paths = file_path)) {
-      "rm -R " %>%
-        paste0(temp.dir) %>%
-        system()
-      if (empty_trash == T) {
-        system('rm -rf ~/.Trash/*')
+    if (remove_existing_folder) {
+      if (dir.exists(paths = file_path)) {
+        "rm -R " %>%
+          paste0(temp.dir) %>%
+          system()
+        if (empty_trash == T) {
+          system('rm -rf ~/.Trash/*')
+        }
       }
     }
 
@@ -8430,8 +8494,8 @@ parse_sec_adv_data_url <-
       dir_files[.]
 
     file_name <-
-      getwd() %>%
-      paste0('/', file_directory, '/', file_name)
+      file_directory %>%
+      paste0('/', file_name)
 
     if (file_name %>% str_detect("XLS|xls|xlsx|XLSX")) {
       adv_data <-
@@ -8588,11 +8652,11 @@ parse_sec_adv_data_url <-
              isExempt = is_exempt) %>%
       dplyr::select(dateDataADV, isExempt, everything())
 
-    if (remove_files == T) {
+    if (remove_files) {
       "rm -R " %>%
         paste0(temp.dir) %>%
         system()
-      if (empty_trash == T) {
+      if (empty_trash) {
         system('rm -rf ~/.Trash/*')
       }
     }
@@ -8603,10 +8667,11 @@ get_period_type_adv_data <-
   function(period = "2016-08",
            is_exempt = F,
            only_most_recent = F,
-           file_directory = 'Desktop/adv_data',
+           file_directory = NULL,
+           folder_name = 'adv_data',
+           remove_existing_folder = F,
            remove_files = T,
            empty_trash = T) {
-
     setwd("~")
     if (!'url_df' %>% exists){
       url_df <-
@@ -8636,6 +8701,8 @@ get_period_type_adv_data <-
       url_data %>%
       parse_sec_adv_data_url_safe(
         file_directory = file_directory,
+        folder_name = folder_name,
+        remove_existing_folder = remove_existing_folder,
         remove_files = remove_files,
         empty_trash = empty_trash
       )
@@ -8645,25 +8712,30 @@ get_period_type_adv_data <-
 
 #' Get ADV summary data for specified periods and filing types
 #'
-#' @param periods
-#' @param all_periods
-#' @param is_exempt
-#' @param only_most_recent
-#' @param file_directory
-#' @param remove_files
-#' @param empty_trash
+#' @param periods Selected periods in Year-Month form
+#' @param all_periods Do you want all periods
+#' @param is_exempt Do you want to exempt, non-exempt or both types of filers
+#' @param only_most_recent Select only the most recent period
+#' @param file_directory Location of the directory you want to save your data into
+#' @param folder_name Name of the folder you want the data to be downloaded into
+#' @param remove_files Remove the files from the folders
+#' @param empty_trash Do you wish to empty the trash after being read into R
 #' @import dplyr stringr lubridate readr readxl rvest purrr
 #' @importFrom curl curl_download
 #' @return
 #' @export
 #'
 #' @examples
+#' get_data_adv_managers_periods_summaries(periods = c("2006-06"), all_periods = F, is_exempt = c(F,T), only_most_recent = F,
+#' file_directory = NULL, folder_name = 'adv_data', remove_existing_folder = F, remove_files = T, empty_trash = T)
 get_data_adv_managers_periods_summaries <-
   function(periods = c("2006-06"),
            all_periods = F,
            is_exempt = c(F,T),
            only_most_recent = F,
-           file_directory = 'Desktop/adv_data',
+           file_directory = NULL,
+           folder_name = 'adv_data',
+           remove_existing_folder = F,
            remove_files = T,
            empty_trash = T) {
     if (all_periods) {
@@ -8689,6 +8761,8 @@ get_data_adv_managers_periods_summaries <-
           is_exempt = input_df$exempt[x],
           only_most_recent = input_df$only_most_recent[x],
           file_directory = file_directory,
+          folder_name = folder_name,
+          remove_existing_folder = remove_existing_folder,
           remove_files = remove_files,
           empty_trash = empty_trash
         )
@@ -8769,21 +8843,31 @@ get_data_adv_managers_periods_summaries <-
 
 #' Get ADV filing data for the most recent filing period
 #'
-#' @param file_directory
-#'
+#' @param file_directory Location of the directory you want to save your data into
+#' @param folder_name Name of the folder you want the data to be downloaded into
+#' @param remove_files Remove the files from the folders
+#' @param empty_trash Do you wish to empty the trash after being read into R
 #' @return
 #' @export
 #'
 #' @examples
+#' get_data_adv_managers_current_period_summary(ile_directory = NULL, folder_name = 'adv_data', remove_files = T, empty_trash = T)
 
 get_data_adv_managers_current_period_summary <-
-  function(file_directory = 'Desktop/adv_data') {
+  function(file_directory = NULL,
+           folder_name = 'adv_data',
+           remove_files = T,
+           empty_trash = T
+  ) {
     all_data <-
       get_data_adv_managers_periods_summaries(
         only_most_recent = T,
         all_periods = F,
+        remove_files = remove_files,
+        empty_trash = empty_trash,
         is_exempt = c(F, T),
-        file_directory = file_directory
+        file_directory = file_directory,
+        folder_name = folder_name
       )
     select_names <-
       c(
