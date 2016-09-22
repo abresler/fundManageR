@@ -7,7 +7,7 @@
 get_data_cik_codes(return_message = T)
 }
 \arguments{
-\item{return_message}{Do you want to return a messag}
+\item{return_message}{Return a message}
 }
 \description{
 Get all data for all CIK registered entities

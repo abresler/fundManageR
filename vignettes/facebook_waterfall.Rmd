@@ -3,7 +3,7 @@ title: "fundManageR Cash Flow Waterfall\nHypothetical Facebook Seed Investment"
 author: "Alex Bresler"
 output: 
   html_notebook: 
-    css: ~/Desktop/semantic/dist/semantic.min.css
+    css: ~/Desktop/Semantic-UI/dist/semantic.css
     fig_width: 8
     highlight: tango
     theme: cosmo

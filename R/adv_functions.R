@@ -137,7 +137,7 @@ get_html_page <-
     httr::set_config(config(ssl_verifypeer = 0L))
     page <-
       url %>%
-      GET %>%
+      GET() %>%
       read_html()
     return(page)
   }
@@ -563,12 +563,12 @@ get_manager_sec_page <-
     httr::set_config(config(ssl_verifypeer = 0L))
     page_status <-
       url %>%
-      GET
+      GET()
 
     if (page_status$url == 'http://www.adviserinfo.sec.gov/IAPD/SearchNoResult.aspx') {
       idCRD <-
         url %>%
-        get_url_crd
+        get_url_crd()
 
       manager_df <-
         data_frame(idCRD,
@@ -6844,15 +6844,17 @@ get_crd_sections_data <-
       section_names %>% is_null
 
     if (all_sections) {
-      name_section_actual <-
+      section_names <-
         sitemap_df$nameSectionActual
     }
 
-    if (selection_null & all_sections == F) {
+    if (section_null &
+        all_sections == F) {
       stop("You must select a section, possibilties for this search are:\n" %>%
-             paste0(paste0(sitemap_df$nameSectionActual,collapse = '\n')))
+             paste0(paste0(
+               sitemap_df$nameSectionActual, collapse = '\n'
+             )))
     }
-
 
     get_adv_sections <-
       function(sitemap_df, all_sections) {
