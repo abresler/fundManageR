@@ -1,6 +1,12 @@
 ---
 title: "fundManageR ADV Function Examples"
-output: html_notebook
+output: 
+  html_notebook: 
+    css: ~/Desktop/semantic/dist/semantic.min.css
+    fig_height: 5
+    fig_width: 10
+    highlight: tango
+    theme: cosmo
 ---
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. Demonstrating some of [fundManageR](https://github.com/abresler/fundManageR)'s [ADV](http://www.investopedia.com/terms/a/advform.asp) data acquisition functions.
@@ -196,7 +202,7 @@ get_data_sec_adv_manager_sitemap() %>%
 ```
 
 
-In our Blackstone example the majority of our selected entites have billions of dollars in assets under mangement so acquiring data for every section and each entity will take some time, you can follow the functions progress in the messages.  The `get_data_adv_managers_filings` returns a list of nested data frames by entity manager and section; to make the data easier to explore upon scraping the default action is to save each section into the user's environment and we combine the brochure sections with a unique list of values describing the manager into a single data frame assigned to the environment as `managerDescription`, you can override this by setting flatten_tables to `FALSE`.
+In our Blackstone example the majority of our selected entities have billions of dollars in assets under management so acquiring data for every section and each entity will take some time, you can follow the functions progress in the messages.  The `get_data_adv_managers_filings` returns a list of nested data frames by entity manager and section; to make the data easier to explore upon scraping the default action is to save each section into the user's environment and we combine the brochure sections with a unique list of values describing the manager into a single data frame assigned to the environment as `managerDescription`, you can override this by setting flatten_tables to `FALSE`.
 
 ```{r manager_detail_search}
 blackstone_entity_df <- 
@@ -233,20 +239,20 @@ managerRecordLocations
 ```
 
 #### Other disclosures
-This section discloses any other relevent information the manager wishes to communicate to the SEC including certain details regarding data in the filing.
+This section discloses any other relevant information the manager wishes to communicate to the SEC including certain details regarding data in the filing.
 
 ```{r other_disclosures}
 managerOtherDisclosures
 ```
 
 #### Private Fund Reporting
-This section includes information about the underlying fund vehicles of a registered manager.  This may include information about the fund size, number of invesors, types of investors, distribution of ownership, details about third parties that service the fund [accountants, marketing agents, custodians, prime brokers, ect..] and any information about related parties to the fund [General Partner, Managing Member, ect..]
+This section includes information about the underlying fund vehicles of a registered manager.  This may include information about the fund size, number of investors, types of investors, distribution of ownership, details about third parties that service the fund [accountants, marketing agents, custodians, prime brokers, etc..] and any information about related parties to the fund [General Partner, Managing Member, etc..]
 
 ```{r private_funds}
 section7BPrivateFundReporting
 ```
 
-The private fund section is chocked full of great visualizable data, and to demonstrate we are going to crate a [treemap](https://en.wikipedia.org/wiki/Treemapping) visualization care of [Kenton Russell's](https://twitter.com/timelyportfolio) fantistic [d3treeR](https://twitter.com/timelyportfolio) package that will explore Blackstone's assets under management by fund type, fund manager, fund vehicle name, and number of fund investors.
+The private fund section is chocked full of great visualizable data, and to demonstrate we are going to crate a [treemap](https://en.wikipedia.org/wiki/Treemapping) visualization care of [Kenton Russell's](https://twitter.com/timelyportfolio) fantastic [d3treeR](https://twitter.com/timelyportfolio) package that will explore Blackstone's assets under management by fund type, fund manager, fund vehicle name, and number of fund investors.
 
 ```{r bx_treemap}
 library(treemap) # install.packages('treemap')
@@ -265,9 +271,45 @@ section7BPrivateFundReporting %>%
 ```
 
 ### Schedule A - Direct Owners
-This section includes information about the individuals and entities that own the registering entity, this includes ranged disclosures on percentage of ownership.  This information, along with Schedule B, are ideal uses for [Network Analysis]()
+This section includes information about the individuals and entities that own the registering entity, this includes ranged disclosures on percentage of ownership.  This information, along with Schedule B, are ideal uses for [Network Analysis](https://en.wikipedia.org/wiki/Network_theory).  We will even demonstrate a really quick and dirty network graph using [Rich Iannone's](https://twitter.com/riannone) [DiagrammeR](https://github.com/rich-iannone/DiagrammeR) package.
 ```{r schedule_a}
 sectionScheduleA # Direct Owners
+```
+
+
+```{r network_graph, fig.width=6}
+library(DiagrammeR) # install.packages("DiagrammeR")
+schedule_a <-
+  sectionScheduleA %>%
+  mutate_at(
+    .cols = c('nameEntityManager', 'nameCommonEntityOwnerManager'),
+    funs(. %>% str_replace_all('\\ ', '\n'))
+  )
+funds <- 
+  schedule_a %>% dplyr::select(nameEntityManager) %>% distinct %>% data.frame
+entities <- 
+  schedule_a %>% dplyr::select(nameCommonEntityOwnerManager) %>% distinct %>% data.frame
+
+create_graph() %>%
+  set_graph_name("blackstone_owners") %>%
+  set_global_graph_attrs(
+    "graph", "output", "visNetwork") %>%
+  add_nodes_from_table(
+    funds,
+    set_type = "fund",
+    label_col = "nameEntityManager") %>% 
+  add_nodes_from_table(
+    entities,
+    set_type = "person",
+    label_col = "nameCommonEntityOwnerManager") %>% 
+  add_edges_from_table(
+    schedule_a %>% data.frame,
+    from_col = "nameEntityManager",
+    from_mapping = "nameEntityManager",
+    to_col = "nameCommonEntityOwnerManager",
+    to_mapping = "nameCommonEntityOwnerManager"
+  ) %>%
+  visnetwork()
 ```
 
 ### Schedule B - Indirect Owners
@@ -277,7 +319,7 @@ sectionScheduleB # Indirect Owners
 ```
 
 ### Related Advisors
-This section includes disclosures on any advisor related to the filing entity, this may include CRD numbers and other descriptive information.
+This section includes disclosures on any adviser related to the filing entity, this may include CRD numbers and other descriptive information.
 
 ```{r realted_advisers}
 managerRelatedAdvisers
@@ -300,14 +342,15 @@ managerControlPublicEntities
 
 
 ### Control Persons
-This section includes information on control persons for any filing manager that is related to a public entitiy.
+This section includes information on control persons for any filing manager that is related to a public entity.
 
 ```{r control_persons}
-managerControlPersons # Websites
+managerControlPersons
 ```
 
 ### Website Information
-This section includes any website relatd to the filing manager.
+This section includes any website related to the filing manager.
+
 ```{r websites}
-managerWebsite # Websites
+managerWebsite
 ```

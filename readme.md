@@ -31,7 +31,7 @@ For `pdftools` you may need to follow the installation instructions [here](https
 
 ``` r
 packages <- 
-  c("curl", "curlconverter", "dplyr", "formattable", "httr", "jsonlite", 
+  c("curl", "curlconverter", "dplyr", "formattable", "httr", "jsonlite", 'devtools',
     "lazyeval", "lubridate", "magrittr", "pdftools", "purrr", "readr",  'quantmod',
     "readxl", "rvest", "stringi", "stringr", "tibble", "tidyr",
     "xml2")
@@ -88,7 +88,7 @@ In the future there may be a third family of functions that would allow one to e
 ### Vignettes
 
 -   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/210924_c49b0e612aee41bea1d3812fed93266a.html)
--   [ADV Function Tutorial -- Where is the money and sleuthing Blackstone](http://rstudio-pubs-static.s3.amazonaws.com/211145_0a649d99d5da4b219c2bd498f8c25430.html)
+-   [ADV Function Tutorial -- Where's the Money and Sleuthing Blackstone](http://rstudio-pubs-static.s3.amazonaws.com/211145_0a649d99d5da4b219c2bd498f8c25430.html)
 
 ### Coming Soon
 

@@ -1,5 +1,3 @@
-
-
 # other sec ---------------------------------------------------------------
 
 #' Get all data for all CIK registered entities
@@ -52,7 +50,7 @@ mutate_adv_data <-
     data <-
       data %>%
       mutate_at(.cols = data %>% dplyr::select(matches("^date")) %>% names,
-                funs(. %>% lubridate::ymd %>% as.Date)) %>%
+                funs(. %>% lubridate::ymd())) %>%
       mutate_at(.cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
                   dplyr::select(-matches("country")) %>%
                   names,
@@ -503,14 +501,14 @@ parse_sec_manager_pdf_url <-
       page %>%
       get_html_node_text(node_css = 'td:nth-child(2)') %>%
       str_trim() %>%
-      mdy %>%
+      lubridate::mdy() %>%
       suppressWarnings()
 
     dateLastConfirmed <-
       page %>%
       get_html_node_text(node_css = 'td:nth-child(3)') %>%
       str_trim() %>%
-      mdy %>%
+      lubridate::mdy() %>%
       suppressWarnings()
 
     urlPDFManagerADVBrochure <-
@@ -613,7 +611,7 @@ get_manager_sec_page <-
                   page %>%
                   html_nodes('#tbERAStatus td:nth-child(3)') %>%
                   html_text() %>%
-                  mdy %>%
+                  lubridate::mdy() %>%
                   as.character()
 
 
@@ -650,7 +648,7 @@ get_manager_sec_page <-
                   page %>%
                   html_nodes('#tbNtcStatus td:nth-child(2)') %>%
                   html_text() %>%
-                  mdy %>%
+                  lubridate::mdy() %>%
                   as.character()
 
                 table_df <-
@@ -690,7 +688,7 @@ get_manager_sec_page <-
                   page %>%
                   html_nodes('#tbRegStatus td:nth-child(3)') %>%
                   html_text() %>%
-                  mdy %>%
+                  lubridate::mdy() %>%
                   as.character()
 
                 table_df <-
@@ -773,7 +771,6 @@ get_manager_sec_page <-
 
         }
 
-
         manager_df <-
           manager_df %>%
           left_join(urlPDFManager %>%
@@ -815,9 +812,12 @@ get_managers_adv_metadata <-
         c(crd_urls)
     }
 
+    get_manager_sec_page_safe <-
+      possibly(get_manager_sec_page, NULL)
+
     sec_summary_data <-
       adv_urls %>%
-      map_df(get_manager_sec_page) %>%
+      map_df(get_manager_sec_page_safe) %>%
       suppressWarnings()
 
     search_data <-
@@ -1164,11 +1164,13 @@ get_managers_adv_sitemap_adv <-
       possibly(get_managers_adv_metadata, NULL)
     parse_adv_manager_sitemap_df_safe <-
       possibly(parse_adv_manager_sitemap_df, NULL)
+
     if (!idCRDs %>% is_null) {
       urls <-
         idCRDs %>%
         paste0('http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=',.)
     }
+
     if (!search_names %>% is_null) {
       manager_data <-
         search_names %>%
@@ -1180,10 +1182,12 @@ get_managers_adv_sitemap_adv <-
         manager_data %>%
         dplyr::filter(!urlManagerADV %>% is.na)
     }
+
     if ('urls' %>% exists & 'manager_data' %>% exists) {
       urls <-
         c(urls, manager_data$urlManagerADV %>% unique) %>% unique
     }
+
     if (idCRDs %>% is_null & 'manager_data' %>% exists) {
       urls <-
         manager_data$urlManagerADV %>% unique
@@ -1191,7 +1195,7 @@ get_managers_adv_sitemap_adv <-
 
     if ('urls' %>% exists & search_names %>% is_null) {
       manager_data <-
-        get_managers_adv_metadata(crd_ids = idCRDs, search_names = NULL)
+        get_managers_adv_metadata_safe(crd_ids = idCRDs, search_names = NULL)
 
       name_entity_manager <-
         manager_data$nameEntityManager
@@ -1218,6 +1222,7 @@ get_managers_adv_sitemap_adv <-
 
     return(sitemap_dfs)
   }
+
 
 get_type_manager_entity_owner_df <-
   function() {
@@ -2743,7 +2748,7 @@ get_section_4_data <-
                 off_set = 0,
                 is_numeric_node = F
               ) %>%
-              lubridate::mdy
+              lubridate::mdy()
             node_df <-
               node_df %>%
               mutate(dateSuccession)
@@ -4732,7 +4737,7 @@ get_schedule_a_data <-
                   .funs = as.logical) %>%
         mutate_at(.cols =
                     section_data %>% dplyr::select(matches("^date")) %>% names,
-                  .funs = lubridate::ymd)
+                  funs(. %>% lubridate::ymd()))
     }
 
     return(section_data %>% distinct())
@@ -4994,7 +4999,7 @@ get_schedule_b_data <-
                   .funs = as.logical) %>%
         mutate_at(.cols =
                     section_data %>% dplyr::select(matches("^date")) %>% names,
-                  .funs = lubridate::ymd)
+                  funs(. %>% lubridate::ymd()))
     }
 
     return(section_data %>% distinct())
@@ -5177,11 +5182,6 @@ get_schedule_d_data <-
                     mutate(locationSecondary = addressStreet1ManagerOfficeSecondary %>% paste0(' ', cityManagerOfficeSecondary, ', ', stateManagerOfficeSecondary, ' ', countryManagerOfficeSecondary, ' ', zipManagerOfficeSecondary))
                 }
               }
-
-              all_locations <-
-                all_locations %>%
-                dplyr::select(-matches("^NA")) %>%
-                dplyr::select(idCRD, nameEntityManager, countItem)
 
               if (return_wide) {
                 all_locations <-
@@ -5539,7 +5539,7 @@ get_schedule_d_data <-
                 control_person_df %>%
                 mutate_at(.cols =
                             control_person_df %>% dplyr::select(matches("^date")) %>% names,
-                          .funs = mdy) %>%
+                          funs(lubridate::mdy(.))) %>%
                 mutate_at(.cols =
                             control_person_df %>% dplyr::select(matches("^country[A-Z]|^name|^state|^city")) %>% names,
                           .funs = str_to_upper) %>%
@@ -5596,7 +5596,7 @@ get_schedule_d_data <-
                   mutate_at(
                     .cols =
                       control_person_df %>% dplyr::select(matches("^date")) %>% names,
-                    .funs = lubridate::mdy
+                    funs(lubridate::mdy(.))
                   )
               }
             } else {
@@ -5845,7 +5845,7 @@ get_manager_signatory_data <-
             data_frame(item = item_names,
                        value = nodes) %>%
             spread(item, value) %>%
-            mutate(dateADVFiling = dateADVFiling %>% lubridate::mdy)
+            mutate(dateADVFiling = dateADVFiling %>% lubridate::mdy())
         }
 
         if (nodes %>% length == 2) {
@@ -6001,7 +6001,7 @@ get_section_drp <-
               return(date_value)
             }) %>%
             flatten_chr %>%
-            lubridate::mdy %>%
+            lubridate::mdy() %>%
             as.character() %>%
             suppressWarnings()
 
@@ -7109,8 +7109,8 @@ return_selected_adv_tables <-
            all_sections,
            table_names,
            gather_data) {
-      table_names <-
-        data$nameTable %>% unique
+    table_names <-
+      data$nameTable %>% unique
     return_selected_adv_table <-
       function(data,
                table_name,
@@ -7307,8 +7307,8 @@ return_selected_adv_tables <-
     table_names %>%
       map(function(x) {
         return_selected_adv_table_safe(data = data,
-                                  table_name = x,
-                                  gather_data = gather_data)
+                                       table_name = x,
+                                       gather_data = gather_data)
       })
     invisible()
   }
@@ -7325,10 +7325,12 @@ return_selected_adv_tables <-
 #'
 #' @return
 #' @export
-#' @import dplyr formattable httr lubridate purrr readr rvest stringi stringr tibble tidyr curlconverter
+#' @import dplyr formattable httr purrr readr rvest stringi stringr tibble tidyr curlconverter lubridate
 #' @importFrom lazyeval as_name
 #' @importFrom curl curl_download
 #' @importFrom magrittr %>%
+#' @importFrom lubridate mdy
+#' @importFrom lubridate ymd
 #' @examples
 get_data_adv_managers_filings <-
   function(search_names = c('Blackstone Real Estate'),
@@ -7726,8 +7728,8 @@ get_data_adv_managers_brochures <-
       crds %>%
       map_df(function(x) {
         manager_pdf <-
-          get_manager_brochure_data(id_crd = x,
-                                    split_pages = split_pages)
+          get_manager_brochure_data_safe(id_crd = x,
+                                         split_pages = split_pages)
         paste0('idCRD: ', x, ' - ', 'Manager Brochure') %>% message
         return(manager_pdf)
       })
@@ -7762,7 +7764,7 @@ get_data_adv_period_urls <-
       paste0('https://www.sec.gov', .)
 
     date_data <-
-      url_zip %>% basename() %>% str_replace_all('ia|.zip', '') %>% mdy
+      url_zip %>% basename() %>% str_replace_all('ia|.zip', '') %>% lubridate::mdy()
 
     url_exempt_zip <-
       page %>%
@@ -7771,7 +7773,7 @@ get_data_adv_period_urls <-
       paste0('https://www.sec.gov', .)
 
     data_data_exempt <-
-      url_exempt_zip %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% mdy
+      url_exempt_zip %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% lubridate::mdy()
 
     if (return_wide) {
       url_df <-
@@ -8381,7 +8383,7 @@ parse_sec_adv_data_url <-
     setwd("~")
     options(scipen = 999999)
     date_data <-
-      url %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% mdy
+      url %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% lubridate::mdy()
 
     is_exempt <-
       url %>% str_detect("exempt")
@@ -8549,7 +8551,7 @@ parse_sec_adv_data_url <-
       adv_data <-
         adv_data %>%
         mutate_at(char_col,
-                  lubridate::mdy) %>%
+                  lubridate::mdy()) %>%
         suppressWarnings()
     }
 
@@ -8699,7 +8701,7 @@ get_data_adv_managers_periods_summaries <-
         all_adv_data %>%
         mutate_at(.cols =
                     all_adv_data %>% dplyr::select(matches("^date[A-Z]")) %>% names,
-                  .funs = ymd) %>%
+                  funs(. %>% lubridate::ymd())) %>%
         mutate_at(
           .cols =
             all_adv_data %>% dplyr::select(matches(
