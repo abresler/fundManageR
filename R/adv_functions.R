@@ -77,7 +77,7 @@ widen_adv_data <-
       data %>%
       mutate(
         countItem = countItem - 1,
-        countItem = countItem %>% as.character,
+        countItem = countItem %>% as.character(),
         countItem = ifelse(countItem == "0", '', countItem)
       ) %>%
       unite(item, nameItem, countItem, sep = '') %>%
