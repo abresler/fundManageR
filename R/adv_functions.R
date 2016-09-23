@@ -47,16 +47,37 @@ select_start_vars <-
 
 mutate_adv_data <-
   function(data) {
+    has_dates <-
+      data %>% dplyr::select(matches("^date")) %>% names %>% length > 0
+    if (has_dates) {
     data <-
       data %>%
-      mutate_at(.cols = data %>% dplyr::select(matches("^date")) %>% names,
-                funs(. %>% lubridate::ymd())) %>%
+      mutate_at(.cols =
+                  data %>% dplyr::select(matches("^date")) %>% names,
+                funs(. %>% lubridate::ymd()))
+    }
+    has_counts <-
+      data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>% dplyr::select(-matches("country")) %>%
+      names %>% length > 0
+
+    if (has_counts) {
+    data <-
+      data %>%
       mutate_at(.cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
                   dplyr::select(-matches("country")) %>%
                   names,
-                funs(. %>% as.numeric)) %>%
-      mutate_at(.cols = data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names,
-                funs(. %>% as.logical))
+                funs(. %>% as.numeric()))
+    }
+    has_logical <-
+      data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names %>% length > 0
+
+    if (has_logical) {
+    data <-
+      data %>%
+      mutate_at(.cols =
+                  data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names,
+                funs(. %>% as.logical()))
+    }
 
     return(data)
 
@@ -2150,7 +2171,7 @@ parse_funds_tables <-
           mutate_at(
             .cols =
               fund_table_data %>% dplyr::select(matches("^pct")) %>% names,
-            .funs = funs(. %>% as.numeric / 100)
+            .funs = funs(. %>% as.numeric() / 100)
           )
         fund_table_data <-
           fund_table_data %>%
@@ -2368,7 +2389,7 @@ get_section_1_data <-
       section_data %>%
       mutate_at(.cols =
                   section_data %>% dplyr::select(matches("^address|^city|^state|^country")) %>% names,
-                funs(. %>% str_to_upper))
+                funs(. %>% str_to_upper()))
 
     return(section_data)
   }
@@ -8816,7 +8837,7 @@ get_data_adv_managers_periods_summaries <-
             .cols =
               all_adv_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names,
             .funs =
-              funs(. %>% as.numeric %>% formattable::currency)
+              funs(. %>% as.numeric %>% formattable::currency())
           ) %>%
           arrange(dateDataADV, desc(amountAUMTotal)) %>%
           suppressWarnings()
