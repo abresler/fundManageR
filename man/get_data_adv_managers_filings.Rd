@@ -4,8 +4,8 @@
 \alias{get_data_adv_managers_filings}
 \title{Get detailed ADV form data for specified search name or CRD id}
 \usage{
-get_data_adv_managers_filings(search_names = c("Blackstone Real Estate"),
-  crd_ids = NULL, all_sections = T, section_names = c("Registration",
+get_data_adv_managers_filings(search_names = NULL, crd_ids = NULL,
+  all_sections = T, section_names = c("Registration",
   "Identifying Information", "Organization", "Successions",
   "Private Fund Reporting", "Direct Manager Owners", "Indirect Manager Owners",
   "Other Manager Information", "Manager Signatories"), flatten_tables = T,

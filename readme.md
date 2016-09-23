@@ -88,8 +88,8 @@ In the future there may be a third family of functions that would allow one to e
 
 ### Vignettes
 
--   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/211239_5ea9091444cd4200a998055ffde4ba94.html)
--   [ADV Function Tutorial -- Where's the Money and Sleuthing Blackstone](http://rstudio-pubs-static.s3.amazonaws.com/211145_0a649d99d5da4b219c2bd498f8c25430.html)
+-   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/211588_637e50c374464eeb831eea7eb234131a.html)
+-   [ADV Function Tutorial -- Where's the Money and Sleuthing Blackstone](http://rstudio-pubs-static.s3.amazonaws.com/211957_c50622d26dd34055b94673f0c24f1dce.html)
 
 ### Coming Soon
 

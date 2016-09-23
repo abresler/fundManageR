@@ -2330,16 +2330,20 @@ get_section_1_data <-
           business_data_df %>%
           spread(nameItem, value) %>%
           dplyr::select(one_of(column_order))
-        if ('addressStreet2OfficePrimary' %in% names(business_data_df)) {
+        has_secondary_office <-
+          'addressStreet2OfficePrimary' %in% names(business_data_df)
+        if (has_secondary_office) {
           business_data_df <-
             business_data_df %>%
             unite(addressStreet1OfficePrimary, addressStreet1OfficePrimary, addressStreet2OfficePrimary, sep = ' ')
         }
-        if (names(business_data_df) %>% str_count('^address|^city|^country|^state') %>% sum >= 4) {
+
+        has_office_location <-
+          names(business_data_df) %>% str_count('^address|^city|^country|^state') %>% sum >= 4
+        if (has_office_location) {
           business_data_df <-
             business_data_df %>%
-            mutate(locationOfficePrimary = addressStreet1OfficePrimary %>% paste0(' ', cityOfficePrimary, ', ', stateOfficePrimary, ' ', countryOfficePrimary, ' ', zipOfficePrimary),
-                   locationOfficePrimary = locationOffice %>% str_to_upper)
+            mutate(locationOfficePrimary = addressStreet1OfficePrimary %>% paste0(' ', cityOfficePrimary, ', ', stateOfficePrimary, ' ', countryOfficePrimary, ' ', zipOfficePrimary) %>% str_to_upper())
         }
         if (business_data_df$idLEI == 'A legal entity identifier') {
           business_data_df <-
@@ -5737,7 +5741,7 @@ get_schedule_d_data <-
           parse_for_manager_website_data_safe()
 
         parse_public_control_persons_safe <-
-          possibily(parse_public_control_persons, NULL)
+          possibly(parse_public_control_persons, NULL)
 
         public_control_df <-
           page %>%
@@ -6423,7 +6427,7 @@ get_section_drp <-
                   is_date = F,
                   is_employment_firm = F,
                   replace_words = NA,
-                  filter_words = c('\\^8.')
+                  filter_words = c('^8.')
                 ),
                 generate_table_name_df(
                   item_name = 'dateResolution',
@@ -7376,7 +7380,7 @@ return_selected_adv_tables <-
 #' @examples
 #' get_data_adv_managers_filings(search_names = c('Blackstone Real Estate'), crd_ids = NULL, all_sections = T,  section_names = NULL, flatten_tables = T, gather_data = F, assign_to_enviornment = T)
 get_data_adv_managers_filings <-
-  function(search_names = c('Blackstone Real Estate'),
+  function(search_names = NULL,
            crd_ids = NULL,
            all_sections = T,
            section_names = c(
@@ -7413,6 +7417,12 @@ get_data_adv_managers_filings <-
         'curlconverter'
       )
     suppressMessages(lapply(packages, library, character.only = T))
+
+    nothing_entered <-
+      (crd_ids %>% is_null()) & (search_names %>% is_null())
+    if (nothing_entered) {
+      stop("Please enter a CRD ID or a search name")
+    }
 
     get_search_crd_ids_safe <-
       possibly(get_search_crd_ids, NULL)

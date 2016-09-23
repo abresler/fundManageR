@@ -1,5 +1,5 @@
 ---
-title: "fundManageR ADV Function Vignette\nFund Manager Summary Exploration\nDetailed Sleuthing of The Blackstone Group"
+title: "fundManageR ADV Function Vignette -- Fund Manager Summary Exploration and A Detailed Sleuthing of The Blackstone Group"
 output: 
   html_notebook: 
     css: ~/Desktop/Semantic-UI/dist/semantic.css
@@ -7,13 +7,15 @@ output:
     highlight: tango
     theme: cosmo
 ---
+
 ### Introduction
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. Demonstrating some of [fundManageR](https://github.com/abresler/fundManageR)'s [ADV](http://www.investopedia.com/terms/a/advform.asp) data acquisition functions.
 
 ### Setup
 ```{r results='hide', message=FALSE, warning=FALSE}
-packages <- c('fundManageR', 'dplyr', 'tidyr', 'purrr', 'formattable', 'stringr')
+packages <-
+  c('fundManageR', 'tidyverse','formattable', 'stringr')
 lapply(packages, library, character.only = T)
 ```
 
@@ -137,7 +139,8 @@ ct_validation_test %>%
 
 It looks like `buergerm` *has* authored some of the PDFs that we KNOW are related to Blackstone, there for it is safe to say CT Investment Management is indeed a related party to Blackstone. Entity resolved!
 
-#### Text Analysis -- Parse out Blackstone's Management Fees and Tiered Management Fees
+### Text Analysis -- Parse out Blackstone's Management Fees and Tiered Management Fees
+
 One of the most nontransparent aspects of the investment management industry is the lack of transparency around fee structures.  Unlike say sports, there is no stat line for this data.  The data itself isn't even standardized, meaning the way it is described, even if it is the same thing, varies!  Thankfully `fundManageR` gives us a tool try to discover this *deep data*. We can parse our OCR'd brochure text and use the [tidytext](https://github.com/juliasilge/tidytext) package developed by [Julia Silge](https://twitter.com/juliasilge) and [David Robinson](https://twitter.com/drob) to slice and dice to the data to allow us to try to find the disclosed management fee structures.
 
 First thing we have to do is tokenize the paragraphs into sentences.  We then want to try to determine if a sentence has a possible fee reference.  To do that we will `stringr` and it's `str_detect` function with a list of management fee hit words, the most important of which being a % sign.  Once completed we will take those sentence, tokenize them to words and look for a number less than 5 knowing management fees are generally between 1% and 5%.  This is by no means a magic bullet to discover all disclosed management fees but it should be good enough to get us a bunch of possible juicy information without having to read thousands of pages of boring disclosure text.
@@ -234,16 +237,19 @@ managerRegulatoryCRD
 
 #### Private Fund Reporting
 This table contains information about the underlying fund vehicles of a registered manager.  This may include information about the fund size, number of investors, types of investors, distribution of ownership, details about third parties that service the fund [accountants, marketing agents, custodians, prime brokers, etc..] and any information about related parties to the fund [General Partner, Managing Member, etc..]
+
 ```{r private_funds}
 section7BPrivateFundReporting
 ```
 
 #### Sample Data Visualization 
-The private fund section is chocked full of great visualizable data, and to demonstrate we are going to crate a [treemap](https://en.wikipedia.org/wiki/Treemapping) visualization care of [Kenton Russell's](https://twitter.com/timelyportfolio) fantastic [d3treeR](https://twitter.com/timelyportfolio) package that will explore Blackstone's assets under management by fund type, fund manager, fund vehicle name, and number of fund investors.
+The private fund section is chocked full of great visualizable data, and to demonstrate we are going to create a [treemap](https://en.wikipedia.org/wiki/Treemapping) visualization care of [Kenton Russell's](https://twitter.com/timelyportfolio) fantastic [d3treeR](https://twitter.com/timelyportfolio) package that will explore Blackstone's assets under management by fund type, fund manager, fund vehicle name, and number of fund investors.
+
 ```{r bx_treemap}
 library(treemap) # install.packages('treemap')
 library(d3treeR) # devtools::install_github("timelyportfolio/d3treeR")
-section7BPrivateFundReporting %>% 
+treemap_viz <- 
+  section7BPrivateFundReporting %>% 
   mutate(nameFund = nameFund %>% str_replace_all('\\ ','\n')) %>% 
   treemap(
     index = c("typeFund",'nameEntityManager', "nameFund"),
@@ -256,6 +262,10 @@ section7BPrivateFundReporting %>%
   d3tree2(rootname = "Blackstone Vehicles")
 ```
 
+
+```{r treemap_viz}
+treemap_viz
+```
 ### Schedule A - Direct Owners
 This table contains information about the individuals and entities that own the registering entity, this includes ranged disclosures on percentage of ownership.  This information, along with Schedule B, are ideal uses for [Network Analysis](https://en.wikipedia.org/wiki/Network_theory).  We can prove this with a really quick and dirty network graph of all of our Blackstone entities primary owners using [Rich Iannone's](https://twitter.com/riannone) [DiagrammeR](https://github.com/rich-iannone/DiagrammeR) package.
 
@@ -272,31 +282,29 @@ schedule_a <-
     .cols = c('nameEntityManager', 'nameCommonEntityOwnerManager'),
     funs(. %>% str_replace_all('\\ ', '\n'))
   )
-funds <- 
+funds <-
   schedule_a %>% dplyr::select(nameEntityManager) %>% distinct %>% data.frame
-entities <- 
+entities <-
   schedule_a %>% dplyr::select(nameCommonEntityOwnerManager) %>% distinct %>% data.frame
 
 create_graph() %>%
   set_graph_name("blackstone_owners") %>%
-  set_global_graph_attrs(
-    "graph", "output", "visNetwork") %>%
-  add_nodes_from_table(
-    funds,
-    set_type = "fund",
-    label_col = "nameEntityManager") %>% 
-  add_nodes_from_table(
-    entities,
-    set_type = "person",
-    label_col = "nameCommonEntityOwnerManager") %>% 
+  set_global_graph_attrs("graph", "output", "visNetwork") %>%
+  add_nodes_from_table(funds,
+                       set_type = "fund",
+                       label_col = "nameEntityManager") %>%
+  add_nodes_from_table(entities,
+                       set_type = "person",
+                       label_col = "nameCommonEntityOwnerManager") %>%
   add_edges_from_table(
-    schedule_a %>% data.frame,
+    schedule_a %>% dplyr::select(nameEntityManager, nameCommonEntityOwnerManager) %>% data.frame(stringsAsFactors = F),
     from_col = "nameEntityManager",
     from_mapping = "nameEntityManager",
     to_col = "nameCommonEntityOwnerManager",
     to_mapping = "nameCommonEntityOwnerManager"
   ) %>%
   visnetwork()
+
 ```
 
 ### Schedule B - Indirect Owners
@@ -305,7 +313,7 @@ This table contains information on the owners of any Schedule A owner that is an
 ```{r schedule_b}
 sectionScheduleB # Indirect Owners
 ```
-
+  
 ### Related Advisors
 This table contains disclosures on any adviser related to the filing entity, this may include CRD numbers and other descriptive information.  This section is ideal to get a full understanding of related entities.
 
@@ -354,6 +362,6 @@ managerWebsite
 
 That wraps up the data that is returned from a deep dive into a filing manager.  Keep in mind not every manager is required to file each section of the form so you may not get all these sections for each manager.
 
-### Conculussion
+### Conclusion
 
 I hope this give you a good quick overview of how these ADV functions work.  This is an extremely powerful dataset that opens up wide-scale consumption of important information that was once impossible to access.  Over the next month I intend to release a few more tutorials using this data but in the meantime I hope people make use these functions and share some of their findings!
