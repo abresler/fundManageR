@@ -106,7 +106,7 @@ In a future release there will be a third class of functions centering around th
 ### Vignettes
 
 * [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/211588_637e50c374464eeb831eea7eb234131a.html)
-* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211957_cec746cbf0cb4232b857e6fa5f49184c.html)
+* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211957_2ab9d98c70ac4fdc9c1672f0924177b0.html)
 
 ### Coming Soon
 * `visualize_` suite of functions.
