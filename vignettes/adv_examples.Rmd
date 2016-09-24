@@ -82,7 +82,7 @@ possible_bx_companies %>%
   formattable()
 ```
 
-Wow, Blackstone may have up to 34 SEC registered entities.  Let's try to whittle this list down and find only entities we can be sure are related to Blackstone.  We can make a best guess human judgment and xclude any entity on a completely different floor and with a unique website that doesn't refer to Blackstone or its known {by me, Alx Bresler} affiliates.  Using this logic we eliminate, DBX/Deutsche, and Wafra.  Further, I want to exclude any entity, even if it is part of Blackstone, that had no reported capital this period.
+Wow, Blackstone may have up to 34 SEC registered entities.  Let's try to whittle this list down and find only entities we can be sure are related to Blackstone.  We can make a best guess human judgment and exclude any entity on a completely different floor and with a unique website that doesn't refer to Blackstone or its known {by me, Alx Bresler} affiliates.  Using this logic we eliminate, DBX/Deutsche, and Wafra.  Further, I want to exclude any entity, even if it is part of Blackstone, that had no reported capital this period.
 
 ```{r possible_bx}
 possible_bx_companies <-
@@ -98,7 +98,7 @@ possible_bx_companies %>%
   formattable()
 ```
 
-Excellent, we now have a list of 28 managers that we either know, or have a good degree of certainity around being part of Blackstone.  Lets see what `fundmanageR` will help us discover. We want to store the list of Blackstone CRDs into a vector that we can use to iterate through some of `fundManageR's` work horse ADV functions.
+Excellent, we now have a list of 28 managers that we either know, or have a good degree of certainty around being part of Blackstone.  Lets see what `fundmanageR` will help us discover. We want to store the list of Blackstone CRDs into a vector that we can use to iterate through some of `fundManageR's` work horse ADV functions.
 
 ```{r bx_crds}
 blackstone_crds <- 
@@ -122,7 +122,7 @@ blackstone_brochure_data <-
 #### Entity Resolution
 One name, `CT INVESTMENT MANAGEMENT CO., LLC` sticks out from our prior analysis.  It is unclear if this entity is related to Blackstone, none of the prior validation assumptions apply but we also are unable to eliminate it from our list.  One important thing to remember is that there is no one specific way to perform entity resolution, in fact there are countless possibly methods, the key is to be confident that which ever methods you use provides you with results you feel comfortable with.  One great feature of `fundManageR` ADV functions is they provide many possible ways to perform entity resolution.  In this example we are going to explore using PDF file metadata to see if we can resolve this entity to Blackstone.
 
-One fantastic feature of the [pdftools](https://github.com/ropensci/pdftools) package is it's metadata extraction capabilities, a feature `fundManageR` utlizes.  When a PDF file is processed we unearth a host of fields describing who, what, when, where and how a PDF file was created.  One powerful field that may be given to us is a PDF author field.  It is safe to say if we find the person who created CT INVESTMENT MANAGEMENT's filed brochure and their name appears in the metadata of a brochure we know to be a Blackstone relatd entity that CT is related to Blackstone. 
+One fantastic feature of the [pdftools](https://github.com/ropensci/pdftools) package is it's metadata extraction capabilities, a feature `fundManageR` utilizes.  When a PDF file is processed we unearth a host of fields describing who, what, when, where and how a PDF file was created.  One powerful field that may be given to us is a PDF author field.  It is safe to say if we find the person who created CT INVESTMENT MANAGEMENT's filed brochure and their name appears in the metadata of a brochure we know to be a Blackstone related entity that CT is related to Blackstone. 
 
 ```{r ct_author}
 ct_author <- 
@@ -143,7 +143,7 @@ ct_validation_test <-
 ct_validation_test
 ```
 
-It looks like `buergerm` *has* authored some of the PDFs that we KNOW are related to Blackstone which is pretty conclusive evidence that CT INVESTMENT MANAGEMENT is a Blackston related manager.
+It looks like `buergerm` *has* authored some of the PDFs that we KNOW are related to Blackstone which is pretty conclusive evidence that CT INVESTMENT MANAGEMENT is a Blackstone related manager.
 
 ### Text Analysis -- Parse out Blackstone's Management Fees and Tiered Management Fees
 
@@ -151,7 +151,7 @@ One of the most nontransparent aspects of the investment management industry is 
 
 One of the most exciting features of `fundManageR` is that it gives us a tool try to discover this *deep data*. We can parse our OCR'd brochure text and use the [tidytext](https://github.com/juliasilge/tidytext) package developed by [Julia Silge](https://twitter.com/juliasilge) and [David Robinson](https://twitter.com/drob) to slice and dice the text data to zero in on fee structure.
 
-In ordr to do this we must [tokenize](https://en.wikipedia.org/wiki/Tokenization_(lexical_analysis)) the paragraph text into sentences.  We then want to try to determine if a sentence has a possible fee reference.  To do that we will `stringr` and it's `str_detect` function with a list of management fee hit words, the most important of which being a % sign.  Once completed we will take those sentence, tokenize them again into words and look for a number less than or equal to 5 knowing management fees are generally between 1% and 5%.  
+In order to do this we must [tokenize](https://en.wikipedia.org/wiki/Tokenization_(lexical_analysis)) the paragraph text into sentences.  We then want to try to determine if a sentence has a possible fee reference.  To do that we will `stringr` and it's `str_detect` function with a list of management fee hit words, the most important of which being a % sign.  Once completed we will take those sentence, tokenize them again into words and look for a number less than or equal to 5 knowing management fees are generally between 1% and 5%.  
 
 This workflow is by no means a magic bullet to discover all disclosed management fees but it puts into code enough domain knowledge driven information to hopefully extract out some of the juicy data hidden in the thousands of pages of PDF documents we just scraped.
 
@@ -218,7 +218,7 @@ The `get_data_adv_managers_filings` returns a list of nested data frames by enti
 
 #### What Can We Learn About Blackstone?
 
-The majority our 28 Blackstone related entities have billions of dollars in assets under management so acquiring data for every section and entity will a while, you can follow the functions progress in the messages but if you recrate this code, sit back, relax, and just please be patient.
+  The majority our 28 Blackstone related entities have billions of dollars in assets under management so acquiring data for every section and entity will a while, you can follow the functions progress in the messages but if you recreate this code, sit back, relax, and just please be patient.
 
 ```{r manager_detail_search}
 blackstone_entity_df <- 
