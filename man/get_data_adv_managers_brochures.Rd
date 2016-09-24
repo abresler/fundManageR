@@ -4,8 +4,8 @@
 \alias{get_data_adv_managers_brochures}
 \title{Get manager ADV brochure}
 \usage{
-get_data_adv_managers_brochures(search_names = c("137 Ventures", "Divco"),
-  crd_ids = NULL, split_pages = T)
+get_data_adv_managers_brochures(search_names = NULL, crd_ids = NULL,
+  split_pages = T)
 }
 \arguments{
 \item{search_names}{Names of the companies you want to search}

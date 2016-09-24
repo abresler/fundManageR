@@ -2116,8 +2116,7 @@ parse_funds_tables <-
   function(page,
            table_css_node_df = table_css_node_df,
            section_matrix_df = section_matrix_df,
-           return_message = T) {
-
+           return_message = T)  {
     parse_fund_table <-
       function(page,
                table_number = 1,
@@ -2163,16 +2162,28 @@ parse_funds_tables <-
           mutate(numberFund = table_number) %>%
           dplyr::select(numberFund, everything())
 
-        fund_table_data <-
-          fund_table_data %>%
-          mutate_at(.cols =
-                      fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names,
-                    .funs = as.numeric) %>%
-          mutate_at(
-            .cols =
-              fund_table_data %>% dplyr::select(matches("^pct")) %>% names,
-            .funs = funs(. %>% as.numeric() / 100)
-          )
+        has_amount <-
+          fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names %>% length > 0
+
+        if (has_amount) {
+          fund_table_data <-
+            fund_table_data %>%
+            mutate_at(.cols =
+                        fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names,
+                      .funs = as.numeric)
+
+        }
+        has_percent <-
+          fund_table_data %>% dplyr::select(matches("^pct")) %>% names %>% length > 0
+        if (has_percent) {
+          fund_table_data <-
+            fund_table_data %>%
+            mutate_at(
+              .cols =
+                fund_table_data %>% dplyr::select(matches("^pct")) %>% names,
+              .funs = funs(. %>% as.numeric() / 100)
+            )
+        }
         fund_table_data <-
           fund_table_data %>%
           left_join(response_df) %>%
@@ -3950,19 +3961,8 @@ get_section_7b_data <-
 
           if (return_message) {
             total_aum <-
-              all_data$amountFundGrossAUM %>% sum %>% formattable::currency()
-          }
+              all_data$amountFundGrossAUM %>% sum(na.rm = T) %>% formattable::currency()
 
-          if (return_wide) {
-            all_data <-
-              all_data %>%
-              dplyr::rename(countItem = numberFund) %>%
-              widen_adv_data() %>%
-              mutate_adv_data()
-
-          }
-
-          if (return_message) {
             "Parsed " %>%
               paste0(
                 name_entity_manager,
@@ -3975,6 +3975,14 @@ get_section_7b_data <-
               message()
           }
 
+          if (return_wide) {
+            all_data <-
+              all_data %>%
+              dplyr::rename(countItem = numberFund) %>%
+              widen_adv_data() %>%
+              mutate_adv_data()
+
+          }
         } else {
           all_data <-
             data_frame(nameEntityManager = name_entity_manager)
@@ -7767,7 +7775,7 @@ get_manager_brochure_data <-
 #' @examples
 #' get_data_adv_managers_brochures(search_names = c('137 Ventures', 'Divco'), crd_ids = NULL, split_pages = T))
 get_data_adv_managers_brochures <-
-  function(search_names = c('137 Ventures', 'Divco'),
+  function(search_names = NULL,
            crd_ids = NULL,
            split_pages = T) {
     packages <-
@@ -7790,7 +7798,11 @@ get_data_adv_managers_brochures <-
         'curlconverter'
       )
     suppressMessages(lapply(packages, library, character.only = T))
-
+    nothing_entered <-
+      (crd_ids %>% is_null()) & (search_names %>% is_null())
+    if (nothing_entered) {
+      stop("Please enter a CRD ID or a search name")
+    }
     get_search_crd_ids_safe <-
       possibly(get_search_crd_ids, NULL)
 
