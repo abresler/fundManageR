@@ -2104,7 +2104,7 @@ get_section_matrix_df <-
           'nameFundMarketer',
           'idSECFundMarketer',
           'idCRDFundMarketer',
-          'locationFundMarkter',
+          'locationFundMarketer',
           'urlFundMarketer'
 
         )
