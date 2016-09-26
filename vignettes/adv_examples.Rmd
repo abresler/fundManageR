@@ -1,5 +1,5 @@
 ---
-title: "fundManageR ADV Function Vignette, Sleuthing The Blackstone Groups"
+title: "fundManageR ADV Function Vignette, Sleuthing The Blackstone Group"
 output: 
   html_notebook: 
     css: ~/Desktop/Semantic-UI/dist/semantic.css
@@ -21,14 +21,14 @@ lapply(packages, library, character.only = T)
 
 ### Explore Most Recent ADV Filing Summary
 
-To initiate the to tutorial we are going to explore the summary data filed with the SEC as of September 1st, 2016.  To acquire the data run the `get_data_adv_managers_current_period_summary` function.
+Lets start this tutorial exploring some big picture information, specifically summary data filed with the SEC as of September 1st, 2016.  To acquire the data run the `get_data_adv_managers_current_period_summary` function.
 
 ```{r most_recent}
 most_recent_data <-
   get_data_adv_managers_current_period_summary(file_directory = NULL)
 ```
 
-The data should be loaded in to your environment allowing us to embark on some explorations.
+The data should be loaded in to your environment allowing us to commence our analysis.  To get started lets find the country's 15 largest investment managers by Total AUM and explore the distribution of managed capital by state.
 
 #### Top 15 Asset Managers by AUM
 ```{r top_5_table}
@@ -52,11 +52,22 @@ most_recent_data %>%
   formattable()
 ```
 
-There is so much more we can do exploring the summary data which will be detailed in the near future in another vignette but now lets move on and explore detailed information about some managers.
+There is so much more we can do exploring the summary data, a subject I will explore in another tutorial or [blog post](http://asbcllc.com/blog) in the near future but now let's move on into a deeper dive of one of the world's most prominent investment managers.
 
 ## Sleuthing Blackstone
 
-In this example we will use `fundManageR` to deep dive as much information as we can find about entities related to [The Blackstone Group](https://en.wikipedia.org/wiki/The_Blackstone_Group).  In this example I will leverage some intelligence I have about Blackstone, like their office location at 345 Park Avenue, their website `blackstone.com` and their ownership of [GSO Capital Partners](https://en.wikipedia.org/wiki/GSO_Capital_Partners)
+[The Blackstone Group](https://en.wikipedia.org/wiki/The_Blackstone_Group) is one of the most powerful and important players in global finance.  Despite being a public company, much of the company's inner workings are difficult are to come by, something `fundManageR` will help us with.  We will leverage the package's manager adv functions combined with some specific author human intelligence including known affiliates, i.e. Blackstone owns [GSO Capital](https://en.wikipedia.org/wiki/GSO_Capital_Partners), to achieving the following goals:
+
+
+* Resolve Blackstone's affiliated fund managers
+* Use text processing to unearth management fee structures
+* Explore assets under management by type
+* Visualize direct owners of each fund manager
+* Explore all the information `fundManageR` gives about Blackstone
+
+### Blackstone Affilliates.
+
+Here were are going to take the master list of all filing managers and eliminate everything but possible Blackstone entities.  To help do this we will leverage knowing that Blackstone's primary office is at 345 Park Avenue in Manhattan, that they are affiliated with GSO Capital, the company sometimes uses a BREP pseudonym for *Blackstone Real Estate Partners* and that their website is [blackstone.com](blackstone.com)
 
 ```{r search_for_bx}
 possible_bx_companies <- 
@@ -82,7 +93,9 @@ possible_bx_companies %>%
   formattable()
 ```
 
-Wow, Blackstone may have up to 34 SEC registered entities.  Let's try to whittle this list down and find only entities we can be sure are related to Blackstone.  We can make a best guess human judgment and exclude any entity on a completely different floor and with a unique website that doesn't refer to Blackstone or its known {by me, Alx Bresler} affiliates.  Using this logic we eliminate, DBX/Deutsche, and Wafra.  Further, I want to exclude any entity, even if it is part of Blackstone, that had no reported capital this period.
+### Possible Blackstone Entities to Resolve
+
+Blackstone may have up to 34 SEC registered entities.  Let's try to whittle this list down and find only entities we can be sure are related to Blackstone.  We can make a best guess human judgment and exclude any entity on a completely different floor and with a unique website that doesn't refer to Blackstone or its known {by me, Alx Bresler} affiliates. Using this logic we eliminate, DBX/Deutsche, and Wafra.  Finally, I want to exclude any entity, even if it is part of Blackstone, that had no reported capital.
 
 ```{r possible_bx}
 possible_bx_companies <-
@@ -93,12 +106,14 @@ possible_bx_companies <-
   dplyr::filter(amountAUMTotal > 0) # exclude managers with no AUM
 ```
 
+### Blackstone Entities to Resolve
+
 ```{r bx_table}
 possible_bx_companies %>% 
   formattable()
 ```
 
-Excellent, we now have a list of 28 managers that we either know, or have a good degree of certainty around being part of Blackstone.  Lets see what `fundmanageR` will help us discover. We want to store the list of Blackstone CRDs into a vector that we can use to iterate through some of `fundManageR's` work horse ADV functions.
+Excellent, we now have a list of 28 managers that we either know, or have a good degree of certainty may be a part of Blackstone.  Lets see what `fundmanageR` will help us discover. To make things easier  lets store the list of Blackstone CRDs into a vector that we can use to iterate through`fundManageR`.
 
 ```{r bx_crds}
 blackstone_crds <- 
@@ -106,7 +121,7 @@ blackstone_crds <-
 ```
 
 
-### Part 1: Resolve Unknown Possible Blackstone Entities and Explore Manager Brochure PDF Filings
+### Resolve Unknown Possible Blackstone Entities and Explore Manager Brochure PDF Filings
 
 The package allows users to explore any manager's most recent [Part 2](https://www.sec.gov/answers/formadv.htm) brochure filings.  The functions allow you to explore a PDF's metadata and it's underlying text.  This function can be useful for tasks including: text extraction, sentiment analysis, and entity resolution.  Let's demonstrate
 
@@ -120,9 +135,13 @@ blackstone_brochure_data <-
 ```
 
 #### Entity Resolution
-One name, `CT INVESTMENT MANAGEMENT CO., LLC` sticks out from our prior analysis.  It is unclear if this entity is related to Blackstone, none of the prior validation assumptions apply but we also are unable to eliminate it from our list.  One important thing to remember is that there is no one specific way to perform entity resolution, in fact there are countless possibly methods, the key is to be confident that which ever methods you use provides you with results you feel comfortable with.  One great feature of `fundManageR` ADV functions is they provide many possible ways to perform entity resolution.  In this example we are going to explore using PDF file metadata to see if we can resolve this entity to Blackstone.
+One name, `CT INVESTMENT MANAGEMENT CO., LLC` sticks out from our prior analysis.  It is unclear if this entity is related to Blackstone, none of the prior validation assumptions apply but we also are unable to eliminate it from our list.  
 
-One fantastic feature of the [pdftools](https://github.com/ropensci/pdftools) package is it's metadata extraction capabilities, a feature `fundManageR` utilizes.  When a PDF file is processed we unearth a host of fields describing who, what, when, where and how a PDF file was created.  One powerful field that may be given to us is a PDF author field.  It is safe to say if we find the person who created CT INVESTMENT MANAGEMENT's filed brochure and their name appears in the metadata of a brochure we know to be a Blackstone related entity that CT is related to Blackstone. 
+One important thing to remember is that there is no one specific way to perform entity resolution, in fact there are countless possibly methods, the key is to be confident that which ever methods you use provides you with results you feel comfortable with.  One great feature of `fundManageR` ADV functions is they provide many possible ways to perform entity resolution.  In this example we are going to explore using PDF file metadata in attempt to resolve the unknown entity.
+
+A fantastic feature of the [pdftools](https://github.com/ropensci/pdftools) package is it's metadata extraction capabilities, something `fundManageR` utilizes.  When a PDF file is processed we unearth a host of fields describing who, what, when, where and how a PDF file was created.  One powerful item that may be disclosed is the PDF author field.  It is safe to say if we find the person who created CT INVESTMENT MANAGEMENT's filed brochure and their name appears in the metadata of a brochure we know to be a Blackstone related entity that CT is related to Blackstone. 
+
+Lets do it.
 
 ```{r ct_author}
 ct_author <- 
@@ -143,17 +162,17 @@ ct_validation_test <-
 ct_validation_test
 ```
 
-It looks like `buergerm` *has* authored some of the PDFs that we KNOW are related to Blackstone which is pretty conclusive evidence that CT INVESTMENT MANAGEMENT is a Blackstone related manager.
+It looks like `buergerm` *has* authored some PDFs are *known* Blackstone affiliates giving conclusive evidence that CT INVESTMENT MANAGEMENT is a Blackstone affiliated manager and one we can keep in our list as we continue to explore the company.
 
-### Text Analysis -- Parse out Blackstone's Management Fees and Tiered Management Fees
+### Text Analysis -- Unearthing Management Fees and Tiered Fee Structures
 
-One of the most nontransparent aspects of the investment management industry is the lack of information around fee structures.  Unlike say sports, there is no stat line for this data.  The data itself isn't even standardized, meaning the way it is described, even if it is the same thing, varies!  It is even common practice that the investors in the same fund may not know the fee structure given to their fellow investors!!
+One of the most nontransparent aspects of the investment management industry is the lack of information around fee structures.  Unlike say sports, there is no stat line OR clearinghouse for this data.  The data itself isn't standardized, meaning the way it is described, even if it refers to the same thing, varies, a good analogy is imagine if the game of Basketball had 50 different ways to describe what a 3 point shot is.   One sad side effect of this paradigm is that it is common practice for investors in the *same fund* to not know the exact terms fellow investors were given by the fund manager.
 
-One of the most exciting features of `fundManageR` is that it gives us a tool try to discover this *deep data*. We can parse our OCR'd brochure text and use the [tidytext](https://github.com/juliasilge/tidytext) package developed by [Julia Silge](https://twitter.com/juliasilge) and [David Robinson](https://twitter.com/drob) to slice and dice the text data to zero in on fee structure.
+A feature of `fundManageR` that I am extremely proud of is is that it gives us a tool try to discover this *deep data*. We can parse our OCR'd brochure text and use the [tidytext](https://github.com/juliasilge/tidytext) package developed by [Julia Silge](https://twitter.com/juliasilge) and [David Robinson](https://twitter.com/drob) to slice and dice the text data to zero in on fee structure that a fund's investors may not even know!
 
 In order to do this we must [tokenize](https://en.wikipedia.org/wiki/Tokenization_(lexical_analysis)) the paragraph text into sentences.  We then want to try to determine if a sentence has a possible fee reference.  To do that we will `stringr` and it's `str_detect` function with a list of management fee hit words, the most important of which being a % sign.  Once completed we will take those sentence, tokenize them again into words and look for a number less than or equal to 5 knowing management fees are generally between 1% and 5%.  
 
-This workflow is by no means a magic bullet to discover all disclosed management fees but it puts into code enough domain knowledge driven information to hopefully extract out some of the juicy data hidden in the thousands of pages of PDF documents we just scraped.
+This workflow is by no means a magic bullet to discover all disclosed management fees but it puts into code enough domain knowledge driven information to hopefully extract out some of the juicy data hidden in the thousands of pages of PDF documents we just scraped and should give us a good understanding of the various fee structures Blackstone charges its investors.
 
 ```{r tokenize}
 library(tidytext) ## devtools::install_github(juliasilge/tidytext)
@@ -176,13 +195,13 @@ possible_fees <-
   dplyr::filter(word <= 5) # look for numbers <=
 ```
 
-Let's explore our results
+### Potential Management Fee References
 
 ```{r possible_fee_locations}
 possible_fees
 ```
 
-Looks pretty good but let's invest some time reading the context of each sentence to see if our hacked up algorithm worked.  We can use the fantastic ```purrr``` package's `map` function to iterate through the sentences and show us the sentence text.
+Looks good but we invest some time reading the context of each sentence to see if our hacked up algorithm produced results that make sense.  We can use the fantastic ```purrr``` package's `map` function to iterate through the sentences, show us the sentence text and we can then use our own common sense to judge the results.
 
 ```{r fee_results}
 possible_fees$idSentence %>%
@@ -200,25 +219,27 @@ possible_fees$idSentence %>%
   message
 ```
 
-#### Bravo, This Really Worked
-While we may have missed some fee disclosures that used strange syntax, anything with basic language around management fees we EASILY discovered in a matter of minutes!  We could take this workflow and apply this to any asset manager to discover management fees or modify it a bit and look for promote structures.  Information that VERY few people have and is not easy to discover using this package now this data is at your finger tips within a few function calls!
+### We Did It
+While we may have missed some fee disclosures that used strange syntax, anything with basic language around management fees we EASILY discovered!  We could take this workflow and apply this to any asset manager to discover management fees or modify it a bit and look for promote structures.  Information that VERY few people have and generally is extremely difficult to find we can empower ourselves with in only a few lines of cde.
 
-### Part 2 - Deep Diving All Disclosed Manager Information
+## Part 2 - Deep Diving All Disclosed Manager Information
 
-The most difficult feature to build was `fundManageR` ability to parse the SEC's absolutely HORRENDUS online ADV forms.  Fortunately this task, though extremely difficult, was doable.  Parsing an ADV form, especially if you select a manager significant assets under management can be a time consuming process given the size of the webpages being ingested so please, be patient.
+The most difficult feature to build was `fundManageR`'s ability to parse the SEC's absolutely HORRENDUS online ADV forms, here is an [example](https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleDSection.aspx?ORG_PK=136979&FLNG_PK=03E83264000801840243876005DE5069056C8CC0) for the brave.  
 
-Also, instead of selecting all possible sections you can specify the specific sections you want the function to pull in, to see your options you can call the `get_data_sec_adv_manager_sitemap` function but by default all sections are selected.  The Private Fund Reporting and Other Manager Information sections tend to be by far the largest pages but they also generally contain the most powerful and useful information.
+Fortunately this task, though extremely difficult, was doable but parsing an ADV form, especially if you select a manager significant assets under management can be a time consuming process given the size of the webpages being ingested so please, be patient.
+
+Also, instead of selecting all possible sections, the function default, you can specify the specific sections [via the nameSectionActual column] you want the function to pull in, to see your options you can call the `get_data_sec_adv_manager_sitemap` function.  The Private Fund Reporting and Other Manager Information sections tend to be by far the largest pages but they also generally contain the most powerful and useful information.
 
 ```{r adv_site_map}
 get_data_sec_adv_manager_sitemap() %>% 
   formattable()
 ```
 
-The `get_data_adv_managers_filings` returns a list of nested data frames by entity and section; to make the data easier to explore upon scraping, the default action is to save each section into the user's environment and we combine the brochure sections with a unique list of values describing the manager into a single data frame assigned to the environment as `managerDescription`, you can override this by setting flatten_tables to `FALSE`.
+#### What Can We Learn About Blackstone's Registered Fund Managers??
 
-#### What Can We Learn About Blackstone?
+The `get_data_adv_managers_filings` returns a list of nested data frames by entity and section; to make the data easier to explore upon scraping, the default action is to save each section into the user's environment and we combine the brochure sections with a unique list of values describing the manager into a single data frame assigned to the environment as `managerDescription`, you can override this by setting flatten_tables to `FALSE`, in which case you will see each underlying ADV section in its own data frame.
 
-  The majority our 28 Blackstone related entities have billions of dollars in assets under management so acquiring data for every section and entity will a while, you can follow the functions progress in the messages but if you recreate this code, sit back, relax, and just please be patient.
+The majority our 28 Blackstone related entities have billions of dollars in assets under management so acquiring data for every section and entity will a while, you can follow the functions progress in the messages but if you recreate this code, sit back, relax, and just please be patient.
 
 ```{r manager_detail_search}
 blackstone_entity_df <- 
@@ -277,7 +298,7 @@ treemap_viz
 ```
 
 ### Schedule A - Direct Owners
-This table contains information about the individuals and entities that own the registering entity, this includes ranged disclosures on percentage of ownership.  This information, along with Schedule B, are ideal uses for [Network Analysis](https://en.wikipedia.org/wiki/Network_theory).  We will demonstrate this with a quick and dirty network graph of all of our Blackstone entities primary owners using [Rich Iannone's](https://twitter.com/riannone) [DiagrammeR](https://github.com/rich-iannone/DiagrammeR) package.
+This table contains information about the individuals and entities that own the registering entity, this includes ranged disclosures on percentage of ownership.  This information, along with Schedule B, are ideal uses for [Network Analysis](https://en.wikipedia.org/wiki/Network_theory).  We will demonstrate this with a quick and dirty network graph of all of our Blackstone entities primary owners and their respective ranged ownership of the registering entity using [Rich Iannone's](https://twitter.com/riannone) [DiagrammeR](https://github.com/rich-iannone/DiagrammeR) package.
 
 ```{r schedule_a}
 sectionScheduleA # Direct Owners
@@ -292,28 +313,50 @@ schedule_a <-
     .cols = c('nameEntityManager', 'nameCommonEntityOwnerManager'),
     funs(. %>% str_replace_all('\\ ', '\n'))
   )
-funds <-
+managers <-
   schedule_a %>% dplyr::select(nameEntityManager) %>% distinct %>% data.frame
-entities <-
-  schedule_a %>% dplyr::select(nameCommonEntityOwnerManager) %>% distinct %>% data.frame
 
-create_graph() %>%
+entity_owner_people <-
+  schedule_a %>%
+  dplyr::filter(!isEntityOwnerManagerEntity) %>%
+  dplyr::select(nameCommonEntityOwnerManager) %>% distinct %>% data.frame
+
+entity_owner_owners <-
+  schedule_a %>%
+  dplyr::filter(isEntityOwnerManagerEntity) %>%
+  dplyr::select(nameCommonEntityOwnerManager) %>% distinct %>% data.frame
+
+schedule_a_edges <-
+  schedule_a %>%
+  dplyr::select(nameEntityManager,
+                nameCommonEntityOwnerManager,
+                rangeManagerEntityOwnership) %>%
+  data.frame(stringsAsFactors = F)
+
+
+create_graph(directed = F,
+             graph_attrs = "layout = circo") %>%
   set_graph_name("blackstone_owners") %>%
   set_global_graph_attrs("graph", "output", "visNetwork") %>%
   add_nodes_from_table(funds,
-                       set_type = "fund",
+                       set_type = "managers",
                        label_col = "nameEntityManager") %>%
-  add_nodes_from_table(entities,
-                       set_type = "person",
+  add_nodes_from_table(entity_owner_people,
+                       set_type = "People Owners",
+                       label_col = "nameCommonEntityOwnerManager") %>%
+  add_nodes_from_table(entity_owner_owners,
+                       set_type = "Owner Entity",
                        label_col = "nameCommonEntityOwnerManager") %>%
   add_edges_from_table(
-    schedule_a %>% dplyr::select(nameEntityManager, nameCommonEntityOwnerManager) %>% data.frame(stringsAsFactors = F),
+    schedule_a_edges,
     from_col = "nameEntityManager",
     from_mapping = "nameEntityManager",
     to_col = "nameCommonEntityOwnerManager",
-    to_mapping = "nameCommonEntityOwnerManager"
+    to_mapping = "nameCommonEntityOwnerManager",
+    rel = 'rangeManagerEntityOwnership'
   ) %>%
   visnetwork()
+
 
 ```
 
@@ -325,21 +368,21 @@ sectionScheduleB # Indirect Owners
 ```
   
 ### Related Advisors
-This table contains disclosures on any adviser related to the filing entity, this may include CRD numbers and other descriptive information.  This section is ideal to get a full understanding of related entities.
+This table contains disclosures on any adviser related to the filing entity, this may include CRD numbers and other descriptive information.  This section is ideal to get a full understanding of related entities and also is great dataset for network visualizations and analysis.
 
 ```{r realted_advisers}
 managerRelatedAdvisers
 ```
 
 ### Control Entities
-This table contains information on control entities for a filing manager, this essentially means is the manager controlled by a public entity?  A good example being Blackstone which is a public company.
+This table contains information on control entities for a filing manager, this essentially means is the manager controlled by a public entity, and if so who controls them?  A good example being Blackstone which is a public company but most registered managers are not affiliated with public companies so don't expect to always find this information in your searches.
 
 ```{r control_publics}
 managerControlPublicEntities
 ```
 
 ### Control Persons
-This table contains information on control persons for any filing manager that is related to a public entity.
+This table contains information on control persons for the control entity from before.
 
 ```{r control_persons}
 managerControlPersons
@@ -377,4 +420,6 @@ managerWebsite
 
 That wraps up the data that is returned from a deep dive into a filing manager.  Keep in mind not every manager is required to file each section of the form so you may not get all these sections for each manager.
 
-I hope this give you a good quick overview of how these ADV functions work.  This is an extremely powerful dataset that opens up wide-scale consumption of important information that was once impossible to access.  Over the next month I intend to release a few more tutorials using this data but in the meantime I hope people make use these functions and share some of their findings!
+Please keep in mind this package is in its extreme infancy so expect bugs.  Please feel free to report them in the [issues](https://github.com/abresler/fundManageR/issues) or become a contributor with a pull request!  I am also unsure whether I will submit this package to [CRAN](https://cran.r-project.org/) so please follow the package on Github for updates.
+
+I hope this give you a good quick overview of how these ADV functions work.  This is an extremely powerful suite of functions that open up wide-scale consumption of important information that was once near impossible to access.

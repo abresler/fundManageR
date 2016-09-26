@@ -104,16 +104,16 @@ In a future release there will be a third class of functions centering around th
 * `get_data_adv_managers_brochures` -- Retrieves and [OCRs](https://en.wikipedia.org/wiki/Optical_character_recognition) for SEC mandated annual [Uniform Requirements for the Investment Adviser Brochure and Brochure Supplements](https://www.sec.gov/about/forms/formadv-part2.pdf) for specified CRDs and/or company names.
 
 ### Vignettes
-
-* [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/211588_637e50c374464eeb831eea7eb234131a.html)
-* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211957_dcce08b656ec4f218e3aa60872122dfd.html)
+* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_db35d9d299d64296ac1fbef252be96db.html)
+* [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/211588_a3fcb80e19814027926cb811326210d0.html)
 
 ### Coming Soon
-* `visualize_` suite of functions.
+* `visualize_` suite of functions
 * Mergers and Acquisition data
 * Integrated leveraged cash flow analysis calculations
 * Catch-up calculations in promote structures
+* [XBRL](https://www.xbrl.org/) wrapper
 * [Open Corporates]('https://opencorporates.com/) wrapper
 * [Form D](https://en.wikipedia.org/wiki/Form_D) wrapper
-* Delaware, Cayman Island, and Nevada entity registration wrappers.
-* [XBRL](https://www.xbrl.org/) wrapper
+* State specific [UCC](https://en.wikipedia.org/wiki/Uniform_Commercial_Code) wrappers
+* Delaware, Cayman Island, and Nevada entity registration wrappers

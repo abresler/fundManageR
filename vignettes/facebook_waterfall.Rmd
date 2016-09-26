@@ -9,13 +9,13 @@ output:
     theme: cosmo
 ---
 
-In the investment management industry a company's product is the financial return it produces.  Generally, investment managers earn an annual management fee and then after certain pre-determined thresholds are met a special fee known as a promote or a carried interest.  
+In the investment management industry a company's product is the financial return it produces.  Generally, investment managers charge an annual management fee and then after certain pre-determined thresholds are met they earn a special fee known as a promote, incentive fee or a carried interest.  
 
-This fee is generally either a set of agreed upon [interal rates of return](https://en.wikipedia.org/wiki/Internal_rate_of_return) [IRR] and/or a set of agreed upon multiples on invested capital [Capital Multiple].  This is known as a cash flow waterfall.  
+This fee is generally either a set of agreed upon [interal rates of return](https://en.wikipedia.org/wiki/Internal_rate_of_return) [IRR] and/or a set of agreed upon multiples on invested capital [Capital Multiple].  This is known as a cash flow waterfall.  These terms can be extremely complex and fully negotiable so you can't say exact certainty what a "common" promote structure is.
 
-Typical there is a general partner who invests a small portion of the total capital and a set of limited partners who invest the remainder.  If the hurdles are met the promote is distributed to the general partner and the remainder of the cash flows are split [parri-passu](https://en.wikipedia.org/wiki/Pari_passu) between the parties.  
+In most entities that have a waterfall structure there is a general partner who invests a small portion of the total capital and one or many limited partners who invest the bulk of the equity capital.  If the hurdles are met the promote is distributed to the general partner and the remainder of the cash flows are split [parri-passu](https://en.wikipedia.org/wiki/Pari_passu) between the parties.  
 
-`fundManager` provides out of the box functionality allowing users perform these complex calculations given a set of dates, cash flows, and a promote structure.  In this example we will explore a hypothetical seed investment of [Facebook](https://en.wikipedia.org/wiki/Facebook) akin to how the company was initially capitalized by [Peter Thiel](https://en.wikipedia.org/wiki/Peter_Thiel) and his fund vehicle [Founders Fund](https://en.wikipedia.org/wiki/Founders_Fund).
+`fundManager` provides out of the box functionality allowing users perform these complex calculations given a set of dates, cash flows, and promote structures.  In this example we will explore a hypothetical seed investment of [Facebook](https://en.wikipedia.org/wiki/Facebook) akin to how the company was initially capitalized by [Peter Thiel](https://en.wikipedia.org/wiki/Peter_Thiel) and his fund vehicle [Founders Fund](https://en.wikipedia.org/wiki/Founders_Fund).
 
 ### Setup
 
@@ -25,9 +25,8 @@ packages <-
 lapply(packages, library, character.only = T)
 ```
 
-
 ### Background and Investment Terms
-In this toy example let's pretend that Founder's Fund makes a <strong>`$500,000`</strong> investment Facebook on June 1st, 2006 through what is known as a [convertible note](https://techcrunch.com/2012/04/07/convertible-note-seed-financings/).  The convertible note accrues interest at a rate of <strong>`10% per annum`</strong> on an `Actual/360` schedule.  The convertible note gives the fund the right to convert their investment into Facebook stock at the lesser of 33c per-share or the per-share price Facebook is able to raise it's Series A investment.
+In this toy example we pretend that Founder's Fund makes a <strong>`$500,000`</strong> investment Facebook on June 1st, 2006 through what is known as a [convertible note](https://techcrunch.com/2012/04/07/convertible-note-seed-financings/).  The convertible note accrues interest at a rate of <strong>`10% per annum`</strong> on an `Actual/360` schedule.  The convertible note gives the fund the right to convert their investment into Facebook stock at the lesser of 33c per-share or the per-share price Facebook is able to raise it's Series A investment.
 
 ```{r eval=TRUE}
 investment <-
@@ -63,7 +62,7 @@ initial_data %>%
 
 #### Waterfall Structure and Equity Splits.
 
-Given it's successful history investing in start-ups Founders Fund [the General Partner] is able to raise a separate account for this once in a lifetime investment with a pension fund [the Limited Partner].  The parties agree principals of Founders Fund will contribute 5% of the required capital and the limited partner will invest the remainder.  The parties agree to a promote structure that goes as follows:
+Given it's successful history investing in start-ups Founders Fund [the General Partner] is able to raise a a fund for this once in a lifetime investment with a single pension fund investor [the Limited Partner].  The parties agree principals of Founders Fund will contribute 5% of the required capital and the limited partner will invest the remainder.  The parties agree to the following promote structure:
 
 1. Parri-passu return of invested capital
 2. 20% promote after 3x distribution on invested capital
@@ -71,7 +70,7 @@ Given it's successful history investing in start-ups Founders Fund [the General 
 4. 60% promote after a 10x distribution on invested capital
 5. 75% promote after a 100x distribution on invested capital.
 
-Please note that his promote structure is <strong>EXTREMELY</strong> unlikely as very few limited partners would likely agree to such manager friendly economics, not to mention the difficulty in tracking and calculating such a waterfall. This structure was selected purely to demonstrate `fundmanageR's` ability to handle the most complicated of waterfall calculations.
+It is important to note a promote structure like this is <strong>EXTREMELY</strong> unlikely as very few limited partners would likely agree to such manager friendly economics, not to mention the difficulty in tracking and calculating such a waterfall. This structure was selected purely to demonstrate `fundmanageR's` ability to handle the most complicated of waterfall calculations.
 
 ```{r eval=TRUE}
 waterfall <-
@@ -89,7 +88,7 @@ promote_df %>%
 ```
 
 ### Conversion to Common Shares
-A little less than a year after the initial investment, on May 14th, 2007, Facebook closes on it's Series A Investment at valuation of `$1.20` a share thus triggering the share conversion.  Note, even though the cash investment was `$500,000`, we accrued interest that gets included in the original investment upon share conversion.  Also since the valuation exceed our cap of $0.33c per share we will convert to stock at 33c per share.
+A little less than a year after the initial investment, on May 14th, 2007, Facebook closes on it's Series A Investment at valuation of `$1.20` triggering the convertible note share conversion.  Keep in mind, even though the cash investment was `$500,000`, we accrued interest that gets included in the original investment upon share conversion.  Also since the valuation exceed our cap of $0.33c per share we will convert to stock at 33c per share.
 
 ```{r eval=TRUE}
 conversion_date <-
@@ -152,7 +151,7 @@ ipo_proceeds <-
 
 #### Final Liquidation Event
 
-Most fund vehicles have pre-determined lifespans, with mechanisms to modify their original intended life.  These lifespans, depending on the asset class, generally range from 5 to 25 years.  For the purpose of this exercise lets assume that this Facebook fund has a fund life not to exceed 11 years, meaning the vehicle must be wound down before June 1st, 2017.  As such, and with Facebook stock at all-time highs, Founders Fund decides to liquidate it's remaining 1,000,000 shares On September 19th, 2016 at $128.98 per share.
+Most fund vehicles have pre-determined lifespans, with mechanisms to modify their original intended life, usually with a vote by the fund's limited partners.  These lifespans, depending on the asset class, generally range from 5 to 25 years.  For the purpose of this exercise lets assume that this Facebook fund has a fund life not to exceed 11 years, meaning the vehicle must be wound down before June 1st, 2017.  As such, and with Facebook stock at all-time highs, Founders Fund decides to liquidate it's remaining 1,000,000 shares On September 19th, 2016 at $128.98 per share.
 
 ```{r eval=TRUE}
 final_sale_price <-
@@ -169,7 +168,7 @@ final_sale_proceeds <-
 ```
 
 #### Final Investment Analysis
-Now given this set of assumptions what were the returns for this investment, how were the economics split between the Manager/General Partner and the Limited Partner, `fundManageR` can tell you!  The first thing we need to do is generate the cash flow time series for this investment.
+Now given this set of assumptions, what were the returns for this investment, how were the economics split between the manager/general partner and the limited partner, `fundManageR` can tell you but we need to give it some important inputs this first being a data frame with the dates and amounts of the capital events
 
 ```{r eval = TRUE}
 capital_event_dates <-
@@ -191,7 +190,6 @@ cash_flow_df <-
 cash_flow_df %>% 
   formattable::formattable()
 ```
-
 Now we are ready to feed the necessary inputs to `fundManageR`'s `calculate_cash_flow_waterfall_partnership` function which will perform the requisite waterfall calculations and return a nested list of data frames summarizing:
 1. Partnership Cash Flow by Period [cashflowWaterfall]
 2. Waterfall by Tier and Period [entityWaterfall]
