@@ -1,6 +1,6 @@
 Package: fundManageR
 Type: Package
-Title: An R toolkit for Investment Management. Because you shouldn't be doing this type of work in Excel
+Title: An Investment Management toolkit for R.  Because Excel can't and shouldn't do what this package can do.
 Version: 0.1.0
 Authors@R: person("Alex", "Bresler", email = "abresler@asbcllc.com", role = c("aut", "cre"))
 License: MIT + file LICENSE
