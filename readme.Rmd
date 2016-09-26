@@ -104,7 +104,7 @@ In a future release there will be a third class of functions centering around th
 * `get_data_adv_managers_brochures` -- Retrieves and [OCRs](https://en.wikipedia.org/wiki/Optical_character_recognition) for SEC mandated annual [Uniform Requirements for the Investment Adviser Brochure and Brochure Supplements](https://www.sec.gov/about/forms/formadv-part2.pdf) for specified CRDs and/or company names.
 
 ### Vignettes
-* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_db35d9d299d64296ac1fbef252be96db.html)
+* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_3220f0aa9b314881843a883063d830e3.html)
 * [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/211588_a3fcb80e19814027926cb811326210d0.html)
 
 ### Coming Soon

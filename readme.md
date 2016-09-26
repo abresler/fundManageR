@@ -96,7 +96,7 @@ In a future release there will be a third class of functions centering around th
 
 ### Vignettes
 
--   [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_db35d9d299d64296ac1fbef252be96db.html)
+-   [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_3220f0aa9b314881843a883063d830e3.html)
 -   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/211588_a3fcb80e19814027926cb811326210d0.html)
 
 ### Coming Soon
