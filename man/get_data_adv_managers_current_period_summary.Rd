@@ -5,10 +5,10 @@
 \title{Get ADV filing data for the most recent filing period}
 \usage{
 get_data_adv_managers_current_period_summary(file_directory = NULL,
-  folder_name = "adv_data", remove_files = T, empty_trash = T)
+  folder_name = "adv_data", remove_files = F, empty_trash = F)
 }
 \arguments{
-\item{file_directory}{Location of the directory you want to save your data into}
+\item{file_directory}{Location of the directory you want to save your data into, if none specified a temporary file will be created}
 
 \item{folder_name}{Name of the folder you want the data to be downloaded into}
 

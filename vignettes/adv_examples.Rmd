@@ -25,7 +25,7 @@ To initiate the to tutorial we are going to explore the summary data filed with 
 
 ```{r most_recent}
 most_recent_data <-
-  get_data_adv_managers_current_period_summary(file_directory = 'Desktop', folder_name = 'adv_data')
+  get_data_adv_managers_current_period_summary(file_directory = NULL)
 ```
 
 The data should be loaded in to your environment allowing us to embark on some explorations.

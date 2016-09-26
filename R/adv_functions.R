@@ -8468,26 +8468,9 @@ parse_sec_adv_data_url <-
            file_directory = NULL,
            folder_name = 'adv_data',
            remove_existing_folder = F,
-           remove_files = T,
-           empty_trash = T) {
+           remove_files = F,
+           empty_trash = F) {
     options(scipen = 999999)
-
-    no_folder_directories <-
-      file_directory %>% is_null & folder_name %>% is_null
-
-    if (no_folder_directories) {
-      stop("Please identify a file directory and or a folder name")
-    }
-    only_folder <-
-      !folder_name %>% is_null & file_directory %>% is_null
-    if (only_folder) {
-      file_directory <-
-        getwd()
-    }
-
-    file_directory <-
-      file_directory %>%
-      paste0('/', folder_name)
 
     date_data <-
       url %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% lubridate::mdy()
@@ -8495,67 +8478,120 @@ parse_sec_adv_data_url <-
     is_exempt <-
       url %>% str_detect("exempt")
 
-    file <-
-      url %>% basename()
+    use_tmp_file <-
+      file_directory %>% is_null
 
-    temp.dir <-
-      file_directory
+    if (use_tmp_file) {
+      tmp <-
+        tempfile()
 
-    file_path <-
-      temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
-    if (remove_existing_folder) {
-      if (dir.exists(paths = file_path)) {
+      url %>%
+        curl_download(url = ., tmp)
+
+      con <-
+        unzip(tmp)
+
+      if (con %>% str_detect("XLS|xls|xlsx|XLSX")) {
+        adv_data <-
+          con %>% parse_adv_excel_data()
+      }
+
+      if (con %>% str_detect("csv|CSV")) {
+        adv_data <-
+          con %>% parse_adv_csv() %>%
+          suppressWarnings()
+      }
+
+      if (con %>% str_detect("txt|TXT")) {
+        adv_data <-
+          con %>% parse_adv_txt_data()
+      }
+
+      con %>%
+        unlink
+    } else {
+      only_folder <-
+        !folder_name %>% is_null & file_directory %>% is_null
+      if (only_folder) {
+        file_directory <-
+          getwd()
+      }
+
+      file_directory <-
+        file_directory %>%
+        paste0('/', folder_name)
+
+
+      file <-
+        url %>% basename()
+
+      temp.dir <-
+        file_directory
+
+      file_path <-
+        temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
+      if (remove_existing_folder) {
+        if (dir.exists(paths = file_path)) {
+          "rm -R " %>%
+            paste0(temp.dir) %>%
+            system()
+          if (empty_trash == T) {
+            system('rm -rf ~/.Trash/*')
+          }
+        }
+      }
+
+      if (!dir.exists(paths = file_path)) {
+        dir.create(temp.dir)
+      }
+
+      file <-
+        temp.dir %>%
+        paste0('/', file)
+      httr::set_config(config(ssl_verifypeer = 0L))
+
+      url %>%
+        curl_download(url = ., destfile = file)
+
+      file %>%
+        unzip(exdir = paste0(temp.dir, '/'))
+
+      dir_files <-
+        temp.dir %>%
+        list.files()
+
+      file_name <-
+        dir_files %>%
+        str_detect('CSV|csv|TXT|txt|XLS|XLSX|xlsx|xls') %>%
+        dir_files[.]
+
+      file_name <-
+        file_directory %>%
+        paste0('/', file_name)
+
+      if (file_name %>% str_detect("XLS|xls|xlsx|XLSX")) {
+        adv_data <-
+          file_name %>% parse_adv_excel_data()
+      }
+
+      if (file_name %>% str_detect("csv|CSV")) {
+        adv_data <-
+          file_name %>% parse_adv_csv() %>%
+          suppressWarnings()
+      }
+
+      if (file_name %>% str_detect("txt|TXT")) {
+        adv_data <-
+          file_name %>% parse_adv_txt_data()
+      }
+      if (remove_files) {
         "rm -R " %>%
           paste0(temp.dir) %>%
           system()
-        if (empty_trash == T) {
+        if (empty_trash) {
           system('rm -rf ~/.Trash/*')
         }
       }
-    }
-
-    if (!dir.exists(paths = file_path)) {
-      dir.create(temp.dir)
-    }
-
-    file <-
-      temp.dir %>%
-      paste0('/', file)
-    httr::set_config(config(ssl_verifypeer = 0L))
-
-    url %>%
-      curl_download(url = ., destfile = file)
-
-    file %>%
-      unzip(exdir = paste0(temp.dir, '/'))
-
-    dir_files <-
-      temp.dir %>%
-      list.files()
-
-    file_name <-
-      dir_files %>%
-      str_detect('CSV|csv|TXT|txt|XLS|XLSX|xlsx|xls') %>%
-      dir_files[.]
-
-    file_name <-
-      file_directory %>%
-      paste0('/', file_name)
-
-    if (file_name %>% str_detect("XLS|xls|xlsx|XLSX")) {
-      adv_data <-
-        file_name %>% parse_adv_excel_data()
-    }
-
-    if (file_name %>% str_detect("csv|CSV")) {
-      adv_data <-
-        file_name %>% parse_adv_csv() %>%
-        suppressWarnings()
-    }
-
-    if (file_name %>% str_detect("txt|TXT")) {
-      adv_data <-
-        file_name %>% parse_adv_txt_data()
     }
 
     sec_names_df <-
@@ -8646,22 +8682,24 @@ parse_sec_adv_data_url <-
         suppressWarnings()
 
     }
-
-    if (adv_data %>%
-        dplyr::select(matches("^date")) %>%
-        keep(is.character) %>%
-        names %>% length > 0) {
+    whack_date <-
+      adv_data %>%
+      dplyr::select(matches("^date")) %>%
+      keep(is.character) %>%
+      names %>% length > 0
+    if (whack_date) {
       char_col <-
         adv_data %>%
         dplyr::select(matches("^date")) %>%
         keep(is.character) %>%
         names
 
-      adv_data <-
-        adv_data %>%
-        mutate_at(char_col,
-                  lubridate::mdy()) %>%
-        suppressWarnings()
+      adv_data[,char_col] <-
+        adv_data[,char_col] %>%
+        magrittr::extract2(1) %>%
+        lubridate::mdy()
+
+
     }
 
     adv_data <-
@@ -8697,14 +8735,6 @@ parse_sec_adv_data_url <-
              isExempt = is_exempt) %>%
       dplyr::select(dateDataADV, isExempt, everything())
 
-    if (remove_files) {
-      "rm -R " %>%
-        paste0(temp.dir) %>%
-        system()
-      if (empty_trash) {
-        system('rm -rf ~/.Trash/*')
-      }
-    }
     return(adv_data)
   }
 
@@ -8715,8 +8745,8 @@ get_period_type_adv_data <-
            file_directory = NULL,
            folder_name = 'adv_data',
            remove_existing_folder = F,
-           remove_files = T,
-           empty_trash = T) {
+           remove_files = F,
+           empty_trash = F) {
     setwd("~")
     if (!'url_df' %>% exists){
       url_df <-
@@ -8761,12 +8791,13 @@ get_period_type_adv_data <-
 #' @param all_periods Do you want all periods
 #' @param is_exempt Do you want to exempt, non-exempt or both types of filers
 #' @param only_most_recent Select only the most recent period
-#' @param file_directory Location of the directory you want to save your data into
+#' @param file_directory Location of the directory you want to save your data into, if none specified a temporary file will be created
 #' @param folder_name Name of the folder you want the data to be downloaded into
 #' @param remove_files Remove the files from the folders
 #' @param empty_trash Do you wish to empty the trash after being read into R
 #' @import dplyr stringr lubridate readr readxl rvest purrr
 #' @importFrom curl curl_download
+#' @importFrom magrittr extract2
 #' @return
 #' @export
 #'
@@ -8781,8 +8812,8 @@ get_data_adv_managers_periods_summaries <-
            file_directory = NULL,
            folder_name = 'adv_data',
            remove_existing_folder = F,
-           remove_files = T,
-           empty_trash = T) {
+           remove_files = F,
+           empty_trash = F) {
     if (all_periods) {
       periods <-
         get_data_adv_period_urls() %>% .$periodData %>% unique
@@ -8888,7 +8919,7 @@ get_data_adv_managers_periods_summaries <-
 
 #' Get ADV filing data for the most recent filing period
 #'
-#' @param file_directory Location of the directory you want to save your data into
+#' @param file_directory Location of the directory you want to save your data into, if none specified a temporary file will be created
 #' @param folder_name Name of the folder you want the data to be downloaded into
 #' @param remove_files Remove the files from the folders
 #' @param empty_trash Do you wish to empty the trash after being read into R
@@ -8901,8 +8932,8 @@ get_data_adv_managers_periods_summaries <-
 get_data_adv_managers_current_period_summary <-
   function(file_directory = NULL,
            folder_name = 'adv_data',
-           remove_files = T,
-           empty_trash = T
+           remove_files = F,
+           empty_trash = F
   ) {
     all_data <-
       get_data_adv_managers_periods_summaries(

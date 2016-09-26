@@ -36,14 +36,14 @@ Excel, while convenient for some, is poorly suited for important data analysis a
 * [ASB ALLEGIANCE REAL ESTATE FUND vs SCION MANAGER](http://courts.state.de.us/opinions/download.aspx?ID=172670)
 * [Did an Excel error bring down the London Whale?](http://blog.revolutionanalytics.com/2013/02/did-an-excel-error-bring-down-the-london-whale.html)
 
-Further more, for many of the most common calculations, there is countless duplication of methods to perform common calculations, and in many cases formulas are left uncheck and errors end up having extreme consequences down the line. 
+Further more, for many of the most common calculations, there is countless duplication of methods to perform common calculations, and in many cases formulas are left unchecked and errors end up having extreme consequences down the line. 
 
-Though in its extreme infancy, `fundManageR` is my attempt to provide an easy to use framework for these calculations to be performed in R, through an open and readable API, consistant with [Hadley Wickham's](https://twitter.com/hadleywickham) [tidy tools](https://mran.microsoft.com/web/packages/tidyverse/vignettes/manifesto.html) manifesto.  These calculations have fault checks to ensure accuracy and designed for iteration which allows for complex calculations that Excel would be unable to execute.
+Though in its extreme infancy, `fundManageR` is my attempt to provide an easy to use framework for these calculations to be performed in R, through an open and readable API, consistent with [Hadley Wickham's](https://twitter.com/hadleywickham) [tidy tools](https://mran.microsoft.com/web/packages/tidyverse/vignettes/manifesto.html) manifesto.  These calculations have fault checks to ensure accuracy and designed for iteration which allows for complex calculations that Excel would be unable to execute.
 
-The package's other motive is to provide easy access to the fincial industry's [dark data](http://www.gartner.com/it-glossary/dark-data), hidden and public APIs.  This should enable better transparency around one of the United States' most vital industries.  As the old saying goes, when in doubt <strong>`Follow the Money`</strong>, `fundManageR` should help to do this.
+The package's other motive is to provide easy access to the financial industry's [dark data](http://www.gartner.com/it-glossary/dark-data), hidden and public APIs.  This should enable better transparency around one of the United States' most vital industries.  As the old saying goes, when in doubt <strong>`Follow the Money`</strong>, `fundManageR` should help to do this.
 
 ### Package Dependencies 
-In order for this package to work you need the packages listed below must be installed.  You can run the code snippet to install them if necassary.
+In order for this package to work you need the packages listed below must be installed.  You can run the code snippet to install them if necessary.
 
 For `pdftools` you may need to follow the installation instructions [here](https://github.com/ropensci/pdftools).
 
@@ -97,7 +97,7 @@ In a future release there will be a third class of functions centering around th
 
 * `get_data_adv_period_urls` -- Retrieves all possible ADV summary periods
 * `get_data_adv_managers_current_period_summary` -- Retrieves summary data for ADV filing managers from the most recent monthly filing period.
-* `get_data_adv_managers_periods_summaries`-- Retrieves summary ADV filings for specified periods and filing type.  You must specify a directory and a folder name.  The default folder name is set to adv_data and if no directory is specified the data will be downloaded into your working directory.
+* `get_data_adv_managers_periods_summaries`-- Retrieves summary ADV filings for specified periods and filing type.  By default the files will be saved to and loaded from a temporary directory however a user can override this default by specifying a file directory.  If you specify a file directory you can also specify folder name, if you don't do this the folder `adv_data` is created by default.  You can also tell the function to delete the folders and empty the trash by setting `remove_files` and `empty_trash` to TRUE.
 * `get_data_sec_adv_manager_sitemap`-- Retrieves a data frame with the possible detailed ADV sections and their descriptions.
 * `get_data_adv_managers_metadata` -- Retrieves metadata for specified search name or CRD ID; fastest way to search for managers you may wish to explore further.
 * `get_data_adv_managers_filings` -- Retrieves detailed ADV filing for specified [Central Registration Depository ID](http://www.finra.org/industry/crd) [CRD] and/or company name by by specified ADV section.
@@ -106,7 +106,7 @@ In a future release there will be a third class of functions centering around th
 ### Vignettes
 
 * [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/211588_637e50c374464eeb831eea7eb234131a.html)
-* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211957_2ab9d98c70ac4fdc9c1672f0924177b0.html)
+* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211957_dcce08b656ec4f218e3aa60872122dfd.html)
 
 ### Coming Soon
 * `visualize_` suite of functions.

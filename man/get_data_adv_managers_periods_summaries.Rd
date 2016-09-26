@@ -7,7 +7,7 @@
 get_data_adv_managers_periods_summaries(periods = c("2006-06"),
   all_periods = F, is_exempt = c(F, T), only_most_recent = F,
   file_directory = NULL, folder_name = "adv_data",
-  remove_existing_folder = F, remove_files = T, empty_trash = T)
+  remove_existing_folder = F, remove_files = F, empty_trash = F)
 }
 \arguments{
 \item{periods}{Selected periods in Year-Month form}
@@ -18,7 +18,7 @@ get_data_adv_managers_periods_summaries(periods = c("2006-06"),
 
 \item{only_most_recent}{Select only the most recent period}
 
-\item{file_directory}{Location of the directory you want to save your data into}
+\item{file_directory}{Location of the directory you want to save your data into, if none specified a temporary file will be created}
 
 \item{folder_name}{Name of the folder you want the data to be downloaded into}
 
