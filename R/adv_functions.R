@@ -1889,7 +1889,7 @@ extract_node_data <-
           node_value <-
             node_value %>% str_replace('\\$', '') %>%
             str_trim %>%
-            readr::parse_number
+            readr::parse_number()
         }
         if (variable_name %>% str_detect("pct")) {
           node_value <-
@@ -5843,7 +5843,7 @@ get_schedule_d_data <-
         section_data %>%
         gather(item, value, -c(nameEntityManager, idCRD)) %>%
         mutate(
-          countItem = item %>% readr::parse_number,
+          countItem = item %>% readr::parse_number(),
           countItem = if_else(countItem %>% is.na, 0, countItem),
           countItem = countItem + 1,
           item = item %>% str_replace_all('[1-9]', '')
