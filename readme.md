@@ -20,9 +20,10 @@ As an added bonus this package also wraps access to a growing array of data silo
 Excel, while convenient for some, is poorly suited for important data analysis and modelling. Billions of dollars have been lost throughout the investment management universe as a *direct* result of uncaught Excel errors. Here are few examples:
 
 -   [Spreadsheet Errors Costing Business Billions, a CNBC Exploration](http://www.cnbc.com/id/100923538)
--   [Spreadsheet Mistake Costs Tibco Shareholders $100 Million](http://blogs.wsj.com/moneybeat/2014/10/16/spreadsheet-mistake-costs-tibco-shareholders-100-million/) \*[The $400 Million Mistake at Lazard: Solarcity "Undervalued" in Tesla Purchase](http://www.wallstreetoasis.com/forums/the-400-million-mistake-at-lazard-solarcity-undervalued-in-tesla-purchase)
+-   [Spreadsheet Mistake Costs Tibco Shareholders $100 Million](http://blogs.wsj.com/moneybeat/2014/10/16/spreadsheet-mistake-costs-tibco-shareholders-100-million/)
+-   [The $400 Million Mistake at Lazard: Solarcity "Undervalued" in Tesla Purchase](http://www.wallstreetoasis.com/forums/the-400-million-mistake-at-lazard-solarcity-undervalued-in-tesla-purchase)
 -   [Eight of the Worst Spreadsheet Blunders](http://www.cio.com/article/2438188/enterprise-software/eight-of-the-worst-spreadsheet-blunders.html)
--   [ASB ALLEGIANCE REAL ESTATE FUND vs SCION MANAGER](http://courts.state.de.us/opinions/download.aspx?ID=172670)
+-   [ASB ALLEGIANCE REAL ESTATE FUND vs SCION MANAGER](http://courts.state.de.us/opinions/download.aspx?ID=172670) - warning, PDF file of a lawsuit.
 -   [Did an Excel error bring down the London Whale?](http://blog.revolutionanalytics.com/2013/02/did-an-excel-error-bring-down-the-london-whale.html)
 
 Further more, for many of the most common calculations, there is countless duplication of methods to perform common calculations, and in many cases formulas are left unchecked and errors end up having extreme consequences down the line.
