@@ -8935,8 +8935,11 @@ get_data_adv_managers_current_period_summary <-
            remove_files = F,
            empty_trash = F
   ) {
+    get_data_adv_managers_periods_summaries_safe <-
+      purrr::possibly(get_data_adv_managers_periods_summaries, NULL)
+
     all_data <-
-      get_data_adv_managers_periods_summaries(
+      get_data_adv_managers_periods_summaries_safe(
         only_most_recent = T,
         all_periods = F,
         remove_files = remove_files,
