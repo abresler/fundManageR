@@ -8867,7 +8867,7 @@ get_data_adv_managers_periods_summaries <-
           .cols =
             all_adv_data %>% dplyr::select(matches("^count[A-Z]"), -matches("country")) %>% names,
           .funs =
-            formattable::comma
+            funs(. %>% formattable::comma())
         )
 
       has_amounts <-
@@ -8897,7 +8897,7 @@ get_data_adv_managers_periods_summaries <-
         all_adv_data %>%
         mutate_at(.cols =
                     all_adv_data %>% dplyr::select(matches("^address|^country[A-Z]|^city^state")) %>% names,
-                  .funs = str_to_upper)
+                  funs(. %>% stringr::str_to_upper()))
 
       if (names(all_adv_data) %>% str_count('^addressStreet2OfficePrimary') %>% sum > 0) {
         locationOfficePrimary <-
