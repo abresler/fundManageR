@@ -253,6 +253,13 @@ blackstone_entity_df <-
 
 ### Explore the Tables
 
+### Visualize the Resulting Data
+
+```{r result_data}
+blackstone_entity_df %>% 
+  visualize_data_frame(edit = F)
+```
+
 #### Manager Description
 This table contains general information about the manager from all sections with distinct data.  Information may include information on the number of employees, total amount of money managed, ranged estimates of investor types an.d much, much more
 
@@ -306,39 +313,11 @@ sectionScheduleA # Direct Owners
 
 #### Network Graph of Blackstone's Direct Owners
 ```{r network_graph, fig.width=6}
-library(DiagrammeR) # install.packages("DiagrammeR")
-schedule_a <-
-  sectionScheduleA %>%
-  mutate_at(
-    .cols = c('nameEntityManager', 'nameCommonEntityOwnerManager'),
-    funs(. %>% str_replace_all('\\ ', '\n'))
-  )
-managers <-
-  schedule_a %>% dplyr::select(nameEntityManager) %>% distinct %>% data.frame
-
-entity_owner_people <-
-  schedule_a %>%
-  dplyr::filter(!isEntityOwnerManagerEntity) %>%
-  dplyr::select(nameCommonEntityOwnerManager) %>% distinct %>% data.frame
-
-entity_owner_owners <-
-  schedule_a %>%
-  dplyr::filter(isEntityOwnerManagerEntity) %>%
-  dplyr::select(nameCommonEntityOwnerManager) %>% distinct %>% data.frame
-
-schedule_a_edges <-
-  schedule_a %>%
-  dplyr::select(nameEntityManager,
-                nameCommonEntityOwnerManager,
-                rangeManagerEntityOwnership) %>%
-  data.frame(stringsAsFactors = F)
-
-
 create_graph(directed = F,
              graph_attrs = "layout = circo") %>%
   set_graph_name("blackstone_owners") %>%
   set_global_graph_attrs("graph", "output", "visNetwork") %>%
-  add_nodes_from_table(funds,
+  add_nodes_from_table(managers,
                        set_type = "managers",
                        label_col = "nameEntityManager") %>%
   add_nodes_from_table(entity_owner_people,
@@ -356,7 +335,6 @@ create_graph(directed = F,
     rel = 'rangeManagerEntityOwnership'
   ) %>%
   visnetwork()
-
 
 ```
 

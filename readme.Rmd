@@ -64,12 +64,11 @@ devtools::install_github("abresler/fundManageR")
 ```
 
 #### Package Idioms
-`fundManageR` is built around 2 families of functions: 
+`fundManageR` is built around 2 full function families and another with 1 usable, but powerful, with many more on the way.
 
-* `calculate_` -- this family of functions performs common industry specific and generalized calculations.
-* `get_data_` -- this family of functions retrieves data either from a specified silo or based upon user inputs.
-
-In a future release there will be a third class of functions centering around the verb `visualize_` which will allow for visualization.
+* `calculate_` -- this function family performs common industry specific and generalized calculations.
+* `get_data_` -- this function family retrieves data either from a specified silo or based upon user inputs.
+* `visualize_` -- this function family performs pre-packaged visualizations geared towards the data this package brings in or helps the user to create.
 
 ### `calculate_` Functions 
 
@@ -86,16 +85,16 @@ In a future release there will be a third class of functions centering around th
 
 ### `get_data_` Functions
 
-* `get_data_ycombinator_alumni` -- Retrieves data on [YCombinator](http://www.ycombinator.com/) graduates
-* `get_data_libor_current` --Retrieves most recent [LIBOR](https://en.wikipedia.org/wiki/Libor) by duration
-* `get_data_promote_structure` -- Returns a [carried/promoted interest](https://en.wikipedia.org/wiki/Carried_interest) given promote syntax
-* `get_data_fred_index_symbol_time_series` -- Retrieves time series data for specified index from the [FRED Database](https://en.wikipedia.org/wiki/Federal_Reserve_Economic_Data)
-* `get_data_index_symbol_current_value` -- Retrieves current value for a specified symbol
-* `get_data_cik_codes` -- Retrieves all entities with a registered [Central Index Key](https://en.wikipedia.org/wiki/Central_Index_Key)
+* `get_data_ycombinator_alumni` -- Retrieves data on [YCombinator](http://www.ycombinator.com/) graduates.
+* `get_data_libor_current` --Retrieves most recent [LIBOR](https://en.wikipedia.org/wiki/Libor) by duration.
+* `get_data_promote_structure` -- Returns a [carried/promoted interest](https://en.wikipedia.org/wiki/Carried_interest) given promote syntax.
+* `get_data_fred_index_symbol_time_series` -- Retrieves time series data for specified index from the [FRED Database](https://en.wikipedia.org/wiki/Federal_Reserve_Economic_Data).
+* `get_data_index_symbol_current_value` -- Retrieves current value for a specified symbol.
+* `get_data_cik_codes` -- Retrieves all entities with a registered [Central Index Key](https://en.wikipedia.org/wiki/Central_Index_Key).
 
 ### ADV Specific `get_data_` Functions
 
-* `get_data_adv_period_urls` -- Retrieves all possible ADV summary periods
+* `get_data_adv_period_urls` -- Retrieves all possible ADV summary periods.
 * `get_data_adv_managers_current_period_summary` -- Retrieves summary data for ADV filing managers from the most recent monthly filing period.
 * `get_data_adv_managers_periods_summaries`-- Retrieves summary ADV filings for specified periods and filing type.  By default the files will be saved to and loaded from a temporary directory however a user can override this default by specifying a file directory.  If you specify a file directory you can also specify folder name, if you don't do this the folder `adv_data` is created by default.  You can also tell the function to delete the folders and empty the trash by setting `remove_files` and `empty_trash` to TRUE.
 * `get_data_sec_adv_manager_sitemap`-- Retrieves a data frame with the possible detailed ADV sections and their descriptions.
@@ -103,8 +102,12 @@ In a future release there will be a third class of functions centering around th
 * `get_data_adv_managers_filings` -- Retrieves detailed ADV filing for specified [Central Registration Depository ID](http://www.finra.org/industry/crd) [CRD] and/or company name by by specified ADV section.
 * `get_data_adv_managers_brochures` -- Retrieves and [OCRs](https://en.wikipedia.org/wiki/Optical_character_recognition) for SEC mandated annual [Uniform Requirements for the Investment Adviser Brochure and Brochure Supplements](https://www.sec.gov/about/forms/formadv-part2.pdf) for specified CRDs and/or company names.
 
+### `visualize_` Functions 
+* `visualize_data_frame` -- This function allows the user to visualize a data frame object to better understand the structure and contents of a data frame.  The function utlizes the fantastic [listviewer](https://github.com/timelyportfolio/listviewer) package which wraps Jos de Jong's [JSON Editor](http://jsoneditoronline.org/) project
+
+
 ### Vignettes
-* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_3220f0aa9b314881843a883063d830e3.html)
+* [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_bfe1b37d6df1439b823cc944f69568df.html)
 * [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/212788_b319809622a942b4a760d307a4cfe636.html)
 
 ### Brief Examples
@@ -131,8 +134,11 @@ test_manager <-
 #### YCombinator Alumni
 
 ```{r eval = F}
-recent_period_summary <- 
+ycombinator_alumni <- 
   fundManageR::get_data_ycombinator_alumni()
+
+ycombinator_alumni %>% 
+  visualize_data_frame(edit = F) ## visualize it
 ```
 
 ##### IRR Calculation
@@ -154,7 +160,7 @@ fundManageR::calculate_irr_periods(dates = dates, cash_flows = cash_flows, retur
 ```
 
 ### Coming Soon
-* `visualize_` suite of functions
+* Full roll out of `visualize_` functions
 * Mergers and Acquisition data
 * Integrated leveraged cash flow analysis calculations
 * Catch-up calculations in promote structures
