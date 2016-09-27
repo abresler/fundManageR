@@ -107,6 +107,52 @@ In a future release there will be a third class of functions centering around th
 * [ADV Function Tutorial -- Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_3220f0aa9b314881843a883063d830e3.html)
 * [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/212788_b319809622a942b4a760d307a4cfe636.html)
 
+### Brief Examples
+
+#### Most Recent ADV Summary Data
+
+```{r eval = F}
+library(fundManageR)
+recent_period_summary <- 
+  get_data_adv_managers_current_period_summary(file_directory = NULL)
+```
+
+#### Detailed Manager Search
+```{r eval = F}
+test_manager <- 
+  fundManageR::get_data_adv_managers_filings(
+    search_names = 'EJF Capital',
+    crd_ids = 156663,
+    all_sections = T,
+    assign_to_enviornment = T
+  )
+```
+
+#### YCombinator Alumni
+
+```{r eval = F}
+recent_period_summary <- 
+  fundManageR::get_data_ycombinator_alumni()
+```
+
+##### IRR Calculation
+```{r eval = F}
+library(dplyr)
+dates <- 
+  c("2015-10-09", "2016-09-26") %>% lubridate::ymd
+
+land_purchase_price <-
+  -1000000 %>% formattable::currency()
+
+land_sale_price <-
+  1300000 %>% formattable::currency()
+
+cash_flows <- 
+  c(land_purchase_price, land_sale_price)
+
+fundManageR::calculate_irr_periods(dates = dates, cash_flows = cash_flows, return_wide = T)
+```
+
 ### Coming Soon
 * `visualize_` suite of functions
 * Mergers and Acquisition data
