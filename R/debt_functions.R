@@ -811,6 +811,19 @@ get_data_monthly_periods <-
     return(all_periods)
   }
 
+pmt <-
+  function (r, n, pv, fv, type = 0)
+  {
+    if (type != 0 && type != 1) {
+      print("Error: type should be 0 or 1!")
+    }
+    else {
+      pmt <- (pv + fv / (1 + r) ^ n) * r / (1 - 1 / (1 + r) ^ n) * (-1) *
+        (1 + r) ^ (-1 * type)
+      return(pmt)
+    }
+  }
+
 #' Calculate loan repayment data given a set of parameters
 #'
 #' @param loan_start_date Date loan starts
@@ -856,8 +869,6 @@ calculate_loan_payment <-
       interest_rate <-
         interest_rate / 100
     }
-
-
     if (is_actual_360 == T) {
       daily_interest <-
         interest_rate / 360
@@ -877,7 +888,7 @@ calculate_loan_payment <-
       (balloon_year * 12) + balloon_month
 
     loan_period_df <-
-      get_monthly_period_df(start_date = loan_start_date,
+      get_data_monthly_periods(start_date = loan_start_date,
                             term_years = term_years,
                             term_months = term_months)
 
@@ -899,6 +910,7 @@ calculate_loan_payment <-
       loan_period_df$idPeriod
     all_payment_data <-
       data_frame()
+
     for (period in periods) {
       period_index <-
         period + 1
@@ -910,7 +922,7 @@ calculate_loan_payment <-
         loan_period_df$amountInitialDraw[period_index]
 
       drawAdditional <-
-        loan_period_df$amountAdditionalDraw[period_index]
+        0 # loan_period_df$amountAdditionalDraw[period_index] -- layer in eventully
 
       is_interest_only <-
         loan_period_df$isIO[period_index]
@@ -934,7 +946,8 @@ calculate_loan_payment <-
             amountLoanFee = periodFee %>% currency(digits = 2)
           ) %>%
           mutate(balanceEnd = amountInitialDraw + amountAdditionalDraw)
-      } else {
+      }
+      if (period > 0) {
         initial_balance <-
           all_payment_data$balanceEnd[period_index - 1]
 
@@ -1016,12 +1029,12 @@ calculate_loan_payment <-
           )
 
       }
+
       all_payment_data <-
         month_df %>%
         bind_rows(all_payment_data) %>%
         arrange((idPeriod))
-
-    }
+}
 
     all_payment_data <-
       all_payment_data %>%
