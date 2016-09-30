@@ -80,6 +80,7 @@ devtools::install_github("abresler/fundManageR")
 * `calculate_loan_payment` -- Calculates loan repayment data given specified parameters
 * `calculate_residual_valuation_ebitda_multiples` -- Calculates residual values given specified [EBITDA](https://en.wikipedia.org/wiki/Earnings_before_interest,_taxes,_depreciation,_and_amortization) and [EBITDA Multiples](http://www.investopedia.com/terms/e/ev-ebitda.asp)
 * `calculate_residual_valuation_cap_rates` -- Calculates residual value given specified [Net Operating Income](http://www.investopedia.com/terms/n/noi.asp) and [Capitalization Rates](http://www.investopedia.com/terms/c/capitalizationrate.asp)
+* `calculate_leverage_metrics` -- Caluclates crude leveraged cash flow metrics for a given set of inputs.  Ideal for *back of the envelope* type calculations of a potential leveraged asset purchase.
 * `calculate_valuation_post_money` -- Calculates entity ownership post investment
 * `calculate_days_accrued_pref` -- Calculates accrued preference/interest for a specified period.
 

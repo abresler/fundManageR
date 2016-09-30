@@ -164,7 +164,7 @@ parse_for_currency_value <-
     value <-
       x %>%
       readr::parse_number() %>%
-      currency
+      formattable::currency()
     return(value)
   }
 
@@ -590,4 +590,699 @@ calculate_share_proceeds <-
     proceeds <-
       (price * shares) %>% currency()
     return(proceeds)
+  }
+
+calculate_basis <-
+  function(purchase_price = "$10,000,000",
+           capitalized_acquisition_costs = "$300,0000",
+           capital_investment = "$1,200,000") {
+  options(scipen = 999)
+
+  if (purchase_price %>% is_null) {
+    stop("Please enter a purchase price")
+  }
+
+  amountPurchasePrice <-
+    purchase_price %>%
+    parse_for_currency_value()
+
+  if (!capitalized_acquisition_costs %>% is_null) {
+    amountCapitalizedCosts <-
+      capitalized_acquisition_costs %>%
+      parse_for_currency_value()
+  } else {
+    amountCapitalizedCosts <-
+      0
+  }
+
+  if (!capitalized_acquisition_costs %>% is_null) {
+    amountCapitalInvestment <-
+      capital_investment %>%
+      parse_for_currency_value()
+  } else {
+    capital_investment <-
+      0
+  }
+
+  basis_df <-
+    data_frame(amountPurchasePrice, amountCapitalInvestment, amountCapitalizedCosts) %>%
+    mutate(amountBasis = amountPurchasePrice + amountCapitalInvestment + amountCapitalizedCosts)
+  return(basis_df)
+}
+
+calculate_capitalization <-
+  function(purchase_price = "$10,000,000",
+           capitalized_acquisition_costs = "$300,0000",
+           capital_investment = "$1,200,000",
+           loan_to_cost = .7,
+           borrow_capital_investment = T,
+           include_capitalized_cost = F,
+           leverage_threshold = .95) {
+
+    if (loan_to_cost %>% is_null) {
+      stop("Please enter a loan to cost even if it is zero")
+    }
+
+    if (leverage_threshold %>% is_null) {
+      leverage_threshold <-
+        1
+    }
+
+    pct_ltc <-
+      loan_to_cost %>% parse_for_percentage()
+
+    if (pct_ltc > leverage_threshold) {
+      leverage_message <-
+        "\nDon't be a reckless idiot, remember what happend to Lehman Brothers???\nDon't know Lehman Brothers, Google it\n" %>%
+        paste0(pct_ltc, ' is unprudent leverage\nA more reasonable amount of leverage is: ', leverage_threshold %>% formattable::percent(), '\nChange your leverage assumptions and try again')
+
+      stop(leverage_message)
+    }
+    basis_df <-
+      calculate_basis(purchase_price = purchase_price, capitalized_acquisition_costs = capitalized_acquisition_costs, capital_investment = capital_investment)
+    if (include_capitalized_cost) {
+      debt_basis <-
+        basis_df %>% mutate(amountDebtBasis = amountPurchasePrice + amountCapitalizedCosts) %>%
+        .$amountDebtBasis
+    } else {
+      debt_basis <-
+        basis_df$amountPurchasePrice
+    }
+
+    loan_proceeds <-
+      debt_basis * pct_ltc
+
+    if (borrow_capital_investment) {
+      loan_proceeds <-
+        loan_proceeds + basis_df$amountCapitalInvestment
+    }
+
+    capital_stack_df <-
+      basis_df %>%
+      mutate(
+        amountLoanProceeds = -loan_proceeds,
+        amountEquity = -(amountBasis + amountLoanProceeds)
+      )
+
+    return(capital_stack_df)
+  }
+
+get_data_monthly_periods <-
+  function(start_date = "2016-06-01",
+           term_years = 25,
+           term_months = 0){
+
+    periods <-
+      term_years * 12 + term_months
+
+    periods <-
+      0:periods
+
+    start_date <-
+      start_date %>% lubridate::ymd %>% as.Date()
+
+    get_end_of_period <-
+      function(period = 0) {
+        if (period == 0) {
+          period_date <-
+            start_date %m+% months(period) %>%
+            as.character() %>%
+            as.Date()
+        }
+
+        if (period == 1) {
+          period_date <-
+            start_date %m+% months(0) %>%
+            timeDate::timeLastDayInMonth %>%
+            as.character() %>%
+            as.Date()
+        }
+
+        if (period > 1) {
+          period_date <-
+            start_date %m+% months(period - 1) %>%
+            timeDate::timeLastDayInMonth %>%
+            as.character() %>%
+            as.Date()
+        }
+        period_df <-
+          data_frame(idPeriod = period, datePeriod = period_date)
+        return(period_df)
+
+      }
+
+    all_periods <-
+      periods %>%
+      purrr::map(function(x) {
+        get_end_of_period(period = x)
+      }) %>%
+      compact %>%
+      bind_rows()
+
+    all_periods <-
+      all_periods %>%
+      mutate(yearPeriod = ifelse(idPeriod == 0, 0, (idPeriod %/% 12) + 1)) %>%
+      dplyr::select(idPeriod, yearPeriod, everything())
+
+    return(all_periods)
+  }
+
+pmt <-
+  function (r, n, pv, fv, type = 0) {
+    if (type != 0 && type != 1) {
+      print("Error: type should be 0 or 1!")
+    }
+    else {
+      pmt <- (pv + fv / (1 + r) ^ n) * r / (1 - 1 / (1 + r) ^ n) * (-1) *
+        (1 + r) ^ (-1 * type)
+      return(pmt)
+    }
+  }
+
+calculate_loan_payment <-
+  function(loan_start_date = "2016-06-01",
+           amount_initial_draw = 3000,
+           is_interest_only = F,
+           interest_only_periods = 24,
+           interest_rate = "10%",
+           is_actual_360 = T,
+           amortization_years = 10,
+           amortization_months = 0,
+           term_years = 10,
+           term_months = 0,
+           pct_loan_fee = 0,
+           balloon_year = 10,
+           override_monthly_interest = F,
+           interest_reserve_period = 0,
+           balloon_month = 0,
+           return_annual_summary = F) {
+    options(scipen = 99999)
+    options(digits = 10)
+
+    interest_rate <-
+      interest_rate %>%
+      parse_for_percentage()
+    if (is_actual_360 == T) {
+      daily_interest <-
+        interest_rate / 360
+      net_rate <-
+        interest_rate / 360 * 365
+    } else {
+      daily_interest <-
+        interest_rate / 365
+      net_rate <-
+        interest_rate
+    }
+
+    amortization_periods <-
+      (amortization_years * 12) + amortization_months
+
+    loan_periods <-
+      (balloon_year * 12) + balloon_month
+
+    loan_period_df <-
+      get_data_monthly_periods(start_date = loan_start_date,
+                               term_years = term_years,
+                               term_months = term_months)
+    loan_period_df <-
+      loan_period_df %>%
+      mutate(
+        isIO = ifelse(is_interest_only == T &
+                        idPeriod <= interest_only_periods, T, F),
+        isActiveLoan = ifelse(idPeriod <= loan_periods, T, F),
+        amountInitialDraw = ifelse(idPeriod == 0, amount_initial_draw, 0),
+        amountLoanFee = amountInitialDraw * pct_loan_fee
+      )
+
+    loan_period_df <-
+      loan_period_df %>%
+      dplyr::filter(isActiveLoan == T)
+
+    periods <-
+      loan_period_df$idPeriod
+    all_payment_data <-
+      data_frame()
+
+    for (period in periods) {
+      period_index <-
+        period + 1
+
+      datePeriod <-
+        loan_period_df$datePeriod[period_index]
+
+      drawInitial <-
+        loan_period_df$amountInitialDraw[period_index]
+
+      drawAdditional <-
+        0 # loan_period_df$amountAdditionalDraw[period_index] -- layer in eventully
+
+      is_interest_only <-
+        loan_period_df$isIO[period_index]
+
+      periodFee <-
+        loan_period_df$amountLoanFee[period_index]
+
+      if (period == 0) {
+        month_df <-
+          data_frame(
+            idPeriod = period,
+            dateStartPeriod = datePeriod,
+            dateEndPeriod = datePeriod,
+            isIO = is_interest_only,
+            balanceInitial = 0 %>% currency(digits = 2),
+            amountInitialDraw = drawInitial %>% currency(digits = 2),
+            amountAdditionalDraw = drawAdditional %>% currency(digits = 2),
+            paymentInterest = 0 %>% currency(digits = 2),
+            paymentPrincipal = 0 %>% currency(digits = 2),
+            amountRepayment = 0 %>% currency(digits = 2),
+            amountLoanFee = periodFee %>% currency(digits = 2)
+          ) %>%
+          mutate(balanceEnd = amountInitialDraw + amountAdditionalDraw)
+      }
+      if (period > 0) {
+        initial_balance <-
+          all_payment_data$balanceEnd[period_index - 1]
+
+        total_balance <-
+          initial_balance + drawInitial + drawAdditional
+
+        balance_basis <-
+          (all_payment_data$amountInitialDraw %>% sum()) +
+          all_payment_data$amountAdditionalDraw %>% sum()
+
+        start_month <-
+          timeDate::timeFirstDayInMonth(datePeriod) %>% as.Date
+
+        days <-
+          (datePeriod  - start_month) + 1
+
+        month_days <-
+          as.numeric(days, units = 'days')
+
+        if (override_monthly_interest == T) {
+          monthly_interest <-
+            net_rate / 12
+        } else {
+          monthly_interest <-
+            daily_interest * month_days
+        }
+
+        paymentInterest <-
+          monthly_interest * (total_balance)
+
+        if (interest_reserve_period > 0 &
+            period <= interest_reserve_period) {
+          paymentInterest <-
+            0
+        }
+
+        if (is_interest_only == T) {
+          paymentTotal <-
+            paymentInterest
+        } else {
+          paymentTotal <-
+            pmt(
+              r = monthly_interest,
+              pv = balance_basis,
+              fv = 0,
+              n = amortization_periods
+            )
+        }
+
+        paymentPrincipal <-
+          abs(paymentTotal) - paymentInterest
+
+        if (period == loan_periods) {
+          amountRepayment <-
+            initial_balance  + drawInitial + drawAdditional - paymentPrincipal
+        } else {
+          amountRepayment <-
+            0
+        }
+
+        month_df <-
+          data_frame(
+            idPeriod = period,
+            dateStartPeriod = start_month,
+            dateEndPeriod = datePeriod,
+            isIO = is_interest_only,
+            balanceInitial = initial_balance %>% currency(digits = 2),
+            amountInitialDraw = drawInitial %>% currency(digits = 2),
+            amountAdditionalDraw = drawAdditional %>% currency(digits = 2),
+            paymentInterest = -paymentInterest %>% currency(digits = 2),
+            paymentPrincipal = -paymentPrincipal %>% currency(digits = 2),
+            amountRepayment = -amountRepayment %>% currency(digits = 2),
+            amountLoanFee = periodFee %>% currency(digits = 2)
+          ) %>%
+          mutate(
+            balanceEnd =
+              balanceInitial + amountInitialDraw + amountAdditionalDraw +
+              paymentPrincipal + amountRepayment
+          )
+
+      }
+
+      all_payment_data <-
+        month_df %>%
+        bind_rows(all_payment_data) %>%
+        arrange((idPeriod))
+    }
+
+    all_payment_data <-
+      all_payment_data %>%
+      mutate(
+        balanceInitial = balanceInitial %>% currency(digits = 2),
+        amountInitialDraw = amountInitialDraw %>% currency(digits = 2),
+        amountAdditionalDraw = amountAdditionalDraw %>% currency(digits = 2),
+        paymentInterest = paymentInterest %>% currency(digits = 2),
+        paymentPrincipal = paymentPrincipal %>% currency(digits = 2),
+        amountRepayment = amountRepayment %>% currency(digits = 2),
+        amountLoanFee = amountLoanFee %>% currency(digits = 2),
+        balanceEnd = balanceEnd %>% currency(digits = 2)
+      ) %>%
+      mutate(yearPeriod = ifelse(idPeriod > 0,
+                                 ((idPeriod - 1) %/% 12) + 1,
+                                 0)) %>%
+      dplyr::select(yearPeriod, everything())
+
+    if (return_annual_summary == T) {
+      all_payment_data <-
+        all_payment_data %>%
+        group_by(yearPeriod) %>%
+        summarise(
+          dateStartPeriod = min(dateStartPeriod),
+          dateEndPeriod = max(dateEndPeriod),
+          amountInitialDraw = sum(amountInitialDraw),
+          amountAdditionalDraw = sum(amountAdditionalDraw),
+          paymentInterest = sum(paymentInterest),
+          paymentPrincipal = sum(paymentPrincipal),
+          amountRepayment = sum(amountRepayment),
+          amountLoanFee = sum(amountLoanFee),
+          cfLoan = (
+            amountInitialDraw + amountAdditionalDraw + paymentInterest + paymentPrincipal + amountRepayment + amountLoanFee
+          ) %>% currency(digits = 2)
+        ) %>%
+        mutate(
+          balanceEnd = cumsum(amountInitialDraw) + cumsum(paymentPrincipal) + cumsum(amountRepayment)
+        ) %>%
+        ungroup
+    }
+
+    return(all_payment_data)
+  }
+
+
+calculate_average_payment <-
+  function(amount_initial_draw = 3000,
+           is_interest_only = F,
+           interest_only_periods = 24,
+           interest_rate = "10%",
+           is_actual_360 = T,
+           amortization_years = 10,
+           amortization_months = 0,
+           term_years = 10,
+           term_months = 0,
+           pct_loan_fee = 0,
+           balloon_year = 10,
+           override_monthly_interest = F,
+           interest_reserve_period = 0,
+           balloon_month = 0) {
+    library(lubridate)
+    first_of_the_month <-
+      (ceiling_date((Sys.Date() %m+% months(0)), "month") - days(1)) + 1
+
+    pmt_df <-
+      calculate_loan_payment(
+      loan_start_date = first_of_the_month,
+      amount_initial_draw = amount_initial_draw,
+      is_interest_only = is_interest_only,
+      interest_only_periods = interest_only_periods,
+      interest_rate = interest_rate,
+      is_actual_360 = is_actual_360,
+      amortization_years = amortization_years,
+      amortization_months = amortization_months,
+      term_years = term_years,
+      term_months = term_months,
+      pct_loan_fee = pct_loan_fee,
+      balloon_year = balloon_year,
+      balloon_month = balloon_month,
+      return_annual_summary = F
+    )
+
+    pmt_df <-
+      pmt_df %>%
+      dplyr::filter(!idPeriod == 0) %>%
+      group_by(yearPeriod) %>%
+      summarise(
+        paymentPrincipal = sum(paymentPrincipal, na.rm = T),
+        paymentInterest = sum(paymentInterest, na.rm = T)
+      ) %>%
+      ungroup %>%
+      summarise(
+        meanPrincipal = mean(paymentPrincipal, na.rm = T) %>% formattable::currency(),
+        meanInterest = mean(paymentInterest, na.rm = T) %>% formattable::currency()
+      ) %>%
+      mutate(meanPayment = meanPrincipal + meanInterest)
+
+    return(pmt_df)
+  }
+
+calculate_leverage_metric <-
+  function(purchase_price = "$10,000,000",
+           capitalized_acquisition_costs = "$300,0000",
+           capital_investment = "$1,200,000",
+           revenue = "$1,500,000",
+           expenses = "$115,000",
+           loan_to_cost = .7,
+           borrow_capital_investment = F,
+           include_capitalized_cost = T,
+           leverage_threshold = .95,
+           is_interest_only = TRUE,
+           interest_only_periods = 12,
+           interest_rate = "5%",
+           is_actual_360 = TRUE,
+           amortization_years = 30,
+           amortization_months = 0,
+           term_years = 10,
+           term_months = 0,
+           pct_loan_fee = 0,
+           balloon_year = 10,
+           balloon_month = 0,
+           return_message = F) {
+
+    basis_df <-
+      calculate_capitalization(
+      purchase_price = purchase_price,
+      capitalized_acquisition_costs = capitalized_acquisition_costs,
+      capital_investment = capital_investment,
+      loan_to_cost = loan_to_cost
+    )
+
+    revenue_amount <-
+      revenue %>%
+      parse_for_currency_value()
+
+
+    expense_amount <-
+      expenses %>%
+      parse_for_currency_value()
+
+    if (expense_amount > 0) {
+      expense_amount <-
+        -expense_amount
+    }
+
+    operating_income <-
+      revenue_amount + expense_amount
+
+    interest_rate <-
+      interest_rate %>%
+      parse_for_percentage()
+
+    pct_loan_fee <-
+      pct_loan_fee %>%
+      parse_for_percentage()
+
+    average_pmt <-
+      calculate_average_payment(
+        amount_initial_draw = basis_df$amountLoanProceeds %>% abs(),
+        is_interest_only = is_interest_only,
+        interest_only_periods = interest_only_periods,
+        interest_rate = interest_rate,
+        is_actual_360 = is_actual_360,
+        amortization_years = amortization_years,
+        amortization_months = amortization_months,
+        term_years = term_years,
+        term_months = term_months,
+        pct_loan_fee = pct_loan_fee,
+        balloon_year = balloon_year,
+        override_monthly_interest = override_monthly_interest,
+        interest_reserve_period = interest_reserve_period
+      )
+
+    data <-
+      basis_df %>%
+      mutate(
+        amountRevenue = revenue_amount,
+        amountExpense = expense_amount,
+        amountEBITDA_NOI = operating_income
+      ) %>%
+      bind_cols(average_pmt) %>%
+      mutate(
+        amountLNCFMean = amountEBITDA_NOI + meanPayment,
+        pctLeverage = (-amountLoanProceeds / amountBasis) %>% formattable::percent(),
+        pctMarginEBITDA_NOI = (amountEBITDA_NOI / amountRevenue) %>% formattable::percent(),
+        pctReturnOnCost = (amountEBITDA_NOI / amountBasis) %>% formattable::percent(),
+        pctDebtYieldInitial = -(amountEBITDA_NOI / amountLoanProceeds) %>% formattable::percent(),
+        ratioDSCRMean = (amountEBITDA_NOI / -meanPayment) %>% as.numeric() %>% formattable::digits(3),
+        pctCashOnCashMean = (amountLNCFMean / -amountEquity) %>% formattable::percent(),
+        pctReturnOnEquity = ((amountEBITDA_NOI + meanInterest) / -amountEquity) %>% formattable::percent(),
+        rule72Multiple2x = (72 / (pctCashOnCashMean * 100)) %>% as.numeric()
+      )
+    if (return_message) {
+    metric_message <-
+      "Basis: " %>%
+      paste0(
+        data$amountBasis,
+        '\n',
+        'Leverage: ',
+        data$pctLeverage,
+        '\n',
+        'Interest Rate: ',
+        interest_rate,
+        '\n',
+        'Amortization: ',
+        ((amortization_years * 12) + amortization_months),
+        ' periods\n',
+        'Return on Cost: ',
+        data$pctReturnOnCost,
+        '\nCash on Cash: ', data$pctCashOnCashMean,
+        "\nReturn on Equity: ", data$pctReturnOnEquity,
+        "\nRule of 72: Equity Doubles in ", data$rule72Multiple2x, ' years\n'
+      )
+
+    metric_message %>% message()
+    }
+
+    return(data)
+  }
+
+
+#' Calculate leveraged return metrics
+#'
+#' @param purchase_price Vector of Purchase Prices
+#' @param capitalized_acquisition_costs  Vector of Capitalized Acquisition Costs
+#' @param capital_investment Vector of Capital Investment
+#' @param revenue Vector of revenue amounts
+#' @param expenses Vector of expenses
+#' @param loan_to_cost Vector of loan to cost
+#' @param interest_rate Interest Rate
+#' @param borrow_capital_investment Borrow Investment \code{TRUE, FALSE}
+#' @param include_capitalized_cost Include capitalized costs in leverage calculations \code{TRUE, FALSE}
+#' @param leverage_threshold Maximum Leverage
+#' @param is_interest_only Does loan have interst only periods \code{TRUE, FALSE}
+#' @param interest_only_periods Interest Only Periods
+#' @param is_actual_360  Is loan calcuated on actual/360 basis \code{TRUE, FALSE}
+#' @param amortization_years Loan amortization years
+#' @param amortization_months  Loan amortization months
+#' @param term_years Term of the loan, years
+#' @param term_months Term of the loan, months
+#' @param pct_loan_fee Loan pee, percent
+#' @param return_wide
+#' @param return_message
+#'
+#' @return
+#' @export
+#' @import readr dplyr lubridate stringr purrr tidyr formattable
+#' @examples
+calculate_leverage_metrics <-
+  function(purchase_price = 0,
+           capitalized_acquisition_costs = 0,
+           capital_investment = 0,
+           revenue = 0,
+           expenses = 0,
+           loan_to_cost = 0,
+           interest_rate = 0,
+           borrow_capital_investment = F,
+           include_capitalized_cost = T,
+           leverage_threshold = .95,
+           is_interest_only = FALSE,
+           interest_only_periods = 0,
+           is_actual_360 = TRUE,
+           amortization_years = 30,
+           amortization_months = 0,
+           term_years = 30,
+           term_months = 0,
+           pct_loan_fee = 0,
+           return_wide = T,
+           return_message = T) {
+    variable_matrix <-
+      expand.grid(
+        purchase_price = purchase_price,
+        capitalized_acquisition_costs = capitalized_acquisition_costs,
+        capital_investment = capital_investment,
+        revenue = revenue,
+        expenses = expenses,
+        loan_to_cost = loan_to_cost,
+        borrow_capital_investment = borrow_capital_investment,
+        include_capitalized_cost = include_capitalized_cost,
+        leverage_threshold = leverage_threshold,
+        is_interest_only = is_interest_only,
+        interest_only_periods = interest_only_periods,
+        interest_rate = interest_rate,
+        is_actual_360 = is_actual_360,
+        amortization_years = amortization_years,
+        amortization_months = amortization_months,
+        term_years = term_years,
+        term_months = term_months,
+        pct_loan_fee = pct_loan_fee,
+        stringsAsFactors = F
+      ) %>%
+      as_data_frame()
+
+    all_data <-
+      1:nrow(variable_matrix) %>%
+      map_df(function(x){
+        calculate_leverage_metric(
+          purchase_price = variable_matrix$purchase_price[[x]],
+          capitalized_acquisition_costs = variable_matrix$capitalized_acquisition_costs[[x]],
+          capital_investment = variable_matrix$capital_investment[[x]],
+          revenue = variable_matrix$revenue[[x]],
+          expenses = variable_matrix$expenses[[x]],
+          loan_to_cost = variable_matrix$loan_to_cost[[x]],
+          borrow_capital_investment = variable_matrix$borrow_capital_investment[[x]],
+          include_capitalized_cost = variable_matrix$include_capitalized_cost[[x]],
+          leverage_threshold = variable_matrix$leverage_threshold[[x]],
+          is_interest_only = variable_matrix$is_interest_only[[x]],
+          interest_only_periods = variable_matrix$interest_only_periods[[x]],
+          is_actual_360 = variable_matrix$is_actual_360[[x]],
+          amortization_years = variable_matrix$amortization_years[[x]],
+          amortization_months = variable_matrix$amortization_months[[x]],
+          term_years = variable_matrix$term_years[[x]],
+          term_months = variable_matrix$term_months[[x]],
+          pct_loan_fee = variable_matrix$pct_loan_fee[[x]],
+          balloon_year = variable_matrix$term_years[[x]],
+          balloon_month = variable_matrix$term_months[[x]],
+          return_message = return_message
+        ) %>%
+          mutate(idScenario = x) %>%
+          dplyr::select(idScenario, everything())
+
+      })
+
+    if (!return_wide) {
+      all_data <-
+        all_data %>%
+        gather(item, value, -c(idScenario))
+    } else {
+      all_data <-
+        all_data %>%
+        mutate_at(.cols =
+                    all_data %>% dplyr::select(matches("^amount[A-Z]|^mean[A-Z]")) %>% names(),
+                  funs(. %>% formattable::currency(digits = 0))) %>%
+        mutate_at(.cols =
+                    all_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names(),
+                  funs(. %>% formattable::percent(digits = 0)))
+    }
+    return(all_data)
   }

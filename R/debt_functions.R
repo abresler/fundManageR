@@ -751,6 +751,24 @@ get_data_index_symbol_current_value <-
   }
 
 
+parse_for_percentage <-
+  function(x) {
+    value <-
+      x %>%
+      readr::parse_number()
+
+    if (value >= 1) {
+      value <-
+        value /  100
+    }
+    value <-
+      value %>%
+      formattable::percent()
+
+    return(value)
+  }
+
+
 get_data_monthly_periods <-
   function(start_date = "2016-06-01",
            term_years = 25,
@@ -865,10 +883,9 @@ calculate_loan_payment <-
            return_annual_summary = F) {
     options(scipen = 99999)
     options(digits = 10)
-    if (interest_rate > 0) {
-      interest_rate <-
-        interest_rate / 100
-    }
+    interest_rate <-
+      interest_rate %>%
+      parse_for_percentage()
     if (is_actual_360 == T) {
       daily_interest <-
         interest_rate / 360
