@@ -631,19 +631,19 @@ calculate_basis <-
 }
 
 calculate_capitalization <-
-  function(purchase_price = "$10,000,000",
-           capitalized_acquisition_costs = "$300,0000",
-           capital_investment = "$1,200,000",
+  function(purchase_price = "$9,700,000",
+           capitalized_acquisition_costs = "$300,000",
+           capital_investment = "$0",
            loan_to_cost = .7,
            borrow_capital_investment = T,
            include_capitalized_cost = F,
            leverage_threshold = .95) {
 
-    if (loan_to_cost %>% is_null) {
+    if (loan_to_cost %>% is_null()) {
       stop("Please enter a loan to cost even if it is zero")
     }
 
-    if (leverage_threshold %>% is_null) {
+    if (leverage_threshold %>% is_null()) {
       leverage_threshold <-
         1
     }
@@ -1048,9 +1048,9 @@ calculate_average_payment <-
   }
 
 calculate_leverage_metric <-
-  function(purchase_price = "$10,000,000",
-           capitalized_acquisition_costs = "$300,0000",
-           capital_investment = "$1,200,000",
+  function(purchase_price = "$9,700,000",
+           capitalized_acquisition_costs = "$300,000",
+           capital_investment = "0",
            revenue = "$1,500,000",
            expenses = "$115,000",
            loan_to_cost = .7,
@@ -1075,13 +1075,14 @@ calculate_leverage_metric <-
       purchase_price = purchase_price,
       capitalized_acquisition_costs = capitalized_acquisition_costs,
       capital_investment = capital_investment,
-      loan_to_cost = loan_to_cost
+      loan_to_cost = loan_to_cost,
+      borrow_capital_investment = borrow_capital_investment,
+      include_capitalized_cost = include_capitalized_cost,
     )
 
     revenue_amount <-
       revenue %>%
       parse_for_currency_value()
-
 
     expense_amount <-
       expenses %>%
@@ -1282,7 +1283,10 @@ calculate_leverage_metrics <-
                   funs(. %>% formattable::currency(digits = 0))) %>%
         mutate_at(.cols =
                     all_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names(),
-                  funs(. %>% formattable::percent(digits = 0)))
+                  funs(. %>% formattable::percent(digits = 2))) %>%
+        mutate_at(.cols =
+                  all_data %>% dplyr::select(matches("^ratio[A-Z]|^rule")) %>% names(),
+                funs(. %>% formattable::comma(digits = 4)))
     }
     return(all_data)
   }

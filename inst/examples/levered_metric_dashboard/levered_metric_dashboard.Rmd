@@ -1,0 +1,350 @@
+---
+title: "Leveraged Return Calculator"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu,
+    source_code: https://git.io/vaZdx
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+packages <- 
+  c('fundManageR', 'dplyr', 'flexdashboard', 'rbokeh', 'tidyr', 'purrr', 'stringr', 'shiny', 'tibble', 'd3treeR', 'treemap', 'taucharts')
+lapply(packages, library, character.only = T)
+```
+
+Input Assumptions {.sidebar}
+=======================================================================
+
+### Financial Assumptions
+
+Interactive [shiny](shiny.rstudio.com) [flexdashboard](http://rmarkdown.rstudio.com/flexdashboard/) utilizing [fundManageR](https://github.com/abresler/fundManageR)'s leveraged cash flow metric calculator for back of the envelope leveraged cash flow analysis.
+
+```{r inputs}
+textInput("assetName", "Asset Name", "500 Park Avenue", width = '150px')
+# purchase price
+textInput("purchase_price", "Purchase Price", "$10,000,000",width = '150px')
+textInput("capitalized_acquisition_costs", "Acquisition Costs", "$300,000",width = '150px')
+textInput("capital_investment", "Capital Investment", "$200,000",width = '150px')
+textInput("revenue", "Revenue", "$1,500,000",width = '150px')
+textInput("expenses", "Expenses", "$325,000", width = '150px')
+textInput("loan_to_cost", "Loan to Cost", "70%", width = '150px')
+numericInput(
+  inputId = 'amortization_years',
+  label = 'Amortization Period, Years',
+  value = 30,
+  min = 0,
+  step = 1,
+  max = 1000,
+  width = '120px'
+  )
+numericInput(
+  inputId = 'term_years',
+  label = 'Loan Term, Years',
+  value = 10,
+  min = 1,
+  step = 1,
+  max = 1000,
+  width = '120px'
+  )
+textInput("interest_rate", "Interest Rate", "3.85%", width = '150px')
+selectInput(
+  'is_actual_360',
+  label = "Actual/360 Interest?",
+  choices = c(TRUE, FALSE),
+  multiple = F,
+  selected = T,
+  selectize = T,
+  width = '120px'
+  )
+selectInput(
+  'borrow_capital_investment',
+  label = "Borrow Capital Investment?",
+  choices = c(TRUE, FALSE),
+  multiple = F,
+  selectize = T,
+  width = '120px'
+  )
+selectInput(
+  'include_capitalized_cost',
+  label = "Capitalize Acquisition Costs?",
+  choices = c(TRUE, FALSE),
+  multiple = F,
+  selectize = T,
+  width = '120px'
+  )
+selectInput(
+  'is_interest_only',
+  label = "Interest Only Loan?",
+  choices = c(TRUE, FALSE),
+  multiple = F,
+  selected = FALSE,
+  selectize = T,
+  width = '120px'
+  )
+numericInput(
+  inputId = 'interest_only_periods',
+  label = 'Interest Only Periods',
+  value = 0,
+  min = 0,
+  step = 1,
+  max = 1000000,
+  width = '120px'
+  )
+```
+
+Financial Return Table
+=======================================================================
+
+Row {data-width=350}
+-----------------------------------------------------------------------
+
+```{r}
+get_return_data <- 
+  reactive({
+  return_data <- 
+      calculate_leverage_metrics(
+      purchase_price = input$purchase_price,
+      capitalized_acquisition_costs = input$capitalized_acquisition_costs,
+      capital_investment = input$capital_investment,
+      revenue = input$revenue,
+      expenses = input$expenses,
+      loan_to_cost = input$loan_to_cost,
+      interest_rate = input$interest_rate,
+      borrow_capital_investment = input$borrow_capital_investment,
+      include_capitalized_cost = input$include_capitalized_cost,
+      leverage_threshold = 1,
+      is_interest_only = input$is_interest_only,
+      interest_only_periods = input$interest_only_periods,
+      is_actual_360 = input$is_actual_360,
+      amortization_years = input$amortization_years,
+      amortization_months = 0,
+      term_years = input$term_years,
+      term_months = 0,
+      pct_loan_fee = 0,
+      return_wide = T,
+      return_message = F
+    ) %>% 
+    mutate(nameAsset = input$assetName) %>% 
+    dplyr::select(-idScenario) %>% 
+    dplyr::select(nameAsset, everything())
+  return(return_data)
+})
+
+```
+
+### Return On Cost {.value-box}
+
+```{r}
+
+renderValueBox({
+  return_data <- 
+  get_return_data()
+  rate <- 
+    return_data$pctReturnOnCost
+  valueBox(
+    value = rate,
+    icon = "glyphicon-usd",
+    color = 'red',
+  )
+})
+```
+
+### Debt Service Coverage {.value-box}
+
+```{r}
+
+renderValueBox({
+  return_data <- 
+  get_return_data()
+  rate <- 
+    return_data$ratioDSCRMean
+  valueBox(
+    value = rate,
+    icon = "ion-arrow-graph-up-right"
+  )
+})
+```
+
+### Leverage {.value-box}
+
+```{r}
+renderValueBox({
+  return_data <- 
+  get_return_data()
+  rate <- 
+    return_data$pctLeverage
+  valueBox(
+    value = rate,
+    icon = "fa-money",
+    color = 'red'
+  )
+})
+
+```
+
+### Cash on Cash {.value-box}
+
+```{r}
+# Emit the download rate
+renderValueBox({
+  return_data <- 
+  get_return_data()
+  rate <- 
+    return_data$pctCashOnCashMean
+  valueBox(
+    value = rate,
+    icon = "fa-area-chart"
+  )
+})
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### Calculations {data-width=400}
+Financial Summary
+```{r}
+renderTable({
+    return_data <- 
+    get_return_data()
+    return_data %>% t() %>% data.frame(value = .) %>% tibble::rownames_to_column(var = 'item') 
+})
+```
+
+Financial Return Visualizations
+=======================================================================
+
+Row {data-width=350}
+-----------------------------------------------------------------------
+
+### Sources and Uses
+
+```{r}
+renderD3tree2({
+  return_data <-
+    get_return_data() %>% 
+    gather(item, value, -(nameAsset))
+  source_use_df <-
+    return_data %>%
+    dplyr::slice(1:6) %>%
+    dplyr::filter(!item == 'amountBasis') %>%
+    dplyr::select(item, value) %>%
+    left_join(data_frame(
+      item = c(
+        "amountPurchasePrice",
+        "amountCapitalInvestment",
+        "amountCapitalizedCosts",
+        "amountLoanProceeds",
+        "amountEquity"
+      ),
+      typeItem = c("use", "use", "use",
+                   "source", "source")
+    )) %>%
+    dplyr::mutate(item = item %>% str_replace_all('amount', '')) %>% 
+    suppressMessages()
+  
+  treemap_viz <-
+    source_use_df %>%
+    mutate(valueThousands = value %>% abs() / 1000) %>%
+    treemap(
+      index = c("typeItem", 'item'),
+      # structure of the trees
+      vSize = "valueThousands",
+      # size of the tree
+      vColor = "valueThousands",
+      # color of the tree
+      palette = "RdYlGn",
+      fontsize.labels = 8,
+      type = "value"
+    ) %>%
+    d3tree2(rootname = "Sources & Uses")
+  
+  treemap_viz
+})
+```
+
+### Cash Flow Summary
+
+```{r tauchart}
+renderTaucharts({
+  return_data <-
+    get_return_data() %>% 
+    gather(item, value, -(nameAsset))
+  
+    return_data %>%
+    dplyr::slice(7:13) %>%
+    dplyr::select(item, value) %>%
+    dplyr::filter(!item == 'meanPayment') %>% 
+    mutate(
+      label = c(rep("NOI", 3), rep("Leverage", 3)),
+      value = value %>% formattable::currency(),
+      item = item %>% stringr::str_replace_all('amount', '')
+    ) %>%
+    tauchart() %>% tau_bar("value", c("label", "item"), 'label', horizontal = TRUE) %>% 
+    tau_legend() %>%
+    tau_tooltip()
+})
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Cash Flow Metrics
+
+```{r tauchart_metrics}
+renderTaucharts({
+  return_data <-
+    get_return_data() %>%
+    gather(item, value, -(nameAsset))
+  
+  return_data %>%
+    dplyr::filter(
+      item %in% c(
+        "pctReturnOnCost",
+        "pctDebtYieldInitial",
+        "pctCashOnCashMean",
+        "pctReturnOnEquity"
+      )
+    ) %>%
+    dplyr::select(item, value) %>%
+    mutate(
+      label = c(rep("Unleveraged", 2), rep("Leveraged", 2)),
+      value = value %>% formattable::percent(),
+      item = item %>% stringr::str_replace_all("pct", '')
+    ) %>%
+    tauchart() %>%
+    tau_bar("item", 'value', 'label', horizontal = F) %>%
+    tau_guide_y(tick_format = ",.2%", label = '') %>%
+    tau_legend() %>%
+    tau_tooltip()
+})
+```
+
+### Deal Metrics
+
+```{r tauchart_metrics3}
+renderTaucharts({
+  return_data <-
+    get_return_data() %>%
+    gather(item, value, -(nameAsset))
+  
+  return_data %>% 
+      dplyr::filter(item %in% c("pctLeverage", "pctMarginEBITDA_NOI", 
+                                "ratioDSCRMean", "rule72Multiple2x")
+      ) %>% 
+      dplyr::select(item, value) %>%
+      mutate(
+        value = value %>% formattable::percent(),
+        item = item %>% stringr::str_replace_all("pct", '')
+      ) %>%
+      tauchart() %>% 
+      tau_bar('item', 'value', 'item', horizontal = F) %>% 
+      tau_guide_y(tick_format = ",.2f", label = '') %>% 
+      tau_guide_x(label = '',padding = 20)  %>% 
+      tau_legend() %>%
+      tau_tooltip()
+})
+```

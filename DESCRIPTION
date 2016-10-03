@@ -1,7 +1,7 @@
 Package: fundManageR
 Type: Package
-Title: An Investment Management toolkit for R.  Because Excel can't and shouldn't do what this package can do.
-Version: 0.1.101
+Title: An Investment Management toolkit for R.  Because Excel is a threat to the global financial system.
+Version: 0.1.102
 Authors@R: person("Alex", "Bresler", email = "abresler@asbcllc.com", role = c("aut", "cre"))
 License: MIT + file LICENSE
 Encoding: UTF-8
