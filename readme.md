@@ -101,7 +101,7 @@ devtools::install_github("abresler/fundManageR")
 
 ### Vignettes
 
--   [ADV Function Tutorial: Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_9a2e2051c7d2472aa8879ce7ed4fe48b.html)
+-   [ADV Function Tutorial: Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_27da3532ff0a4af58e077670a2ce876e.html)
 -   [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment](http://rstudio-pubs-static.s3.amazonaws.com/212788_b319809622a942b4a760d307a4cfe636.html)
 
 ### Interactive Analysis Tools

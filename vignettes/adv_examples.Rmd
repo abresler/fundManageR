@@ -10,7 +10,7 @@ output:
 
 ### Introduction
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. Demonstrating some of [fundManageR](https://github.com/abresler/fundManageR)'s [ADV](http://www.investopedia.com/terms/a/advform.asp) data acquisition functions.
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook demonstrating some of [fundManageR](https://github.com/abresler/fundManageR)'s [ADV](http://www.investopedia.com/terms/a/advform.asp) data acquisition functions.
 
 ### Setup
 ```{r results='hide', message=FALSE, warning=FALSE}
@@ -21,7 +21,7 @@ lapply(packages, library, character.only = T)
 
 ### Explore Most Recent ADV Filing Summary
 
-Lets start this tutorial exploring some big picture information, specifically summary data filed with the SEC as of September 1st, 2016.  To acquire the data run the `get_data_adv_managers_current_period_summary` function.
+Lets start this tutorial exploring some big picture information, specifically summary data filed with the SEC as of October 1st, 2016.  To acquire the data run the `get_data_adv_managers_current_period_summary` function.
 
 ```{r most_recent}
 most_recent_data <-
