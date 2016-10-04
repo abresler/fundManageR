@@ -8764,7 +8764,6 @@ get_period_type_adv_data <-
            remove_existing_folder = F,
            remove_files = F,
            empty_trash = F) {
-    setwd("~")
     if (!'url_df' %>% exists){
       url_df <-
         get_data_adv_period_urls(return_wide = F)
