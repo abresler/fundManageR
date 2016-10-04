@@ -9,7 +9,17 @@ runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-library(fundManageR);library(flexdashboard);library(tidyr);library(purrr);library(dplyr);library(shiny);library(d3treeR);library(treemap);library(stringr);library(tibble);library(taucharts)
+library(flexdashboard)
+library(tidyr)
+library(purrr)
+library(dplyr)
+library(shiny)
+library(d3treeR)
+library(treemap)
+library(stringr)
+library(tibble)
+library(taucharts)
+library(fundManageR)
 ```
 
 

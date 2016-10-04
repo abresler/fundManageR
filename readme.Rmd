@@ -112,9 +112,7 @@ devtools::install_github("abresler/fundManageR")
 * [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/212788_b319809622a942b4a760d307a4cfe636.html)
 
 ### Interactive Analysis Tools
-* [ADV Function Tutorial: Sleuthing The Blackstone Group](http://rstudio-pubs-static.s3.amazonaws.com/211588_9a2e2051c7d2472aa8879ce7ed4fe48b.html)
-* [Partnership Waterfall Calculation: Hypothetical Facebook Seed Investment ](http://rstudio-pubs-static.s3.amazonaws.com/212788_b319809622a942b4a760d307a4cfe636.html)
-
+* [Interactive Leveraged Metric Calculator](https://asbcllc.shinyapps.io/levered_metric_dashboard/)
 
 ### Brief Examples
 
