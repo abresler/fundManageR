@@ -8296,7 +8296,7 @@ get_sec_adv_name_df <-
           "hasServiceOther",
           "typeServiceOther",
           "rangeClientsFinancialPlanning",
-          "amountClientsFinancialPlanningOver500Rounded",
+          "countClientsFinancialPlanningOver500Rounded",
           "hasFeeWrapSponsor",
           "hasFeeWrapPortfolioManager",
           "isAdviserLimitedInvestmentTypes",
