@@ -871,7 +871,7 @@ calculate_loan_payment <-
           all_payment_data$amountAdditionalDraw %>% sum()
 
         start_month <-
-          timeDate::timeFirstDayInMonth(datePeriod) %>% as.Date
+          timeDate::timeFirstDayInMonth(datePeriod) %>% as.Date()
 
         days <-
           (datePeriod  - start_month) + 1

@@ -4,15 +4,14 @@ output:
   flexdashboard::flex_dashboard:
     orientation: rows
     social: menu,
-    source_code: https://git.io/vaZdx
+    source_code: https://git.io/vPOCT
 runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
-packages <- 
-  c('fundManageR', 'dplyr', 'flexdashboard', 'rbokeh', 'tidyr', 'purrr', 'stringr', 'shiny', 'tibble', 'd3treeR', 'treemap', 'taucharts')
-lapply(packages, library, character.only = T)
+library(fundManageR);library(flexdashboard);library(tidyr);library(purrr);library(dplyr);library(shiny);library(d3treeR);library(treemap);library(stringr);library(tibble);library(taucharts)
 ```
+
 
 Input Assumptions {.sidebar}
 =======================================================================
@@ -22,7 +21,7 @@ Input Assumptions {.sidebar}
 Interactive [shiny](shiny.rstudio.com) [flexdashboard](http://rmarkdown.rstudio.com/flexdashboard/) utilizing [fundManageR](https://github.com/abresler/fundManageR)'s leveraged cash flow metric calculator for back of the envelope leveraged cash flow analysis.
 
 ```{r inputs}
-textInput("assetName", "Asset Name", "500 Park Avenue", width = '150px')
+textInput("assetName", "Asset Name", "Alex's Deal", width = '150px')
 # purchase price
 textInput("purchase_price", "Purchase Price", "$10,000,000",width = '150px')
 textInput("capitalized_acquisition_costs", "Acquisition Costs", "$300,000",width = '150px')

@@ -4818,63 +4818,71 @@ get_schedule_b_data <-
 
           names(table_data) <-
             c(
+              'nameEntityManagerOwnerOwner',
+              'idTypeEntityManagerOwnerOwner',
               'nameEntityManagerOwner',
-              'idTypeEntityManagerOwner',
-              'nameEntityManagerOwned',
-              'statusEntityManagerOwner',
-              'monthYearEntityManagerOwnerPurchased',
-              'idRangeManagerEntityOwnership',
-              'isControlPerson',
-              'isPublicReportingEntity',
-              'idEntityManagerOwner'
+              'statusEntityManagerOwnerOwner',
+              'monthYearEntityManagerOwnerOwnerPurchased',
+              'idRangeManagerEntityOwnerOwnership',
+              'isOwnerOwnerControlPerson',
+              'isOwnerOwnerPublicReportingEntity',
+              'idEntityManagerOwnerOwner'
             )
 
           table_data <-
             table_data %>%
             mutate(
               idCRD,
-              isControlPerson = if_else(isControlPerson == "Y", TRUE, FALSE),
-              isPublicReportingEntity = if_else(isPublicReportingEntity == "Y", TRUE, FALSE),
-              dateEntityManagerOwnerPurchased = '01/' %>% paste0(monthYearEntityManagerOwnerPurchased) %>% lubridate::dmy %>% as.Date
+              isOwnerOwnerControlPerson = if_else(isOwnerOwnerControlPerson == "Y", TRUE, FALSE),
+              isOwnerOwnerPublicReportingEntity = if_else(isOwnerOwnerPublicReportingEntity == "Y", TRUE, FALSE),
+              dateEntityManagerOwnerOwnerPurchased = '01/' %>% paste0(monthYearEntityManagerOwnerOwnerPurchased) %>% lubridate::dmy %>% as.Date
             ) %>%
-            left_join(get_type_manager_entity_owner_df()) %>%
-            left_join(get_range_entity_owner_df()) %>%
-            dplyr::select(-monthYearEntityManagerOwnerPurchased) %>%
+            left_join(
+              get_type_manager_entity_owner_df() %>%
+                dplyr::rename(idTypeEntityManagerOwnerOwner = idTypeEntityManagerOwner, typeEntityManagerOwnerOwner = typeEntityManagerOwner,
+                                                                   isEntityOwnerOwnerManagerEntity = isEntityOwnerManagerEntity)
+              ) %>%
+            left_join(
+              get_range_entity_owner_df() %>% dplyr::rename(idRangeManagerEntityOwnerOwnership = idRangeManagerEntityOwnership, rangeManagerEntityOwnerOwnership = rangeManagerEntityOwnership)
+              ) %>%
+            dplyr::select(-monthYearEntityManagerOwnerOwnerPurchased) %>%
             suppressMessages()
 
           has_individual_data <-
             table_data %>%
-            dplyr::filter(idTypeEntityManagerOwner == "I") %>% nrow > 0
-
+            dplyr::filter(idTypeEntityManagerOwnerOwner == "I") %>% nrow > 0
 
           if (has_individual_data) {
             has_entity_df <-
-              table_data %>% dplyr::filter(isEntityOwnerManagerEntity == T) %>% nrow > 0
+              table_data %>% dplyr::filter(isEntityOwnerOwnerManagerEntity == T) %>% nrow > 0
             if (has_entity_df) {
               entity_df <-
-                table_data %>% dplyr::filter(isEntityOwnerManagerEntity == T)
+                table_data %>% dplyr::filter(isEntityOwnerOwnerManagerEntity == T)
 
               entity_df <-
                 entity_df %>%
                 mutate(
-                  countDash = idEntityManagerOwner %>% str_count('\\-'),
+                  countDash = idEntityManagerOwnerOwner %>% str_count('\\-'),
                   typeIDEntityManagerOwner = if_else(countDash == 0, 'idCRD', 'idEIN')
                 ) %>%
                 dplyr::select(-countDash)
 
               individual_data <-
                 table_data %>%
-                dplyr::filter(idTypeEntityManagerOwner == "I")
-
+                dplyr::filter(idTypeEntityManagerOwnerOwner == "I")
 
               individual_data <-
-                individual_data$nameEntityManagerOwner %>%
+                individual_data$nameEntityManagerOwnerOwner %>%
                 map_df(parse_manager_owner_name) %>%
+                dplyr::rename(nameEntityManagerOwnerOwner = nameEntityManagerOwner, nameCommonEntityOwnerOwnerManager = nameCommonEntityOwnerManager,
+                              nameFullEntityManagerOwnerOwner = nameFullEntityOwnerManager, nameFirstEntityManagerOwnerOwner = nameFirstEntityManagerOwner,
+                              nameMiddleEntityManagerOwnerOwner = nameMiddleEntityManagerOwner,
+                              nameLastEntityManagerOwnerOwner = nameLastEntityManagerOwner) %>%
                 right_join(individual_data) %>%
                 suppressMessages() %>%
                 mutate(
-                  countDash = idEntityManagerOwner %>% str_count('\\-'),
-                  typeIDEntityManagerOwner = if_else(countDash == 0, 'idEmployee', 'idSSN')
+                  countDash = idEntityManagerOwnerOwner %>% str_count('\\-'),
+                  typeIDEntityManagerOwnerOwner = if_else(countDash == 0, 'idEmployee', 'idSSN')
                 ) %>%
                 dplyr::select(-countDash)
 
@@ -4882,99 +4890,108 @@ get_schedule_b_data <-
                 individual_data %>%
                 bind_rows(entity_df) %>%
                 mutate(
-                  nameCommonEntityOwnerManager = if_else(
-                    nameCommonEntityOwnerManager %>% is.na,
-                    nameEntityManagerOwner,
-                    nameCommonEntityOwnerManager
+                  nameCommonEntityOwnerOwnerManager = if_else(
+                    nameCommonEntityOwnerOwnerManager %>% is.na,
+                    nameEntityManagerOwnerOwner,
+                    nameCommonEntityOwnerOwnerManager
                   ),
-                  nameEntityManagerOwner = if_else(
-                    nameFullEntityOwnerManager %>% is.na,
-                    nameEntityManagerOwner,
-                    nameFullEntityOwnerManager
+                  nameEntityManagerOwnerOwner = if_else(
+                    nameFullEntityManagerOwnerOwner %>% is.na,
+                    nameEntityManagerOwnerOwner,
+                    nameFullEntityManagerOwnerOwner
                   )
                 ) %>%
                 suppressMessages() %>%
                 mutate(
-                  countDash = idEntityManagerOwner %>% str_count('\\-'),
-                  typeIDEntityManagerOwner = if_else(countDash == 0, 'idEmployee', 'idSSN')
+                  countDash = idEntityManagerOwnerOwner %>% str_count('\\-'),
+                  typeIDEntityManagerOwnerOwner = if_else(countDash == 0, 'idEmployee', 'idSSN')
                 ) %>%
                 dplyr::select(-countDash) %>%
                 dplyr::select(idCRD, everything())
             } else {
               individual_data <-
                 table_data %>%
-                dplyr::filter(idTypeEntityManagerOwner == "I")
+                dplyr::filter(idTypeEntityManagerOwnerOwner == "I")
 
               individual_data <-
-                individual_data$nameEntityManagerOwner %>%
+                individual_data$nameEntityManagerOwnerOwner %>%
                 map_df(parse_manager_owner_name) %>%
+                dplyr::rename(nameEntityManagerOwnerOwner = nameEntityManagerOwner, nameCommonEntityOwnerOwnerManager = nameCommonEntityOwnerManager,
+                              nameFullEntityManagerOwnerOwner = nameFullEntityOwnerManager, nameFirstEntityManagerOwnerOwner = nameFirstEntityManagerOwner,
+                              nameMiddleEntityManagerOwnerOwner = nameMiddleEntityManagerOwner,
+                              nameLastEntityManagerOwnerOwner = nameLastEntityManagerOwner) %>%
                 right_join(individual_data) %>%
-                suppressMessages()
+                suppressMessages() %>%
+                mutate(
+                  countDash = idEntityManagerOwnerOwner %>% str_count('\\-'),
+                  typeIDEntityManagerOwnerOwner = if_else(countDash == 0, 'idEmployee', 'idSSN')
+                ) %>%
+                dplyr::select(-countDash)
 
               table_data <-
                 individual_data %>%
                 mutate(
-                  nameCommonEntityOwnerManager = if_else(
-                    nameCommonEntityOwnerManager %>% is.na,
-                    nameEntityManagerOwner,
-                    nameCommonEntityOwnerManager
+                  nameCommonEntityOwnerOwnerManager = if_else(
+                    nameCommonEntityOwnerOwnerManager %>% is.na,
+                    nameEntityManagerOwnerOwner,
+                    nameCommonEntityOwnerOwnerManager
                   ),
-                  nameEntityManagerOwner = if_else(
-                    nameFullEntityOwnerManager %>% is.na,
-                    nameEntityManagerOwner,
-                    nameFullEntityOwnerManager
+                  nameEntityManagerOwnerOwner = if_else(
+                    nameFullEntityManagerOwnerOwner %>% is.na,
+                    nameEntityManagerOwnerOwner,
+                    nameFullEntityManagerOwnerOwner
                   )
                 ) %>%
                 suppressMessages() %>%
-                dplyr::select(idCRD, everything()) %>%
                 mutate(
-                  countDash = idEntityManagerOwner %>% str_count('\\-'),
-                  typeIDEntityManagerOwner = if_else(countDash == 0, 'idEmployee', 'idSSN')
+                  countDash = idEntityManagerOwnerOwner %>% str_count('\\-'),
+                  typeIDEntityManagerOwnerOwner = if_else(countDash == 0, 'idEmployee', 'idSSN')
                 ) %>%
-                dplyr::select(-countDash)
+                dplyr::select(-countDash) %>%
+                dplyr::select(idCRD, everything())
             }
           } else {
             table_data <-
               table_data %>%
               mutate(
-                countDash = idEntityManagerOwner %>% str_count('\\-'),
-                typeIDEntityManagerOwner = if_else(countDash == 0, 'idCRD', 'idEIN')
+                countDash = idEntityManagerOwnerOwner %>% str_count('\\-'),
+                typeIDEntityManagerOwnerOwner = if_else(countDash == 0, 'idCRD', 'idEIN')
               ) %>%
               dplyr::select(-countDash) %>%
               dplyr::select(idCRD, everything())
           }
 
 
-          if ('nameFullEntityOwnerManager' %in% names(table_data)) {
+          if ('nameFullEntityOwnerOwnerManager' %in% names(table_data)) {
             table_data <-
               table_data %>%
               mutate(
-                nameFullEntityOwnerManager = if_else(
-                  nameFullEntityOwnerManager %>% is.na,
-                  nameEntityManagerOwner,
-                  nameFullEntityOwnerManager
+                nameFullEntityOwnerOwnerManager = if_else(
+                  nameFullEntityOwnerOwnerManager %>% is.na,
+                  nameEntityManagerOwnerOwner,
+                  nameFullEntityOwnerOwnerManager
                 )
               )
           } else {
             table_data <-
               table_data %>%
-              mutate(nameFullEntityOwnerManager = nameEntityManagerOwner)
+              mutate(nameFullEntityOwnerOwnerManager = nameEntityManagerOwnerOwner)
           }
 
-          if ('nameCommonEntityOwnerManager' %in% names(table_data)) {
+          if ('nameCommonEntityOwnerOwnerManager' %in% names(table_data)) {
             table_data <-
               table_data %>%
               mutate(
-                nameCommonEntityOwnerManager = if_else(
-                  nameCommonEntityOwnerManager %>% is.na,
+                nameCommonEntityOwnerOwnerManager = if_else(
+                  nameCommonEntityOwnerOwnerManager %>% is.na,
                   nameEntityManagerOwner,
-                  nameCommonEntityOwnerManager
+                  nameCommonEntityOwnerOwnerManager
                 )
               )
           } else {
             table_data <-
               table_data %>%
-              mutate(nameCommonEntityOwnerManager = nameEntityManagerOwner)
+              mutate(nameCommonEntityOwnerOwnerManager = nameEntityManagerOwnerOwner)
           }
 
           table_data <-
@@ -4982,15 +4999,15 @@ get_schedule_b_data <-
             mutate(nameEntityManager = name_entity_manager) %>%
             dplyr::select(
               nameEntityManager,
+              nameEntityManagerOwnerOwner,
+              statusEntityManagerOwnerOwner,
               nameEntityManagerOwner,
-              statusEntityManagerOwner,
-              isEntityOwnerManagerEntity,
-              dateEntityManagerOwnerPurchased,
-              rangeManagerEntityOwnership,
-              idEntityManagerOwner,
-              typeEntityManagerOwner,
-              isControlPerson,
-              idTypeEntityManagerOwner:typeIDEntityManagerOwner,
+              isEntityOwnerOwnerManagerEntity,
+              dateEntityManagerOwnerOwnerPurchased,
+              rangeManagerEntityOwnerOwnership,
+              idEntityManagerOwnerOwner,
+              typeEntityManagerOwnerOwner,
+              isOwnerOwnerControlPerson,
               everything()
             )
         } else {

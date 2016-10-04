@@ -27,6 +27,7 @@ Imports:
   rvest,
   stringi,
   stringr,
+  timeDate,
   tibble,
   tidyr,
   xml2
