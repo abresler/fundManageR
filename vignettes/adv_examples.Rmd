@@ -313,29 +313,129 @@ sectionScheduleA # Direct Owners
 
 #### Network Graph of Blackstone's Direct Owners
 ```{r network_graph, fig.width=6}
-create_graph(directed = F,
+  library(DiagrammeR)
+owner_graph <-
+  sectionScheduleA %>%
+  dplyr::select(
+    nameEntityManager,
+    nameEntityManagerOwner,
+    nameCommonEntityOwnerManager,
+    rangeManagerEntityOwnership,
+    idTypeEntityManagerOwner
+  ) %>%
+  left_join(
+    sectionScheduleB %>%
+      dplyr::select(
+        nameEntityManagerOwnerOwner,
+        nameEntityManagerOwner,
+        rangeManagerEntityOwnerOwnership
+      )
+  )
+
+owner_graph <-
+  owner_graph %>%
+  mutate_at(.cols = owner_graph %>% dplyr::select(matches('^name[A-Z]')) %>% names,
+            funs(. %>% str_replace_all('\\ ', '\n')))
+
+managers <-
+  owner_graph %>%
+  dplyr::select(manager = nameEntityManager) %>%
+  unique() %>%
+  data.frame()
+
+entity_owner_people <-
+  owner_graph %>%
+  dplyr::filter(idTypeEntityManagerOwner == "I") %>%
+  distinct() %>%
+  dplyr::select(person = nameEntityManagerOwner) %>%
+  unique() %>% 
+  data.frame()
+
+entity_owner_owners <-
+  owner_graph %>%
+  dplyr::filter(!idTypeEntityManagerOwner == "I") %>%
+  dplyr::select(entity = nameEntityManagerOwner) %>%
+  distinct() %>%
+  data.frame()
+
+
+entity_owner_owned_by <-
+  owner_graph %>%
+  dplyr::select(entity_owner = nameEntityManagerOwnerOwner) %>% 
+  distinct() %>%
+  dplyr::filter(!entity_owner %>% is.na()) %>% 
+  unique
+
+schedule_a_edges_people <-
+  owner_graph %>%
+  dplyr::filter(idTypeEntityManagerOwner == "I") %>%
+  dplyr::select(nameEntityManager,
+                nameEntityManagerOwner,
+                rangeManagerEntityOwnership) %>%
+  data.frame(stringsAsFactors = F) %>% 
+  unique
+
+schedule_a_edges_entities <-
+  owner_graph %>%
+  dplyr::filter(!idTypeEntityManagerOwner == "I") %>%
+  dplyr::select(nameEntityManager,
+                nameEntityManagerOwner,
+                rangeManagerEntityOwnership) %>%
+  data.frame(stringsAsFactors = F) %>% 
+  unique
+
+schedule_b_edges_entities <-
+  owner_graph %>%
+  dplyr::select(
+    nameEntityManagerOwner,
+    nameEntityManagerOwnerOwner,
+    rangeManagerEntityOwnerOwnership
+  ) %>%
+  dplyr::filter(!nameEntityManagerOwnerOwner %>% is.na()) %>%
+  distinct() %>% 
+  data.frame()
+
+create_graph(directed = T,
              graph_attrs = "layout = circo") %>%
-  set_graph_name("blackstone_owners") %>%
+  set_graph_name("test") %>%
   set_global_graph_attrs("graph", "output", "visNetwork") %>%
   add_nodes_from_table(managers,
                        set_type = "managers",
-                       label_col = "nameEntityManager") %>%
+                       label_col = "manager") %>%
   add_nodes_from_table(entity_owner_people,
-                       set_type = "People Owners",
-                       label_col = "nameCommonEntityOwnerManager") %>%
+                       set_type = "people",
+                       label_col = "person") %>%
   add_nodes_from_table(entity_owner_owners,
-                       set_type = "Owner Entity",
-                       label_col = "nameCommonEntityOwnerManager") %>%
+                       set_type = "entities",
+                       label_col = "entity") %>%
+  add_nodes_from_table(entity_owner_owned_by,
+                       set_type = "entities_owners",
+                       label_col = "entity_owner") %>%
   add_edges_from_table(
-    schedule_a_edges,
+    schedule_a_edges_people,
     from_col = "nameEntityManager",
-    from_mapping = "nameEntityManager",
-    to_col = "nameCommonEntityOwnerManager",
-    to_mapping = "nameCommonEntityOwnerManager",
-    rel = 'rangeManagerEntityOwnership'
+    from_mapping = 'manager',
+    to_col = "nameEntityManagerOwner",
+    to_mapping = "person",
+    rel_col = "rangeManagerEntityOwnership"
+  ) %>%
+  add_edges_from_table(
+    schedule_a_edges_entities,
+    from_col = "nameEntityManager",
+    from_mapping = 'manager',
+    to_col = "nameEntityManagerOwner",
+    to_mapping = "entity",
+    rel_col = "rangeManagerEntityOwnership"
+  ) %>%
+  add_edges_from_table(
+    schedule_b_edges_entities,
+    from_col = "nameEntityManagerOwner",
+    from_mapping = 'entity',
+    to_col = "nameEntityManagerOwnerOwner",
+    to_mapping = "entity_owner",
+    rel_col = "rangeManagerEntityOwnerOwnership"
   ) %>%
   visnetwork()
-
 ```
 
 ### Schedule B - Indirect Owners
