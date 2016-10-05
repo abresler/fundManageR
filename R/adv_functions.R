@@ -8734,7 +8734,7 @@ parse_sec_adv_data_url <-
       if (adv_data$idLEI %>% class == 'numeric') {
         adv_data <-
           adv_data %>%
-          mutate(idLEI = idLEI %>% as.character)
+          mutate(idLEI = idLEI %>% as.character() %>% str_replace_all("N/A", NA))
       }
     }
 
