@@ -1861,7 +1861,8 @@ extract_node_data <-
           node_df %>%
           dplyr::filter(idNode == max(idNode)) %>%
           .$nodeText
-        if (variable_name %in% c('nameFundGPManagerTrusteeDirector'))  {
+
+        if (variable_name %in% c('nameFundGPManagerTrusteeDirector') & node_df %>% nrow > 2)  {
           node_value <-
             node_df %>% slice(-c(1:2)) %>%
             .$nodeText
@@ -2140,7 +2141,8 @@ parse_funds_tables <-
         fund_table_data <-
           1:nrow(section_matrix_df) %>%
           map_df(function(x) {
-            table_node_df %>% extract_node_data(
+            table_node_df %>%
+              extract_node_data(
               variable_name = section_matrix_df$variableName[x],
               section_letter = section_matrix_df$sectionLetter[x],
               method = 'max'
