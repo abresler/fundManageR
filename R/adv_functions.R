@@ -2541,7 +2541,7 @@ get_section_2_data <-
           node_item_df <-
             data_frame(
               nameItem = c(
-                'hasExemeptionAsSolelyVentureAdviser',
+                'hasExemptionAsSolelyVentureAdviser',
                 'hasExemptionAsPrivateFundManagerUnder150MAUM',
                 'hasExemptionSoleyPrivateFundManagrAUMOver150M'
               ),
@@ -2571,7 +2571,7 @@ get_section_2_data <-
             node_item_df <-
               data_frame(
                 nameItem = c(
-                  'hasExemeptionAsSolelyVentureAdviser',
+                  'hasExemptionAsSolelyVentureAdviser',
                   'hasExemptionAsPrivateFundManagerUnder150MAUM',
                   'hasExemptionSoleyPrivateFundManagrAUMOver150M'
                 ),
@@ -8444,7 +8444,7 @@ get_sec_adv_name_df <-
           "hasControlPersonUnnamed",
           'statusSEC',
           'statusFINRA',
-          'hasExemeptionAsSolelyVentureAdviser',
+          'hasExemptionAsSolelyVentureAdviser',
           'hasExemptionAsPrivateFundManagerUnder150MAUM',
           'hasExemptionSoleyPrivateFundManagrAUMOver150M'
         )
