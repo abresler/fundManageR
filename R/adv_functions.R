@@ -50,33 +50,33 @@ mutate_adv_data <-
     has_dates <-
       data %>% dplyr::select(matches("^date")) %>% names %>% length > 0
     if (has_dates) {
-    data <-
-      data %>%
-      mutate_at(.cols =
-                  data %>% dplyr::select(matches("^date")) %>% names,
-                funs(. %>% lubridate::ymd()))
+      data <-
+        data %>%
+        mutate_at(.cols =
+                    data %>% dplyr::select(matches("^date")) %>% names,
+                  funs(. %>% lubridate::ymd()))
     }
     has_counts <-
       data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>% dplyr::select(-matches("country")) %>%
       names %>% length > 0
 
     if (has_counts) {
-    data <-
-      data %>%
-      mutate_at(.cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
-                  dplyr::select(-matches("country")) %>%
-                  names,
-                funs(. %>% as.numeric()))
+      data <-
+        data %>%
+        mutate_at(.cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
+                    dplyr::select(-matches("country")) %>%
+                    names,
+                  funs(. %>% as.numeric()))
     }
     has_logical <-
       data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names %>% length > 0
 
     if (has_logical) {
-    data <-
-      data %>%
-      mutate_at(.cols =
-                  data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names,
-                funs(. %>% as.logical()))
+      data <-
+        data %>%
+        mutate_at(.cols =
+                    data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names,
+                  funs(. %>% as.logical()))
     }
 
     return(data)
@@ -2543,7 +2543,7 @@ get_section_2_data <-
               nameItem = c(
                 'hasExemptionAsSolelyVentureAdviser',
                 'hasExemptionAsPrivateFundManagerUnder150MAUM',
-                'hasExemptionSoleyPrivateFundManagrAUMOver150M'
+                'hasExemptionSoleyPrivateFundManagerAUMOver150M'
               ),
               valueItem = T
             )
@@ -2573,7 +2573,7 @@ get_section_2_data <-
                 nameItem = c(
                   'hasExemptionAsSolelyVentureAdviser',
                   'hasExemptionAsPrivateFundManagerUnder150MAUM',
-                  'hasExemptionSoleyPrivateFundManagrAUMOver150M'
+                  'hasExemptionSoleyPrivateFundManagerAUMOver150M'
                 ),
                 valueItem = T %>% as.character()
               ) %>% bind_rows(node_item_df)
@@ -4840,11 +4840,11 @@ get_schedule_b_data <-
             left_join(
               get_type_manager_entity_owner_df() %>%
                 dplyr::rename(idTypeEntityManagerOwnerOwner = idTypeEntityManagerOwner, typeEntityManagerOwnerOwner = typeEntityManagerOwner,
-                                                                   isEntityOwnerOwnerManagerEntity = isEntityOwnerManagerEntity)
-              ) %>%
+                              isEntityOwnerOwnerManagerEntity = isEntityOwnerManagerEntity)
+            ) %>%
             left_join(
               get_range_entity_owner_df() %>% dplyr::rename(idRangeManagerEntityOwnerOwnership = idRangeManagerEntityOwnership, rangeManagerEntityOwnerOwnership = rangeManagerEntityOwnership)
-              ) %>%
+            ) %>%
             dplyr::select(-monthYearEntityManagerOwnerOwnerPurchased) %>%
             suppressMessages()
 
@@ -7608,7 +7608,7 @@ parse_manager_brochure_data <-
               "detailsMetadata",
               "isLocked",
               "hasAttachments",
-              "detaillayout",
+              "detailLayout",
               'titleDocument'
             )
           )
@@ -8446,7 +8446,7 @@ get_sec_adv_name_df <-
           'statusFINRA',
           'hasExemptionAsSolelyVentureAdviser',
           'hasExemptionAsPrivateFundManagerUnder150MAUM',
-          'hasExemptionSoleyPrivateFundManagrAUMOver150M'
+          'hasExemptionSoleyPrivateFundManagerAUMOver150M'
         )
       )
     return(sec_name_df)
