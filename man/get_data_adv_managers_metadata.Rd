@@ -11,8 +11,6 @@ get_data_adv_managers_metadata(search_names = "Divco", crd_ids = NULL,
 \item{search_names}{Names of the entities you want to search}
 
 \item{crd_ids}{CRD ids you want to search}
-
-\item{return_message}{}
 }
 \description{
 Get ADV metadata for specified ADV or search name

@@ -1,39 +1,3 @@
-# other sec ---------------------------------------------------------------
-
-#' Get all data for all CIK registered entities
-#'
-#' @param return_message Return a message
-#'
-#' @return
-#' @export
-#' @import dplyr readr tidyr stringr
-#' @examples
-get_data_cik_codes <-
-  function(return_message = T) {
-    url <- 'https://www.sec.gov/edgar/NYU/cik.coleft.c'
-    cik_data <-
-      url %>%
-      readr::read_table(col_names = F)
-
-    cik_data <-
-      cik_data %>%
-      tidyr::separate(X1,
-                      into = c('nameEntity', 'codeCIK'),
-                      sep = '\\:[0][0]') %>%
-      mutate(codeCIK = codeCIK %>% stringr::str_replace('\\:', ''),
-             codeCIK = "00" %>% paste0(codeCIK),
-             idCIK = codeCIK %>% as.numeric) %>%
-      mutate(datetimeData = Sys.time()) %>%
-      dplyr::select(idCIK, nameEntity, everything())
-
-    if (return_message) {
-      "You returned " %>%
-        paste0(cik_data %>% nrow,' entities with registered CIK codes')
-    }
-    return(cik_data)
-  }
-
-
 # munging -----------------------------------------------------------------
 
 select_start_vars <-
@@ -811,10 +775,9 @@ get_manager_sec_page <-
 #' @param search_names Names of the entities you want to search
 #' @param crd_ids CRD ids you want to search
 #' @param return_message
-#'
+#' @import dplyr purrr curl jsonlite lubridate tidyr rvest httr
 #' @return
 #' @export
-#'
 #' @examples
 #' get_data_adv_managers_metadata(search_names = c('Divco'))
 get_data_adv_managers_metadata <-
@@ -826,10 +789,19 @@ get_data_adv_managers_metadata <-
         'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>%
         paste0(crd_ids)
     }
+    get_finra_managers_metadata_safe <-
+      possibly(get_finra_managers_metadata, NULL)
     if (!search_names %>% is_null) {
       finra_data <-
         search_names %>%
-        get_finra_managers_metadata(return_message = return_message)
+        get_finra_managers_metadata(return_message = return_message) %>%
+        suppressMessages() %>%
+        suppressWarnings()
+
+      if (finra_data %>% nrow == 0) {
+        return(invisible())
+      }
+
       adv_urls <-
         finra_data$urlManagerSummaryADV
     }
@@ -7415,7 +7387,7 @@ return_selected_adv_tables <-
 #' @param section_names If not all sections, which sections
 #' @param flatten_tables Do you want the data the data with singular values flattened into a single data frame
 #' @param gather_data Do you want the data in gathered form
-#' @param assign_to_enviornment Do you want to save the invidual data frames to your global environment
+#' @param assign_to_environment Do you want to save the invidual data frames to your global environment
 #'
 #' @return
 #' @export
@@ -7426,7 +7398,7 @@ return_selected_adv_tables <-
 #' @importFrom lubridate mdy
 #' @importFrom lubridate ymd
 #' @examples
-#' get_data_adv_managers_filings(search_names = c('Blackstone Real Estate'), crd_ids = NULL, all_sections = T,  section_names = NULL, flatten_tables = T, gather_data = F, assign_to_enviornment = T)
+#' get_data_adv_managers_filings(search_names = c('Blackstone Real Estate'), crd_ids = NULL, all_sections = T,  section_names = NULL, flatten_tables = T, gather_data = F, assign_to_environment = T)
 get_data_adv_managers_filings <-
   function(search_names = NULL,
            crd_ids = NULL,
@@ -7444,7 +7416,7 @@ get_data_adv_managers_filings <-
            ),
            flatten_tables = T,
            gather_data = F,
-           assign_to_enviornment = T) {
+           assign_to_environment = T) {
     packages <-
       c(
         'tidyverse',
@@ -7494,7 +7466,7 @@ get_data_adv_managers_filings <-
     return_selected_adv_tables_safe <-
       possibly(return_selected_adv_tables, NULL)
 
-    if (assign_to_enviornment) {
+    if (assign_to_environment) {
       all_data %>%
         return_selected_adv_tables(all_sections = all_sections,
                                    gather_data = gather_data)

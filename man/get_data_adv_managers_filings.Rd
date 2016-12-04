@@ -9,7 +9,7 @@ get_data_adv_managers_filings(search_names = NULL, crd_ids = NULL,
   "Identifying Information", "Organization", "Successions",
   "Private Fund Reporting", "Direct Manager Owners", "Indirect Manager Owners",
   "Other Manager Information", "Manager Signatories"), flatten_tables = T,
-  gather_data = F, assign_to_enviornment = T)
+  gather_data = F, assign_to_environment = T)
 }
 \arguments{
 \item{search_names}{Names of the entities you want to search}
@@ -24,12 +24,12 @@ get_data_adv_managers_filings(search_names = NULL, crd_ids = NULL,
 
 \item{gather_data}{Do you want the data in gathered form}
 
-\item{assign_to_enviornment}{Do you want to save the invidual data frames to your global environment}
+\item{assign_to_environment}{Do you want to save the invidual data frames to your global environment}
 }
 \description{
 Get detailed ADV form data for specified search name or CRD id
 }
 \examples{
-get_data_adv_managers_filings(search_names = c('Blackstone Real Estate'), crd_ids = NULL, all_sections = T,  section_names = NULL, flatten_tables = T, gather_data = F, assign_to_enviornment = T)
+get_data_adv_managers_filings(search_names = c('Blackstone Real Estate'), crd_ids = NULL, all_sections = T,  section_names = NULL, flatten_tables = T, gather_data = F, assign_to_environment = T)
 }
 

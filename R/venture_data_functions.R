@@ -92,6 +92,87 @@ get_data_ycombinator_alumni <-
     return(json_data)
   }
 
+
+# cbinsights --------------------------------------------------------------
+
+#' Get Unicorn Valuation Data
+#'
+#' @return
+#' @export
+#' @import dplyr rvest formattable stringr purrr
+#' @importFrom readr parse_number
+#' @examples
+get_data_unicorn_valuations <-
+  function(return_message = TRUE) {
+    page <-
+      "https://www.cbinsights.com/research-unicorn-companies" %>%
+      read_html()
+
+    companies <-
+      page %>%
+      html_nodes('td:nth-child(1)') %>%
+      html_text() %>%
+      stringr::str_replace('\n\t','') %>%
+      gsub("^ *|(?<= ) | *$", "", ., perl = TRUE)
+
+    company_urls <-
+      page %>%
+      html_nodes('td:nth-child(1) a') %>%
+      html_attr('href') %>%
+      str_replace_all('https://www.cbinsights.com/company/https://www.cbinsights.com/company/',
+                      'https://www.cbinsights.com/company/')
+
+    valuation_billions <-
+      page %>%
+      html_nodes('td:nth-child(2)') %>%
+      html_text() %>%
+      readr::parse_number() %>%
+      formattable::currency(digits = 2)
+
+    date_joined <-
+      page %>%
+      html_nodes('td:nth-child(3)') %>%
+      html_text() %>%
+      lubridate::mdy()
+
+    country <-
+      page %>%
+      html_nodes('td:nth-child(4)') %>%
+      html_text()
+
+    industry <-
+      page %>%
+      html_nodes('td:nth-child(5)') %>%
+      html_text()
+
+    investors <-
+      page %>%
+      html_nodes('td:nth-child(6)') %>%
+      html_text()
+
+    unicorn_df <-
+      data_frame(
+      nameCompany = companies,
+      amountValuationBillions = valuation_billions,
+      dateJoined = date_joined,
+      countryCompany = country,
+      nameIndustry = industry,
+      nameInvestors = investors,
+      urlCompanyCBInsights = company_urls
+    )
+
+    if (return_message) {
+      list("You acquired data on ",
+           unicorn_df %>% nrow() %>% formattable::comma(digits = 0),
+           ' unicorns with a total private market valuation of $',
+           unicorn_df$amountValuationBillions %>% sum %>% formattable::currency(),
+           ' Billion') %>%
+        message()
+    }
+    return(unicorn_df)
+  }
+
+
 # fintech transactions -----------------------------------------------------------------
  # http://db.ftpartners.com/transactionsearch
 
