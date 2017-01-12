@@ -2,14 +2,19 @@
 % Please edit documentation in R/sec_functions.R
 \name{get_data_sec_foia_requests}
 \alias{get_data_sec_foia_requests}
-\title{Get SEC FOIA Requests}
+\title{Get SEC FOIA requests by year}
 \usage{
 get_data_sec_foia_requests(search_years = 2006:2016, return_message = TRUE)
 }
 \arguments{
-\item{return_message}{}
+\item{search_years}{years to search}
+
+\item{return_message}{return a message \code{TRUE, FALSE}}
 }
 \description{
-Get SEC FOIA Requests
+Get SEC FOIA requests by year
+}
+\examples{
+get_data_sec_foia_requests(search_years = 2006:2017, return_message = TRUE)
 }
 

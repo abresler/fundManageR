@@ -1,16 +1,18 @@
 # ycombinator -------------------------------------------------------------
 
 #' Get data on Y-Combinator alumni companies
-#'
-#' @param return_message Return a fun message
+#' @param nest_data returns a nested data frame \code{TRUE, FALSE}
+#' @param return_message return a message that includes a random YC company, \code{TRUE, FALSE}
 #'
 #' @return
 #' @export
 #' @import stringr dplyr readr
 #' @importFrom jsonlite fromJSON
-#' @examples get_data_ycombinator_alumni()
+#' @examples
+#' get_data_ycombinator_alumni()
 get_data_ycombinator_alumni <-
-  function(return_message = T) {
+  function(nest_data = FALSE,
+           return_message = T) {
     url <-
       'https://api.ycombinator.com/companies/export.json?callback=setupCompanies'
 
@@ -89,20 +91,27 @@ get_data_ycombinator_alumni <-
         message
     }
 
+    if (nest_data) {
+      json_data <-
+        json_data %>%
+        nest(-batchYC, .key = 'dataClass')
+    }
+
     return(json_data)
   }
 
 
 # cbinsights --------------------------------------------------------------
 
-#' Get Unicorn Valuation Data
-#'
+#' Get CB insight unicorn data
+#' @param return_message return a message after data parsing \code{TRUE, FALSE}
 #' @return
 #' @export
 #' @import dplyr rvest formattable stringr purrr
 #' @importFrom readr parse_number
 #' @examples
-get_data_unicorn_valuations <-
+#' get_data_cb_unicorns(return_message = TRUE)
+get_data_cb_unicorns <-
   function(return_message = TRUE) {
     page <-
       "https://www.cbinsights.com/research-unicorn-companies" %>%

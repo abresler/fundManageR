@@ -2,11 +2,11 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_recent_insider_trades}
 \alias{get_data_recent_insider_trades}
-\title{Get Insider Trades from the Last Week}
+\title{Get most recent insider trades}
 \usage{
 get_data_recent_insider_trades(return_message = TRUE)
 }
 \description{
-Get Insider Trades from the Last Week
+Get most recent insider trades
 }
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_sic_codes}
 \alias{get_data_sic_codes}
-\title{Get SIC code Classifications}
+\title{Get SIC codes and classifications}
 \usage{
 get_data_sic_codes(filter_duplicates = TRUE)
 }
@@ -10,6 +10,6 @@ get_data_sic_codes(filter_duplicates = TRUE)
 \item{filter_duplicates}{}
 }
 \description{
-Get SIC code Classifications
+Get SIC codes and classifications
 }
 

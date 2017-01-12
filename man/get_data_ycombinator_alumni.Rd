@@ -4,10 +4,12 @@
 \alias{get_data_ycombinator_alumni}
 \title{Get data on Y-Combinator alumni companies}
 \usage{
-get_data_ycombinator_alumni(return_message = T)
+get_data_ycombinator_alumni(nest_data = FALSE, return_message = T)
 }
 \arguments{
-\item{return_message}{Return a fun message}
+\item{nest_data}{returns a nested data frame \code{TRUE, FALSE}}
+
+\item{return_message}{return a message that includes a random YC company, \code{TRUE, FALSE}}
 }
 \description{
 Get data on Y-Combinator alumni companies

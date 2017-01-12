@@ -2,11 +2,11 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_sec_file_codes}
 \alias{get_data_sec_file_codes}
-\title{Get SEC CODES}
+\title{Get SEC file code descriptions}
 \usage{
 get_data_sec_file_codes()
 }
 \description{
-Get SEC CODES
+Get SEC file code descriptions
 }
 

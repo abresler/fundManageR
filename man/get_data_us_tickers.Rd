@@ -2,7 +2,7 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_us_tickers}
 \alias{get_data_us_tickers}
-\title{Get ticker information for United States traded public entities}
+\title{Get United States publicly traded ticker data}
 \usage{
 get_data_us_tickers(return_message = TRUE)
 }
@@ -10,7 +10,7 @@ get_data_us_tickers(return_message = TRUE)
 \item{return_message}{}
 }
 \description{
-Get ticker information for United States traded public entities
+Get United States publicly traded ticker data
 }
 \examples{
 get_data_us_tickers(return_message = TRUE)

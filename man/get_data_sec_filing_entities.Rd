@@ -2,7 +2,7 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_sec_filing_entities}
 \alias{get_data_sec_filing_entities}
-\title{Get SEC Filing Entities for Search Names}
+\title{Get SEC filing entities for specified name}
 \usage{
 get_data_sec_filing_entities(entity_names = c("Rockwood Capital", "Vornado",
   "Two Sigma"), return_message = TRUE)
@@ -11,6 +11,6 @@ get_data_sec_filing_entities(entity_names = c("Rockwood Capital", "Vornado",
 \item{return_message}{}
 }
 \description{
-Get SEC Filing Entities for Search Names
+Get SEC filing entities for specified name
 }
 
