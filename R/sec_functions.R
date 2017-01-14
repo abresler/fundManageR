@@ -2060,13 +2060,14 @@ parse_xbrl_url <-
   }
 
 #' Get SEC quarterly XBRL data dumps
-#'
-#' @param only_most_recent
-#' @param years
-#' @param quarters
-#' @param tables
-#' @param only_all
-#' @param assign_to_environment
+#' @param only_most_recent return only most recent year \code{TRUE, FALSE}
+#' @param years years to include starting in 2009
+#' @param quarters quartrs to include \code{1, 2, 3, 4}
+#' @param return_message return a message
+#' @param nest_data nest the data
+#' @param tables underlying XBRL tables you want to include \code {Presentation, Values,  Filers, Taxonomy}
+#' @param only_all returns a joined file of the three tables
+#' @param assign_to_environment assign the data frame to your environment
 #' @param return_message
 #'
 #' @return

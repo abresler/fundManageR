@@ -9,6 +9,22 @@ get_data_sec_xbrl_periods(only_most_recent = TRUE, years = NULL,
   assign_to_environment = TRUE, return_message = TRUE)
 }
 \arguments{
+\item{only_most_recent}{return only most recent year \code{TRUE, FALSE}}
+
+\item{years}{years to include starting in 2009}
+
+\item{quarters}{quartrs to include \code{1, 2, 3, 4}}
+
+\item{tables}{underlying XBRL tables you want to include \code {Presentation, Values,  Filers, Taxonomy}}
+
+\item{only_all}{returns a joined file of the three tables}
+
+\item{assign_to_environment}{assign the data frame to your environment}
+
+\item{return_message}{return a message}
+
+\item{nest_data}{nest the data}
+
 \item{return_message}{}
 }
 \description{

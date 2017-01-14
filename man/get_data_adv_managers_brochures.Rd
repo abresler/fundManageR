@@ -2,22 +2,22 @@
 % Please edit documentation in R/adv_functions.R
 \name{get_data_adv_managers_brochures}
 \alias{get_data_adv_managers_brochures}
-\title{Get manager ADV brochure}
+\title{OCR registerd managers ADV brochures}
 \usage{
 get_data_adv_managers_brochures(search_names = NULL, crd_ids = NULL,
-  split_pages = T)
+  split_pages = TRUE)
 }
 \arguments{
-\item{search_names}{Names of the companies you want to search}
+\item{search_names}{names of the companies you want to search}
 
-\item{crd_ids}{CRD IDs you want to search}
+\item{crd_ids}{CRDs you want to search}
 
-\item{split_pages}{Do you want the brochure as 1 text blob or multiple pages}
+\item{split_pages}{do you want to split the brochure into multiple pages}
 }
 \description{
-Get manager ADV brochure
+OCR registerd managers ADV brochures
 }
 \examples{
-get_data_adv_managers_brochures(search_names = c('137 Ventures', 'Divco'), crd_ids = NULL, split_pages = T))
+get_data_adv_managers_brochures(search_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE)
 }
 

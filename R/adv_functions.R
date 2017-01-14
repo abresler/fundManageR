@@ -1,122 +1,3 @@
-# munging -----------------------------------------------------------------
-
-select_start_vars <-
-  function(data){
-    data <-
-      data %>%
-      dplyr::select(idCRD, nameEntityManager, everything())
-    return(data)
-  }
-
-
-mutate_adv_data <-
-  function(data) {
-    has_dates <-
-      data %>% dplyr::select(matches("^date")) %>% names %>% length > 0
-    if (has_dates) {
-      data <-
-        data %>%
-        mutate_at(.cols =
-                    data %>% dplyr::select(matches("^date")) %>% names,
-                  funs(. %>% lubridate::ymd()))
-    }
-    has_counts <-
-      data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>% dplyr::select(-matches("country")) %>%
-      names %>% length > 0
-
-    if (has_counts) {
-      data <-
-        data %>%
-        mutate_at(.cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
-                    dplyr::select(-matches("country")) %>%
-                    names,
-                  funs(. %>% as.numeric()))
-    }
-    has_logical <-
-      data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names %>% length > 0
-
-    if (has_logical) {
-      data <-
-        data %>%
-        mutate_at(.cols =
-                    data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names,
-                  funs(. %>% as.logical()))
-    }
-
-    return(data)
-
-  }
-
-
-widen_adv_data <-
-  function(data) {
-    data <-
-      data %>%
-      mutate_at(.cols =
-                  data %>% dplyr::select(matches("^date[A-Z]")) %>% names,
-                funs(. %>% as.character())) %>%
-      gather(nameItem, value, -c(countItem, nameEntityManager)) %>%
-      suppressWarnings()
-
-    data <-
-      data %>%
-      mutate(
-        countItem = countItem - 1,
-        countItem = countItem %>% as.character(),
-        countItem = ifelse(countItem == "0", '', countItem)
-      ) %>%
-      unite(item, nameItem, countItem, sep = '') %>%
-      distinct() %>%
-      suppressWarnings()
-
-    col_order <-
-      c('nameEntityManager', data$item)
-
-    data <-
-      data %>%
-      spread(item, value) %>%
-      dplyr::select(one_of(col_order))
-
-    data <-
-      data %>%
-      mutate_adv_data() %>%
-      suppressWarnings()
-
-    return(data)
-  }
-
-
-get_item_name_yes_no_df <-
-  function(item_name = 'hasCustodyClientCash') {
-    item_name_df <-
-      1:length(item_name) %>%
-      map_df(function(x) {
-        data_frame(nameItem = rep(item_name[x], 2),
-                   valueItem = c(T, F)) %>%
-          unite(fullnameItem,
-                nameItem,
-                valueItem,
-                sep = '.',
-                remove = F)
-      })
-    return(item_name_df)
-  }
-
-has_item_check_name <-
-  function(item_name = 'hasQuarterlyStatemnt') {
-    item_name_df <-
-      1:length(item_name) %>%
-      map_df(function(x) {
-        data_frame(nameItem = rep(item_name[x], 1),
-                   valueItem = T) %>%
-          mutate(fullnameItem = nameItem)
-      })
-    return(item_name_df)
-  }
-
-
-
-# finra_broker ------------------------------------------------------------
 get_html_page <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=160080') {
     httr::set_config(config(ssl_verifypeer = 0L))
@@ -301,167 +182,1088 @@ find_text_node <-
     return(text_node)
   }
 
+# munging -----------------------------------------------------------------
 
-get_finra_managers_metadata <-
-  function(search_names = c('Rockwood Capital',
-                            'Blackstone Real Estate',
-                            'Fir Tree',
-                            'Fortress'),
-           return_message = T) {
-    get_finra_manager_metadata <-
-      function(search_name = "Blackstone Real Estate",
-               return_message = T) {
-        get_finra_search_term_c_urls <-
-          function(search_name = "Blackstone") {
-            get_finra_c_url <-
-              function(search_name = "EJF Capital",
-                       page_no = 1) {
-                base_curl <-
-                  "curl 'http://brokercheck.finra.org/Search/GenericSearch' -H 'Pragma: no-cache' -H 'Origin: http://brokercheck.finra.org' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: en-US,en;q=0.8' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.80 Safari/537.36' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8' -H 'Cache-Control: no-cache' -H 'Referer: http://brokercheck.finra.org/Search/GenericSearch' -H 'Cookie: __RequestVerificationToken=rSB02up7WU1YiLtAmLvoqbrC4heA7LXKidX0GkSiEjprktiE0qFDfkGKbQkTQVd94ShQynDI5BsmpIJeB4idW39G2QE6hRtgA9M_ejnQoHc1; ASP.NET_SessionId=kjzpjdpm1p0ltmm1xcuafmoz' -H 'Connection: keep-alive' -H 'DNT: 1' --data '__RequestVerificationToken=1jsNCQ-1KyYFIfKZuaJc_-CFqVaBiSi1MQ_WyvUrMKk9bEh1ux4s_te11rbeAEHH23ncmfbN8Ndf9gIQvYb0gGEuSabJ1PKIhKi0_AJac9Q1&GenericSearch.StartRow=1&GenericSearch.PageSize=15&GenericSearch.System=BC&GenericSearch.SearchType=2&GenericSearch.IndividualSearchText=&GenericSearch.EmploymingFirmSearchText=&GenericSearch.FirmSearchText="
+select_start_vars <-
+  function(data){
+    data <-
+      data %>%
+      dplyr::select(idCRD, nameEntityManager, everything())
+    return(data)
+  }
 
-                end_curl_1 <-
-                  "&ZipCode=&Within=25&PageSize=15&StartRow=1&CurrentPage=1"
 
-                end_curl_2 <-
-                  "&IsPagination=false' --compressed"
+mutate_adv_data <-
+  function(data) {
+    has_dates <-
+      data %>% dplyr::select(matches("^date")) %>% names %>% length > 0
+    if (has_dates) {
+      data <-
+        data %>%
+        mutate_at(.cols =
+                    data %>% dplyr::select(matches("^date")) %>% names,
+                  funs(. %>% lubridate::ymd()))
+    }
+    has_counts <-
+      data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>% dplyr::select(-matches("country")) %>%
+      names %>% length > 0
 
-                search_encode <-
-                  search_name %>%
-                  URLencode()
-                c_url <-
-                  base_curl %>%
-                  paste0(search_encode, end_curl_1, page_no, end_curl_2)
-                return(c_url)
-              }
+    if (has_counts) {
+      data <-
+        data %>%
+        mutate_at(.cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
+                    dplyr::select(-matches("country")) %>%
+                    names,
+                  funs(. %>% as.numeric()))
+    }
+    has_logical <-
+      data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names %>% length > 0
 
-            page <-
-              search_name %>%
-              get_finra_c_url(search_name = .) %>%
-              parse_finra_c_url()
+    if (has_logical) {
+      data <-
+        data %>%
+        mutate_at(.cols =
+                    data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names,
+                  funs(. %>% as.logical()))
+    }
 
-            count_results <-
-              page %>%
-              html_nodes('.searchresultscriteriacol1') %>%
-              html_text() %>%
-              str_trim %>%
-              str_replace_all(' of | to ', '\\-') %>%
-              str_split('\\-') %>%
-              flatten_chr %>%
-              readr::parse_number() %>%
-              max()
+    return(data)
 
-            pages <-
-              ceiling(count_results / 15)
+  }
 
-            term_c_urls <-
-              seq_len(pages) %>%
-              map_chr(function(x) {
-                get_finra_c_url(search_name = search_name, page_no = x)
+
+widen_adv_data <-
+  function(data) {
+    data <-
+      data %>%
+      mutate_at(.cols =
+                  data %>% dplyr::select(matches("^date[A-Z]")) %>% names,
+                funs(. %>% as.character())) %>%
+      gather(nameItem, value, -c(countItem, nameEntityManager)) %>%
+      suppressWarnings()
+
+    data <-
+      data %>%
+      mutate(
+        countItem = countItem - 1,
+        countItem = countItem %>% as.character(),
+        countItem = ifelse(countItem == "0", '', countItem)
+      ) %>%
+      unite(item, nameItem, countItem, sep = '') %>%
+      distinct() %>%
+      suppressWarnings()
+
+    col_order <-
+      c('nameEntityManager', data$item)
+
+    data <-
+      data %>%
+      spread(item, value) %>%
+      dplyr::select(one_of(col_order))
+
+    data <-
+      data %>%
+      mutate_adv_data() %>%
+      suppressWarnings()
+
+    return(data)
+  }
+
+
+get_item_name_yes_no_df <-
+  function(item_name = 'hasCustodyClientCash') {
+    item_name_df <-
+      1:length(item_name) %>%
+      map_df(function(x) {
+        data_frame(nameItem = rep(item_name[x], 2),
+                   valueItem = c(T, F)) %>%
+          unite(fullnameItem,
+                nameItem,
+                valueItem,
+                sep = '.',
+                remove = F)
+      })
+    return(item_name_df)
+  }
+
+has_item_check_name <-
+  function(item_name = 'hasQuarterlyStatemnt') {
+    item_name_df <-
+      1:length(item_name) %>%
+      map_df(function(x) {
+        data_frame(nameItem = rep(item_name[x], 1),
+                   valueItem = T) %>%
+          mutate(fullnameItem = nameItem)
+      })
+    return(item_name_df)
+  }
+
+
+
+
+# new_finra ---------------------------------------------------------------
+
+get_finra_name_df <-
+  function() {
+    data_frame(nameFINRA = c(
+      "fields.score",
+      "fields.bc_source_id",
+      "fields.bc_firm_name",
+      "fields.bc_scope",
+      "fields.bc_sec_number",
+      "fields.bc_branches_count",
+      "fields.bc_approved_finra_registration_count",
+      "fields.bc_disclosure_fl",
+      "highlightedFields.bc_firm_name",
+      "fields.bc_ia_address_details",
+      "firmId", "firmName", "secNumber", "otherNames", "bcScope",
+        "iaScope", "isLegacy", "finraRegistered", "districtName", "firmType",
+        "formedState", "formedDate", "fiscalMonthEndCode", "legacyReportStatus",
+      "disclosureType", "disclosureCount",
+      "approvedFinraRegistrationCount", "approvedSECRegistrationCount",
+      "approvedSRORegistrationCount", "approvedStateRegistrationCount",
+      "businessTypeCount", "legalName", "position", "crdNumber",
+      "fields.bc_firstname", "fields.bc_industry_days", "fields.bc_employments_count",
+      "fields.bc_lastname", "fields.bc_middlename",
+      "category", "regulator", "messages", "capacity", 'individualId',
+      'firstName', 'middleName', 'lastName', 'daysInIndustry',
+      "street1", "street2", "city", "state", "country", "zipCode",
+       "registrationBeginDate", "registrationEndDate", "firmBCScope",
+       "firmIAScope", "eventDate", "disclosureResolution",
+      "docketNumber", "Initiated By", "Allegations", "Resolution",
+      "SanctionDetails", "Sanction Details", "Broker Comment",
+      "stateExamCount", "principalExamCount", "productExamCount",
+      "examCategory", "examName", "examTakenDate",
+      "hasBCComments", "hasIAComments", "legacyReportStatusDescription",
+      'firmSize'
+      ),
+    nameActual = c(
+      "scoreWord",
+      "idCRD",
+      "nameFirm",
+      "typeActiveFiler",
+      "idSEC",
+      "countBranches",
+      "countFINRARegistrations",
+      "idDisclosure",
+      "htmlName",
+      'addressFiler',
+      "idCRD", "nameFirm", "idSEC", "nameOther", "scopeBC",
+      "scopeIA", "isLegacy", "finraRegistered", "namDistrict", "typeFirm",
+      "stateFormed", "dateFormed", "monthFiscalEnd", "statusLegacyReporting",
+      "typeDisclosure", "countDisclosures",
+      "countApprovedFinraRegistration", "countApprovedSECRegistration",
+      "countApprovedSRORegistration", "countApprovedStateRegistration",
+      "countBusinessType",
+      "nameLegal", "descriptionPosition", "idCRD",
+      "nameFirst", "countDaysIndustry", "countEmployments",
+      "nameLast", "nameMiddle",
+      "categoryAction", "idRegulator", "messageAction", "capacityAction",
+      'idCRD', 'nameFirst', 'nameMiddle', 'nameLast', 'countDaysIndustry',
+      "street1Firm", "street2Firm", "cityFirm", "stateFirm", "countryFirm", "zipcodeFrim",
+       "dateRegistrationBegin", "dateRegistrationEnd", "scopeBCS",
+       "scopeIAFirm", "dateEvent", "detailsDisclosureResolution",
+      "idDocket", "entityInitiatedBy", "descriptionAllegations", "typeResolution",
+      "idSanctions", "detailsSanctions", "commentBroker",
+      "countStateExam", "countPrincipalExam", "countProductExam",
+      "categoryExam", "nameExam", "dateExamTaken",
+      "hasBCComments", "hasIAComments", "descriptionLegacyReportStatus",
+      'descriptionSizeFirm'
+    )
+    )
+  }
+
+generate_finra_url <-
+  function(search_name = "Rockwood Capital",
+           is_firm = TRUE) {
+    if (is_firm) {
+      slug <-
+        'firms?hl=true&'
+    } else {
+      slug <-
+        'individuals?hl=true&'
+    }
+    search_slug <-
+      search_name %>%
+      URLencode()
+
+    url <-
+      list('https://doppler.finra.org/doppler-lookup/api/v1/search/',
+         slug,
+         '&nrows=99000&query=',
+         search_slug,
+         '&r=2500&wt=json') %>%
+      purrr::invoke(paste0,.)
+    return(url)
+  }
+
+parse_broker_json_url <-
+  function(url = "https://doppler.finra.org/doppler-lookup/api/v1/search/firms/18718/?&wt=json") {
+    json_data <-
+      url %>%
+      fromJSON()
+    if (json_data$results$BROKER_CHECK_FIRM$results$fields$content_json %>% length() > 0) {
+    json_dfs <-
+      json_data$results$BROKER_CHECK_FIRM$results$fields$content_json %>%
+      flatten_chr() %>%
+      fromJSON()
+    } else {
+      json_dfs <-
+        json_data$results$BROKER_CHECK_REP$results$fields$content_json %>%
+        flatten_chr() %>%
+        fromJSON()
+    }
+
+    class_df <-
+      json_dfs %>%
+      map_df(class) %>%
+      gather(nameTable, type) %>%
+      mutate(idTable = 1:n())
+
+    count_df <-
+      json_dfs %>% map_dbl(length) %>%
+      data.frame(count = ., stringsAsFactors = F)
+
+    class_df <-
+      class_df %>%
+      filter(!nameTable %in% c('bdDisclosureFlag', 'iaFirmAddressDetails', 'disclosureFlag' ,'iaDisclosureFlag'))
+
+    active_tables <-
+      count_df %>%
+      mutate(nameTable = rownames(count_df)) %>%
+      filter(count > 0) %>%
+      .$nameTable
+
+    class_df <-
+      class_df %>%
+      filter(nameTable %in% active_tables)
+
+    finra_name_df <-
+      get_finra_name_df() %>%
+      mutate(idRow = 1:n())
+
+    all_df <-
+      map_df(function(x){
+        x %>% message()
+        table_no <-
+          class_df$idTable[[x]]
+
+        df <-
+          json_dfs[[table_no]]
+
+        if (df %>% length() == 0) {
+          return(data_frame())
+        }
+
+        name_table <-
+          names(json_dfs)[[table_no]]
+        df_class <-
+          class(df)
+        has_list_df <-
+          df_class %in% c('list', 'data.frame')
+        if (has_list_df) {
+          if ('stateList' %in% names(df)) {
+            df['stateList'] <-
+              NULL
+          }
+
+          class_df_list <-
+            df %>% map_df(class) %>% gather(column, type)
+
+          columns <-
+            class_df_list %>%
+            filter(!type %in% c('list', 'data.frame')) %>%
+            .$column
+
+          df_items <-
+            df[columns] %>%
+            as_data_frame()
+
+          finra_names <-
+            names(df_items)
+
+          has_missing_names <-
+            finra_names[!finra_names %in% name_df$nameFINRA] %>% length() > 0
+
+          if (has_missing_names) {
+            df_has <-
+              df_items %>%
+              select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
+
+            has_names <-
+              names(df_has) %>%
+              map_chr(function(x){
+                name_df %>%
+                  filter(nameFINRA == x) %>%
+                  filter(idRow == min(idRow)) %>%
+                  .$nameActual
               })
 
-            return(term_c_urls)
+
+            df_has <-
+              df_has %>%
+              purrr::set_names(has_names)
+
+            df_fields <-
+              df_has %>%
+              bind_cols(df_items %>%
+                          select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
+          } else {
+            actual_names <-
+              names(df_items) %>%
+              map_chr(function(x){
+                name_df %>%
+                  filter(nameFINRA == x) %>%
+                  filter(idRow == min(idRow)) %>%
+                  .$nameActual
+              })
+
+            df_items <-
+              df_items %>%
+              purrr::set_names(actual_names)
           }
 
-        get_finra_search_term_c_urls_safe <-
-          possibly(get_finra_search_term_c_urls, NULL)
-        parse_finra_manager_search_data <-
-          function(manager_c_url = "curl 'http://brokercheck.finra.org/Search/GenericSearch' -H 'Pragma: no-cache' -H 'Origin: http://brokercheck.finra.org' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: en-US,en;q=0.8' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.80 Safari/537.36' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8' -H 'Cache-Control: no-cache' -H 'Referer: http://brokercheck.finra.org/Search/GenericSearch' -H 'Cookie: __RequestVerificationToken=rSB02up7WU1YiLtAmLvoqbrC4heA7LXKidX0GkSiEjprktiE0qFDfkGKbQkTQVd94ShQynDI5BsmpIJeB4idW39G2QE6hRtgA9M_ejnQoHc1; ASP.NET_SessionId=kjzpjdpm1p0ltmm1xcuafmoz' -H 'Connection: keep-alive' -H 'DNT: 1' --data '__RequestVerificationToken=1jsNCQ-1KyYFIfKZuaJc_-CFqVaBiSi1MQ_WyvUrMKk9bEh1ux4s_te11rbeAEHH23ncmfbN8Ndf9gIQvYb0gGEuSabJ1PKIhKi0_AJac9Q1&GenericSearch.StartRow=1&GenericSearch.PageSize=15&GenericSearch.System=BC&GenericSearch.SearchType=2&GenericSearch.IndividualSearchText=&GenericSearch.EmploymingFirmSearchText=&GenericSearch.FirmSearchText=Blackstone%20Real%20&ZipCode=&Within=25&PageSize=15&StartRow=1&CurrentPage=11&IsPagination=false' --compressed")
-          {
-            page <-
-              manager_c_url %>%
-              parse_finra_c_url()
+          if ('idCRD' %in% names(df_items)) {
+            df_items <-
+              df_items %>%
+              mutate(idCRD = idCRD %>% readr::parse_number())
+          }
 
-            nameEntityManager <-
-              page %>%
-              get_html_node_text(node_css = '.displayname')
+          df_items <-
+            df_items %>%
+            mutate_at(df_items %>% select(matches("date")) %>% names(),
+                      funs(. %>% lubridate::mdy())) %>%
+            mutate_at(df_items %>% select(matches("^name|^description|^type")) %>% names(),
+                      funs(. %>% stringr::str_to_upper())) %>%
+            mutate_at(df_items %>% select(matches("^is|^has")) %>% names(),
+                      funs(ifelse(. == "Y", TRUE, FALSE)))
 
-            idSECCRD <-
-              page %>%
-              get_html_node_text(node_css = '.displaycrd') %>%
-              str_replace_all('\\(|\\)|CRD#|SEC# ', '') %>%
-              str_trim
+          has_lists <-
+            class_df_list %>% filter(type %in% c('list', 'data.frame')) %>% nrow() > 0
 
-            nameRelatedEntities <-
-              page %>%
-              get_html_node_text(node_css = '#contentTable i') %>%
-              str_replace_all('Alternate Names: ', '')
+          if (has_lists) {
+            list_cols <-
+              class_df_list %>% filter(type %in% c('list', 'data.frame')) %>%
+              .$column
+            list_dfs <-
+              list_cols %>%
+              map_df(function(x){
+                if(df[[x]] %>% length() == 0) {
+                  return(data_frame())
+                }
+                if (x == "disclosureDetail") {
+                  return(data_frame())
+                }
+                df_list <-
+                  df[[x]] %>%
+                  flatten_df() %>%
+                  select(-matches("detail")) %>%
+                  unnest()
+                finra_names <-
+                  names(df_list)
 
-            typeEntityRegulation <-
-              page %>%
-              get_html_node_text(node_css = '.TextBold div')
+                has_missing_names <-
+                  finra_names[!finra_names %in% name_df$nameFINRA] %>% length() > 0
 
-            addressEntity <-
-              page %>%
-              get_html_node_text(node_css = '.searchresulttext .bcsearchresultfirstcol div div div') %>%
-              str_trim()
+                if (has_missing_names) {
+                  df_has <-
+                    df_list %>%
+                    select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
 
-            if ((addressEntity %>% length) == (nameEntityManager %>% length)) {
-              use_addresses <-
-                T
+                  has_names <-
+                    names(df_has) %>%
+                    map_chr(function(x){
+                      name_df %>%
+                        filter(nameFINRA == x) %>%
+                        filter(idRow == min(idRow)) %>%
+                        .$nameActual
+                    })
+
+
+                  df_has <-
+                    df_has %>%
+                    purrr::set_names(has_names)
+
+                  df_fields <-
+                    df_has %>%
+                    bind_cols(df_list %>%
+                                select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
+                } else {
+                  actual_names <-
+                    names(df_list) %>%
+                    map_chr(function(x){
+                      name_df %>%
+                        filter(nameFINRA == x) %>%
+                        filter(idRow == min(idRow)) %>%
+                        .$nameActual
+                    })
+
+                  df_list <-
+                    df_list %>%
+                    purrr::set_names(actual_names)
+                }
+                return(df_list)
+              })
+            if (list_dfs %>% nrow() == 1) {
+              df_items <-
+                df_items %>%
+                bind_cols(list_dfs)
+            }
+          }
+
+          if ('disclosureDetail' %in% class_df_list$column) {
+            df_list <-
+              df[['disclosureDetail']] %>%
+              as_data_frame()
+            actual_names <-
+              names(df_list) %>%
+              map_chr(function(x){
+                finra_name_df %>%
+                  filter(nameFINRA == x) %>%
+                  filter(idRow == min(idRow)) %>%
+                  .$nameActual
+              })
+            df_list <-
+              df_list %>%
+              purrr::set_names(actual_names)
+            has_sanctions <-
+              !df_list$idSanctions[[1]] %>% length() == 0
+            if (has_sanctions) {
+              df_list <-
+                df_list %>%
+                unnest()
+
+              df_list <-
+                df_list %>%
+                dplyr::rename(idSanctions = Sanctions)
             } else {
-              use_addresses <-
-                F
-            }
-            manager_data <-
-              data_frame(nameEntityManager,
-                         idSECCRD,
-                         nameRelatedEntities) %>%
-              separate(idSECCRD, sep = '\\ / ', into = c('idCRD', 'idSEC')) %>%
-              suppressWarnings() %>%
-              mutate(
-                idCRD = idCRD %>% as.numeric,
-                urlManagerSummaryADV = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>% paste0(idCRD),
-                urlPDFManagerADVBrochure = 'http://www.adviserinfo.sec.gov/IAPD/content/ViewForm/crd_iapd_stream_pdf.aspx?ORG_PK=' %>% paste0(idCRD)
-              )
-
-            if (use_addresses == T) {
-              manager_data <-
-                manager_data %>%
-                mutate(addressEntity)
+              df_list$idSanctions <-
+                NULL
             }
 
-            if (typeEntityRegulation %>% length() == nameEntityManager %>% length()) {
-              manager_data <-
-                manager_data %>%
-                mutate(typeEntityRegulation)
-            }
-            return(manager_data)
+
+            df <-
+              data_frame(idTable = x,
+                         nameTable = name_table,
+                         dataTable = list(df_items),
+                         dataSanctions = list(df_list))
+
+            return(df)
           }
 
-
-        search_c_urls <-
-          get_finra_search_term_c_urls_safe(search_name = search_name)
-        if (search_c_urls %>% is.null) {
-          stop("No Data")
+          df <-
+            data_frame(idTable = x,
+                     nameTable = name_table,
+                     dataTable = list(df_items))
+          return(df)
         }
-        manager_data <-
-          search_c_urls %>%
-          map_df(function(x) {
-            parse_finra_manager_search_data(manager_c_url = x)
-          }) %>%
-          mutate(nameSearch = search_name) %>%
-          dplyr::select(nameSearch, everything())
-        if (return_message) {
-          "Extracted " %>%
-            paste0(manager_data %>% nrow,
-                   ' SEC regulated managers with a name containing ',
-                   search_name) %>%
-            message
-        }
-        return(manager_data)
 
+        if (df_class == 'data.frame') {
+          df %>%
+            as_data_frame()
+        }
+      })
+
+    all_df <-
+      all_df %>%
+      mutate(urlFINRABrokerJSON = url)
+
+    all_df <-
+      all_df %>%
+      tidyr::nest(-urlFINRABrokerJSON, .key = 'dataFINRABroker')
+    return(all_df)
+  }
+
+parse_finra_pdf_brochure <-
+  function(url = 'https://files.brokercheck.finra.org/firm/firm_18718.pdf') {
+    info <-
+      url %>%
+      pdf_info()
+
+
+    df_info <-
+      info %>%
+      flatten_df()
+
+    sec_name_df <-
+      data_frame(
+        nameSEC = c(
+          "version",
+          "pages",
+          "encrypted",
+          "linearized",
+          "Author",
+          "Creator",
+          "Producer",
+          "created",
+          "modified",
+          "metadata",
+          "locked",
+          "attachments",
+          "layout",
+          'Title'
+        ),
+        nameActual = c(
+          "idVersion",
+          "countPages",
+          "isEncrypted",
+          "isLinearized",
+          "nameAuthor",
+          "nameCreator",
+          "nameProducer",
+          "datetimeCreated",
+          "datetimeModified",
+          "detailsMetadata",
+          "isLocked",
+          "hasAttachments",
+          "detailLayout",
+          'titleDocument'
+        )
+      )
+
+    sec_names <-
+      names(df_info)
+
+    actual_name_df <-
+      1:length(sec_names) %>%
+      map_df(function(x){
+        name_exists <-
+          sec_name_df %>%
+          dplyr::filter(nameSEC == sec_names[x]) %>% nrow > 0
+        if (name_exists)  {
+          nameActual <-
+            sec_name_df %>%
+            dplyr::filter(nameSEC == sec_names[x]) %>%
+            .$nameActual
+        } else {
+          nameActual <-
+            NA
+        }
+        data_frame(idColumn = x, nameActual)
+      })
+
+    columns_selected <-
+      actual_name_df %>%
+      dplyr::filter(!nameActual %>% is.na) %>%
+      .$idColumn
+
+    info <-
+      df_info %>%
+      dplyr::select(columns_selected)
+
+    actual_names <-
+      actual_name_df %>%
+      dplyr::filter(!nameActual %>% is.na) %>%
+      .$nameActual
+
+    names(df_info) <-
+      actual_names
+
+    pdf_pages <-
+      url %>%
+      pdf_text() %>%
+      str_split('\n')
+
+    pdf_text_df <-
+      1:length(pdf_pages) %>%
+      map_df(function(x) {
+        page_text <-
+          pdf_pages[[x]] %>%
+          str_trim()
+
+        page_text <-
+          page_text %>% str_replace_all('www.finra.org/brokercheck|©2016 FINRA. All rights reserved.|User Guidance|End of Report|This page is intentionally left blank.', '') %>%
+          str_replace_all('Firm Brochure', '') %>%
+          str_trim() %>%
+          gsub("^ *|(?<= ) | *$", "", ., perl = TRUE)
+
+        page_text <-
+          page_text[!page_text == '']
+
+        page_text <-
+          page_text %>% paste0(collapse = ' ')
+
+        page_text <-
+          page_text %>%
+          stringi::stri_trans_general("latin-ascii")
+
+        df_page <-
+          data_frame(numberPage = x, textPage = page_text)
+        return(df_page)
+      }) %>%
+      dplyr::select(textPage) %>%
+      summarise(textBrochure = textPage %>% paste0(collapse = '\n'))
+
+    return(pdf_text_df)
+
+  }
+
+parse_finra_json_url <-
+  function(url = "https://doppler.finra.org/doppler-lookup/api/v1/search/firms?hl=true&nrows=99000&query=Blackstone&r=2500&wt=json",
+           ocr_pdfs = TRUE) {
+    json_data <-
+      url %>%
+      fromJSON(simplifyDataFrame = TRUE, flatten = TRUE)
+
+    df <-
+      json_data$results$BROKER_CHECK_FIRM$results
+    if (df %>% length() == 0) {
+      df <-
+        json_data$results$BROKER_CHECK_REP$results
+    }
+
+    list_cols <-
+      df %>% map_df(class) %>%
+      gather(column, type) %>%
+      filter(type %in% 'list') %>%
+      .$column
+
+    df_fields <-
+      df %>%
+      select(-one_of(list_cols)) %>%
+      as_data_frame()
+    if ('fields.bc_firm_address_details' %in% names(df_fields)) {
+      df_fields <-
+        df_fields %>%
+        mutate(fields.bc_ia_address_details = ifelse(fields.bc_ia_address_details %>% is.na(),fields.bc_firm_address_details ,fields.bc_ia_address_details)) %>%
+        select(-fields.bc_firm_address_details)
+    }
+
+    if ('fields.bc_ia_scope' %in% names(df_fields) & 'fields.bc_scope' %in% names(df_fields)) {
+      df_fields <-
+        df_fields %>%
+        mutate(fields.bc_scope = ifelse(fields.bc_scope %>% is.na(),fields.bc_ia_scope , fields.bc_scope)) %>%
+        select(-fields.bc_ia_scope)
+    }
+
+    df_fields <-
+       df_fields %>%
+       select(which(colMeans(is.na(.)) < 1))
+
+    name_df <-
+      get_finra_name_df() %>%
+      mutate(idRow = 1:n())
+
+    finra_names <-
+      names(df_fields)
+
+    has_missing_names <-
+      finra_names[!finra_names %in% name_df$nameFINRA] %>% length() > 0
+
+    if (has_missing_names) {
+      df_has <-
+        df_fields %>%
+        select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
+
+      has_names <-
+        names(df_has) %>%
+        map_chr(function(x){
+          name_df %>%
+            filter(nameFINRA == x) %>%
+            filter(idRow == min(idRow)) %>%
+            .$nameActual
+        })
+
+      df_has <-
+        df_has %>%
+        purrr::set_names(has_names)
+
+      df_fields <-
+        df_has %>%
+        bind_cols(df_fields %>%
+                    select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
+    } else {
+      actual_names <-
+      names(df_fields) %>%
+      map_chr(function(x){
+        name_df %>%
+          filter(nameFINRA == x) %>%
+          filter(idRow == min(idRow)) %>%
+          .$nameActual
+      })
+
+    df_fields <-
+      df_fields %>%
+      purrr::set_names(actual_names)
+    }
+    is_person <-
+      'nameFirst' %in% names(df_fields)
+    if (is_person) {
+      has_middle <-
+        'nameMiddle' %in% names(df_fields)
+      if (has_middle) {
+        df_fields <-
+          df_fields %>%
+          mutate(nameFiler = list(nameFirst, nameMiddle, nameLast) %>% purrr::invoke(paste,.)) %>%
+          select(nameFiler, everything())
+      } else {
+        df_fields <-
+          df_fields %>%
+          mutate(nameFiler = list(nameFirst, nameLast) %>% purrr::invoke(paste,.)) %>%
+          select(nameFiler, everything())
+      }
+      df_fields <-
+        df_fields %>%
+        mutate(isPerson = TRUE)
+    } else {
+      df_fields <-
+        df_fields %>%
+        mutate(isPerson = F)
+    }
+
+    df_fields <-
+      df_fields %>%
+      select(-matches("htmlName|^highlight")) %>%
+      as_data_frame() %>%
+      mutate(idCRD = idCRD %>% as.numeric(),
+             idRow = 1:n())
+
+    if ('fields.bc_ia_scope' %in% names(df_fields) & (!'typeActiveFiler' %in% names(df_fields))) {
+      df_fields <-
+        df_fields %>%
+        dplyr::rename(typeActiveFiler = fields.bc_ia_scope)
+    }
+
+    if ('addressFiler' %in% names(df_fields)) {
+      address_df <-
+        1:nrow(df_fields) %>%
+        map_df(function(x){
+          js_data <-
+            df_fields$addressFiler[[x]]
+          if (js_data %>% is.na()) {
+            return(data_frame(idRow = x))
+          }
+          js_df <-
+            js_data %>% fromJSON() %>% flatten_df()
+          names(js_df) <-
+            names(js_df) %>% str_replace_all('postalCode', 'zipecode') %>%
+            paste0('Firm')
+
+          js_df <-
+            js_df %>%
+            mutate_all(str_to_upper) %>%
+            mutate(idRow = x) %>%
+            select(idRow, everything())
+          return(js_df)
+        })
+
+      df_fields <-
+        df_fields %>%
+        left_join(address_df) %>%
+        suppressMessages() %>%
+        select(-matches("addressFiler"))
+    }
+
+    if ('fields.bc_other_names' %in% names(df)) {
+      df_related_entities <-
+        1:nrow(df) %>%
+        map_df(function(x){
+
+          entities <-
+            df$fields.bc_other_names[[x]]
+
+          if (entities %>% length() == 0) {
+            return(data_frame(idRow = x))
+          }
+          data <-
+            data_frame(nameEntityRelated = entities) %>%
+            mutate(idRow = x, countEntity = 1:n()) %>%
+            select(idRow, countEntity, nameEntityRelated)
+          return(data)
+        })
+
+      df_related_entities <-
+        df_related_entities %>%
+        nest(-idRow, .key = 'dateRelatedEntities')
+
+      df_fields <-
+        df_fields %>%
+        left_join(df_related_entities) %>%
+        suppressMessages()
+    }
+
+    if ('idDisclosure' %in% names(df_fields) & !is_person) {
+      df_fields <-
+        df_fields %>%
+        mutate(
+          hasFINRADisclosures = ifelse(idDisclosure == "Y", TRUE, FALSE),
+          urlFINRABrokerPDF = ifelse(
+            hasFINRADisclosures == T,
+            list(
+              'https://files.brokercheck.finra.org/firm/firm_',
+              idCRD ,
+              '.pdf'
+            ) %>% purrr::invoke(paste0, .),
+            NA
+          ),
+          urlFINRABrokerJSON =
+            ifelse(
+              hasFINRADisclosures == T,
+              list(
+                'https://doppler.finra.org/doppler-lookup/api/v1/search/firms/',
+                idCRD ,
+                '/?&wt=json'
+              ) %>% purrr::invoke(paste0, .),
+              NA
+            )
+        )
+
+      urls_json <-
+        df_fields %>%
+        filter(!urlFINRABrokerJSON %>% is.na()) %>%
+        .$urlFINRABrokerJSON
+
+      parse_broker_json_url_safe <-
+        purrr::possibly(parse_broker_json_url, data_frame())
+
+      broker_df <-
+        urls_json %>%
+        map_df(function(x) {
+        parse_broker_json_url_safe(url = x)
+        })
+      has_broker <-
+        broker_df %>% nrow() > 0
+      if (has_broker) {
+      df_fields <-
+        df_fields %>%
+        left_join(broker_df) %>%
+        suppressMessages()
+      df_fields <-
+        df_fields %>%
+        mutate(rowsDataBroker = dataFINRABroker %>% map_dbl(function(x){x %>% length()}),
+               hasDataBroker = ifelse(rowsDataBroker > 0 ,TRUE, FALSE)) %>%
+        select(-rowsDataBroker)
       }
 
-    get_finra_manager_metadata_safe <-
-      possibly(get_finra_manager_metadata, NULL)
+      has_pdfs <-
+        df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
+        nrow() > 0
+      if (has_pdfs) {
+        if(ocr_pdfs) {
+          pdf_urls <-
+            df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
+          .$urlFINRABrokerPDF
+          parse_finra_pdf_brochure_safe <-
+            purrr::possibly(parse_finra_pdf_brochure, data_frame())
+          pdf_df <-
+            pdf_urls %>%
+            map_df(function(x){
+              list("PARSING: ", x) %>% purrr::invoke(paste0,. ) %>% message()
+              parse_finra_pdf_brochure_safe(url = x) %>%
+                mutate(urlFINRABrokerPDF = x)
+            })
+          df_fields <-
+            df_fields %>%
+            left_join(pdf_df) %>%
+            suppressMessages()
+        }
+      }
+    }
 
-    managers_data <-
-      search_names %>%
-      map_df(function(x) {
-        get_finra_manager_metadata_safe(search_name = x, return_message = return_message)
+    if ('idDisclosure' %in% names(df_fields) & is_person) {
+      df_fields <-
+        df_fields %>%
+        mutate(
+          hasFINRADisclosures = ifelse(idDisclosure == "Y", TRUE, FALSE),
+          urlFINRABrokerPDF = ifelse(
+            hasFINRADisclosures == T,
+            list(
+              'https://files.brokercheck.finra.org/individual/individual_',
+              idCRD ,
+              '.pdf'
+            ) %>% purrr::invoke(paste0, .),
+            NA
+          ),
+          urlFINRABrokerJSON =
+            ifelse(
+              hasFINRADisclosures == T,
+              list(
+                'https://doppler.finra.org/doppler-lookup/api/v1/search/individuals/',
+                idCRD ,
+                '/?&wt=json'
+              ) %>% purrr::invoke(paste0, .),
+              NA
+            )
+        )
+
+      urls_json <-
+        df_fields %>%
+        filter(!urlFINRABrokerJSON %>% is.na()) %>%
+        .$urlFINRABrokerJSON %>%
+        unique()
+
+      parse_broker_json_url_safe <-
+        purrr::possibly(parse_broker_json_url, data_frame())
+
+      broker_df <-
+        urls_json %>%
+        map_df(function(x) {
+          parse_broker_json_url_safe(url = x)
+        })
+
+      if (broker_df %>% nrow() > 0 ){
+        df_fields <-
+        df_fields %>%
+        left_join(broker_df) %>%
+        suppressMessages()
+      df_fields <-
+        df_fields %>%
+        mutate(rowsDataBroker = dataFINRABroker %>% map_dbl(function(x){x %>% length()}),
+               hasDataBroker = ifelse(rowsDataBroker > 0 ,TRUE, FALSE)) %>%
+        select(-rowsDataBroker)
+
+      }
+      if (has_pdfs) {
+        if(ocr_pdfs) {
+          pdf_urls <-
+            df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
+            .$urlFINRABrokerPDF
+          parse_finra_pdf_brochure_safe <-
+            purrr::possibly(parse_finra_pdf_brochure, data_frame())
+          pdf_df <-
+            pdf_urls %>%
+            map_df(function(x){
+              list("PARSING: ", x) %>% purrr::invoke(paste0,. ) %>% message()
+              parse_finra_pdf_brochure_safe(url = x) %>%
+                mutate(urlFINRABrokerPDF = x)
+            })
+          df_fields <-
+            df_fields %>%
+            left_join(pdf_df) %>%
+            suppressMessages()
+        }
+      }
+    }
+
+    df_fields <-
+      df_fields %>%
+      mutate(urlFINRA = url) %>%
+      suppressMessages()
+
+    return(df_fields)
+  }
+
+
+get_data_finra_entity <-
+  function(search_name = "Rockwood Capital",
+           is_firm = TRUE,
+           ocr_pdf = TRUE,
+           return_message = TRUE) {
+    if (search_name %>% purrr::is_null()){
+      stop("Please enter a search term")
+    }
+    url_df <-
+      search_name %>%
+      map_df(function(x){
+        url <-
+          generate_finra_url(is_firm = is_firm, search_name = x)
+
+        data_frame(nameSearch = x, urlJSON = url)
+      })
+
+    parse_finra_json_url_safe <-
+      possibly(parse_finra_json_url, data_frame())
+
+    all_data <-
+      url_df$urlJSON %>%
+      map_df(function(x){
+        parse_finra_json_url_safe(url = x, ocr_pdf = ocr_pdf)
       }) %>%
-      distinct()
-    return(managers_data)
+      mutate(nameSearch = search_name) %>%
+      select(nameSearch, matches("name"), matches("^id"), everything()) %>%
+      select(-matches("idRow"))
+
+    if (return_message) {
+      list("Returned ", all_data %>% nrow() %>% formattable::comma(digits = 0), ' FINRA registered entities for ', search_name) %>%
+        purrr::invoke(paste0, .) %>%
+        message()
+    }
+
+    return(all_data)
+
+  }
+
+
+#' Get FINRA registered firms and associated metadata
+#'
+#' @param search_names  vector of names to search
+#' @param return_message return a message upon parsing \code{TRUE, FALS}
+#' @import jsonlite dplyr tidyr purrr stringr pdftools stringi
+#' @return
+#' @export
+#'
+#' @examples
+#' get_data_finra_entities(search_name = c('EJF Capital', 'Goldman Sachs'), ocr_pdf = TRUE)
+get_data_finra_entities <-
+  function(search_names = c("Thrive","Rockwood Capital", "EJF", "Simple Capital"),
+           ocr_pdf = TRUE,
+           return_message = TRUE) {
+  search_df <-
+    expand.grid(nameSearch = search_names,
+              isFirm = TRUE,stringsAsFactors = FALSE) %>%
+      as_data_frame()
+  get_data_finra_entity_safe <-
+    purrr::possibly(get_data_finra_entity, data_frame())
+
+  all_data <-
+    1:nrow(search_df) %>%
+    map_df(function(x){
+      get_data_finra_entity(search_name = search_df$nameSearch[[x]],
+                            ocr_pdf = ocr_pdf,
+                            is_firm = search_df$isFirm[[x]],
+                            return_message = return_message)
+    })
+
+  if ('typeActiveFiler' %in% names(all_data)) {
+    all_data <-
+      all_data %>%
+      mutate(isActiveFiler = ifelse(typeActiveFiler == "ACTIVE", TRUE, FALSE)) %>%
+      select(nameSearch, matches('idCRD'), matches("nameFirm"), isActiveFiler, everything())
+  }
+
+  all_data <-
+    all_data %>%
+    mutate(urlManagerSummaryADV = 'https://adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>% paste0(idCRD))
+  return(all_data)
+  }
+
+#' Get FINRA registered people and associated metadata
+#'
+#' @param search_names  vector of names to search
+#' @param return_message return a message upon parsing \code{TRUE, FALS}
+#' @import jsonlite dplyr tidyr purrr stringr pdftools stringi
+#' @return
+#' @export
+#'
+#' @examples
+#' get_data_finra_people(search_name = 'Llyod Blankfein', ocr_pdf = TRUE)
+get_data_finra_people <-
+  function(search_names = NULL,
+           ocr_pdf = TRUE,
+           return_message = TRUE) {
+    search_df <-
+      expand.grid(nameSearch = search_names,
+                  isFirm = FALSE,stringsAsFactors = FALSE) %>%
+      as_data_frame()
+    get_data_finra_entity_safe <-
+      purrr::possibly(get_data_finra_entity, data_frame())
+
+    all_data <-
+      1:nrow(search_df) %>%
+      map_df(function(x){
+        get_data_finra_entity(search_name = search_df$nameSearch[[x]],
+                              is_firm = search_df$isFirm[[x]],
+                              ocr_pdf = ocr_pdf,
+                              return_message = return_message)
+      })
+
+    if ('typeActiveFiler' %in% names(all_data)) {
+      all_data <-
+        all_data %>%
+        mutate(isActiveFiler = ifelse(typeActiveFiler == "ACTIVE", TRUE, FALSE)) %>%
+        select(nameSearch, matches('idCRD'), matches("nameFirm"), isActiveFiler, everything())
+    }
+    return(all_data)
   }
 
 
@@ -789,12 +1591,11 @@ get_data_adv_managers_metadata <-
         'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>%
         paste0(crd_ids)
     }
-    get_finra_managers_metadata_safe <-
-      possibly(get_finra_managers_metadata, NULL)
-    if (!search_names %>% is_null) {
+
+    if (!search_names %>% is_null()) {
       finra_data <-
         search_names %>%
-        get_finra_managers_metadata(return_message = return_message) %>%
+        get_data_finra_entities(ocr_pdf = F,return_message = return_message) %>%
         suppressMessages() %>%
         suppressWarnings()
 
@@ -806,7 +1607,7 @@ get_data_adv_managers_metadata <-
         finra_data$urlManagerSummaryADV
     }
 
-    if ((!crd_ids %>% is_null) & (!search_names %>% is_null)) {
+    if ((!crd_ids %>% is_null()) & (!search_names %>% is_null())) {
       adv_urls <-
         c(adv_urls, crd_urls)
     }
@@ -1175,7 +1976,7 @@ get_managers_adv_sitemap_adv <-
         paste0('http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=',.)
     }
 
-    if (!search_names %>% is_null) {
+    if (!search_names %>% is_null()) {
       manager_data <-
         search_names %>%
         map_df(function(x) {
@@ -1187,17 +1988,17 @@ get_managers_adv_sitemap_adv <-
         dplyr::filter(!urlManagerADV %>% is.na)
     }
 
-    if ('urls' %>% exists & 'manager_data' %>% exists) {
+    if ('urls' %>% exists() & 'manager_data' %>% exists()) {
       urls <-
         c(urls, manager_data$urlManagerADV %>% unique) %>% unique
     }
 
-    if (idCRDs %>% is_null & 'manager_data' %>% exists) {
+    if (idCRDs %>% is_null() & 'manager_data' %>% exists()) {
       urls <-
-        manager_data$urlManagerADV %>% unique
+        manager_data$urlManagerADV %>% unique()
     }
 
-    if ('urls' %>% exists & search_names %>% is_null) {
+    if ('urls' %>% exists & search_names %>% is_null()) {
       manager_data <-
         get_data_adv_managers_metadata_safe(crd_ids = idCRDs, search_names = NULL)
 
@@ -7128,35 +7929,37 @@ get_crd_sections_data <-
 get_search_crd_ids <-
   function(search_names = c('EJF Capital', '137 Ventures'),
            crd_ids = NULL) {
-    if (search_names %>% is_null & (crd_ids %>% is_null)) {
+    if (search_names %>% is_null() & (crd_ids %>% is_null())) {
       stop("Please enter search names or CRD IDs")
     }
 
     crd_df <-
       data_frame(idCRD = NA)
 
-    if (!search_names %>% is_null) {
+    if (!search_names %>% is_null()) {
+      get_data_finra_entities_safe <-
+        purrr::possibly(get_data_finra_entities, data_frame())
       search_name_df <-
         search_names %>%
         map_df(function(x) {
-          get_data_adv_managers_metadata(
-            crd_ids = NULL,
+          get_data_finra_entities(
             search_names = x,
-            return_message = T
+            return_message = FALSE,
+            ocr_pdf = FALSE
           )
         })
 
       id_crds <-
         search_name_df %>%
-        .$idCRD
+        .$idCRD %>%
+        readr::parse_number()
 
       crd_df <-
         crd_df %>%
         bind_rows(data_frame(idCRD = id_crds))
+      }
 
-    }
-
-    if (!crd_ids %>% is_null) {
+    if (!crd_ids %>% is_null()) {
       crd_df <-
         crd_df %>%
         bind_rows(data_frame(idCRD = crd_ids))
@@ -7727,7 +8530,7 @@ parse_manager_brochure_data <-
   }
 
 get_manager_brochure_data <-
-  function(id_crd = 124529,
+  function(id_crd = 156663,
            split_pages = T) {
     url <-
       get_managers_adv_sitemap_adv(idCRDs = id_crd) %>%
@@ -7754,21 +8557,21 @@ get_manager_brochure_data <-
 
   }
 
-#' Get manager ADV brochure
+#' OCR registerd managers ADV brochures
 #'
-#' @param search_names Names of the companies you want to search
-#' @param crd_ids CRD IDs you want to search
-#' @param split_pages Do you want the brochure as 1 text blob or multiple pages
+#' @param search_names names of the companies you want to search
+#' @param crd_ids CRDs you want to search
+#' @param split_pages do you want to split the brochure into multiple pages
 #'
 #' @return
 #' @export
 #' @import pdftools stringr stringi dplyr purrr tidyr
 #' @examples
-#' get_data_adv_managers_brochures(search_names = c('137 Ventures', 'Divco'), crd_ids = NULL, split_pages = T))
+#' get_data_adv_managers_brochures(search_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE)
 get_data_adv_managers_brochures <-
   function(search_names = NULL,
            crd_ids = NULL,
-           split_pages = T) {
+           split_pages = TRUE) {
     packages <-
       c(
         "curl",

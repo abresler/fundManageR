@@ -82,8 +82,8 @@ get_general_name_df <-
           "phoneEntity",
           "stateEntity",
           "stateIncorporation",
-          "addressStreetEntity1",
-          "addressStreetEntity2",
+          "addressStreet1Entity",
+          "addressStreet2Entity",
           "idTypeFiler",
           "zipCodeEntity",
           "industryEntity", "objectIssuer", "typeEntity",
@@ -373,7 +373,7 @@ parse_13F_url <-
   }
 
   if (return_message) {
-    list("Parsed: ", url, '\nContains ', df_13f %>% select(idCUSIP) %>% distinct() %>% nrow(), ' securities valued at ', df_13f$valueSecurity %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)) %>%
+    list("Parsed: ", url, '\nContains ', df_13f %>% select(idCUSIP) %>% distinct() %>% nrow(), ' securities valued at ', df_13f$valueSecurity %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0), '\n') %>%
       purrr::invoke(paste0, .) %>%
       message()
   }
@@ -447,15 +447,15 @@ get_small_issuer_name_df <-
         "idIRS",
         "countEmployeesFullTime",
         "countEmployeesPartTime",
-        "addressStreetFiler1",
-        "addressStreetFiler2",
+        "addressStreet1Filer",
+        "addressStreet2Filer",
         "cityFiler",
         "stateFiler",
         "zipcodeFiler",
         "phoneFiler",
         "nameFilerContact",
-        "addressStreetContact1",
-        "addressStreetContact2",
+        "addressStreet1Contact",
+        "addressStreet2Contact",
         "cityContact",
         "stateContact",
         "zipcodeContact",
@@ -532,7 +532,7 @@ get_small_issuer_name_df <-
         "amountSecuritiesUnregistered",
         "amountSecuritiesUnregisteredInsiderPromoterBroker",
         "amountSecuritiesUnregisteredBasis",
-        "amountSecuritiesUnregisteredBasisB3",
+        "amountSecuritiesUnregisteredB3Basis",
         "descriptionSecuritiesUnregisteredReason"
       )
     ) %>%
@@ -4074,7 +4074,7 @@ parse_json_private <-
                 df %>%
                 nest(-idRow, .key = dataBrokers)
             }
-            return(df)
+            return(data_frame())
           }
 
           df <-
@@ -5384,488 +5384,488 @@ get_data_sec_filer <-
     has_ciks <-
       (('ciks' %>% exists()) & (!ciks %>% purrr::is_null()))
 
-    has_tickers <-
-      (('tickers' %>% exists()) & (!tickers %>% purrr::is_null()))
+      has_tickers <-
+        (('tickers' %>% exists()) & (!tickers %>% purrr::is_null()))
 
-    has_nothing <-
-      ((!has_ciks) & (!has_entities) & (!has_tickers))
+      has_nothing <-
+        ((!has_ciks) & (!has_entities) & (!has_tickers))
 
-    has_tables <-
-      (!tables %>% purrr::is_null()) #(('tables' %>% exists()) |
+      has_tables <-
+        (!tables %>% purrr::is_null()) #(('tables' %>% exists()) |
 
-    if (has_nothing) {
-      stop("Please enter a CIK, tickr, or an entity name")
-    }
+      if (has_nothing) {
+        stop("Please enter a CIK, ticker, or an entity name")
+      }
 
-    all_ciks <-
-      c()
+      all_ciks <-
+        c()
 
-    if (has_entities) {
-      search_df <-
-        entity_names %>%
-        get_data_sec_filing_entities(return_message = return_message)
+      if (has_entities) {
+        get_data_sec_filing_entities_safe <-
+          purrr::possibly(get_data_sec_filing_entities, data_frame())
 
-      has_rows <-
-        search_df %>% nrow() > 0
+        search_df <-
+          entity_names %>%
+          get_data_sec_filing_entities_safe(return_message = return_message)
 
-      if (has_rows) {
-        search_ciks <-
-          search_df %>%
-          filter(idTypeFiler == 'f') %>%
-          .$idCIK
+        has_rows <-
+          search_df %>% nrow() > 0
+
+        if (has_rows) {
+          search_ciks <-
+            search_df %>%
+            filter(idTypeFiler == 'f') %>%
+            .$idCIK
+          all_ciks <-
+            all_ciks %>%
+            append(search_ciks)
+        }
+      }
+
+      if (has_ciks) {
         all_ciks <-
           all_ciks %>%
-          append(search_ciks)
+          append(ciks)
       }
-    }
 
-    if (has_ciks) {
-      all_ciks <-
-        all_ciks %>%
-        append(ciks)
-    }
+      parse_cik_data_safe <-
+        possibly(parse_cik_data, NULL)
 
-    parse_cik_data_safe <-
-      possibly(parse_cik_data, NULL)
-
-    if (all_ciks %>% length() > 0) {
-      all_data <-
-        all_ciks %>%
-        sort() %>%
-        map_df(function(x) {
-          parse_cik_data_safe(
-            tables = tables,
-            nest_data = nest_data,
-            cik = x,
-            return_message = return_message
-          )
-        }) %>%
-        mutate(
-          urlRankAndFiled =
-            list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>% purrr::invoke(paste0, .)
-        ) %>%
-        select(idCIK, nameEntity, urlRankAndFiled, nameTable, dataTable) %>%
-        distinct() %>%
-        suppressWarnings()
-    }
-
-    if (has_tickers) {
-      parse_ticker_data_safe <-
-        purrr::possibly(parse_ticker_data, data_frame())
-
-      table_exists <-
-        'all_data' %>% exists()
-
-      if (table_exists) {
-        all_ticker_data <-
-          tickers %>%
+      if (all_ciks %>% length() > 0) {
+        all_data <-
+          all_ciks %>%
+          sort() %>%
           map_df(function(x) {
-            parse_ticker_data_safe(
-              ticker = x,
-              nest_data = nest_data,
+            parse_cik_data_safe(
               tables = tables,
+              nest_data = nest_data,
+              cik = x,
               return_message = return_message
             )
           }) %>%
+          mutate(
+            urlRankAndFiled =
+              list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>% purrr::invoke(paste0, .)
+          ) %>%
+          select(idCIK, nameEntity, urlRankAndFiled, nameTable, dataTable) %>%
+          distinct() %>%
           suppressWarnings()
+      }
+
+      if (has_tickers) {
+        parse_ticker_data_safe <-
+          purrr::possibly(parse_ticker_data, data_frame())
+
+        table_exists <-
+          'all_data' %>% exists()
+
+        if (table_exists) {
+          all_ticker_data <-
+            tickers %>%
+            map_df(function(x) {
+              parse_ticker_data_safe(
+                ticker = x,
+                nest_data = nest_data,
+                tables = tables,
+                return_message = return_message
+              )
+            }) %>%
+            suppressWarnings()
+
+          all_data <-
+            all_data %>%
+            bind_rows(all_ticker_data)
+        } else {
+          all_data <-
+            tickers %>%
+            map_df(function(x) {
+              parse_ticker_data_safe(ticker = x,
+                                     tables = tables,
+                                     return_message = return_message)
+            }) %>%
+            suppressWarnings()
+        }
+      }
+
+      if (has_tables) {
+        table_options <-
+          c(
+            'General',
+            'CIK Filings',
+            'Filings',
+            'Private Offerings',
+            'Related Parties',
+            'Traders',
+            'C Level',
+            'MDA',
+            'Owners',
+            'Insider Trades',
+            'Trades'
+          )
+        table_names <-
+          tables %>% str_to_lower() %>% paste0(collapse = "|")
+
+        wrong_table <-
+          table_options %>% str_to_lower() %>% str_count(table_names) %>% sum() == 0
+
+        if (wrong_table) {
+          stop("Sorry tables can only be:\n" %>% paste0(paste0(table_options, collapse = '\n')))
+        }
 
         all_data <-
           all_data %>%
-          bind_rows(all_ticker_data)
-      } else {
-        all_data <-
-          tickers %>%
-          map_df(function(x) {
-            parse_ticker_data_safe(ticker = x,
-                                   tables = tables,
-                                   return_message = return_message)
-          }) %>%
-          suppressWarnings()
+          mutate(table = nameTable %>% str_to_lower()) %>%
+          filter(table %>% str_detect(table_names)) %>%
+          select(-table)
       }
-    }
 
-    if (has_tables) {
-      table_options <-
-        c(
-          'General',
-          'CIK Filings',
-          'Filings',
-          'Private Offerings',
-          'Related Parties',
-          'Traders',
-          'C Level',
-          'MDA',
-          'Owners',
-          'Insider Trades',
-          'Trades'
-        )
-      table_names <-
-        tables %>% str_to_lower() %>% paste0(collapse = "|")
+      missing_ciks <-
+        all_ciks[!all_ciks %in% all_data$idCIK] %>% length() > 0
 
-      wrong_table <-
-        table_options %>% str_to_lower() %>% str_count(table_names) %>% sum() == 0
-
-      if (wrong_table) {
-        stop("Sorry tables can only be:\n" %>% paste0(paste0(table_options, collapse = '\n')))
+      if (missing_ciks) {
+        list("Missing ", all_ciks[!all_ciks %in% all_data$idCIK] %>% paste(collapse = ', ')) %>%
+          purrr::invoke(paste0, .) %>%
+          message()
       }
 
       all_data <-
         all_data %>%
-        mutate(table = nameTable %>% str_to_lower()) %>%
-        filter(table %>% str_detect(table_names)) %>%
-        select(-table)
-    }
+        select(-matches("urlRankAndFiled"))
 
-    missing_ciks <-
-      all_ciks[!all_ciks %in% all_data$idCIK] %>% length() > 0
+      has_filings <-
+        c('CIK Filings', 'Filings') %in% all_data$nameTable %>% sum() > 0
 
-    if (missing_ciks) {
-      list("Missing ", all_ciks[!all_ciks %in% all_data$idCIK] %>% paste(collapse = ', ')) %>%
-        purrr::invoke(paste0, .) %>%
-        message()
-    }
-
-    all_data <-
-      all_data %>%
-      select(-matches("urlRankAndFiled"))
-
-    has_filings <-
-      c('CIK Filings', 'Filings') %in% all_data$nameTable %>% sum() > 0
-
-    if (has_filings){
-      filing_df <-
-        all_data %>%
-        filter(nameTable %in% c('Filings','CIK Filings')) %>%
-        select(dataTable) %>%
-        unnest() %>%
-        distinct()
-
-      has_13fs <-
-        (filing_df %>%
-        .$is13FFiling %>% sum(na.rm = TRUE)) > 0 & (include_13Fs)
-
-      has_subsidiaries <-
-        (filing_df %>%
-        filter(typeFiling == "SUBSIDIARIES OF THE REGISTRANT") %>%
-        nrow() > 0) & (include_subsidiaries)
-
-      has_asset_data <-
-        (filing_df %>%
-           filter(typeFiling == "ABS ASSET DATA FILE") %>%
-           nrow() > 0) & (include_asset_data)
-
-      has_small_offering_data <-
-        (filing_df %>%
-           filter(typeFiling == "SMALL OFFERING") %>%
-           nrow() > 0) & (include_small_offering_data)
-
-      if (has_13fs) {
-        urls_13F <-
-          filing_df %>%
-          filter(is13FFiling == TRUE) %>%
-          .$urlSEC %>%
-          unique()
-
-        parse_13F_url_safe <-
-          purrr::possibly(parse_13F_url, data_frame())
-
-        df_13f <-
-          1:length(urls_13F) %>%
-          map_df(function(x) {
-            parse_13F_url_safe(url = urls_13F[[x]], return_message = return_message)
-          }) %>%
-          suppressWarnings() %>%
-          select(-matches("remove")) %>%
-          resolve_names_to_upper()
-
-        df_13f <-
-          df_13f %>%
-          left_join(filing_df %>% select(idCIK, nameEntity, dateFiling, urlSEC)) %>%
-          select(idCIK, nameEntity, dateFiling, everything()) %>%
-          suppressMessages()
-
-        if (nest_data) {
-          df_13f <-
-            df_13f %>%
-            nest(-c(dateFiling, idCIK, nameEntity), .key = data13F)
-
-        }
-
-        a_13f_df <-
-          df_13f %>%
-          group_by(idCIK, nameEntity) %>%
-          nest(-c(idCIK, nameEntity), .key = dataTable) %>%
-          ungroup() %>%
-          mutate(nameTable = 'Filings 13F')
-
-        all_data <-
+      if (has_filings){
+        filing_df <-
           all_data %>%
-          bind_rows(
-            a_13f_df
-          )
-      }
-
-      if (has_subsidiaries) {
-        parse_sec_subsidiary_url_safe <-
-          purrr::possibly(parse_sec_subsidiary_url, data_frame())
-
-        has_list <-
-          filing_df %>%
-          filter(typeFiling == "LIST OF SUBSIDIARIES") %>%
-          nrow() > 0
-
-        sub_url_df <-
-          filing_df %>%
-          filter(typeFiling %in% c("SUBSIDIARIES OF THE REGISTRANT", "SUBSIDIARIES OF HOLDING COMPANY")) %>%
-          select(dateFiling, nameEntity, urlSEC) %>%
+          filter(nameTable %in% c('Filings','CIK Filings')) %>%
+          select(dataTable) %>%
+          unnest() %>%
           distinct()
 
-        if (has_list) {
-          sub_url_list_df <-
+        has_13fs <-
+          (filing_df %>%
+          .$is13FFiling %>% sum(na.rm = TRUE)) > 0 & (include_13Fs)
+
+        has_subsidiaries <-
+          (filing_df %>%
+          filter(typeFiling == "SUBSIDIARIES OF THE REGISTRANT") %>%
+          nrow() > 0) & (include_subsidiaries)
+
+        has_asset_data <-
+          (filing_df %>%
+             filter(typeFiling == "ABS ASSET DATA FILE") %>%
+             nrow() > 0) & (include_asset_data)
+
+        has_small_offering_data <-
+          (filing_df %>%
+             filter(typeFiling == "SMALL OFFERING") %>%
+             nrow() > 0) & (include_small_offering_data)
+
+        if (has_13fs) {
+          urls_13F <-
             filing_df %>%
-            filter(typeFiling %>% str_detect("LIST OF SUBSIDIARIES|LIST OF SIGNIFICANT SUBSIDIARIES|LIST OF SIGNIFCANT")) %>%
+            filter(is13FFiling == TRUE) %>%
+            .$urlSEC %>%
+            unique()
+
+          parse_13F_url_safe <-
+            purrr::possibly(parse_13F_url, data_frame())
+
+          df_13f <-
+            1:length(urls_13F) %>%
+            map_df(function(x) {
+              parse_13F_url_safe(url = urls_13F[[x]], return_message = return_message)
+            }) %>%
+            suppressWarnings() %>%
+            select(-matches("remove")) %>%
+            resolve_names_to_upper()
+
+          df_13f <-
+            df_13f %>%
+            left_join(filing_df %>% select(idCIK, nameEntity, dateFiling, urlSEC)) %>%
+            select(idCIK, nameEntity, dateFiling, everything()) %>%
+            suppressMessages()
+
+          if (nest_data) {
+            df_13f <-
+              df_13f %>%
+              nest(-c(dateFiling, idCIK, nameEntity), .key = data13F)
+
+          }
+
+          a_13f_df <-
+            df_13f %>%
+            group_by(idCIK, nameEntity) %>%
+            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+            ungroup() %>%
+            mutate(nameTable = 'Filings 13F')
+
+          all_data <-
+            all_data %>%
+            bind_rows(
+              a_13f_df
+            )
+        }
+
+        if (has_subsidiaries) {
+          parse_sec_subsidiary_url_safe <-
+            purrr::possibly(parse_sec_subsidiary_url, data_frame())
+
+          has_list <-
+            filing_df %>%
+            filter(typeFiling == "LIST OF SUBSIDIARIES") %>%
+            nrow() > 0
+
+          sub_url_df <-
+            filing_df %>%
+            filter(typeFiling %in% c("SUBSIDIARIES OF THE REGISTRANT", "SUBSIDIARIES OF HOLDING COMPANY")) %>%
             select(dateFiling, nameEntity, urlSEC) %>%
             distinct()
 
-          if ('sub_url_df' %>% exists()) {
-            sub_url_df <-
-              sub_url_list_df %>%
-              bind_rows(sub_url_df)
+          if (has_list) {
+            sub_url_list_df <-
+              filing_df %>%
+              filter(typeFiling %>% str_detect("LIST OF SUBSIDIARIES|LIST OF SIGNIFICANT SUBSIDIARIES|LIST OF SIGNIFCANT")) %>%
+              select(dateFiling, nameEntity, urlSEC) %>%
+              distinct()
+
+            if ('sub_url_df' %>% exists()) {
+              sub_url_df <-
+                sub_url_list_df %>%
+                bind_rows(sub_url_df)
+            } else {
+              sub_url_df <-
+                sub_url_list_df
+            }
+          }
+
+          sub_df <-
+            sub_url_df %>%
+            arrange(dateFiling) %>%
+            .$urlSEC %>%
+            map_df(function(x){
+              parse_sec_subsidiary_url_safe(url = x, return_message = return_message)
+            }) %>%
+            suppressWarnings()
+
+          if (sub_df %>% nrow() > 0) {
+          sub_df <-
+            sub_df %>%
+            select(-matches("X|date")) %>%
+            filter(!nameSubsidiary %in% c('(I)', '(II)', '(III)', '(IV)', '(V)', '(VI)', '(VII)', '(VIII)', '(IX)', '(X)', 'PART A')) %>%
+            left_join(sub_url_df) %>%
+            select(idCIK, dateFiling, everything()) %>%
+            suppressMessages() %>%
+            distinct()
+
+          active_date_df <-
+            sub_df %>%
+            group_by(nameSubsidiary) %>%
+            summarise(dateFirstFiled = min(dateFiling, na.rm = TRUE),
+                      dateLastFiled = max(dateFiling, na.rm = TRUE),
+                      isActiveSubsidiary = ifelse(dateLastFiled == sub_df$dateFiling %>% max(na.rm = TRUE), TRUE, FALSE)
+                      ) %>%
+            ungroup()
+
+          sub_df <-
+            sub_df %>%
+            left_join(active_date_df) %>%
+            left_join(sub_url_df) %>%
+            suppressMessages()
+
+          sub_df <-
+            sub_df %>%
+            mutate(nameSubsidiaryRF = nameSubsidiary %>% str_replace_all('\\,|\\.', '')) %>%
+            select(idCIK, nameEntity, dateFiling, everything()) %>%
+            suppressMessages()
+
+          has_sub_df <-
+            'Subsidiaries' %in% all_data$nameTable
+
+          if (has_sub_df) {
+            ad_sub_df <-
+              all_data %>%
+              filter(nameTable == 'Subsidiaries') %>%
+              select(dataTable) %>%
+              unnest()
+
+            if ('pctSubsidiaryOwned' %in% names(ad_sub_df)) {
+              sub_df <-
+                sub_df %>%
+                left_join(
+                  ad_sub_df %>%
+                    select(nameSubsidiaryRF = nameSubsidiary, pctSubsidiaryOwned) %>%
+                    distinct()
+                ) %>%
+                suppressMessages() %>%
+                select(-nameSubsidiaryRF)
+            }
+
+            if (nest_data) {
+              sub_df <-
+                sub_df %>%
+                nest(-c(dateFiling, idCIK, nameEntity), .key = dataSubsidiaries)
+            }
+            a_sub_df <-
+              sub_df %>%
+              group_by(idCIK, nameEntity) %>%
+              nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+              ungroup() %>%
+              mutate(nameTable = 'Subsidiaries')
+
+            all_data <-
+              all_data %>%
+              filter(!nameTable == 'Subsidiaries') %>%
+              bind_rows(
+                a_sub_df
+              )
+
           } else {
-            sub_url_df <-
-              sub_url_list_df
+            if (nest_data) {
+              sub_df <-
+                sub_df %>%
+                nest(-c(dateFiling, idCIK, nameEntity), .key = dataSubsidiaries)
+            }
+            a_sub_df <-
+              sub_df %>%
+              group_by(idCIK, nameEntity) %>%
+              nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+              ungroup() %>%
+              mutate(nameTable = 'Subsidiaries')
+
+            all_data <-
+              all_data %>%
+              filter(!nameTable == 'Subsidiaries') %>%
+              bind_rows(
+                a_sub_df
+              )
+          }
           }
         }
 
-        sub_df <-
-          sub_url_df %>%
-          arrange(dateFiling) %>%
-          .$urlSEC %>%
-          map_df(function(x){
-            parse_sec_subsidiary_url_safe(url = x, return_message = return_message)
-          }) %>%
-          suppressWarnings()
+        if (has_small_offering_data) {
+          url_df <-
+            filing_df %>%
+            filter(typeFiling == "SMALL OFFERING") %>%
+            select(dateFiling, nameEntity, urlSEC) %>%
+            distinct()
 
-        if (sub_df %>% nrow() > 0) {
-        sub_df <-
-          sub_df %>%
-          select(-matches("X|date")) %>%
-          filter(!nameSubsidiary %in% c('(I)', '(II)', '(III)', '(IV)', '(V)', '(VI)', '(VII)', '(VIII)', '(IX)', '(X)', 'PART A')) %>%
-          left_join(sub_url_df) %>%
-          select(idCIK, dateFiling, everything()) %>%
-          suppressMessages() %>%
-          distinct()
+          parse_small_offering_data_safe <-
+            purrr::possibly(parse_small_offering_data, data_frame())
 
-        active_date_df <-
-          sub_df %>%
-          group_by(nameSubsidiary) %>%
-          summarise(dateFirstFiled = min(dateFiling, na.rm = TRUE),
-                    dateLastFiled = max(dateFiling, na.rm = TRUE),
-                    isActiveSubsidiary = ifelse(dateLastFiled == sub_df$dateFiling %>% max(na.rm = TRUE), TRUE, FALSE)
-                    ) %>%
-          ungroup()
+          offering_df <-
+            url_df$urlSEC %>%
+            map_df(function(x) {
+              parse_small_offering_data(url = x, return_message = return_message)
+            }) %>%
+            select(-matches("^NA")) %>%
+            suppressWarnings()
 
-        sub_df <-
-          sub_df %>%
-          left_join(active_date_df) %>%
-          left_join(sub_url_df) %>%
-          suppressMessages()
-
-        sub_df <-
-          sub_df %>%
-          mutate(nameSubsidiaryRF = nameSubsidiary %>% str_replace_all('\\,|\\.', '')) %>%
-          select(idCIK, nameEntity, dateFiling, everything()) %>%
-          suppressMessages()
-
-        has_sub_df <-
-          'Subsidiaries' %in% all_data$nameTable
-
-        if (has_sub_df) {
-          ad_sub_df <-
-            all_data %>%
-            filter(nameTable == 'Subsidiaries') %>%
-            select(dataTable) %>%
-            unnest()
-
-          if ('pctSubsidiaryOwned' %in% names(ad_sub_df)) {
-            sub_df <-
-              sub_df %>%
-              left_join(
-                ad_sub_df %>%
-                  select(nameSubsidiaryRF = nameSubsidiary, pctSubsidiaryOwned) %>%
-                  distinct()
-              ) %>%
-              suppressMessages() %>%
-              select(-nameSubsidiaryRF)
-          }
-
-          if (nest_data) {
-            sub_df <-
-              sub_df %>%
-              nest(-c(dateFiling, idCIK, nameEntity), .key = dataSubsidiaries)
-          }
-          a_sub_df <-
-            sub_df %>%
-            group_by(idCIK, nameEntity) %>%
-            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
-            ungroup() %>%
-            mutate(nameTable = 'Subsidiaries')
-
-          all_data <-
-            all_data %>%
-            filter(!nameTable == 'Subsidiaries') %>%
-            bind_rows(
-              a_sub_df
-            )
-
-        } else {
-          if (nest_data) {
-            sub_df <-
-              sub_df %>%
-              nest(-c(dateFiling, idCIK, nameEntity), .key = dataSubsidiaries)
-          }
-          a_sub_df <-
-            sub_df %>%
-            group_by(idCIK, nameEntity) %>%
-            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
-            ungroup() %>%
-            mutate(nameTable = 'Subsidiaries')
-
-          all_data <-
-            all_data %>%
-            filter(!nameTable == 'Subsidiaries') %>%
-            bind_rows(
-              a_sub_df
-            )
-        }
-        }
-      }
-
-      if (has_small_offering_data) {
-        url_df <-
-          filing_df %>%
-          filter(typeFiling == "SMALL OFFERING") %>%
-          select(dateFiling, nameEntity, urlSEC) %>%
-          distinct()
-
-        parse_small_offering_data_safe <-
-          purrr::possibly(parse_small_offering_data, data_frame())
-
-        offering_df <-
-          url_df$urlSEC %>%
-          map_df(function(x) {
-            parse_small_offering_data(url = x, return_message = return_message)
-          }) %>%
-          select(-matches("^NA")) %>%
-          suppressWarnings()
-
-        offering_df <-
-          offering_df %>%
-          mutate_at(offering_df %>% select(matches("^perShare|^price")) %>% names(),
-                    funs(. %>% formattable::currency(digits = 3))) %>%
-          mutate_at(offering_df %>% select(matches("^count")) %>% names(),
-                    funs(. %>% formattable::comma(digits = 0))) %>%
-          mutate_at(offering_df %>% select(matches("^amount")) %>% names(),
-                    funs(. %>% formattable::currency(digits = 0))) %>%
-          mutate_at(offering_df %>% select(matches("^percent|^pct")) %>% names(),
-                    funs(. %>% formattable::percent(digits = 3)))
-
-        offering_df <-
-          offering_df %>%
-          left_join(url_df) %>%
-          suppressMessages() %>%
-          select(idCIK, nameEntity, dateFiling, everything())
-
-        if (nest_data) {
           offering_df <-
             offering_df %>%
-            nest(-c(dateFiling, idCIK, nameEntity), .key = dataSmallOffering)
+            mutate_at(offering_df %>% select(matches("^perShare|^price")) %>% names(),
+                      funs(. %>% formattable::currency(digits = 3))) %>%
+            mutate_at(offering_df %>% select(matches("^count")) %>% names(),
+                      funs(. %>% formattable::comma(digits = 0))) %>%
+            mutate_at(offering_df %>% select(matches("^amount")) %>% names(),
+                      funs(. %>% formattable::currency(digits = 0))) %>%
+            mutate_at(offering_df %>% select(matches("^percent|^pct")) %>% names(),
+                      funs(. %>% formattable::percent(digits = 3)))
+
+          offering_df <-
+            offering_df %>%
+            left_join(url_df) %>%
+            suppressMessages() %>%
+            select(idCIK, nameEntity, dateFiling, everything())
+
+          if (nest_data) {
+            offering_df <-
+              offering_df %>%
+              nest(-c(dateFiling, idCIK, nameEntity), .key = dataSmallOffering)
+          }
+
+          a_offering_df <-
+            offering_df %>%
+            group_by(idCIK, nameEntity) %>%
+            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+            ungroup() %>%
+            mutate(nameTable = 'Small Offerings')
+
+          all_data <-
+            all_data %>%
+            bind_rows(
+              a_offering_df
+            )
+
         }
 
-        a_offering_df <-
-          offering_df %>%
-          group_by(idCIK, nameEntity) %>%
-          nest(-c(idCIK, nameEntity), .key = dataTable) %>%
-          ungroup() %>%
-          mutate(nameTable = 'Small Offerings')
+        if (has_asset_data) {
+          url_df <-
+            filing_df %>%
+            filter(typeFiling == "ABS ASSET DATA FILE") %>%
+            select(dateFiling, nameEntity, urlSEC) %>%
+            distinct()
 
-        all_data <-
-          all_data %>%
-          bind_rows(
-            a_offering_df
-          )
+          parse_asset_xbrl_safe <-
+            purrr::possibly(parse_asset_xbrl, data_frame())
 
-      }
+          xbrl_df <-
+            url_df$urlSEC %>%
+            map_df(function(x) {
+              parse_asset_xbrl_safe(url = x, return_message = return_message)
+            }) %>%
+            suppressWarnings()
 
-      if (has_asset_data) {
-        url_df <-
-          filing_df %>%
-          filter(typeFiling == "ABS ASSET DATA FILE") %>%
-          select(dateFiling, nameEntity, urlSEC) %>%
-          distinct()
-
-        parse_asset_xbrl_safe <-
-          purrr::possibly(parse_asset_xbrl, data_frame())
-
-        xbrl_df <-
-          url_df$urlSEC %>%
-          map_df(function(x) {
-            parse_asset_xbrl_safe(url = x, return_message = return_message)
-          }) %>%
-          suppressWarnings()
-
-        xbrl_df <-
-          xbrl_df %>%
-          mutate_at(.cols =
-                      xbrl_df %>% select(
-                        matches(
-                          "^id|^pct|^percent|^renovated|^amount|^count[A-Z]|year|area|ratio|^number"
-                        )
-                      ) %>% select(-matches('county|country|idAssetNumber|date')) %>% names(),
-                    funs(. %>% as.numeric())) %>%
-          mutate_at(.cols = xbrl_df %>% select(matches("^date")) %>% names(),
-                    funs(. %>% lubridate::mdy())) %>%
-          mutate_at(
-            .cols = xbrl_df %>% select(matches("^number|^count")) %>% select(-matches('county|country|numberAsset')) %>% names(),
-            funs(. %>% formattable::comma(digits = 0))
-          ) %>%
-          mutate_at(.cols = xbrl_df %>% select(matches("^ratio")) %>% names(),
-                    funs(. %>% formattable::comma(digits = 3))) %>%
-          mutate_at(.cols = xbrl_df %>% select(matches("^amount")) %>% names(),
-                    funs(. %>% formattable::currency(digits = 0))) %>%
-          mutate_at(.cols = xbrl_df %>% select(matches("^pct|^percent")) %>% names(),
-                    funs(. %>% formattable::percent(digits = 3)))
-
-        xbrl_df <-
-          xbrl_df %>%
-          left_join(url_df) %>%
-          suppressMessages() %>%
-          select(idCIK, nameEntity, dateFiling, everything())
-
-        if (nest_data) {
           xbrl_df <-
             xbrl_df %>%
-            nest(-c(dateFiling, idCIK, nameEntity), .key = dataAssetXBRL)
+            mutate_at(.cols =
+                        xbrl_df %>% select(
+                          matches(
+                            "^id|^pct|^percent|^renovated|^amount|^count[A-Z]|year|area|ratio|^number"
+                          )
+                        ) %>% select(-matches('county|country|idAssetNumber|date')) %>% names(),
+                      funs(. %>% as.numeric())) %>%
+            mutate_at(.cols = xbrl_df %>% select(matches("^date")) %>% names(),
+                      funs(. %>% lubridate::mdy())) %>%
+            mutate_at(
+              .cols = xbrl_df %>% select(matches("^number|^count")) %>% select(-matches('county|country|numberAsset')) %>% names(),
+              funs(. %>% formattable::comma(digits = 0))
+            ) %>%
+            mutate_at(.cols = xbrl_df %>% select(matches("^ratio")) %>% names(),
+                      funs(. %>% formattable::comma(digits = 3))) %>%
+            mutate_at(.cols = xbrl_df %>% select(matches("^amount")) %>% names(),
+                      funs(. %>% formattable::currency(digits = 0))) %>%
+            mutate_at(.cols = xbrl_df %>% select(matches("^pct|^percent")) %>% names(),
+                      funs(. %>% formattable::percent(digits = 3)))
+
+          xbrl_df <-
+            xbrl_df %>%
+            left_join(url_df) %>%
+            suppressMessages() %>%
+            select(idCIK, nameEntity, dateFiling, everything())
+
+          if (nest_data) {
+            xbrl_df <-
+              xbrl_df %>%
+              nest(-c(dateFiling, idCIK, nameEntity), .key = dataAssetXBRL)
+          }
+
+          a_xbrl <-
+            xbrl_df %>%
+            group_by(idCIK, nameEntity) %>%
+            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+            ungroup() %>%
+            mutate(nameTable = 'Asset XBRL')
+
+          all_data <-
+            all_data %>%
+            bind_rows(
+              a_xbrl
+            )
         }
-
-        a_xbrl <-
-          xbrl_df %>%
-          group_by(idCIK, nameEntity) %>%
-          nest(-c(idCIK, nameEntity), .key = dataTable) %>%
-          ungroup() %>%
-          mutate(nameTable = 'Asset XBRL')
-
-        all_data <-
-          all_data %>%
-          bind_rows(
-            a_xbrl
-          )
       }
-    }
-
-    all_data
-
-    if (assign_to_environment) {
+      if (assign_to_environment) {
       table_name_df <-
         all_data %>%
         select(nameTable) %>%
@@ -7210,10 +7210,10 @@ parse_json_public_general <-
         ) %>%
         select(-matches("object"))
 
-      if ('addressStreetEntity1' %in% names(filer_df)) {
+      if ('addressStreet1Entity' %in% names(filer_df)) {
         filer_df <-
           filer_df %>%
-          mutate(addressEntity = list(addressStreetEntity1, ' ', cityEntity, ' ',stateEntity, ', ', zipCodeEntity) %>% purrr::invoke(paste0,.)) %>%
+          mutate(addressEntity = list(addressStreet1Entity, ' ', cityEntity, ' ',stateEntity, ', ', zipCodeEntity) %>% purrr::invoke(paste0,.)) %>%
           select(nameEntity, addressEntity, everything())
       }
 
@@ -7323,10 +7323,29 @@ parse_company_general <-
     data <-
       generate_ticker_general_url(ticker = ticker) %>%
       parse_json_public_general(nest_data = nest_data,
-                                return_message = return_message) %>%
+                                return_message = return_message)
+    if ('nameEntity' %in% names(data)) {
+    data <-
+      data %>%
       mutate(nameCompany = nameEntity) %>%
       select(idCIK, idTicker, nameEntity, nameCompany, everything()) %>%
       select(-matches("dateiso"))
+    } else {
+      df_name <-
+        list('http://rankandfiled.com/data/filer/', data$idCIK, '/general') %>%
+        purrr::invoke(paste0,.) %>%
+        parse_json_general_filing()
+
+      entity <-
+        df_name$nameEntity
+
+      data <-
+        data %>%
+        mutate(nameEntity = entity,
+               nameCompany = nameEntity) %>%
+        select(idCIK, idTicker, nameEntity, nameCompany, everything()) %>%
+        select(-matches("dateiso"))
+    }
 
     data <-
       data %>%
@@ -7814,7 +7833,7 @@ get_data_us_public_companies <-
         select(idTicker, nameCompany, idCIK, idSector, nameSector, nameExchange, everything())
 
       if (return_message) {
-        list("Acquired data for ", company_data %>% nrow() %>% formattable::comma(digits = 0),' US Stocks with a combined market capitalization of ', company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)) %>%
+        list("Acquired data for ", company_data %>% nrow() %>% formattable::comma(digits = 0),' US stocks with a combined market capitalization of ', company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)) %>%
           purrr::invoke(paste0, .) %>%
           message()
       }
@@ -7823,7 +7842,6 @@ get_data_us_public_companies <-
     }
 
     if (is_match) {
-
       all_tickers <-
         get_data_us_tickers()
 
@@ -7853,7 +7871,8 @@ get_data_us_public_companies <-
       dup_df <-
         company_data %>%
         filter(idTicker %in% dup_tickers)
-
+      parse_company_general_safe <-
+        purrr::possibly(parse_company_general, data_frame)
       dup_general_df <-
         dup_tickers %>%
         map_df(function(x){
@@ -7886,7 +7905,8 @@ get_data_us_public_companies <-
         company_data %>%
         filter(nameCompany %>% is.na()) %>%
         select(-c(nameCompany, idCIK)) %>%
-        inner_join(all_tickers %>% select(idTicker, nameCompany, idCIK))
+        inner_join(all_tickers %>% select(idTicker, nameCompany, idCIK)) %>%
+        suppressMessages()
 
       count_df <-
         missing_name_df %>%
