@@ -3222,7 +3222,7 @@ parse_rf_search_name <-
       select(-slugFiler)
 
     has_tickers <-
-      data$nameEntity %>% stringr::str_count('\\[') %>% sum()
+      data$nameEntity %>% stringr::str_count('\\[') %>% sum() > 0
 
     if (has_tickers) {
       data <-
@@ -3239,95 +3239,6 @@ parse_rf_search_name <-
         suppressWarnings()
     }
 
-  has_individuals <-
-    data$idTypeFiler %>% str_count(pattern = '\\i') %>% sum() > 0
-
-  if (has_individuals) {
-    data <-
-      data %>%
-      mutate(namePerson = ifelse(idTypeFiler == "i", nameEntity, NA)) %>%
-      tidyr::separate(namePerson, into = c('namePerson', 'remove'), sep = '\\|') %>%
-      select(-remove) %>%
-      select(matches("name"), everything()) %>%
-      suppressWarnings()
-
-    people <-
-      data$namePerson %>%
-      map_chr(function(x){
-        if (x %>% is.na()) {
-          return(NA)
-        }
-
-        is_entity <-
-          x %>% str_detect("LP|LLC|TRUST|REALTY|GP|LTD")
-
-        if (is_entity) {
-          return(x)
-        }
-
-        is_doctor <-
-          x %>%
-          substr(start = (x %>% nchar) -1, stop = x %>% nchar) == "DR"
-
-        if (is_doctor) {
-          person_name <-
-            x %>%
-            substr(1, x %>% nchar -2) %>%
-            str_trim()
-
-          words <-
-            person_name %>%
-            str_split('\\ ') %>% flatten_chr()
-
-          if (words %>% length == 2){
-            name_first <-
-              words[[2]]
-
-            name_last <-
-              words[[1]]
-
-            name_middle <-
-              ''
-          }
-
-          if (words %>% length == 3){
-            name_first <-
-              words[[2]]
-
-            name_last <-
-              words[[1]]
-
-            name_middle <-
-              words[[3]]
-          }
-
-          person_name <-
-            list("DR ",name_first, ' ', name_middle, ' ', name_last) %>%
-            purrr::invoke(paste0, .) %>%
-            stringr::str_trim()
-
-          return(person_name)
-        }
-        words <-
-          x %>% str_split('\\ ') %>%
-          flatten_chr()
-
-        if (words %>% length == 2) {
-          return(list(words[[2]], ' ', words[[1]]) %>%
-            purrr::invoke(paste0, .))
-        }
-
-        if (words %>% length == 3) {
-          return(list(words[[2]], ' ', words[[3]], ' ', words[[1]]) %>%
-                   purrr::invoke(paste0, .))
-        }
-      }) %>%
-      str_trim()
-
-    data %>%
-      mutate(namePerson = people) %>%
-      mutate(nameEntity = ifelse(idTypeFiler == "i", namePerson, nameEntity))
-  }
   return(data)
   }
 
@@ -3389,7 +3300,7 @@ get_data_sec_filing_entities <-
     has_double_entities <-
       all_data$nameEntity %>%
       map_dbl(function(x){x %>% str_count('\\|')}) %>%
-      sum() > 0
+      sum(na.rm = T) > 0
 
     if (has_double_entities) {
       all_data <-
@@ -5517,6 +5428,10 @@ get_data_sec_filer <-
           mutate(table = nameTable %>% str_to_lower()) %>%
           filter(table %>% str_detect(table_names)) %>%
           select(-table)
+      }
+
+      if (!'all_data' %>% exists()) {
+        return(data_frame())
       }
 
       missing_ciks <-
