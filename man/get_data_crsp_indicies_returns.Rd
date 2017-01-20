@@ -2,22 +2,39 @@
 % Please edit documentation in R/crisp.R
 \name{get_data_crsp_indicies_returns}
 \alias{get_data_crsp_indicies_returns}
-\title{Get CRSP index return by month}
+\title{CRSP monthly index returns}
 \usage{
 get_data_crsp_indicies_returns(return_wide = FALSE, nest_data = TRUE,
   return_message = TRUE)
 }
 \arguments{
-\item{return_wide}{return data in wide form \code{TRUE, FALSE}}
+\item{return_wide}{\code{TRUE} return data in wide form}
 
-\item{nest_data}{return nested data frame \code{TRUE, FALSE}}
+\item{nest_data}{\code{TRUE} return nested data frame}
 
-\item{return_message}{return a message after data is parsed \code{TRUE, FALSE}}
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 }
 \description{
-Get CRSP index return by month
+This function returns data about
+monthly CRSP performance by index
 }
 \examples{
-get_data_crsp_indicies_returns(return_wide = FALSE, nest_data = FALSE, return_message = TRUE)
+get_data_crsp_indicies_returns(return_wide = FALSE,
+nest_data = FALSE, return_message = TRUE)
+}
+\references{
+\href{http://crsp.com}{The Center for Research in Security Prices}
+}
+\seealso{
+Other CRSP: \code{\link{get_data_crsp_files}},
+  \code{\link{get_data_crsp_indicies_constituents}}
+
+Other index values: \code{\link{get_data_fred_symbols}},
+  \code{\link{get_data_msci_realtime_index_values}},
+  \code{\link{get_data_nareit_annual_subsector_returns}},
+  \code{\link{get_data_nareit_monthly_returns}}
 }
 

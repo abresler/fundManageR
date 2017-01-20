@@ -2,40 +2,77 @@
 % Please edit documentation in R/waterfall_functions.R
 \name{calculate_cash_flow_waterfall}
 \alias{calculate_cash_flow_waterfall}
-\title{Calculate a cash flow waterfall for a given set of dates, cash flows and promote structure}
+\title{Cash-flow waterfall}
 \usage{
 calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20",
   "2016-10-15"), cash_flows = c(-1e+05, -2e+05, 698906.76849),
   working_capital = 0, promote_structure = c("20 / 12", "30 / 18"),
-  distribution_frequency = NA, is_actual_360 = T,
-  widen_promote_structure = F, bind_to_cf = F, remove_zero_cols = T,
-  widen_waterfall = F)
+  distribution_frequency = NA, is_actual_360 = TRUE,
+  widen_promote_structure = FALSE, bind_to_cf = FALSE,
+  remove_zero_cols = TRUE, widen_waterfall = FALSE)
 }
 \arguments{
-\item{dates}{A vector of dates in year-month-day format}
+\item{dates}{vector of dates in year-month-day format}
 
-\item{cash_flows}{A vector of cash flows}
+\item{cash_flows}{vector of cash flows}
 
-\item{working_capital}{Amount of working capital}
+\item{working_capital}{amount of working capital}
 
-\item{promote_structure}{Vector of promte structures}
+\item{promote_structure}{character vector of promote structures}
 
-\item{is_actual_360}{Is the rate of return actual 360}
+\item{distribution_frequency}{frequency of distributions}
 
-\item{widen_promote_structure}{Widen the promote structure}
+\item{is_actual_360}{\code{TRUE} is the rate of return actual 360}
 
-\item{bind_to_cf}{Bind results to data frame}
+\item{widen_promote_structure}{\code{TRUE} widen the promote structure}
 
-\item{remove_zero_cols}{remove zeroed columns}
+\item{bind_to_cf}{\code{TRUE}  bind results to data frame}
 
-\item{widen_waterfall}{Return waterfall in wide form}
+\item{remove_zero_cols}{\code{TRUE} remove zero-value columns}
+
+\item{widen_waterfall}{\code{TRUE} returns waterfall in wide form}
+}
+\value{
+data_frame
 }
 \description{
-Calculate a cash flow waterfall for a given set of dates, cash flows and promote structure
+This function performs waterfall calculations
+ on a set of leveraged or unleveraged cash flows
+ based upon the user's inputs
 }
 \examples{
-calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20", "2016-10-15"), cash_flows = c(-100000, -200000, 698906.76849), working_capital = 0,
-promote_structure = c("20 / 12", "30 / 18"), distribution_frequency = NA, is_actual_360 = T, widen_promote_structure = F, bind_to_cf = F,
-remove_zero_cols = T, widen_waterfall = F)
+calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20", "2016-10-15"), cash_flows = c(-100000, -200000, 698906.76849),
+working_capital = 0, promote_structure = c("20 / 12", "30 / 18"),
+ distribution_frequency = NA, is_actual_360 = TRUE,
+ widen_promote_structure = FALSE, bind_to_cf = FALSE,
+remove_zero_cols = TRUE, widen_waterfall = FALSE)
+}
+\seealso{
+Other calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_days_accrued_pref}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{calculate_leverage_metrics}},
+  \code{\link{calculate_loan_payment}},
+  \code{\link{calculate_residual_valuation_cap_rates}},
+  \code{\link{calculate_residual_valuation_ebitda_multiples}},
+  \code{\link{calculate_share_proceeds}},
+  \code{\link{calculate_valuation_post_money}},
+  \code{\link{tidy_promote_structure}}
+
+Other leveraged finance calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{calculate_leverage_metrics}},
+  \code{\link{calculate_loan_payment}}
+
+Other partnership calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_days_accrued_pref}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{tidy_promote_structure}}
 }
 

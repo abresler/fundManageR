@@ -2,20 +2,48 @@
 % Please edit documentation in R/nareit.R
 \name{get_data_nareit_constituent_years}
 \alias{get_data_nareit_constituent_years}
-\title{Get NAREIT index constuiency data by year}
+\title{NAREIT index constituency data by year}
 \usage{
 get_data_nareit_constituent_years(years = 1991:2016, resolve_names = TRUE,
   nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
-\item{years}{years of data you wa}
+\item{years}{vector of years to search starting in 1991}
 
-\item{return_message}{}
+\item{resolve_names}{\code{TRUE} resolve mis-spelled or abbreviated names}
+
+\item{nest_data}{\code{TRUE} return nested data frame}
+
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 }
 \description{
-Get NAREIT index constuiency data by year
+This function allows the user to acquire data on
+companies in the FTSE NAREIT index for a given year.
 }
 \examples{
-get_data_nareit_constituent_years(years = 1991:2016, resolve_names = TRUE, nest_data = TRUE, return_messag = TRUE)
+get_data_nareit_constituent_years(years = 1991:2016, resolve_names = TRUE, nest_data = TRUE, return_message = TRUE)
+}
+\references{
+\href{http://nareit.org}{National Association of Real Estate Investment Trusts}
+}
+\seealso{
+Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
+  \code{\link{get_data_nareit_capital_raises}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_nareit_industry_tracker}},
+  \code{\link{get_data_nareit_mergers_acquisitions}},
+  \code{\link{get_data_nareit_monthly_returns}},
+  \code{\link{get_data_nareit_notable_properties}},
+  \code{\link{get_data_nareit_property_msa}},
+  \code{\link{get_data_nareit_state_info}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_reit_entity_dictionary}}
+
+Other index constituents: \code{\link{get_data_crsp_indicies_constituents}},
+  \code{\link{get_data_msci_indicies_constituents}},
+  \code{\link{get_data_sp500_constituents}}
 }
 

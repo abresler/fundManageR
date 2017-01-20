@@ -2,20 +2,75 @@
 % Please edit documentation in R/adv_functions.R
 \name{get_data_adv_managers_metadata}
 \alias{get_data_adv_managers_metadata}
-\title{Get ADV metadata for specified ADV or search name}
+\title{IAPD registered meta data}
 \usage{
-get_data_adv_managers_metadata(search_names = "Divco", crd_ids = NULL,
-  return_message = T)
+get_data_adv_managers_metadata(entity_names = NULL, crd_ids = NULL,
+  score_threshold = 0.2, return_message = T)
 }
 \arguments{
-\item{search_names}{Names of the entities you want to search}
+\item{entity_names}{vector of entities to search}
 
-\item{crd_ids}{CRD ids you want to search}
+\item{crd_ids}{numric vector of crds to search}
+
+\item{score_threshold}{matching score threshold for the search name
+if \code{NULL} there is no threshold}
+
+\item{return_message}{return a message}
+}
+\value{
+a data frame
 }
 \description{
-Get ADV metadata for specified ADV or search name
+This function returns meta data
+on any Investment Adviser Public Disclosure [IAPD]
+filing manager.  This function can be used to discover
+managers to power the
+\code{\link{get_data_adv_managers_filing()}} function.
 }
 \examples{
-get_data_adv_managers_metadata(search_names = c('Divco'))
+get_data_adv_managers_metadata(entity_names = c('Divco', 'EJF'), score_threshold = .2)
+get_data_adv_managers_metadata(entity_names = "Blackstone", score_threshold = NULL)
+get_data_adv_managers_metadata(crd_ids = 173787)
+}
+\seealso{
+Other FINRA: \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_finra_people}}
+
+Other IAPD: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_finra_people}}
+
+Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_data_ycombinator_alumni}}
+
+Other fund data: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_money_market_funds}}
 }
 

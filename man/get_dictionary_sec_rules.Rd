@@ -2,12 +2,13 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_dictionary_sec_rules}
 \alias{get_dictionary_sec_rules}
-\title{Get SEC rule dictionary}
+\title{SEC Rule dictionary}
 \usage{
 get_dictionary_sec_rules()
 }
 \description{
-Get SEC rule dictionary
+This function retuns a
+dictionary of SEC rules
 }
 \examples{
 get_dictionary_sec_rules()

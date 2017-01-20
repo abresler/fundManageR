@@ -2,34 +2,91 @@
 % Please edit documentation in R/adv_functions.R
 \name{get_data_adv_managers_filings}
 \alias{get_data_adv_managers_filings}
-\title{Get detailed ADV form data for specified search name or CRD id}
+\title{IAPD registered managers ADV data}
 \usage{
-get_data_adv_managers_filings(search_names = NULL, crd_ids = NULL,
-  all_sections = T, section_names = c("Registration",
+get_data_adv_managers_filings(entity_names = NULL, crd_ids = NULL,
+  all_sections = TRUE, section_names = c("Registration",
   "Identifying Information", "Organization", "Successions",
   "Private Fund Reporting", "Direct Manager Owners", "Indirect Manager Owners",
-  "Other Manager Information", "Manager Signatories"), flatten_tables = T,
-  gather_data = F, assign_to_environment = T)
+  "Other Manager Information", "Manager Signatories"), flatten_tables = TRUE,
+  gather_data = FALSE, assign_to_environment = TRIE)
 }
 \arguments{
-\item{search_names}{Names of the entities you want to search}
+\item{entity_names}{vector entities you want to search}
 
-\item{crd_ids}{CRD ids you want to search}
+\item{crd_ids}{vector of CRDs to search}
 
-\item{all_sections}{Do you want to search all ADV Sections}
+\item{all_sections}{include all sections \code{TRUE}(default)
+searches all sections}
 
-\item{section_names}{If not all sections, which sections}
+\item{section_names}{sections to search \itemize{
+\item \code{Registration}: registration information
+\item \code{Identifying Information}: indentifying information
+\item \code{Organization}: organizational structure information
+\item \code{Successions}: succession information
+\item \code{Private Fund Reporting}: private funds controlled by the manager
+\item \code{Direct Manager Owners}: direct owners of the fund manager
+\item \code{Indirect Manager Owners}: indirect owners of the fund manager
+\item \code{Other Manager Information}: other information
+\item \code{Manager Signatories}: manager signatories
+#' }}
 
-\item{flatten_tables}{Do you want the data the data with singular values flattened into a single data frame}
+\item{flatten_tables}{\code{TRUE} flattens data with multiple values into wide form}
 
-\item{gather_data}{Do you want the data in gathered form}
-
-\item{assign_to_environment}{Do you want to save the invidual data frames to your global environment}
+\item{assign_to_environment}{\code{TRUE} assign individual data frames to your environment}
+}
+\value{
+a \code{data_frame}
 }
 \description{
-Get detailed ADV form data for specified search name or CRD id
+This function parses the specified sections of the
+\href{https://www.sec.gov/answers/formadv.htm}{Form ADV} for specified managers.
 }
 \examples{
-get_data_adv_managers_filings(search_names = c('Blackstone Real Estate'), crd_ids = NULL, all_sections = T,  section_names = NULL, flatten_tables = T, gather_data = F, assign_to_environment = T)
+get_data_adv_managers_filings(entity_names = c('Blackstone Real Estate'), crd_ids = NULL,
+ all_sections = TRUE,  section_names = NULL,
+ flatten_tables = TRUE, gather_data = FALSE,
+ assign_to_environment = TRUE)
+}
+\seealso{
+Other ADV: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_periods_summaries}}
+
+Other IAPD: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_finra_people}}
+
+Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_data_ycombinator_alumni}}
+
+Other fund data: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_money_market_funds}}
 }
 

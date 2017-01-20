@@ -4,12 +4,28 @@
 \alias{tidy_column_formats}
 \title{Tidy column formatting}
 \usage{
-tidy_column_formats(data)
+tidy_column_formats(data, drop_na_columns = TRUE)
 }
 \arguments{
-\item{data}{}
+\item{data}{\code{data_frame}}
+
+\item{drop_na_columns}{\code{TRUE} drops NA columns}
+}
+\value{
+\code{data_frame}
 }
 \description{
-Tidy column formatting
+Tidys a data frame to return unified case names, autoparses logical columns
+and auto formats counts, amounts and values.
+}
+\examples{
+library(dplyr)
+data_frame(nameFund = "Blackstone Real Estate Fund IX", isNewFund = "N/A",
+countAssets = 12000, amountAUM = 65000000, isRealEstateFund = 1) \%>\% tidy_column_formats(drop_na_columns = FALSE)
+}
+\seealso{
+Other utility function: \code{\link{drop_na_columns}},
+  \code{\link{get_class_df}},
+  \code{\link{tidy_column_relations}}
 }
 

@@ -2,11 +2,40 @@
 % Please edit documentation in R/nareit.R
 \name{get_reit_entity_dictionary}
 \alias{get_reit_entity_dictionary}
-\title{Get NAREIT member dictionary}
+\title{NAREIT member dictionary}
 \usage{
 get_reit_entity_dictionary()
 }
+\value{
+\code{data_frame}
+}
 \description{
-Get NAREIT member dictionary
+This function returns a
+data frame of all NAREIT members
+}
+\examples{
+get_reit_entity_dictionary()
+}
+\references{
+\href{http://nareit.org}{National Association of Real Estate Investment Trusts}
+}
+\seealso{
+Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
+  \code{\link{get_data_nareit_capital_raises}},
+  \code{\link{get_data_nareit_constituent_years}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_nareit_industry_tracker}},
+  \code{\link{get_data_nareit_mergers_acquisitions}},
+  \code{\link{get_data_nareit_monthly_returns}},
+  \code{\link{get_data_nareit_notable_properties}},
+  \code{\link{get_data_nareit_property_msa}},
+  \code{\link{get_data_nareit_state_info}},
+  \code{\link{get_data_reit_funds}}
+
+Other dictionary: \code{\link{get_data_location_codes}},
+  \code{\link{get_data_sec_rules}},
+  \code{\link{get_data_sic_codes}},
+  \code{\link{get_dictionary_sec_filing_codes}},
+  \code{\link{get_dictionary_sec_form_codes}}
 }
 

@@ -346,19 +346,26 @@ ebtida_multiple_value <-
     return(value_df)
   }
 
-#' Calculate residual value
+#' Residual value, capitalization rate method
 #'
-#' @param cap_rates Vector of Capitalization Rates in percent or character percent form
-#' @param net_operating_income Vector of Net Operating Income in numeric or character numeric/currency form
-#' @param cost_of_sale Vector of Cost of Sale in percent or character percent form
-#' @param debt_balance Vector of anticipated Debt Balance at sale in numeric or character numeric/currency form
-#' @param return_wide
+#' This function calculates \href{https://en.wikipedia.org/wiki/Residual_value}{residual values}
+#' based upon the specified inputs.  See \code{\link{calculate_residual_valuation_ebitda_multiples}} for
+#' EBITDA multiple method.
+#'
+#' @param cap_rates vector of capitalization rates in percent or character form
+#' @param net_operating_income vector of net operating income in numeric or character numeric/currency form
+#' @param cost_of_sale vector of cost of sale in percent or character percent form
+#' @param debt_balance vector of anticipated debt balance at sale in numeric or character numeric/currency form
+#' @param return_wide \code{TRUE} return wide or \code{FALSE}
 #' @import readr dplyr purrr formattable
-#' @return
+#' @return a \code{data_frame}
+#' @family calculation
+#' @family residual value calculation
 #' @export
 #'
 #' @examples
-#' calculate_residual_valuation_cap_rates()
+#' calculate_residual_valuation_cap_rates(cap_rates = c(.05, .0525, .06, .2),
+#' net_operating_income = "$27,500,000", cost_of_sale = "5%",debt_balance = "$350,000,000", return_wide = T)
 calculate_residual_valuation_cap_rates <-
   function(cap_rates = c(.05, .0525, .06, .2),
            net_operating_income = "$27,500,000",
@@ -420,17 +427,22 @@ calculate_residual_valuation_cap_rates <-
   }
 
 
-#' Calculate residual value for a set of given EBITDA based inputs
+#' Residual value, EBITDA multiple method
 #'
-#' @param ebitda_multiples Vector of EBITDA Multiples in numeric or character
-#' @param ebitda Vector of EBITDA in numeric or character numeric/currency form
-#' @param cost_of_sale Vector of Cost of Sale in percent or character percent form
-#' @param debt_balance Vector of anticipated Debt Balance at sale in numeric or character numeric/currency form
-#' @param return_wide Return data in wide or long form
+#' This function calculates \href{https://en.wikipedia.org/wiki/Residual_value}{residual values}
+#' based upon the specified inputs.  See \code{\link{calculate_residual_valuation_cap_rates}} for
+#' capitalization rate method.
+#'
+#' @param ebitda_multiples vector of EBITDA multiples in numeric or character
+#' @param ebitda vector of EBITDA in numeric or character numeric/currency form
+#' @param cost_of_sale vector of cost of sale in percent or character percent form
+#' @param debt_balance vector of anticipated debt balance at sale in numeric or character numeric/currency form
+#' @param return_wide return data in wide or long form
 #' @import readr dplyr purrr formattable
-#' @return
+#' @return a \code{data_frame}
 #' @export
-#'
+#' @family calculation
+#' @family residual value calculation
 #' @examples
 #' calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20), ebitda = "$27,500,000", cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T)
 calculate_residual_valuation_ebitda_multiples <-
@@ -520,14 +532,18 @@ post_money_valuation <-
     return(valuation_data)
   }
 
-#' Calculates range of post investment valuations
+#' Post money valuation splits
 #'
-#' @param pre_money_valuation  Vector of of valuations in numeric or character
-#' @param percent_sold  Vector of of amount of business sold in percent or character percent form
-#' @param return_wide
+#' This function calculates the the post-money
+#' ownership splits of an entity for specified inputs.
+#'
+#' @param pre_money_valuation vector of of valuations in numeric or character
+#' @param percent_sold  vector of of amount of business sold in percent or character percent form
 #' @param return_wide Return data in wide or long form
-#' @import readr dplyr purrr formattable
-#' @return
+#' @import readr dplyr purrr formattable tidyr
+#' @return a \code{data_frame()}
+#' @family calculation
+#' @family venture capital
 #' @export
 #'
 #' @examples
@@ -575,13 +591,18 @@ calculate_valuation_post_money <-
   }
 
 
-#' Calculate proceeds from share sale given specified price and share amount
+#' Share proceeds
 #'
-#' @param price
-#' @param shares
+#' This function calculates
+#' distributable proceeds from
+#' a share sale based upon specified inputs.
 #'
-#' @return
+#' @param price numeric price
+#' @param shares share count
+#'
+#' @return numeric \code{vector}
 #' @export
+#' @family calculation
 #' @importFrom formattable currency
 #' @examples
 #' calculate_share_proceeds(price = 9, shares = 150000)
@@ -596,39 +617,41 @@ calculate_basis <-
   function(purchase_price = "$10,000,000",
            capitalized_acquisition_costs = "$300,0000",
            capital_investment = "$1,200,000") {
-  options(scipen = 999)
+    options(scipen = 999)
 
-  if (purchase_price %>% is_null) {
-    stop("Please enter a purchase price")
-  }
+    if (purchase_price %>% is_null) {
+      stop("Please enter a purchase price")
+    }
 
-  amountPurchasePrice <-
-    purchase_price %>%
-    parse_for_currency_value()
-
-  if (!capitalized_acquisition_costs %>% is_null) {
-    amountCapitalizedCosts <-
-      capitalized_acquisition_costs %>%
+    amountPurchasePrice <-
+      purchase_price %>%
       parse_for_currency_value()
-  } else {
-    amountCapitalizedCosts <-
-      0
-  }
 
-  if (!capitalized_acquisition_costs %>% is_null) {
-    amountCapitalInvestment <-
-      capital_investment %>%
-      parse_for_currency_value()
-  } else {
-    capital_investment <-
-      0
-  }
+    if (!capitalized_acquisition_costs %>% is_null) {
+      amountCapitalizedCosts <-
+        capitalized_acquisition_costs %>%
+        parse_for_currency_value()
+    } else {
+      amountCapitalizedCosts <-
+        0
+    }
 
-  basis_df <-
-    data_frame(amountPurchasePrice, amountCapitalInvestment, amountCapitalizedCosts) %>%
-    mutate(amountBasis = amountPurchasePrice + amountCapitalInvestment + amountCapitalizedCosts)
-  return(basis_df)
-}
+    if (!capitalized_acquisition_costs %>% is_null) {
+      amountCapitalInvestment <-
+        capital_investment %>%
+        parse_for_currency_value()
+    } else {
+      capital_investment <-
+        0
+    }
+
+    basis_df <-
+      data_frame(amountPurchasePrice,
+                 amountCapitalInvestment,
+                 amountCapitalizedCosts) %>%
+      mutate(amountBasis = amountPurchasePrice + amountCapitalInvestment + amountCapitalizedCosts)
+    return(basis_df)
+  }
 
 calculate_capitalization <-
   function(purchase_price = "$9,700,000",
@@ -636,9 +659,8 @@ calculate_capitalization <-
            capital_investment = "$0",
            loan_to_cost = .7,
            borrow_capital_investment = T,
-           include_capitalized_cost = F,
+           borrow_capitalized_costs = F,
            leverage_threshold = .95) {
-
     if (loan_to_cost %>% is_null()) {
       stop("Please enter a loan to cost even if it is zero")
     }
@@ -654,13 +676,22 @@ calculate_capitalization <-
     if (pct_ltc > leverage_threshold) {
       leverage_message <-
         "\nDon't be a reckless idiot, remember what happend to Lehman Brothers???\nDon't know Lehman Brothers, Google it\n" %>%
-        paste0(pct_ltc, ' is unprudent leverage\nA more reasonable amount of leverage is: ', leverage_threshold %>% formattable::percent(), '\nChange your leverage assumptions and try again')
+        paste0(
+          pct_ltc,
+          ' is unprudent leverage\nA more reasonable amount of leverage is: ',
+          leverage_threshold %>% formattable::percent(),
+          '\nChange your leverage assumptions and try again'
+        )
 
       stop(leverage_message)
     }
     basis_df <-
-      calculate_basis(purchase_price = purchase_price, capitalized_acquisition_costs = capitalized_acquisition_costs, capital_investment = capital_investment)
-    if (include_capitalized_cost) {
+      calculate_basis(
+        purchase_price = purchase_price,
+        capitalized_acquisition_costs = capitalized_acquisition_costs,
+        capital_investment = capital_investment
+      )
+    if (borrow_capitalized_costs) {
       debt_basis <-
         basis_df %>% mutate(amountDebtBasis = amountPurchasePrice + amountCapitalizedCosts) %>%
         .$amountDebtBasis
@@ -690,8 +721,7 @@ calculate_capitalization <-
 get_data_monthly_periods <-
   function(start_date = "2016-06-01",
            term_years = 25,
-           term_months = 0){
-
+           term_months = 0) {
     periods <-
       term_years * 12 + term_months
 
@@ -759,20 +789,52 @@ pmt <-
     }
   }
 
+#' Loan payment calculation
+#'
+#' Calculate loan payment information
+#' based upon specified parameters.
+#'
+#' @param loan_start_date date loan starts in year, month, date form
+#' @param amount_initial_draw amount of initial draw
+#' @param is_interest_only \code{TRUE} has interest only periods
+#' @param interest_only_periods  count of interest only periods
+#' @param interest_rate  interest rate in character or numeric form
+#' @param is_actual_360 \code{TRUE} interest calculated on actual/360 basis
+#' @param amortization_years amortization in years
+#' @param amortization_months amortization additional months
+#' @param term_years term of the loan in years
+#' @param term_months term of the loan additional months
+#' @param pct_loan_fee loan fee in percent
+#' @param balloon_year year loan baloons
+#' @param override_monthly_interest  \code{TRUE} override
+#' @param interest_reserve_period periods of interest reserve
+#' @param balloon_month month loan baloons
+#' @param return_annual_summary \code{TRUE} returns annual summary
+#'
+#' @return a \code{data_frame}
+#' @export
+#' @family leveraged finance calculation
+#' @family calculation
+#' @examples
+#' calculate_loan_payment(loan_start_date = "2016-06-01", amount_initial_draw = 3000, is_interest_only = F, interest_only_periods = 24,
+#' interest_rate = "10%", is_actual_360 = TRUE, amortization_years = 10, amortization_months = 0,
+#' term_years = 10, term_months = 0, pct_loan_fee = 0, balloon_year = 10,
+#' override_monthly_interest = FALSE, interest_reserve_period = 0, balloon_month = 0,
+#' return_annual_summary = F)
 calculate_loan_payment <-
   function(loan_start_date = "2016-06-01",
            amount_initial_draw = 3000,
            is_interest_only = F,
            interest_only_periods = 24,
            interest_rate = "10%",
-           is_actual_360 = T,
+           is_actual_360 = TRUE,
            amortization_years = 10,
            amortization_months = 0,
            term_years = 10,
            term_months = 0,
            pct_loan_fee = 0,
            balloon_year = 10,
-           override_monthly_interest = F,
+           override_monthly_interest = FALSE,
            interest_reserve_period = 0,
            balloon_month = 0,
            return_annual_summary = F) {
@@ -1013,21 +1075,21 @@ calculate_average_payment <-
 
     pmt_df <-
       calculate_loan_payment(
-      loan_start_date = first_of_the_month,
-      amount_initial_draw = amount_initial_draw,
-      is_interest_only = is_interest_only,
-      interest_only_periods = interest_only_periods,
-      interest_rate = interest_rate,
-      is_actual_360 = is_actual_360,
-      amortization_years = amortization_years,
-      amortization_months = amortization_months,
-      term_years = term_years,
-      term_months = term_months,
-      pct_loan_fee = pct_loan_fee,
-      balloon_year = balloon_year,
-      balloon_month = balloon_month,
-      return_annual_summary = F
-    )
+        loan_start_date = first_of_the_month,
+        amount_initial_draw = amount_initial_draw,
+        is_interest_only = is_interest_only,
+        interest_only_periods = interest_only_periods,
+        interest_rate = interest_rate,
+        is_actual_360 = is_actual_360,
+        amortization_years = amortization_years,
+        amortization_months = amortization_months,
+        term_years = term_years,
+        term_months = term_months,
+        pct_loan_fee = pct_loan_fee,
+        balloon_year = balloon_year,
+        balloon_month = balloon_month,
+        return_annual_summary = F
+      )
 
     pmt_df <-
       pmt_df %>%
@@ -1055,7 +1117,7 @@ calculate_leverage_metric <-
            expenses = "$115,000",
            loan_to_cost = .7,
            borrow_capital_investment = F,
-           include_capitalized_cost = T,
+           borrow_capitalized_costs = T,
            leverage_threshold = .95,
            is_interest_only = TRUE,
            interest_only_periods = 12,
@@ -1069,16 +1131,15 @@ calculate_leverage_metric <-
            balloon_year = 10,
            balloon_month = 0,
            return_message = F) {
-
     basis_df <-
       calculate_capitalization(
-      purchase_price = purchase_price,
-      capitalized_acquisition_costs = capitalized_acquisition_costs,
-      capital_investment = capital_investment,
-      loan_to_cost = loan_to_cost,
-      borrow_capital_investment = borrow_capital_investment,
-      include_capitalized_cost = include_capitalized_cost,
-    )
+        purchase_price = purchase_price,
+        capitalized_acquisition_costs = capitalized_acquisition_costs,
+        capital_investment = capital_investment,
+        loan_to_cost = loan_to_cost,
+        borrow_capital_investment = borrow_capital_investment,
+        borrow_capitalized_costs = borrow_capitalized_costs
+      )
 
     revenue_amount <-
       revenue %>%
@@ -1141,61 +1202,82 @@ calculate_leverage_metric <-
         rule72Multiple2x = (72 / (pctCashOnCashMean * 100)) %>% as.numeric()
       )
     if (return_message) {
-    metric_message <-
-      "Basis: " %>%
-      paste0(
-        data$amountBasis,
-        '\n',
-        'Leverage: ',
-        data$pctLeverage,
-        '\n',
-        'Interest Rate: ',
-        interest_rate,
-        '\n',
-        'Amortization: ',
-        ((amortization_years * 12) + amortization_months),
-        ' periods\n',
-        'Return on Cost: ',
-        data$pctReturnOnCost,
-        '\nCash on Cash: ', data$pctCashOnCashMean,
-        "\nReturn on Equity: ", data$pctReturnOnEquity,
-        "\nRule of 72: Equity Doubles in ", data$rule72Multiple2x, ' years\n'
-      )
+      metric_message <-
+        "Basis: " %>%
+        paste0(
+          data$amountBasis,
+          '\n',
+          'Leverage: ',
+          data$pctLeverage,
+          '\n',
+          'Interest Rate: ',
+          interest_rate,
+          '\n',
+          'Amortization: ',
+          ((amortization_years * 12) + amortization_months),
+          ' periods\n',
+          'Return on Cost: ',
+          data$pctReturnOnCost,
+          '\nCash on Cash: ',
+          data$pctCashOnCashMean,
+          "\nReturn on Equity: ",
+          data$pctReturnOnEquity,
+          "\nRule of 72: Equity doubles in ",
+          data$rule72Multiple2x,
+          ' years\n'
+        )
 
-    metric_message %>% message()
+      metric_message %>% message()
     }
 
     return(data)
   }
 
 
-#' Calculate leveraged return metrics
+#' Leveraged return metrics
 #'
-#' @param purchase_price Vector of Purchase Prices
-#' @param capitalized_acquisition_costs  Vector of Capitalized Acquisition Costs
-#' @param capital_investment Vector of Capital Investment
-#' @param revenue Vector of revenue amounts
-#' @param expenses Vector of expenses
-#' @param loan_to_cost Vector of loan to cost
-#' @param interest_rate Interest Rate
-#' @param borrow_capital_investment Borrow Investment \code{TRUE, FALSE}
-#' @param include_capitalized_cost Include capitalized costs in leverage calculations \code{TRUE, FALSE}
-#' @param leverage_threshold Maximum Leverage
-#' @param is_interest_only Does loan have interst only periods \code{TRUE, FALSE}
-#' @param interest_only_periods Interest Only Periods
-#' @param is_actual_360  Is loan calcuated on actual/360 basis \code{TRUE, FALSE}
-#' @param amortization_years Loan amortization years
-#' @param amortization_months  Loan amortization months
-#' @param term_years Term of the loan, years
-#' @param term_months Term of the loan, months
-#' @param pct_loan_fee Loan pee, percent
-#' @param return_wide
-#' @param return_message
+#' This function returns data with the outputs
+#' from a "back-of-the-envelope" leveraged math calculation
+#' that can be used for a quick and dirty underwriting of a
+#' leveragd cash flow stream.
 #'
-#' @return
+#' @param purchase_price vector of purchase prices
+#' @param capitalized_acquisition_costs  vector of capitalized acquisition costs
+#' @param capital_investment vector of capital investment
+#' @param revenue vector of revenue amounts
+#' @param expenses vector of expenses
+#' @param loan_to_cost vector of loan to cost
+#' @param interest_rate vector nterest rates
+#' @param borrow_capital_investment \code{TRUE} borrow capital investment
+#' @param borrow_capitalized_costs \code{TRUE} borrow capitalized costs
+#' @param leverage_threshold maximum leverage allowed
+#' @param is_interest_only \code{TRUE} has interest only periods
+#' @param interest_only_periods count of interest only periods
+#' @param is_actual_360 \code{TRUE} is interest calculated on actual 360 basis
+#' @param is_actual_360 \code{TRUE} interest calculated on actual/360 basis
+#' @param amortization_years amortization in years
+#' @param amortization_months amortization additional months
+#' @param term_years term of the loan in years
+#' @param term_months term of the loan additional months
+#' @param pct_loan_fee loan fee in percent
+#' @param return_wide \code{TRUE} return data in wide form
+#' @param return_message \code{TRUE} return a message after data import
+#'
+#' @return a \code{data_frame}
 #' @export
 #' @import readr dplyr lubridate stringr purrr tidyr formattable
+#' @family calculation
+#' @family leveraged finance calculation
 #' @examples
+#' calculate_leverage_metrics(purchase_price = c("13,000,000", "9,000,000"),
+#' capitalized_acquisition_costs = "300,000",
+#' capital_investment = "$100,000", revenue = "$1,200,000", expenses = "$400,000",
+#' loan_to_cost = .75,interest_rate = .045,borrow_capital_investment = TRUE,
+#' borrow_capitalized_costs = TRUE, leverage_threshold = .8, is_interest_only = FALSE,
+#' interest_only_periods = 0, is_actual_360 = TRUE, amortization_years = 30,
+#' amortization_months = 0, term_years = 10, term_months = 0, pct_loan_fee = 0, return_wide = TRUE,
+#' return_message = TRUE)
+
 calculate_leverage_metrics <-
   function(purchase_price = 0,
            capitalized_acquisition_costs = 0,
@@ -1205,7 +1287,7 @@ calculate_leverage_metrics <-
            loan_to_cost = 0,
            interest_rate = 0,
            borrow_capital_investment = F,
-           include_capitalized_cost = T,
+           borrow_capitalized_costs = T,
            leverage_threshold = .95,
            is_interest_only = FALSE,
            interest_only_periods = 0,
@@ -1226,7 +1308,7 @@ calculate_leverage_metrics <-
         expenses = expenses,
         loan_to_cost = loan_to_cost,
         borrow_capital_investment = borrow_capital_investment,
-        include_capitalized_cost = include_capitalized_cost,
+        borrow_capitalized_costs = borrow_capitalized_costs,
         leverage_threshold = leverage_threshold,
         is_interest_only = is_interest_only,
         interest_only_periods = interest_only_periods,
@@ -1243,7 +1325,7 @@ calculate_leverage_metrics <-
 
     all_data <-
       1:nrow(variable_matrix) %>%
-      map_df(function(x){
+      map_df(function(x) {
         calculate_leverage_metric(
           purchase_price = variable_matrix$purchase_price[[x]],
           capitalized_acquisition_costs = variable_matrix$capitalized_acquisition_costs[[x]],
@@ -1252,7 +1334,7 @@ calculate_leverage_metrics <-
           expenses = variable_matrix$expenses[[x]],
           loan_to_cost = variable_matrix$loan_to_cost[[x]],
           borrow_capital_investment = variable_matrix$borrow_capital_investment[[x]],
-          include_capitalized_cost = variable_matrix$include_capitalized_cost[[x]],
+          borrow_capitalized_costs = variable_matrix$borrow_capitalized_costs[[x]],
           leverage_threshold = variable_matrix$leverage_threshold[[x]],
           is_interest_only = variable_matrix$is_interest_only[[x]],
           interest_only_periods = variable_matrix$interest_only_periods[[x]],
@@ -1278,15 +1360,17 @@ calculate_leverage_metrics <-
     } else {
       all_data <-
         all_data %>%
-        mutate_at(.cols =
-                    all_data %>% dplyr::select(matches("^amount[A-Z]|^mean[A-Z]")) %>% names(),
-                  funs(. %>% formattable::currency(digits = 0))) %>%
+        mutate_at(
+          .cols =
+            all_data %>% dplyr::select(matches("^amount[A-Z]|^mean[A-Z]")) %>% names(),
+          funs(. %>% formattable::currency(digits = 0))
+        ) %>%
         mutate_at(.cols =
                     all_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names(),
                   funs(. %>% formattable::percent(digits = 2))) %>%
         mutate_at(.cols =
-                  all_data %>% dplyr::select(matches("^ratio[A-Z]|^rule")) %>% names(),
-                funs(. %>% formattable::comma(digits = 4)))
+                    all_data %>% dplyr::select(matches("^ratio[A-Z]|^rule")) %>% names(),
+                  funs(. %>% formattable::comma(digits = 4)))
     }
     return(all_data)
   }

@@ -1,10 +1,14 @@
-#' Drops NA columns
+#' Drop NA columns
 #'
-#' @param data
+#' This function drops NA
+#' columns from a specified data frame.
 #'
-#' @return
+#' @param data a \code{data frame}
+#'
+#' @return \code{data_frame}
 #' @export
 #' @import dplyr
+#' @family utility function
 #' @examples
 #' data_frame(nameFirm = 'Goldman Sachs', countSuperHeros = NA, countCriminals = 0, countFinedEmployees = 10) %>% drop_na_columns()
 drop_na_columns <-
@@ -15,10 +19,25 @@ drop_na_columns <-
       suppressWarnings()
   }
 
+#' Class DF
+#'
+#' This function returns the
+#' column classes of a specified
+#' data frame.
+#'
+#' @param data a \code{data_frame}
+#'
+#' @return \code{data_frame}
+#' @family utility function
+#' @export
+#' @import dplyr purrr
+#' @examples
+#' get_class_df(mtcars)
 get_class_df <-
   function(data) {
     class_data <-
-      data %>% map(class)
+      data %>%
+      map(class)
 
     class_df <-
       1:length(class_data) %>%
@@ -33,14 +52,21 @@ get_class_df <-
 
 #' Tidy column formatting
 #'
-#' @param data
+#' Tidys a data frame to return unified case names, autoparses logical columns
+#' and auto formats counts, amounts and values.
 #'
-#' @return
+#' @param data \code{data_frame}
+#' @param drop_na_columns \code{TRUE} drops NA columns
+#' @return \code{data_frame}
 #' @export
 #' @import dplyr stringr formattable purrr tidyr
+#' @family utility function
 #' @examples
+#' library(dplyr)
+#' data_frame(nameFund = "Blackstone Real Estate Fund IX", isNewFund = "N/A",
+#' countAssets = 12000, amountAUM = 65000000, isRealEstateFund = 1) %>% tidy_column_formats(drop_na_columns = FALSE)
 tidy_column_formats <-
-  function(data) {
+  function(data, drop_na_columns = TRUE) {
     data <-
       data %>%
       mutate_if(is_character,
@@ -50,60 +76,86 @@ tidy_column_formats <-
 
     data <-
       data %>%
-      mutate_at(data %>% select(matches("^idCRD")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^idCRD")) %>% names(),
                 funs(. %>% as.numeric())) %>%
       mutate_at(data %>% select(
-        matches(
+        dplyr::matches(
           "^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]"
         )
-      ) %>% names(),
+      ) %>% select(-matches("nameElement")) %>% names(),
       funs(. %>% str_to_upper())) %>%
-      mutate_at(data %>% select(matches("^url[A-Z]")) %>% names(),
-                funs(. %>% str_to_lower())) %>%
-      mutate_at(data %>% select(matches("^amount")) %>% names(),
-                funs(. %>% formattable::currency(digits = 0))) %>%
       mutate_at(
-        data %>% select(matches("latitude|longitude")) %>% names(),
+        data %>% select(dplyr::matches("^amount")) %>% names(),
+        funs(. %>% as.numeric() %>% formattable::currency(digits = 0))
+      ) %>%
+      mutate_at(data %>% select(dplyr::matches("^is|^has")) %>% names(),
+                funs(. %>% as.logical())) %>%
+      mutate_at(
+        data %>% select(dplyr::matches("latitude|longitude")) %>% names(),
         funs(. %>% as.numeric() %>% formattable::digits(digits = 5))
       ) %>%
       mutate_at(
-        data %>% select(matches("^price[A-Z]|pershare")) %>% select(-matches("priceNotation")) %>% names(),
+        data %>% select(dplyr::matches("^price[A-Z]|pershare")) %>% select(-dplyr::matches("priceNotation")) %>% names(),
         funs(. %>% formattable::currency(digits = 3))
       ) %>%
       mutate_at(
-        data %>% select(matches(
+        data %>% select(dplyr::matches(
           "^count[A-Z]|^number[A-Z]|^year[A-Z]"
-        )) %>% select(-matches("country|county")) %>% names(),
+        )) %>% select(-dplyr::matches("country|county")) %>% names(),
         funs(. %>% formattable::comma(digits = 0))
       ) %>%
-      mutate_at(data %>% select(matches("^ratio|^multiple|^priceNotation")) %>% names(),
+      mutate_at(
+        data %>% select(dplyr::matches(
+          "codeInterestAccrualMethod|codeOriginalInterestRateType|codeLienPositionSecuritization|codePaymentType|codePaymentFrequency|codeServicingAdvanceMethod|codePropertyStatus"
+        )) %>% names(),
+        funs(. %>% as.integer())
+      ) %>%
+      mutate_at(data %>% select(dplyr::matches("^ratio|^multiple|^priceNotation|^value")) %>% names(),
                 funs(. %>% formattable::comma(digits = 3))) %>%
-      mutate_at(data %>% select(matches("^pct|^percent")) %>% names(),
-                funs(. %>% formattable::percent(digits = 3)))
+      mutate_at(data %>% select(dplyr::matches("^pct|^percent")) %>% names(),
+                funs(. %>% formattable::percent(digits = 3))) %>%
+      mutate_at(
+        data %>% select(dplyr::matches("^amountFact")) %>% names(),
+        funs(. %>% as.numeric() %>% formattable::currency(digits = 3))
+      ) %>%
+      suppressWarnings()
     has_dates <-
-      data %>% select(matches("^date")) %>% ncol() > 0
+      data %>% select(dplyr::matches("^date")) %>% ncol() > 0
 
     if (has_dates) {
-      data %>% select(matches("^date")) %>% map(class)
+      data %>% select(dplyr::matches("^date")) %>% map(class)
     }
-    data <-
+    if (drop_na_columns ) {
+      data <-
       data %>%
       drop_na_columns()
+    }
     return(data)
   }
 
 
-#' Tidy columns with nested list or related columns
+#' Tidy nested and count columns
 #'
-#' @param data data frame column
+#' This function unnests any neseted columns and
+#' converts any wide columns containing count information
+#' into a tidy data frame
+#'
+#' @param data \code{data frame}
 #' @param column_keys column keys
-#' @param bind_to_original_df bind to the original data frame
-#' @param clean_column_formats clean the columns
+#' @param bind_to_original_df \code{TRUE} bind results to the original data frame in a nested column
+#' @param clean_column_formats \code{TRUE} clean the columns
 #'
-#' @return
+#' @return \code{data_frame}
 #' @export
 #' @import dplyr stringr formattable purrr tidyr
+#' @family utility function
 #' @examples
+#' library(fundManageR)
+#' library(dplyr)
+#' get_data_sec_filer(entity_names = "8VC")
+#' dataFilerRelatedParties %>%
+#' tidy_column_relations()
+
 tidy_column_relations <-
   function(data,
            column_keys = c('idCIK', 'nameEntity'),
@@ -126,6 +178,24 @@ tidy_column_relations <-
       suppressMessages() %>%
       suppressWarnings()
 
+    if ('dataAllFilings' %in% names(data)) {
+      data <-
+        data %>%
+        unnest() %>%
+        tidy_column_formats()
+
+      return(data)
+    }
+
+    if ('dataAssetXBRL' %in% names(data)) {
+      data <-
+        data %>%
+        unnest() %>%
+        tidy_column_formats()
+
+      return(data)
+    }
+
     if (has_lists == F & columns_matching %>% length() == 0) {
       return(data)
     }
@@ -144,7 +214,7 @@ tidy_column_relations <-
 
       df_match <-
         data %>%
-        select(idRow, one_of(column_keys), matches(match))
+        select(idRow, one_of(column_keys), dplyr::matches(match))
 
       has_dates <-
         names(df_match) %>% str_count("date") %>% sum() > 0
@@ -152,7 +222,7 @@ tidy_column_relations <-
       if (has_dates) {
         df_match <-
           df_match %>%
-          mutate_at(df_match %>% select(matches("^date")) %>% names(),
+          mutate_at(df_match %>% select(dplyr::matches("^date")) %>% names(),
                     funs(. %>% as.character()))
       }
 
@@ -204,7 +274,6 @@ tidy_column_relations <-
           col_length_df <-
             1:nrow(df) %>%
             map_df(function(x) {
-
               value <-
                 df[[column]][[x]]
 
@@ -217,10 +286,12 @@ tidy_column_relations <-
                 suppressMessages() %>%
                 suppressWarnings()
 
+              if (column == "dataAllFilings") {
+                return(data_frame(idRow = x, countCols = value %>% ncol()))
+              }
               if (columns_matching %>% length() == 0) {
                 return(data_frame(idRow = x))
               }
-
               data_frame(idRow = x, countCols = value %>% ncol())
             })
 
@@ -246,7 +317,7 @@ tidy_column_relations <-
           if (has_dates) {
             df <-
               df %>%
-              mutate_at(df %>% select(matches("^date")) %>% names(),
+              mutate_at(df %>% select(dplyr::matches("^date")) %>% names(),
                         funs(. %>% as.character()))
           }
 
@@ -284,31 +355,32 @@ tidy_column_relations <-
       df %>% nrow() > 0
 
     if (!has_data) {
-      return(data %>% select(-matches("idRow")))
+      return(data %>% select(-dplyr::matches("idRow")))
     }
     if (has_data) {
       df <-
         df %>%
-        arrange(idRow)
+        arrange(idRow) %>%
+        distinct()
 
       col_order <-
         c(df %>% select(-c(item, value)) %>% names(), df$item)
 
-
       df <-
         df %>%
         spread(item, value) %>%
-        select(one_of(col_order))
+        select(one_of(col_order)) %>%
+        suppressWarnings()
 
       has_dates <-
-        data %>% select(matches("^date")) %>% ncol() > 0
+        data %>% select(dplyr::matches("^date")) %>% ncol() > 0
 
       if (has_dates) {
         df <-
           df %>%
-          mutate_at(df %>% select(matches("^date[A-Z]")) %>% names(),
+          mutate_at(df %>% select(dplyr::matches("^date[A-Z]")) %>% names(),
                     funs(. %>% lubridate::ymd())) %>%
-          mutate_at(df %>% select(matches("^datetime[A-Z]")) %>% names(),
+          mutate_at(df %>% select(dplyr::matches("^datetime[A-Z]")) %>% names(),
                     funs(. %>% lubridate::ymd_hm()))
       }
       if (clean_column_formats) {
@@ -342,7 +414,7 @@ tidy_column_relations <-
 
         data <-
           data %>%
-          select(-matches(ignore_cols)) %>%
+          select(-dplyr::matches(ignore_cols)) %>%
           left_join(df %>%
                       nest(-idRow, .key = 'dataResolved')) %>%
           suppressMessages()

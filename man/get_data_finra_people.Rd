@@ -2,20 +2,46 @@
 % Please edit documentation in R/adv_functions.R
 \name{get_data_finra_people}
 \alias{get_data_finra_people}
-\title{Get FINRA registered people and associated metadata}
+\title{FINRA registered people}
 \usage{
-get_data_finra_people(search_names = NULL, ocr_pdf = TRUE,
+get_data_finra_people(search_name = NULL, ocr_pdf = TRUE,
   return_message = TRUE)
 }
 \arguments{
-\item{search_names}{vector of names to search}
+\item{search_name}{vector of names to search}
+
+\item{ocr_pdf}{if \code{TRUE} returns OCR'd broker report PDF}
 
 \item{return_message}{return a message upon parsing \code{TRUE, FALS}}
+
+\item{score_threshold}{matching score threshold for the search name
+if \code{NULL} there is no threshold}
+}
+\value{
+a \code{data frame}
 }
 \description{
-Get FINRA registered people and associated metadata
+This function returns information for any
+Financial Industry Regulatory Authority [FINRA] registered
+entity.
+}
+\note{
+Use \code{\link{get_data_finra_people()}} for registered people
 }
 \examples{
 get_data_finra_people(search_name = 'Llyod Blankfein', ocr_pdf = TRUE)
+}
+\references{
+\href{http://www.finra.org/}{FINRA}
+}
+\seealso{
+Other FINRA: \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_finra_entities}}
+
+Other IAPD: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}}
 }
 

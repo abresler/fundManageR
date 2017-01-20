@@ -2,17 +2,47 @@
 % Please edit documentation in R/dtcc.R
 \name{get_data_dtcc_most_recent_trades}
 \alias{get_data_dtcc_most_recent_trades}
-\title{Get DTCC most recent cleared trades}
+\title{DTCC most recent trades by product}
 \usage{
 get_data_dtcc_most_recent_trades(assets = NULL, nest_data = TRUE,
   return_message = TRUE)
 }
 \arguments{
-\item{assets}{type of DTCC cleared financial product \code{NULL, COMMODITIES, CREDITS, EQUITIES, FOREX, RATES}}
+\item{assets}{type of DTCC cleared financial product \itemize{
+\item \code{NULL}: returns all product types (default)
+\item \code{COMMODITIES}: Commodities
+\item \code{CREDITS}: Credit Default Swaps
+\item \code{EQUITIES}: Equities
+\item \code{FOREX}: Foreign Exchange
+\item \code{RATES}: Interest Rates
+}}
 
-\item{return_message}{}
+\item{nest_data}{\code{TRUE} return nested data frame}
+
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+
+where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
+where \code{nest_data} is \code{FALSE} a data_frame
 }
 \description{
-Get DTCC most recent cleared trades
+This function returns information about the most recent
+trades cleared by The Depository Trust & Clearing Corporation [DTCC]
+for specified product type.
+}
+\references{
+\href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
+}
+\seealso{
+Other DTCC: \code{\link{get_data_dtcc_trades}}
+
+Other real-time data: \code{\link{get_data_msci_realtime_index_values}},
+  \code{\link{get_data_us_public_companies}}
+
+Other transaction data: \code{\link{get_data_dtcc_trades}},
+  \code{\link{get_data_nareit_mergers_acquisitions}},
+  \code{\link{get_data_sec_securities_metrics_by_exchange}}
 }
 

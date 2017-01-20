@@ -1,11 +1,18 @@
-#' Get CRSP url dictionary data frame
+#' CRSP file dictionary
 #'
-#' @return
+#' This function returns information about available
+#' CRSP index data
+#'
+#' @param include_summary_file \code{TRUE} (default) or \code{FALSE} to exclude
+#' @return a \code{data_frame}
+#' @references \href{http://crsp.com}{The Center for Research in Security Prices}
 #' @export
 #' @import rvest dplyr tidyr stringr lubridate readr
+#' @family CRSP
 #' @examples
-get_data_crsp_index_df <-
-  function() {
+#' get_data_crsp_files()
+get_data_crsp_files <-
+  function(include_summary_files = TRUE) {
   page <-
     "http://www.crsp.com/indexes-pages/returns-and-constituents" %>%
     read_html()
@@ -44,6 +51,12 @@ get_data_crsp_index_df <-
     mutate(idRow = 1:n()) %>%
     mutate(isSummaryFile = ifelse(idRow < 4, TRUE, FALSE)) %>%
     select(-idRow)
+
+  if (!include_summary_files) {
+    crsp_urls <-
+      crsp_urls %>%
+      filter(isSummaryFile == F)
+  }
 
   return(crsp_urls)
 
@@ -117,21 +130,27 @@ parse_crsp_index_url <-
     return(data)
   }
 
-#' Get CRSP constituency data by index
+#' CRSP index constituents
 #'
-#' @param nest_data return nested data frame \code{TRUE, FALSE}
-#' @param return_message return a message after data is parsed \code{TRUE, FALSE}
-#' @import rvest dplyr tidyr stringr lubridate readr
+#' This function returns information
+#' about a CRSP index's constituents
+#'
+#' @param return_message \code{TRUE} return a message after data import
+#' @param nest_data \code{TRUE} return nested data frame
+#' @references \href{http://crsp.com}{The Center for Research in Security Prices}
+#' @import rvest dplyr tidyr stringr lubridate readr purrr
 #' @importFrom rio import
-#' @return
+#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 #' @export
+#' @family CRSP
+#' @family index constituents
 #'
 #' @examples
 #' get_data_crsp_indicies_constituents(nest_data = FALSE, return_message = TRUE)
 get_data_crsp_indicies_constituents <-
   function(nest_data = TRUE, return_message = TRUE) {
     url_df <-
-      get_data_crsp_index_df() %>%
+      get_data_crsp_files() %>%
       filter(isSummaryFile == FALSE)
     parse_crsp_index_url_safe <-
       purrr::possibly(parse_crsp_index_url, data_frame())
@@ -148,22 +167,29 @@ get_data_crsp_indicies_constituents <-
     return(all_data)
   }
 
-#' Get CRSP index return by month
-#' @param return_wide return data in wide form \code{TRUE, FALSE}
-#' @param nest_data return nested data frame \code{TRUE, FALSE}
-#' @param return_message return a message after data is parsed \code{TRUE, FALSE}
+#' CRSP monthly index returns
 #'
-#' @return
+#' This function returns data about
+#' monthly CRSP performance by index
+#'
+#' @param return_wide \code{TRUE} return data in wide form
+#' @param return_message \code{TRUE} return a message after data import
+#' @param nest_data \code{TRUE} return nested data frame
+#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @references \href{http://crsp.com}{The Center for Research in Security Prices}
 #' @export
 #' @import rvest dplyr tidyr stringr lubridate readr
 #' @importFrom rio import
+#' @family CRSP
+#' @family index values
 #' @examples
-#' get_data_crsp_indicies_returns(return_wide = FALSE, nest_data = FALSE, return_message = TRUE)
+#' get_data_crsp_indicies_returns(return_wide = FALSE,
+#' nest_data = FALSE, return_message = TRUE)
 get_data_crsp_indicies_returns <-
   function(return_wide = FALSE,
            nest_data = TRUE, return_message = TRUE) {
     url_df <-
-      get_data_crsp_index_df() %>%
+      get_data_crsp_files() %>%
       filter(isSummaryFile == TRUE)
     parse_crsp_index_url_safe <-
       purrr::possibly(parse_crsp_index_url, data_frame())

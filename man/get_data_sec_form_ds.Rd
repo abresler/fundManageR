@@ -2,12 +2,38 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_sec_form_ds}
 \alias{get_data_sec_form_ds}
-\title{Get SEC Form D data by industry}
+\title{SEC Form-D's}
 \usage{
 get_data_sec_form_ds(industries = NULL, form_years = NULL, months = NULL,
-  return_message = TRUE)
+  nest_data = FALSE, return_message = TRUE)
+}
+\arguments{
+\item{form_years}{years to search options are \itemize{
+\item \code{NULL}: all years (default)
+\item \code{2009-present}: search years
+}}
+
+\item{nest_data}{\code{TRUE} return nested data frame}
+
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
+where \code{nest_data} is \code{FALSE} a data_frame
 }
 \description{
-Get SEC Form D data by industry
+This function returns data for SEC Form D's by
+specified industry
+}
+\details{
+\code{get_data_sec_form_ds()} queries all SEC filed form-d's since 2009 and returns the associated data.
+the default parameters search every industry and year which you
+can change by modifying the parameters
+}
+\examples{
+\dontrun{
+get_data_sec_form_ds()
+get_data_sec_form_ds(years = 2012:2017, industries = c("Real Estate", "Technology", "Other"))
+}
 }
 

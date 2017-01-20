@@ -2,24 +2,95 @@
 % Please edit documentation in R/sec_functions.R
 \name{get_data_sec_cusips}
 \alias{get_data_sec_cusips}
-\title{Get SEC registered CUSIPs for specified year}
+\title{SEC CUSIPs}
 \usage{
 get_data_sec_cusips(only_most_recent = FALSE, years = 1996:2016,
-  quarters = NULL, return_message = TRUE)
+  quarters = NULL, nest_data = FALSE, return_message = TRUE)
 }
 \arguments{
-\item{only_most_recent}{return only most recent quarter}
+\item{only_most_recent}{\code{TRUE} search only the most recent period}
 
-\item{years}{years to search, starting in 1996}
+\item{years}{vector years to search, starting in 1996}
 
-\item{quarters}{quarters to search \code{NULL, 1, 2, 3, 4}}
+\item{quarters}{quarters to search \itemize{
+\item\code{NULL}(default): all quarters,
+\item \code{1}: Q1
+\item \code{2}: Q2
+\item \code{3}: Q3
+\item \code{4}: Q4
+}}
 
-\item{return_message}{return a message}
+\item{nest_data}{\code{TRUE} return nested data frame}
+
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 }
 \description{
-Get SEC registered CUSIPs for specified year
+This function returns information on all Committee on Uniform Securities Identification Procedures [CUSIP]
+registered entities for a specified period.  The SEC exposes this data in PDF
+form so this function can take a long time to run.
 }
 \examples{
-get_data_sec_cusips(only_most_recent = FALSE, years = 2016, return_message = TRUE)
+\dontrun{
+get_data_sec_cusips(only_most_recent = FALSE, years = c(2016, 2010),
+quarters = c(4),
+return_message = TRUE)
+}
+}
+\references{
+\href{http://sec.gov}{The Securities and Exchange Commission}
+}
+\seealso{
+Other SEC: \code{\link{get_data_mmf_owned_debt_securities}},
+  \code{\link{get_data_recent_insider_trades}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_failed_to_deliver_securities}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_foia_requests}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_securities_filing_counts}},
+  \code{\link{get_data_sec_securities_metrics_by_exchange}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_dictionary_sec_filing_codes}},
+  \code{\link{get_dictionary_sec_form_codes}}
+
+Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_data_ycombinator_alumni}}
+
+Other securities search: \code{\link{get_data_mmf_owned_debt_securities}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_securities_offerings}}
 }
 

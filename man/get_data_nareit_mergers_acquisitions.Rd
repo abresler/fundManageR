@@ -2,22 +2,43 @@
 % Please edit documentation in R/nareit.R
 \name{get_data_nareit_mergers_acquisitions}
 \alias{get_data_nareit_mergers_acquisitions}
-\title{Get NAREIT merger & acquisition data by year}
+\title{NAREIT merger and acquisitions}
 \usage{
 get_data_nareit_mergers_acquisitions(pages = 32:33, nest_data = FALSE,
   return_message = TRUE)
 }
 \arguments{
-\item{pages}{location of the pages in the REIT monthly file, only use this if the location of the M&A table changes}
+\item{nest_data}{\code{TRUE} return nested data frame}
 
-\item{nest_data}{return a nested data frame \code{TRUE, FALSE}}
+\item{return_message}{\code{TRUE} return a message after data import}
 
-\item{return_message}{return a message \code{TRUE, FALSE}}
+\item{return_wide}{\code{TRUE} return data in wide form}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 }
 \description{
-Get NAREIT merger & acquisition data by year
+This function OCRs data on NAREIT member
+M&A activity since 2004.
 }
 \examples{
 get_data_nareit_mergers_acquisitions(nest_data = FALSE, return_message = TRUE)
+}
+\seealso{
+Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
+  \code{\link{get_data_nareit_capital_raises}},
+  \code{\link{get_data_nareit_constituent_years}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_nareit_industry_tracker}},
+  \code{\link{get_data_nareit_monthly_returns}},
+  \code{\link{get_data_nareit_notable_properties}},
+  \code{\link{get_data_nareit_property_msa}},
+  \code{\link{get_data_nareit_state_info}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_reit_entity_dictionary}}
+
+Other transaction data: \code{\link{get_data_dtcc_most_recent_trades}},
+  \code{\link{get_data_dtcc_trades}},
+  \code{\link{get_data_sec_securities_metrics_by_exchange}}
 }
 

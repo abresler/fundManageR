@@ -2,35 +2,78 @@
 % Please edit documentation in R/adv_functions.R
 \name{get_data_adv_managers_periods_summaries}
 \alias{get_data_adv_managers_periods_summaries}
-\title{Get ADV summary data for specified periods and filing types}
+\title{ADV managers periods data}
 \usage{
 get_data_adv_managers_periods_summaries(periods = c("2006-06"),
-  all_periods = F, is_exempt = c(F, T), only_most_recent = F,
-  file_directory = NULL, folder_name = "adv_data",
-  remove_existing_folder = F, remove_files = F, empty_trash = F)
+  all_periods = FALSE, only_most_recent = FALSE, is_exempt = c(TRUE,
+  FALSE), nest_data = FALSE, return_message = TRUE)
 }
 \arguments{
-\item{periods}{Selected periods in Year-Month form}
+\item{periods}{dates in year-month form}
 
-\item{all_periods}{Do you want all periods}
+\item{all_periods}{include all periods}
 
-\item{is_exempt}{Do you want to exempt, non-exempt or both types of filers}
+\item{is_exempt}{exempt, non-exempt filers}
 
-\item{only_most_recent}{Select only the most recent period}
+\item{nest_data}{return a nested data frame}
 
-\item{file_directory}{Location of the directory you want to save your data into, if none specified a temporary file will be created}
-
-\item{folder_name}{Name of the folder you want the data to be downloaded into}
-
-\item{remove_files}{Remove the files from the folders}
-
-\item{empty_trash}{Do you wish to empty the trash after being read into R}
+\item{return_message}{return a message after parsing data}
+}
+\value{
+where \code{nest_data} is \code{TRUE} a nested data_frame by period and type of filer,
+where \code{nest_data} is \code{FALSE} a data_frame
 }
 \description{
-Get ADV summary data for specified periods and filing types
+This function returns monthly summary
+information for every ADV filing manager
+from 2006 onwards.
 }
 \examples{
-get_data_adv_managers_periods_summaries(periods = c("2006-06"), all_periods = F, is_exempt = c(F,T), only_most_recent = F,
-file_directory = NULL, folder_name = 'adv_data', remove_existing_folder = F, remove_files = T, empty_trash = T)
+#' \dontrun{
+get_data_adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"), all_periods = FALSE, is_exempt = c(FALSE,TRUE), only_most_recent = FALSE, nest_data = FALSE)
+
+get_data_adv_managers_periods_summaries(only_most_recent = TRUE)
+}
+}
+\seealso{
+Other ADV: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}}
+
+Other IAPD: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_finra_people}}
+
+Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_data_ycombinator_alumni}}
+
+Other fund data: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_money_market_funds}}
 }
 

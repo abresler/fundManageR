@@ -2,12 +2,17 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_dictionary_form_d_categories}
 \alias{get_dictionary_form_d_categories}
-\title{Get Form-D Category dictionry}
+\title{Form-D dictionary}
 \usage{
 get_dictionary_form_d_categories()
 }
+\value{
+a \code{data_frame}
+}
 \description{
-Get Form-D Category dictionry
+This function returns searchable
+industries for parsed SEC Form-D
+filings
 }
 \examples{
 get_dictionary_form_d_categories()

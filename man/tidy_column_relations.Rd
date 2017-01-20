@@ -2,21 +2,38 @@
 % Please edit documentation in R/utils.R
 \name{tidy_column_relations}
 \alias{tidy_column_relations}
-\title{Tidy columns with nested list or related columns}
+\title{Tidy nested and count columns}
 \usage{
 tidy_column_relations(data, column_keys = c("idCIK", "nameEntity"),
   bind_to_original_df = FALSE, clean_column_formats = TRUE)
 }
 \arguments{
-\item{data}{data frame column}
+\item{data}{\code{data frame}}
 
 \item{column_keys}{column keys}
 
-\item{bind_to_original_df}{bind to the original data frame}
+\item{bind_to_original_df}{\code{TRUE} bind results to the original data frame in a nested column}
 
-\item{clean_column_formats}{clean the columns}
+\item{clean_column_formats}{\code{TRUE} clean the columns}
+}
+\value{
+\code{data_frame}
 }
 \description{
-Tidy columns with nested list or related columns
+This function unnests any neseted columns and
+converts any wide columns containing count information
+into a tidy data frame
+}
+\examples{
+library(fundManageR)
+library(dplyr)
+get_data_sec_filer(entity_names = "8VC")
+dataFilerRelatedParties \%>\%
+tidy_column_relations()
+}
+\seealso{
+Other utility function: \code{\link{drop_na_columns}},
+  \code{\link{get_class_df}},
+  \code{\link{tidy_column_formats}}
 }
 

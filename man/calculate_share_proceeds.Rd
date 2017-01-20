@@ -2,17 +2,38 @@
 % Please edit documentation in R/cf_functions.R
 \name{calculate_share_proceeds}
 \alias{calculate_share_proceeds}
-\title{Calculate proceeds from share sale given specified price and share amount}
+\title{Share proceeds}
 \usage{
 calculate_share_proceeds(price = 10, shares = 1e+06)
 }
 \arguments{
-\item{shares}{}
+\item{price}{numeric price}
+
+\item{shares}{share count}
+}
+\value{
+numeric \code{vector}
 }
 \description{
-Calculate proceeds from share sale given specified price and share amount
+This function calculates
+distributable proceeds from
+a share sale based upon specified inputs.
 }
 \examples{
 calculate_share_proceeds(price = 9, shares = 150000)
+}
+\seealso{
+Other calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flow_waterfall}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_days_accrued_pref}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{calculate_leverage_metrics}},
+  \code{\link{calculate_loan_payment}},
+  \code{\link{calculate_residual_valuation_cap_rates}},
+  \code{\link{calculate_residual_valuation_ebitda_multiples}},
+  \code{\link{calculate_valuation_post_money}},
+  \code{\link{tidy_promote_structure}}
 }
 

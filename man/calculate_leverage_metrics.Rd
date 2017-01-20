@@ -2,12 +2,12 @@
 % Please edit documentation in R/cf_functions.R
 \name{calculate_leverage_metrics}
 \alias{calculate_leverage_metrics}
-\title{Calculate leveraged return metrics}
+\title{Leveraged return metrics}
 \usage{
 calculate_leverage_metrics(purchase_price = 0,
   capitalized_acquisition_costs = 0, capital_investment = 0, revenue = 0,
   expenses = 0, loan_to_cost = 0, interest_rate = 0,
-  borrow_capital_investment = F, include_capitalized_cost = T,
+  borrow_capital_investment = F, borrow_capitalized_costs = T,
   leverage_threshold = 0.95, is_interest_only = FALSE,
   interest_only_periods = 0, is_actual_360 = TRUE,
   amortization_years = 30, amortization_months = 0, term_years = 30,
@@ -15,45 +15,86 @@ calculate_leverage_metrics(purchase_price = 0,
   return_message = T)
 }
 \arguments{
-\item{purchase_price}{Vector of Purchase Prices}
+\item{purchase_price}{vector of purchase prices}
 
-\item{capitalized_acquisition_costs}{Vector of Capitalized Acquisition Costs}
+\item{capitalized_acquisition_costs}{vector of capitalized acquisition costs}
 
-\item{capital_investment}{Vector of Capital Investment}
+\item{capital_investment}{vector of capital investment}
 
-\item{revenue}{Vector of revenue amounts}
+\item{revenue}{vector of revenue amounts}
 
-\item{expenses}{Vector of expenses}
+\item{expenses}{vector of expenses}
 
-\item{loan_to_cost}{Vector of loan to cost}
+\item{loan_to_cost}{vector of loan to cost}
 
-\item{interest_rate}{Interest Rate}
+\item{interest_rate}{vector nterest rates}
 
-\item{borrow_capital_investment}{Borrow Investment \code{TRUE, FALSE}}
+\item{borrow_capital_investment}{\code{TRUE} borrow capital investment}
 
-\item{include_capitalized_cost}{Include capitalized costs in leverage calculations \code{TRUE, FALSE}}
+\item{borrow_capitalized_costs}{\code{TRUE} borrow capitalized costs}
 
-\item{leverage_threshold}{Maximum Leverage}
+\item{leverage_threshold}{maximum leverage allowed}
 
-\item{is_interest_only}{Does loan have interst only periods \code{TRUE, FALSE}}
+\item{is_interest_only}{\code{TRUE} has interest only periods}
 
-\item{interest_only_periods}{Interest Only Periods}
+\item{interest_only_periods}{count of interest only periods}
 
-\item{is_actual_360}{Is loan calcuated on actual/360 basis \code{TRUE, FALSE}}
+\item{is_actual_360}{\code{TRUE} is interest calculated on actual 360 basis}
 
-\item{amortization_years}{Loan amortization years}
+\item{amortization_years}{amortization in years}
 
-\item{amortization_months}{Loan amortization months}
+\item{amortization_months}{amortization additional months}
 
-\item{term_years}{Term of the loan, years}
+\item{term_years}{term of the loan in years}
 
-\item{term_months}{Term of the loan, months}
+\item{term_months}{term of the loan additional months}
 
-\item{pct_loan_fee}{Loan pee, percent}
+\item{pct_loan_fee}{loan fee in percent}
 
-\item{return_message}{}
+\item{return_wide}{\code{TRUE} return data in wide form}
+
+\item{return_message}{\code{TRUE} return a message after data import}
+
+\item{is_actual_360}{\code{TRUE} interest calculated on actual/360 basis}
+}
+\value{
+a \code{data_frame}
 }
 \description{
-Calculate leveraged return metrics
+This function returns data with the outputs
+from a "back-of-the-envelope" leveraged math calculation
+that can be used for a quick and dirty underwriting of a
+leveragd cash flow stream.
+}
+\examples{
+calculate_leverage_metrics(purchase_price = c("13,000,000", "9,000,000"),
+capitalized_acquisition_costs = "300,000",
+capital_investment = "$100,000", revenue = "$1,200,000", expenses = "$400,000",
+loan_to_cost = .75,interest_rate = .045,borrow_capital_investment = TRUE,
+borrow_capitalized_costs = TRUE, leverage_threshold = .8, is_interest_only = FALSE,
+interest_only_periods = 0, is_actual_360 = TRUE, amortization_years = 30,
+amortization_months = 0, term_years = 10, term_months = 0, pct_loan_fee = 0, return_wide = TRUE,
+return_message = TRUE)
+}
+\seealso{
+Other calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flow_waterfall}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_days_accrued_pref}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{calculate_loan_payment}},
+  \code{\link{calculate_residual_valuation_cap_rates}},
+  \code{\link{calculate_residual_valuation_ebitda_multiples}},
+  \code{\link{calculate_share_proceeds}},
+  \code{\link{calculate_valuation_post_money}},
+  \code{\link{tidy_promote_structure}}
+
+Other leveraged finance calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flow_waterfall}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{calculate_loan_payment}}
 }
 

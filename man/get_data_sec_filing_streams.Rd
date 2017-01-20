@@ -2,16 +2,42 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_sec_filing_streams}
 \alias{get_data_sec_filing_streams}
-\title{Get SEC Filing Stream Data}
+\title{SEC filing stream}
 \usage{
 get_data_sec_filing_streams(filers = c("All", "Corporate Insider",
   "Companies", "Investment Company"), filing_names = c("All",
   "Annual Reports", "Quarterly Reports", "Current Reports", "Other Reports",
   "Registrations", "Private Offerings", "Ownership", "Prospectuses",
   "Exemptions", "Withdrawals", "Correspondence", "Proxy Statements",
-  "Confidential"), return_message = TRUE)
+  "Confidential"), nest_data = TRUE, return_message = TRUE)
+}
+\arguments{
+\item{filing_names}{type of filing \itemize{
+\item \code{Annual Reports}: annual report
+\item \code{Quarterly Reports}: quarterly report
+\item \code{Current Reports}: current report
+\item \code{Other Reports}: other reports
+\item \code{Registrations}: securities registration
+\item \code{Private Offerings}: private securities offerings
+\item \code{Ownership}: ownership
+\item \code{Prospectuses}: securities prospectus
+\item \code{Exemptions}: exempt securities
+\item \code{Withdrawals}: securities withdrawls
+\item \code{Correspondence}: SEC correspondence
+\item \code{Proxy Statements}:  proxy issuances
+\item \code{\item \code{Confidential}: confidential information}
+}}
+
+\item{return_message}{return a message}
 }
 \description{
-Get SEC Filing Stream Data
+This function returns the most recent SEC filings
+for specified filer type by filing type.
+}
+\examples{
+#' \dontrun{
+get_data_sec_filing_streams(filers = 'All', filing_names = 'Annual Reports')
+}
+
 }
 

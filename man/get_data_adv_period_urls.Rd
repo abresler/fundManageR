@@ -4,7 +4,7 @@
 \alias{get_data_adv_period_urls}
 \title{Get ADV Summary Filing Data URLs for All Applicable Periods}
 \usage{
-get_data_adv_period_urls(return_wide = T)
+get_data_adv_period_urls(return_wide = TRUE)
 }
 \arguments{
 \item{return_wide}{}

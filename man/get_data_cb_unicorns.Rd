@@ -2,17 +2,28 @@
 % Please edit documentation in R/venture_data_functions.R
 \name{get_data_cb_unicorns}
 \alias{get_data_cb_unicorns}
-\title{Get CB insight unicorn data}
+\title{CB Insight data}
 \usage{
 get_data_cb_unicorns(return_message = TRUE)
 }
 \arguments{
-\item{return_message}{return a message after data parsing \code{TRUE, FALSE}}
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+\code{data_frame}
 }
 \description{
-Get CB insight unicorn data
+This function returns information about startups whose valuation
+exceeds $1B as identified by CB Insights.
 }
 \examples{
 get_data_cb_unicorns(return_message = TRUE)
+}
+\references{
+\href{https://cbinsights/}{CB Insights}
+}
+\seealso{
+Other venture capital: \code{\link{calculate_valuation_post_money}},
+  \code{\link{get_data_ycombinator_alumni}}
 }
 

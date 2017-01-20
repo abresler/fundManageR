@@ -2,24 +2,50 @@
 % Please edit documentation in R/indicies.R
 \name{get_data_msci_indicies_constituents}
 \alias{get_data_msci_indicies_constituents}
-\title{Get MSCI indicies constituents}
+\title{MSCI Indicies Constituents}
 \usage{
 get_data_msci_indicies_constituents(indicies = NULL, nest_data = TRUE,
   return_message = TRUE)
 }
 \arguments{
-\item{indicies}{specific indicies, \code{NULL} returns all}
+\item{indicies}{vector of indicies \itemize{
+\item \code{NULL}: returns all indicies (default)
+\item \code{index}: index name
+}}
 
-\item{nest_data}{return a nested data frame \code{TRUE, FALSE}}
+\item{nest_data}{\code{TRUE} return nested data frame}
 
-\item{return_message}{return a message \code{TRUE, FALSE}}
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 }
 \description{
-Get MSCI indicies constituents
+This function returns weights and constituents for a specified
+MSCI index.
 }
 \examples{
-get_data_msci_indicies_constituents(indicies = "NORTH AMERICA", nest_data = FALSE, return_message = TRUE)
-
+library(stringr)
+df_msci_indicies <-
+get_data_msci_indicies()
+## Get all technology indicies and their constituents
+tech_indicies <-
+df_msci_indicies \%>\%
+filter(nameIndex \%>\% str_detect('TECH')) \%>\%
+.$nameIndex
+get_data_msci_indicies_constituents(indicies = tech_indicies, nest_data = TRUE, return_message  = TRUE)
+get_data_msci_indicies_constituents(indicies = "NORTH AMERICA", nest_data = FALSE, return_message = TRUE)#'
 get_data_msci_indicies_constituents(indicies = NULL, nest_data = TRUE, return_message = TRUE)
+}
+\references{
+\href{http://msci.com}{MSCI Inc}
+}
+\seealso{
+Other MSCI: \code{\link{get_data_msci_indicies}},
+  \code{\link{get_data_msci_realtime_index_values}}
+
+Other index constituents: \code{\link{get_data_crsp_indicies_constituents}},
+  \code{\link{get_data_nareit_constituent_years}},
+  \code{\link{get_data_sp500_constituents}}
 }
 

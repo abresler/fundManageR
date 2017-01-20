@@ -2,14 +2,25 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_location_codes}
 \alias{get_data_location_codes}
-\title{Get location code data}
+\title{Locations}
 \usage{
 get_data_location_codes()
 }
+\value{
+a \code{data_frame}
+}
 \description{
-Get location code data
+This function returns location codes
+and the name the location
 }
 \examples{
 get_data_location_codes()
+}
+\seealso{
+Other dictionary: \code{\link{get_data_sec_rules}},
+  \code{\link{get_data_sic_codes}},
+  \code{\link{get_dictionary_sec_filing_codes}},
+  \code{\link{get_dictionary_sec_form_codes}},
+  \code{\link{get_reit_entity_dictionary}}
 }
 

@@ -2,14 +2,29 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_sic_codes}
 \alias{get_data_sic_codes}
-\title{Get SIC codes and classifications}
+\title{SIC Codes}
 \usage{
 get_data_sic_codes(filter_duplicates = TRUE)
 }
 \arguments{
-\item{filter_duplicates}{}
+\item{filter_duplicates}{\code{TRUE} removes duplicate entries}
+}
+\value{
+a \d
 }
 \description{
-Get SIC codes and classifications
+This function returns Standard Industrial Classification [SIC]
+codes and the corresponding
+North American Industry Classification System [NAICS] identification.
+}
+\examples{
+get_data_sic_codes(filter_duplicates = TRUE)
+}
+\seealso{
+Other dictionary: \code{\link{get_data_location_codes}},
+  \code{\link{get_data_sec_rules}},
+  \code{\link{get_dictionary_sec_filing_codes}},
+  \code{\link{get_dictionary_sec_form_codes}},
+  \code{\link{get_reit_entity_dictionary}}
 }
 

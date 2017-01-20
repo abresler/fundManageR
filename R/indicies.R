@@ -1,11 +1,16 @@
 
+
 # wiki --------------------------------------------------------------------
-#' Get S&P 500 constituent data
+#' S&P 500 constituents
 #'
-#' @param return_message return a message \code{TRUE, FALSE}
+#' This function returns the constituents
+#' in the S&P 500.
 #'
-#' @return
+#' @param return_message \code{TRUE} return a message after data import
+#'
+#' @return a \code{data_frame}
 #' @export
+#' @family index constituents
 #' @import dplyr purrr tidyr stringr formattable rvest
 #' @examples
 #' get_data_sp500_constituents(return_message = TRUE)
@@ -23,7 +28,17 @@ get_data_sp500_constituents <-
       as_data_frame() %>%
       select(-3) %>%
       mutate_all(str_to_upper) %>%
-      purrr::set_names(c('idTicker', 'nameCompany', 'nameSectorGICS', 'nameIndustryGICS', 'locationHeadquarters' ,'dateAdded', 'idCIK')) %>%
+      purrr::set_names(
+        c(
+          'idTicker',
+          'nameCompany',
+          'nameSectorGICS',
+          'nameIndustryGICS',
+          'locationHeadquarters' ,
+          'dateAdded',
+          'idCIK'
+        )
+      ) %>%
       mutate(dateAdded = dateAdded %>% lubridate::ymd(),
              nameIndex = "S&P 500")
 
@@ -58,39 +73,48 @@ get_data_sp500_constituents <-
 # https://en.wikipedia.org/wiki/S%26P_100#Components
 
 
-# morningstar -------------------------------------------------------------
-
-# https://quotespeed.morningstar.com/ra/uniqueChartData?tickers=0P000003XP%2C0P000003XP%2C126.1.VNO&f=1&cdt=6&sd=20161223&st=18%3A14%3A00&instid=NYSE&sdkver=2.4.1&qs_wsid=038E290A225D167B8CD2C0B2F6FA8247
-
-
 
 # msci --------------------------------------------------------------------
 
-#' Get MSCI indicies
+#' MSCI indicies
 #'
-#' @return A data_frame with all MSCI indicies
+#' Returns all MSCI indicies.  This function
+#' can be used to find indicies to search with
+#' \code{\link{get_data_msci_indicies_constituents}}
+#' to specify indicies to extract constituents.
+#'
+#' @return \code{data_frame}
 #' @export
+#' @family MSCI
 #' @import dplyr purrr formattable tidyr stringr jsonlite
 #' @examples
 #' get_data_msci_indicies()
 get_data_msci_indicies <-
   function() {
-  index_name_df <-
-    "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=" %>%
-    fromJSON(simplifyDataFrame = TRUE) %>%
-    .$indices %>%
-    as_data_frame() %>%
-    purrr::set_names(c('dateIndexAsOf', 'idTypeRebalance', 'idIndex', 'nameIndex', 'hasDisclaimer')) %>%
-    mutate(nameIndex = nameIndex %>% str_to_upper(),
-           dateIndexAsOf = dateIndexAsOf %>% lubridate::ymd(),
-           urlIndexConstituents = 'https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=' %>% paste0(idIndex)) %>%
-    group_by(nameIndex) %>%
-    filter(idIndex == min(idIndex)) %>%
-    ungroup()
+    index_name_df <-
+      "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=" %>%
+      fromJSON(simplifyDataFrame = TRUE) %>%
+      .$indices %>%
+      as_data_frame() %>%
+      purrr::set_names(c(
+        'dateIndexAsOf',
+        'idTypeRebalance',
+        'idIndex',
+        'nameIndex',
+        'hasDisclaimer'
+      )) %>%
+      mutate(
+        nameIndex = nameIndex %>% str_to_upper(),
+        dateIndexAsOf = dateIndexAsOf %>% lubridate::ymd(),
+        urlIndexConstituents = 'https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=' %>% paste0(idIndex)
+      ) %>%
+      group_by(nameIndex) %>%
+      filter(idIndex == min(idIndex)) %>%
+      ungroup()
 
-  return(index_name_df)
+    return(index_name_df)
 
-}
+  }
 
 parse_msci_json_constituent_url <-
   function(url = "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=701268",
@@ -103,8 +127,7 @@ parse_msci_json_constituent_url <-
       purrr::set_names(c('pctWeight', 'nameCompany')) %>%
       mutate_all(str_to_upper) %>%
       select(nameCompany, pctWeight) %>%
-      mutate(pctWeight = (pctWeight %>% as.numeric() / 100) %>% formattable::percent(digits = 5)
-             ) %>%
+      mutate(pctWeight = (pctWeight %>% as.numeric() / 100) %>% formattable::percent(digits = 5)) %>%
       mutate(urlIndexConstituents = url)
 
     if (return_message) {
@@ -113,26 +136,42 @@ parse_msci_json_constituent_url <-
         flatten_chr() %>%
         .[[2]] %>%
         as.numeric()
-      list("Parsed Index ID: ",index_id) %>%
-      purrr::invoke(paste0, .) %>%
-      message()
+      list("Parsed Index ID: ", index_id) %>%
+        purrr::invoke(paste0, .) %>%
+        message()
     }
 
     return(data)
   }
 
-#' Get MSCI indicies constituents
+#' MSCI Indicies Constituents
 #'
-#' @param indicies specific indicies, \code{NULL} returns all
-#' @param nest_data return a nested data frame \code{TRUE, FALSE}
-#' @param return_message return a message \code{TRUE, FALSE}
-#'
-#' @return
+#' This function returns weights and constituents for a specified
+#' MSCI index.
+#' @param indicies vector of indicies \itemize{
+#' \item \code{NULL}: returns all indicies (default)
+#' \item \code{index}: index name
+#' }
+#' @param return_message \code{TRUE} return a message after data import
+#' @param nest_data \code{TRUE} return nested data frame
+#' @references \href{http://msci.com}{MSCI Inc}
+#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @family MSCI
+#' @family index constituents
 #' @export
 #' @import dplyr purrr formattable tidyr stringr jsonlite
 #' @examples
-#' get_data_msci_indicies_constituents(indicies = "NORTH AMERICA", nest_data = FALSE, return_message = TRUE)
-#'
+#' library(stringr)
+#' df_msci_indicies <-
+#' get_data_msci_indicies()
+#' ## Get all technology indicies and their constituents
+#' tech_indicies <-
+#' df_msci_indicies %>%
+#' filter(nameIndex %>% str_detect('TECH')) %>%
+#' .$nameIndex
+#' get_data_msci_indicies_constituents(indicies = tech_indicies, nest_data = TRUE, return_message  = TRUE)
+
+#' get_data_msci_indicies_constituents(indicies = "NORTH AMERICA", nest_data = FALSE, return_message = TRUE)#'
 #' get_data_msci_indicies_constituents(indicies = NULL, nest_data = TRUE, return_message = TRUE)
 get_data_msci_indicies_constituents <-
   function(indicies = NULL,
@@ -144,14 +183,17 @@ get_data_msci_indicies_constituents <-
     if (!indicies %>% is_null()) {
       index_options <-
         index_df$nameIndex
-      if (!indicies %in% index_options) {
-        stop(list("Indexes can only be:\n", paste(index_options,collapse = "\n")) %>%
-               purrr::invoke(paste0,.))
+      if (indicies %in% index_options %>% sum(na.rm = T) == 0) {
+        stop(list(
+          "Indexes can only be:\n",
+          paste(index_options, collapse = "\n")
+        ) %>%
+          purrr::invoke(paste0, .))
       }
 
       index_df <-
         index_df %>%
-        filter(nameIndex %in% indicies)
+        filter(nameIndex %>%  str_detect(indicies %>% paste0(collapse = "|")))
 
     }
 
@@ -194,20 +236,32 @@ get_data_msci_indicies_constituents <-
     }
 
     if (return_message) {
-      list("Acquired index constituents for ", const_df$nameIndex %>% unique() %>% length(), ' MSCI indicies') %>%
-        purrr::invoke(paste0,.) %>%
+      list(
+        "Acquired index constituents for ",
+        const_df$nameIndex %>% unique() %>% length(),
+        ' MSCI indicies'
+      ) %>%
+        purrr::invoke(paste0, .) %>%
         message()
     }
 
     return(const_df)
   }
 
-#' Get most recent MSCI index values
+#' MSCI indicies values
 #'
-#' @param return_wide return a wide data frame \code{TRUE, FALSEs}
-#' @param return_message return a message \code{TRUE, FALSE}
-#' @return
+#' This function returns the most recent
+#' index values for the
+#' 41 primary MSCI indicies on a 15 minute time delay.
+#'
+#' @param return_message \code{TRUE} return a message after data import
+#' @param return_wide \code{TRUE} return data in wide form
+#' @references \href{http://msci.com}{MSCI Inc}
+#' @return \code{data_frame}
 #' @export
+#' @family MSCI
+#' @family index values
+#' @family real-time data
 #' @import jsonlite dplyr purrr stringr lubridate
 #' @examples
 #' get_data_msci_realtime_index_values()
@@ -219,7 +273,7 @@ get_data_msci_realtime_index_values <-
       read_lines()
 
     json_data <-
-      raw %>% substr(18, nchar(raw) -1) %>%
+      raw %>% substr(18, nchar(raw) - 1) %>%
       fromJSON()
     current_year <-
       Sys.Date() %>% lubridate::year()
@@ -228,12 +282,29 @@ get_data_msci_realtime_index_values <-
       json_data$xmfIndices$index %>%
       as_data_frame() %>%
       mutate_all(str_to_upper) %>%
-      purrr::set_names(c("datetimeData", "valueIndexClosePrevious", "pctChange", "valueIndex", "valueChange",
-                         "nameIndex", "isTradingClosed", "typeCurrency", "idIndex")
+      purrr::set_names(
+        c(
+          "datetimeData",
+          "valueIndexClosePrevious",
+          "pctChange",
+          "valueIndex",
+          "valueChange",
+          "nameIndex",
+          "isTradingClosed",
+          "typeCurrency",
+          "idIndex"
+        )
       ) %>%
-      mutate(datetimeData = list(current_year, " ", datetimeData) %>% purrr::invoke(paste0,.) %>% ydm_hm(),
-             isTradingClosed = isTradingClosed %>% as.logical()) %>%
-      select(datetimeData, nameIndex, idIndex, isTradingClosed, typeCurrency, everything())
+      mutate(
+        datetimeData = list(current_year, " ", datetimeData) %>% purrr::invoke(paste0, .) %>% ydm_hm(),
+        isTradingClosed = isTradingClosed %>% as.logical()
+      ) %>%
+      select(datetimeData,
+             nameIndex,
+             idIndex,
+             isTradingClosed,
+             typeCurrency,
+             everything())
 
     index_data <-
       index_data %>%
@@ -246,13 +317,21 @@ get_data_msci_realtime_index_values <-
 
     if (return_message) {
       list("Got MSCI Index values as of ", Sys.time()) %>%
-        purrr::invoke(paste0,. ) %>%
+        purrr::invoke(paste0, .) %>%
         message()
     }
     if (!return_wide) {
       index_data <-
         index_data %>%
-        gather(item, value, -c(datetimeData, nameIndex, idIndex, isTradingClosed, typeCurrency))
+        gather(item,
+               value,
+               -c(
+                 datetimeData,
+                 nameIndex,
+                 idIndex,
+                 isTradingClosed,
+                 typeCurrency
+               ))
     }
     return(index_data)
   }

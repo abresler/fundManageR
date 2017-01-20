@@ -2,14 +2,88 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_us_public_companies}
 \alias{get_data_us_public_companies}
-\title{Get United States public securities descriptive data}
+\title{US Public Company snapshot}
 \usage{
 get_data_us_public_companies(merge_type = NULL, return_message = TRUE)
 }
 \arguments{
-\item{return_message}{}
+\item{merge_type}{how to merge general information for public companies \itemize{
+\item \code{NULL} and \code{MATCH}: only acquires metadata for unmatched batch import companies (default)
+#' \item \code{ALL}: returns general information for all companies
+}}
+
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+a \code{data_frame}
 }
 \description{
-Get United States public securities descriptive data
+This function returns snapshot details
+of X public companies.  Information includes
+corporate metadata, valuation metrics, and more.
+}
+\examples{
+\dontrun{
+get_data_us_public_companies(merge_type = NULL)
+
+}
+}
+\seealso{
+Other Rank and Filed: \code{\link{get_data_mmf_owned_debt_securities}},
+  \code{\link{get_data_recent_insider_trades}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_securities_offerings}}
+
+Other SEC: \code{\link{get_data_mmf_owned_debt_securities}},
+  \code{\link{get_data_recent_insider_trades}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_failed_to_deliver_securities}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_foia_requests}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_securities_filing_counts}},
+  \code{\link{get_data_sec_securities_metrics_by_exchange}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_dictionary_sec_filing_codes}},
+  \code{\link{get_dictionary_sec_form_codes}}
+
+Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_ycombinator_alumni}}
+
+Other real-time data: \code{\link{get_data_dtcc_most_recent_trades}},
+  \code{\link{get_data_msci_realtime_index_values}}
 }
 

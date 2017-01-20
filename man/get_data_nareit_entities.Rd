@@ -2,20 +2,63 @@
 % Please edit documentation in R/nareit.R
 \name{get_data_nareit_entities}
 \alias{get_data_nareit_entities}
-\title{Get NAREIT constituent data}
+\title{NAREIT constituents}
 \usage{
 get_data_nareit_entities(include_private_non_public = TRUE,
   return_message = TRUE)
 }
 \arguments{
-\item{include_private_non_public}{include privately traded or over-the-counter traded REITs \code{TRUE, FALSE}}
+\item{include_private_non_public}{\code{TRUE} include privately traded or over-the-counter traded REITs \code{TRUE}, \code{FALSE}}
 
-\item{return_message}{return a message \code{TRUE, FALSE}}
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+data_frame
 }
 \description{
-Get NAREIT constituent data
+This function returns information about all active
+NAREIT members.
 }
 \examples{
 get_data_nareit_entities(include_private_non_public = TRUE, return_message = TRUE)
+}
+\references{
+\href{http://nareit.org}{National Association of Real Estate Investment Trusts}
+}
+\seealso{
+Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
+  \code{\link{get_data_nareit_capital_raises}},
+  \code{\link{get_data_nareit_constituent_years}},
+  \code{\link{get_data_nareit_industry_tracker}},
+  \code{\link{get_data_nareit_mergers_acquisitions}},
+  \code{\link{get_data_nareit_monthly_returns}},
+  \code{\link{get_data_nareit_notable_properties}},
+  \code{\link{get_data_nareit_property_msa}},
+  \code{\link{get_data_nareit_state_info}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_reit_entity_dictionary}}
+
+Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_data_ycombinator_alumni}}
 }
 

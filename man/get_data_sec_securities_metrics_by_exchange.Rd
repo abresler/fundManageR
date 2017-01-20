@@ -2,26 +2,68 @@
 % Please edit documentation in R/sec_functions.R
 \name{get_data_sec_securities_metrics_by_exchange}
 \alias{get_data_sec_securities_metrics_by_exchange}
-\title{Get SEC aggregate securities metrics}
+\title{SEC quarterly securities transaction metrics}
 \usage{
 get_data_sec_securities_metrics_by_exchange(only_most_recent = FALSE,
-  years = 2016, months = NULL, nest_data = FALSE, return_message = TRUE)
+  years = 2016, months = NULL, nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
-\item{only_most_recent}{return only most recent year}
+\item{only_most_recent}{\code{TRUE} search only the most recent period}
 
 \item{years}{years to include}
 
 \item{months}{months to include}
 
-\item{nest_data}{nest the data}
+\item{nest_data}{\code{TRUE} return nested data frame}
 
-\item{return_message}{return a message}
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 }
 \description{
-Get SEC aggregate securities metrics
+This function returns a variety of metrics surrounding
+transactions for individual securities.  The quarterly data
+starts in 2012.
 }
 \examples{
-get_data_sec_securities_metrics_by_exchange()
+\dontrun{
+get_data_sec_securities_metrics_by_exchange(only_most_recent = TRUE)
+get_data_sec_securities_metrics_by_exchange(years = 2016)
+}
+}
+\references{
+\href{http://sec.gov}{The Securities and Exchange Commission}
+}
+\seealso{
+Other SEC: \code{\link{get_data_mmf_owned_debt_securities}},
+  \code{\link{get_data_recent_insider_trades}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_failed_to_deliver_securities}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_foia_requests}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_securities_filing_counts}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_dictionary_sec_filing_codes}},
+  \code{\link{get_dictionary_sec_form_codes}}
+
+Other public company data: \code{\link{get_data_sec_failed_to_deliver_securities}},
+  \code{\link{get_data_sec_xbrl_periods}}
+
+Other transaction data: \code{\link{get_data_dtcc_most_recent_trades}},
+  \code{\link{get_data_dtcc_trades}},
+  \code{\link{get_data_nareit_mergers_acquisitions}}
 }
 

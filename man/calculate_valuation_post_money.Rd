@@ -2,22 +2,43 @@
 % Please edit documentation in R/cf_functions.R
 \name{calculate_valuation_post_money}
 \alias{calculate_valuation_post_money}
-\title{Calculates range of post investment valuations}
+\title{Post money valuation splits}
 \usage{
 calculate_valuation_post_money(pre_money_valuation = "$45,000,000",
   percent_sold = "10\%", return_wide = T)
 }
 \arguments{
-\item{pre_money_valuation}{Vector of of valuations in numeric or character}
+\item{pre_money_valuation}{vector of of valuations in numeric or character}
 
-\item{percent_sold}{Vector of of amount of business sold in percent or character percent form}
+\item{percent_sold}{vector of of amount of business sold in percent or character percent form}
 
 \item{return_wide}{Return data in wide or long form}
 }
+\value{
+a \code{data_frame()}
+}
 \description{
-Calculates range of post investment valuations
+This function calculates the the post-money
+ownership splits of an entity for specified inputs.
 }
 \examples{
 calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold = "10\%", return_wide = T)
+}
+\seealso{
+Other calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flow_waterfall}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_days_accrued_pref}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{calculate_leverage_metrics}},
+  \code{\link{calculate_loan_payment}},
+  \code{\link{calculate_residual_valuation_cap_rates}},
+  \code{\link{calculate_residual_valuation_ebitda_multiples}},
+  \code{\link{calculate_share_proceeds}},
+  \code{\link{tidy_promote_structure}}
+
+Other venture capital: \code{\link{get_data_cb_unicorns}},
+  \code{\link{get_data_ycombinator_alumni}}
 }
 

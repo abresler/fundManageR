@@ -2,17 +2,21 @@
 % Please edit documentation in R/visualize_functions.R
 \name{visualize_data_frame}
 \alias{visualize_data_frame}
-\title{Visualize a data frame}
+\title{Data frame visualization}
 \usage{
 visualize_data_frame(data, edit = F)
 }
 \arguments{
 \item{data}{A data frame}
 
-\item{edit}{Do you wish to edit the data}
+\item{edit}{\code{TRUE} edit the data frame}
+}
+\value{
+\code{htmlwidget}
 }
 \description{
-Visualize a data frame
+This function allows a data frame to
+be viewed and edited via the \code{listviewer} package.
 }
 \examples{
 visualize_data_frame(mtcars)

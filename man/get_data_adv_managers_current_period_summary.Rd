@@ -2,24 +2,102 @@
 % Please edit documentation in R/adv_functions.R
 \name{get_data_adv_managers_current_period_summary}
 \alias{get_data_adv_managers_current_period_summary}
-\title{Get ADV filing data for the most recent filing period}
+\title{ADV managers most recent summary data}
 \usage{
-get_data_adv_managers_current_period_summary(file_directory = NULL,
-  folder_name = "adv_data", remove_files = F, empty_trash = F)
+get_data_adv_managers_current_period_summary(select_names = c("dateDataADV",
+  "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC",
+  "nameEntityManager", "nameEntityManagerLegal", "addressOfficePrimary",
+  "addressStreet1OfficePrimary", "addressStreet2OfficePrimary",
+  "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary",
+  "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC",
+  "dateADVLatest", "urlManager", "isForeignRegisteredEntity",
+  "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI",
+  "hasAUMGreater100M",      "typeEntity", "countryEntityOrganized",
+  "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal",
+  "amountAUMDiscretionary", "amountAUMNonDiscretionary",
+  "countAccountsDiscretionary", "countAccountsNonDiscretionary",
+  "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM",
+  "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission",
+  "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer",
+  "isBrokerDealerRepresentative", "isCommodityPoolOperator",     
+  "isFuturesMerchant", "isRealEstateBrokerDealerAgent",
+  "isInsuranceBrokerAgent", "isBank", "isTrustCompany",
+  "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer",
+  "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm",
+  "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson",
+  "countEmployeesBrokerDealer",
+  "countEmployeesStateRegisteredInvestmentAdviser",
+  "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities",
+  "countEmployeesLicensedInsuranceAgents",     
+  "countEmployeesSolicitAdvisoryClients", "hasManagerFelonyPleaConviction",
+  "hasManagerFelonyCharge", "hasManagerMisdemeanorPleaConviction"),
+  return_message = TRUE)
 }
 \arguments{
-\item{file_directory}{Location of the directory you want to save your data into, if none specified a temporary file will be created}
+\item{return_message}{return a message after parsing data}
 
-\item{folder_name}{Name of the folder you want the data to be downloaded into}
+\item{file_directory}{directory you want to save your data into, if none specified a temporary file will be created}
 
-\item{remove_files}{Remove the files from the folders}
+\item{folder_name}{older you want the data to be downloaded into}
 
-\item{empty_trash}{Do you wish to empty the trash after being read into R}
+\item{remove_files}{remove the files from the folders}
+
+\item{empty_trash}{empty the trash after being read into R}
+}
+\value{
+a data frame
 }
 \description{
-Get ADV filing data for the most recent filing period
+This function returns abbreviated ADV data for
+all filing managers for the most recent period.
+}
+\details{
+For multiple periods and all information see \code{\link{get_data_adv_managers_periods_summariess}}
 }
 \examples{
-get_data_adv_managers_current_period_summary(ile_directory = NULL, folder_name = 'adv_data', remove_files = T, empty_trash = T)
+#' \dontrun{
+get_data_adv_managers_current_period_summary(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasManagerFelonyPleaConviction", "hasManagerFelonyCharge", "hasManagerMisdemeanorPleaConviction"))
+}
+}
+\seealso{
+Other ADV: \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_periods_summaries}}
+
+Other IAPD: \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_finra_people}}
+
+Other entity search: \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_data_ycombinator_alumni}}
+
+Other fund data: \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_metadata}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_money_market_funds}}
 }
 

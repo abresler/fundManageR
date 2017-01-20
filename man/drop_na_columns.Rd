@@ -2,17 +2,26 @@
 % Please edit documentation in R/utils.R
 \name{drop_na_columns}
 \alias{drop_na_columns}
-\title{Drops NA columns}
+\title{Drop NA columns}
 \usage{
 drop_na_columns(data)
 }
 \arguments{
-\item{data}{}
+\item{data}{a \code{data frame}}
+}
+\value{
+\code{data_frame}
 }
 \description{
-Drops NA columns
+This function drops NA
+columns from a specified data frame.
 }
 \examples{
 data_frame(nameFirm = 'Goldman Sachs', countSuperHeros = NA, countCriminals = 0, countFinedEmployees = 10) \%>\% drop_na_columns()
+}
+\seealso{
+Other utility function: \code{\link{get_class_df}},
+  \code{\link{tidy_column_formats}},
+  \code{\link{tidy_column_relations}}
 }
 

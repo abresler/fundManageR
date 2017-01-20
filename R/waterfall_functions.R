@@ -1,24 +1,32 @@
-#' Caclulate an Interal Rate of Return given a vectors of dates and cash flows.
+#' Interal rate of return
 #'
-#' @param cash_flows A vector of cash flows
-#' @param dates A vector of dates
-#' @param date_format Date formate
-#' @param scale_to_100 Scale to 100
-#' @param return_percentage Return percentages
-#' @param return_df Return a data frame
-#' @param return_message
+#' This function returns a data frame that produces
+#' the \href{https://en.wikipedia.org/wiki/Internal_rate_of_return}{internal rate of return}
+#' for specified dates and cash flows
+#'
+#' @param cash_flows vector of cash flows
+#' @param dates vector of dates, year-month-date format
+#' @param date_format date format
+#' @param scale_to_100 \code{TRUE} scale to 100
+#' @param return_percentage \code{TRUE} return percentages
+#' @param return_df \code{TRUE} returns a data frame
+#' @param return_message \code{TRUE} return a message after data import
 #' @importFrom magrittr %>%
 #' @importFrom formattable digits currency percent
 #' @importFrom lubridate ymd
 #' @importFrom dplyr data_frame
 #'
-#' @return
+#' @return \code{data_frame}
+#' @family calculation
+#' @family leveraged finance calculation
+#' @family partnership calculation
 #' @export
 #'
-#' @examples calculate_irr_periods(dates = c("2016-06-01","2017-05-31", "2018-05-31", "2019-05-31", "2020-05-31", "2021-05-31",
+#' @examples
+#' calculate_irr_periods(dates = c("2016-06-01","2017-05-31", "2018-05-31", "2019-05-31", "2020-05-31", "2021-05-31",
 #' "2022-05-31", "2023-05-31", "2024-05-31", "2025-05-31", "2026-05-31"), cash_flows = c( -3000, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242,
-#' 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547278 ), date_format = '%Y-%m-%d', scale_to_100 = F,
-#' return_percentage = F, return_df = T, return_wide = T, return_message = T)
+#' 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547278 ), date_format = '%Y-%m-%d', scale_to_100 = FALSE,
+#' return_percentage = FALSE, return_df = TRUE, return_wide = TRUE, return_message = TRUE)
 calculate_irr_periods <-
   function(dates = c(
     "2016-06-01",
@@ -47,11 +55,11 @@ calculate_irr_periods <-
     478.515738547278
   ),
   date_format = '%Y-%m-%d',
-  scale_to_100 = F,
-  return_percentage = F,
-  return_df = T,
-  return_wide = T,
-  return_message = T) {
+  scale_to_100 = FALSE,
+  return_percentage = FALSE,
+  return_df = TRUE,
+  return_wide = TRUE,
+  return_message = TRUE) {
     secant <-
       function(par,
                fn,
@@ -156,10 +164,10 @@ calculate_irr_periods <-
     }
 
     if (return_message) {
-      "Cash Flow Produces a " %>%
+      "Cash Flow produces a " %>%
         paste0(
           irr * 100,
-          '% irr\nFrom ',
+          '% IRR\nFrom ',
           dateStart,
           ' to ',
           dateEnd,
@@ -182,24 +190,36 @@ calculate_irr_periods <-
 
 
 
-#' Calculate summary cash flows given a vector of dates and cash flows
+#' Summary cash flows
+#'
+#' This function returns a data frame of
+#' summarised cash flows for given a set of inputs.
 #'
 #' @param dates vector of dates
-#' @param cash_flows Vector of cash flows
-#' @param working_capital Amount of working capital, minimum cash
-#' @param remove_cumulative_cols Remove summary columns
-#' @param include_final_day Include the final day in calculation
-#' @param distribution_frequency When is the cash distributed
-#' @import tidyr dplyr stringr formattable
+#' @param cash_flows vector of cash flows
+#' @param working_capital amount of working capital, minimum cash
+#' @param remove_cumulative_cols \code{TRUE} remove summary columns
+#' @param include_final_day \code{TRUE} include the final day in calculation
+#' @param distribution_frequency frequency of distribution \itemize{
+#' \\item \code{NA}: NA
+#' \item \code{weekly}: weekly distributions
+#' \item \code{monthly}: monthly distributions
+#' \item \code{quarterly}: quarterly distributions
+#' \item \code{annually}: annual distributions
+#' \item \code{sale}: distribution on residual
+#' }
+#' @import tidyr dplyr stringr formattable purrr
 #' @importFrom magrittr %>%
 #' @importFrom lubridate ymd
-#' @return
+#' @return data_frame
 #' @export
-#'
+#' @family calculation
+#' @family leveraged finance calculation
+#' @family partnership calculation
 #' @examples
 #' calculate_cash_flow_dates(dates = c( "2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31", "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31" ),
 #' cash_flows = c( -4151601, 119499.036215643, 257186.036215643, 447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166, 8788626.7640915 ),
-#' working_capital = 125000, remove_cumulative_cols = T, include_final_day = T, distribution_frequency = NA)
+#' working_capital = 125000, remove_cumulative_cols = TRUE, include_final_day = TRUE, distribution_frequency = NA)
 calculate_cash_flow_dates <-
   function(dates = c(
     "2016-09-01",
@@ -222,8 +242,8 @@ calculate_cash_flow_dates <-
     8788626.76409155
   ),
   working_capital = 125000,
-  remove_cumulative_cols = T,
-  include_final_day = T,
+  remove_cumulative_cols = TRUE,
+  include_final_day = TRUE,
   distribution_frequency = NA) {
     distribution_frequencies <-
       c(NA,
@@ -231,8 +251,6 @@ calculate_cash_flow_dates <-
         'monthly',
         'quarterly',
         'yearly',
-        'annually',
-        'residual',
         'sale')
 
     distribution_frequency <-
@@ -245,7 +263,7 @@ calculate_cash_flow_dates <-
     }
     dates <-
       dates %>%
-      ymd
+      ymd()
 
     is_annual_budget <-
       as.numeric((dates[2] - dates[1] + 1)) %%
@@ -394,20 +412,22 @@ calculate_cash_flow_dates <-
 #' Calculate returns for a given set of cash flows
 #'
 #' @param dates vector of dates
-#' @param cash_flows Vector of cash flows
-#' @param working_capital Amount of working capital, minimum cash
-#' @param remove_cumulative_cols Remove summary columns
-#' @param include_final_day Include the final day in calculation
-#' @param distribution_frequency When is the cash distributed
-#' @param date_format Format of the date inputs
-#' @param scale_to_100 Scale numbers to 100
-#' @param return_percentage Return percentages
+#' @param cash_flows vector of cash flows
+#' @param working_capital amount of working capital, minimum cash
+#' @param remove_cumulative_cols remove summary columns
+#' @param include_final_day include the final day in calculation
+#' @param distribution_frequency when is the cash distributed
+#' @param date_format format of the date inputs
+#' @param scale_to_100 scale numbers to 100
+#' @param return_percentage return percentages
 #' @param return_df return data frame
-#' @param return_message return message
+#' @param return_message include a message
 #'
-#' @return
+#' @return data_frame
 #' @export
-#'
+#' @family calculation
+#' @family leveraged finance calculation
+#' @family partnership calculation
 #' @examples
 #' calculate_cash_flows_returns(dates = c( "2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31", "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31" ),
 #' cash_flows = c( -4151601, 119499.036215643, 257186.036215643, 447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166, 8788626.7640915 ),
@@ -534,17 +554,25 @@ parse_promote_structure <-
   }
 
 
-#' Parse Vector of Promotes into a data frame
+#' Tidy waterfall structure
 #'
-#' @param promote_structures A vector of promote structures
-#' @param return_wide
+#' This function parses a character vector
+#' describing a partnership waterfall into a
+#' date frame.  The function looks to recogonize
+#' whether the promote is based upon an internal rate of return
+#' or capital multiple hurdle.
 #'
-#' @return
+#' @param promote_structures character vector of promote structures
+#' @param return_wide return data in wide form
+#'
+#' @return a data frame
 #' @export
 #' @importFrom formattable percent
+#' @family calculation
+#' @family partnership calculation
 #' @examples
-#' get_data_promote_structure(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"), return_wide = T)
-get_data_promote_structure <-
+#' tidy_promote_structure(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"), return_wide = T)
+tidy_promote_structure <-
   function(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"),
            return_wide = F) {
     parse_promote_structure_safe <-
@@ -600,23 +628,28 @@ get_data_promote_structure <-
     return(promote_data)
   }
 
-#' Calculate accrued preference for a stated period of days
+#' Accrued preference
 #'
-#' @param pct_pref
-#' @param is_actual_360
-#' @param days
-#' @param equity_bb
-#' @param pref_accrued_bb
+#' This function calcuates accrued
+#' preferences for a specified inputs
 #'
-#' @return
+#' @param pct_pref rate of accrued preference
+#' @param is_actual_360 \code{TRUE} calculate rate actual/360 terms
+#' @param days count of days
+#' @param equity_bb vector of begining equity balance
+#' @param pref_accrued_bb vector of accrued preference begining balance
+#'
+#' @return a \code{data_Fram}
 #' @export
 #' @import dplyr
 #' @importFrom formattable currency
+#' @family calculation
+#' @family partnership calculation
 #' @examples
 #' calculate_days_accrued_pref(pct_pref = .1, is_actual_360 = T, days = 31, equity_bb = 1700000.00, pref_accrued_bb = 0)
 calculate_days_accrued_pref <-
   function(pct_pref = .1,
-           is_actual_360 = T,
+           is_actual_360 = TRUE,
            days = 31,
            equity_bb = 1700000.00,
            pref_accrued_bb = 0) {
@@ -770,27 +803,35 @@ get_initial_equity_df <-
   }
 
 
-#'  Calculate a cash flow waterfall for a given set of dates, cash flows and promote structure
+#'  Cash-flow waterfall
+#'
+#'  This function performs waterfall calculations
+#'  on a set of leveraged or unleveraged cash flows
+#'  based upon the user's inputs
 #'
 #'
-#' @param dates A vector of dates in year-month-day format
-#' @param cash_flows A vector of cash flows
-#' @param working_capital Amount of working capital
-#' @param promote_structure Vector of promte structures
-#' @param distribution_frequency
-#' @param is_actual_360 Is the rate of return actual 360
-#' @param widen_promote_structure Widen the promote structure
-#' @param bind_to_cf Bind results to data frame
-#' @param remove_zero_cols remove zeroed columns
-#' @param widen_waterfall Return waterfall in wide form
+#' @param dates vector of dates in year-month-day format
+#' @param cash_flows vector of cash flows
+#' @param working_capital amount of working capital
+#' @param promote_structure character vector of promote structures
+#' @param distribution_frequency frequency of distributions
+#' @param is_actual_360 \code{TRUE} is the rate of return actual 360
+#' @param widen_promote_structure \code{TRUE} widen the promote structure
+#' @param bind_to_cf \code{TRUE}  bind results to data frame
+#' @param remove_zero_cols \code{TRUE} remove zero-value columns
+#' @param widen_waterfall \code{TRUE} returns waterfall in wide form
 #' @import tidyr formattable dplyr stringr
-#' @return
+#' @return data_frame
 #' @export
-#'
+#' @family calculation
+#' @family leveraged finance calculation
+#' @family partnership calculation
 #' @examples
-#' calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20", "2016-10-15"), cash_flows = c(-100000, -200000, 698906.76849), working_capital = 0,
-#' promote_structure = c("20 / 12", "30 / 18"), distribution_frequency = NA, is_actual_360 = T, widen_promote_structure = F, bind_to_cf = F,
-#' remove_zero_cols = T, widen_waterfall = F)
+#' calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20", "2016-10-15"), cash_flows = c(-100000, -200000, 698906.76849),
+#' working_capital = 0, promote_structure = c("20 / 12", "30 / 18"),
+#'  distribution_frequency = NA, is_actual_360 = TRUE,
+#'  widen_promote_structure = FALSE, bind_to_cf = FALSE,
+#' remove_zero_cols = TRUE, widen_waterfall = FALSE)
 calculate_cash_flow_waterfall <-
   function(dates =
              c("2015-03-11", "2015-11-20", "2016-10-15"),
@@ -798,11 +839,11 @@ calculate_cash_flow_waterfall <-
            working_capital = 0,
            promote_structure = c("20 / 12", "30 / 18"),
            distribution_frequency = NA,
-           is_actual_360 = T,
-           widen_promote_structure = F,
-           bind_to_cf = F,
-           remove_zero_cols = T,
-           widen_waterfall = F) {
+           is_actual_360 = TRUE,
+           widen_promote_structure = FALSE,
+           bind_to_cf = FALSE,
+           remove_zero_cols = TRUE,
+           widen_waterfall = FALSE) {
     options(scipen = 999999)
     cf_data <-
       calculate_cash_flow_dates(
@@ -822,8 +863,8 @@ calculate_cash_flow_waterfall <-
       mutate(cashDistributionAvailable = -pmin(0, capitalCF) %>% currency)
 
     promote_df <-
-      get_data_promote_structure(promote_structures = promote_structure,
-                                 return_wide = widen_promote_structure)
+      tidy_promote_structure(promote_structures = promote_structure,
+                             return_wide = widen_promote_structure)
 
     waterfall_periods <-
       waterfall_data$idPeriod
@@ -1445,28 +1486,40 @@ calculate_cash_flow_waterfall <-
     return(waterfall_df)
   }
 
-#' Calculate partership's waterfall and cash flow splits given a set of parameters
+#' Partnership waterfall and cash flows
 #'
-#' @param dates A vector of dates in year-month-day format
-#' @param cash_flows A vector of cash flows
-#' @param working_capital Amount of working capital
-#' @param promote_structure Vector of structures
-#' @param general_partner_pct Percentage of capital provided by GP
-#' @param gp_promote_share Share of promote to GP
-#' @param unnest_data Unnest final results
-#' @param exclude_partnership_total Exclude total column
-#' @param distribution_frequency
-#' @param is_actual_360 Is interest calculated on actual/360 method
-#' @param widen_promote_structure
-#' @param bind_to_cf Bind results to data frame
-#' @param remove_zero_cols remove zeroed columns
-#' @param widen_waterfall Return waterfall in wide form
+#' This function is a variant of the \code{\link{calculate_cash_flow_waterfall}}
+#' function that also includes the calculation of the share of cash flow available
+#' to each member based upon the specified percentage equity splits and promote allocation
 #'
-#' @return
+#' @param dates vector of dates in year-month-day format
+#' @param cash_flows vector of cash flows
+#' @param working_capital amount of working capital
+#' @param promote_structure vector of the promote structure
+#' @param general_partner_pct ercentage of capital provided by general partner
+#' @param gp_promote_share share of promote to general partner
+#' @param unnest_data unnest final results
+#' @param exclude_partnership_total exclude total columns
+#' @param distribution_frequency frequency of distribution
+#' @param is_actual_360 \code{TRUE} is the rate of return actual 360
+#' @param widen_promote_structure \code{TRUE} widen the promote structure
+#' @param bind_to_cf \code{TRUE}  bind results to data frame
+#' @param remove_zero_cols \code{TRUE} remove zero-value columns
+#' @param widen_waterfall \code{TRUE} returns waterfall in wide form
+#' @family calculation
+#' @family leveraged finance calculation
+#' @family partnership calculation
+#' @return \code{data_frame}O
 #' @export
 #'
 #' @examples
-#' calculate_cash_flow_waterfall_partnership(dates =c("2016-09-01", "2017-08-31"), cash_flows = c(-1500000, 105000000), working_capital = 200000, promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"), general_partner_pct = .05, gp_promote_share = 1, unnest_data = F, exclude_partnership_total = F, distribution_frequency = 'annually', is_actual_360 = T, widen_promote_structure = F, bind_to_cf = F, remove_zero_cols = T, widen_waterfall = F)
+#' calculate_cash_flow_waterfall_partnership(dates =c("2016-09-01", "2017-08-31"), cash_flows = c(-1500000, 105000000),
+#' working_capital = 200000, promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
+#' general_partner_pct = .05, gp_promote_share = 1, unnest_data = F,
+#' exclude_partnership_total = F,
+#' distribution_frequency = 'annually', is_actual_360 = TRUE,
+#' widen_promote_structure = FALSE, bind_to_cf = FALSE, remove_zero_cols = TRU,
+#' widen_waterfall = FALSE)
 calculate_cash_flow_waterfall_partnership <-
   function(dates =
              c("2016-09-01",
@@ -1475,17 +1528,17 @@ calculate_cash_flow_waterfall_partnership <-
                           105000000),
            working_capital = 200000,
            promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
-           assign_to_environment = T,
+           assign_to_environment = TRUE,
            general_partner_pct = .05,
            gp_promote_share = 1,
-           unnest_data = F,
-           exclude_partnership_total = F,
+           unnest_data = FALSE,
+           exclude_partnership_total = FALSE,
            distribution_frequency = NA,
-           is_actual_360 = T,
-           widen_promote_structure = F,
-           bind_to_cf = F,
-           remove_zero_cols = T,
-           widen_waterfall = F) {
+           is_actual_360 = TRUE,
+           widen_promote_structure = FALSE,
+           bind_to_cf = FALSE,
+           remove_zero_cols = TRUE,
+           widen_waterfall = FALSE) {
     options(scipen = 9999999)
     pct_gp <-
       general_partner_pct %>% scale_to_pct()
@@ -1503,8 +1556,8 @@ calculate_cash_flow_waterfall_partnership <-
       data_frame(tierWaterfall = 1,
                  nameTier = "Return of Equity") %>%
       bind_rows(
-        get_data_promote_structure(promote_structures = promote_structure,
-                                   return_wide = F) %>%
+        tidy_promote_structure(promote_structures = promote_structure,
+                               return_wide = F) %>%
           mutate(tierWaterfall = tierWaterfall + 1) %>%
           dplyr::select(tierWaterfall, nameTier)
       )
@@ -1663,7 +1716,7 @@ calculate_cash_flow_waterfall_partnership <-
           df_name <-
             data$idDF[[x]]
 
-          assign(x = df_name, eval(table_data), env = .GlobalEnv)
+          assign(x = df_name, eval(table_data), envir = .GlobalEnv)
         })
       data <-
         data %>%

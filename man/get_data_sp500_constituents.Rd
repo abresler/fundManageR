@@ -2,17 +2,26 @@
 % Please edit documentation in R/indicies.R
 \name{get_data_sp500_constituents}
 \alias{get_data_sp500_constituents}
-\title{Get S&P 500 constituent data}
+\title{S&P 500 constituents}
 \usage{
 get_data_sp500_constituents(return_message = TRUE)
 }
 \arguments{
-\item{return_message}{return a message \code{TRUE, FALSE}}
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+a \code{data_frame}
 }
 \description{
-Get S&P 500 constituent data
+This function returns the constituents
+in the S&P 500.
 }
 \examples{
 get_data_sp500_constituents(return_message = TRUE)
+}
+\seealso{
+Other index constituents: \code{\link{get_data_crsp_indicies_constituents}},
+  \code{\link{get_data_msci_indicies_constituents}},
+  \code{\link{get_data_nareit_constituent_years}}
 }
 

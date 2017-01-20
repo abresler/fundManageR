@@ -1,9 +1,12 @@
-#' Visualize a data frame
+#' Data frame visualization
+#'
+#' This function allows a data frame to
+#' be viewed and edited via the \code{listviewer} package.
 #'
 #' @param data A data frame
-#' @param edit Do you wish to edit the data
+#' @param edit \code{TRUE} edit the data frame
 #'
-#' @return
+#' @return \code{htmlwidget}
 #' @export
 #' @import listviewer
 #' @examples

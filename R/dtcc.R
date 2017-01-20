@@ -159,7 +159,7 @@ get_dtcc_name_df <-
           "isExotic",
           "hasEmbeddedOption",
           "codeOptionFamily",
-          "isCleared",
+          "type",
           "idTypeCollateralization",
           "hasEndUserException",
           "isBespokeSwap",
@@ -391,8 +391,8 @@ parse_for_underlying_asset <-
       if (has_desc_df) {
         description_df <-
           data %>%
-          mutate(idRow = 1:n()) %>%
           filter(!descriptionUnderlyingAsset1 %>% is.na()) %>%
+          mutate(idRow = 1:n()) %>%
           select(idRow, descriptionUnderlyingAsset1)
 
         desc_df <-
@@ -412,8 +412,9 @@ parse_for_underlying_asset <-
 
             items <-
               items[!items == 'NA']
-
-            if (items %>% length() == 2) {
+            count_items <-
+              items %>% length()
+            if (count_items == 2) {
               df <-
                 data_frame(
                   idRow = row_number,
@@ -424,7 +425,7 @@ parse_for_underlying_asset <-
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
-            if (items %>% length() == 3) {
+            if (count_items == 3) {
               df <-
                 data_frame(
                   idRow = row_number,
@@ -435,7 +436,7 @@ parse_for_underlying_asset <-
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
-            if (items %>% length() == 4) {
+            if (count_items == 4) {
               df <-
                 data_frame(
                   idRow = row_number,
@@ -445,6 +446,81 @@ parse_for_underlying_asset <-
                 spread(item, values) %>%
                 mutate(idSeries = idSeries %>% as.numeric())
             }
+
+            if (count_items == 5) {
+              df <-
+                data_frame(
+                  idRow = row_number,
+                  item = c(
+                    'idIndex',
+                    'idSubIndex',
+                    'idSeries',
+                    'idSubIndex1',
+                    'idRating'
+                  ),
+                  values = items
+                ) %>%
+                spread(item, values) %>%
+                mutate(idSeries = idSeries %>% as.numeric())
+            }
+
+            if (count_items == 6) {
+              df <-
+                data_frame(
+                  idRow = row_number,
+                  item = c(
+                    'idIndex',
+                    'idSubIndex',
+                    'idSeries',
+                    'idSeries1',
+                    'idRating',
+                    'idOther'
+                  ),
+                  values = items
+                ) %>%
+                spread(item, values) %>%
+                mutate(idSeries = idSeries %>% as.numeric())
+            }
+
+            if (count_items == 7) {
+              df <-
+                data_frame(
+                  idRow = row_number,
+                  item = c(
+                    'idIndex',
+                    'idSubIndex',
+                    'idSeries',
+                    'idSeries1',
+                    'idRating',
+                    'idOther',
+                    'idOther1'
+                  ),
+                  values = items
+                ) %>%
+                spread(item, values) %>%
+                mutate(idSeries = idSeries %>% as.numeric())
+            }
+
+            if (count_items == 8) {
+              df <-
+                data_frame(
+                  idRow = row_number,
+                  item = c(
+                    'idIndex',
+                    'idSubIndex',
+                    'idSeries',
+                    'idSeries1',
+                    'idRating',
+                    'idOther',
+                    'idOther1',
+                    'idOther2'
+                  ),
+                  values = items
+                ) %>%
+                spread(item, values) %>%
+                mutate(idSeries = idSeries %>% as.numeric())
+            }
+
             return(df)
           }) %>%
           distinct()
@@ -464,7 +540,7 @@ resolve_taxonomy <-
   function(data) {
     has_taxonomy <-
       'descriptionTaxonomy' %in% names(data)
-    if (has_taxonomy){
+    if (has_taxonomy) {
       df_taxonomy <-
         data %>%
         filter(!descriptionTaxonomy %>% is.na()) %>%
@@ -474,7 +550,7 @@ resolve_taxonomy <-
 
       df_taxonomies <-
         1:nrow(df_taxonomy) %>%
-        map_df(function(x){
+        map_df(function(x) {
           tax <-
             df_taxonomy$descriptionTaxonomy[[x]]
           levels <-
@@ -487,11 +563,17 @@ resolve_taxonomy <-
             str_split('\\:') %>%
             flatten_chr()
           asset <-
-            tax_items[[1]]
+            tax_items[[1]] %>% str_to_upper()
 
           if (asset == 'COMMODITY') {
             items <-
-              c('typeFinancialProduct', 'nameProduct', 'nameSubProduct', 'typeFuture', 'methodDelivery')
+              c(
+                'typeFinancialProduct',
+                'nameProduct',
+                'nameSubProduct',
+                'typeFuture',
+                'methodDelivery'
+              )
 
             df_long <-
               data_frame(value = tax_items, item = items[1:length(tax_items)]) %>%
@@ -509,7 +591,12 @@ resolve_taxonomy <-
 
           if (asset == "CREDIT") {
             items <-
-              c('typeFinancialProduct', 'typeIndex', 'nameIndexReference', 'nameSubIndexReference')
+              c(
+                'typeFinancialProduct',
+                'typeIndex',
+                'nameIndexReference',
+                'nameSubIndexReference'
+              )
 
             df_long <-
               data_frame(value = tax_items, item = items[1:length(tax_items)]) %>%
@@ -527,7 +614,12 @@ resolve_taxonomy <-
 
           if (asset == "EQUITY") {
             items <-
-              c('typeFinancialProduct', 'typeFuture', 'nameIndexReference', 'typeIndexReference')
+              c(
+                'typeFinancialProduct',
+                'typeFuture',
+                'nameIndexReference',
+                'typeIndexReference'
+              )
 
             df_long <-
               data_frame(value = tax_items, item = items[1:length(tax_items)]) %>%
@@ -542,9 +634,14 @@ resolve_taxonomy <-
               select(one_of(col_order))
           }
 
-          if (asset == "INTERESTRATE") {
+          if (asset %in% c("FOREIGNEXCHANGE", "INTERESTRATE")) {
             items <-
-              c('typeFinancialProduct', 'typeFuture', 'nameIndexReference', 'typeIndexReference')
+              c(
+                'typeFinancialProduct',
+                'typeFuture',
+                'nameIndexReference',
+                'typeIndexReference'
+              )
 
             df_long <-
               data_frame(value = tax_items, item = items[1:length(tax_items)]) %>%
@@ -558,7 +655,9 @@ resolve_taxonomy <-
               spread(item, value) %>%
               select(one_of(col_order))
           }
-
+          df <-
+            df %>%
+            mutate_all(as.character)
           return(df)
         })
 
@@ -631,19 +730,6 @@ download_dtcc_url <-
     return(data)
   }
 
-#' Get DTCC cleared trades by type and day
-#'
-#' @param assets type of DTCC cleared financial product \code{NULL, COMMODITIES, CREDITS, EQUITIES, FOREX, RATES}
-#' @param start_date date starting \code{"Y-M-D"}
-#' @param end_date date ending \code{"Y-M-D"}
-#' @param nest_data return a nested data frame \code{TRUE, FALSE}
-#' @param return_message return a message \code{TRUE, FALSE}
-#' @import curl dplyr purrr readr lubridate stringr tidyr
-#' @return
-#' @export
-#'
-#' @examples
-#' get_data_dtcc_assets_days(assets = NULL, start_date = "2017-01-05", end_date = Sys.Date(), nest_data = TRUE, return_message = FALSE)
 get_data_dtcc_assets_days <-
   function(assets = NULL,
            start_date = "2016-12-01",
@@ -786,23 +872,42 @@ parse_most_recent_url <-
     return(df)
   }
 
-#' Get DTCC most recent cleared trades
+#' DTCC most recent trades by product
 #'
-#' @param assets type of DTCC cleared financial product \code{NULL, COMMODITIES, CREDITS, EQUITIES, FOREX, RATES}
-#' @param nest_data
-#' @param return_message
+#' This function returns information about the most recent
+#' trades cleared by The Depository Trust & Clearing Corporation [DTCC]
+#' for specified product type.
 #'
-#' @return
+#' @param assets type of DTCC cleared financial product \itemize{
+#' \item \code{NULL}: returns all product types (default)
+#' \item \code{COMMODITIES}: Commodities
+#' \item \code{CREDITS}: Credit Default Swaps
+#' \item \code{EQUITIES}: Equities
+#' \item \code{FOREX}: Foreign Exchange
+#' \item \code{RATES}: Interest Rates
+#' }
+#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @references \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
+#' @param return_message \code{TRUE} return a message after data import
+#' @param nest_data \code{TRUE} return nested data frame
+#'
+#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
+#' where \code{nest_data} is \code{FALSE} a data_frame
 #' @export
+#' @family DTCC
+#' @family real-time data
+#' @family transaction data
 #' @import rvest httr dplyr stringr tidyr purrr
 #' @examples
-#' get_data_dtcc_most_recent_trades(assets = NULL)
+#' get_data_dtcc_most_recent_trades(assets = NULL, nest_data = FALSE)
 #' get_data_dtcc_most_recent_trades(assets = c('credits', 'equities', 'rates))
 
 get_data_dtcc_most_recent_trades <-
   function(assets = NULL,
            nest_data = TRUE,
            return_message = TRUE) {
+    assets <-
+      assets %>% str_to_upper()
     css_df <-
       get_dtcc_recent_schema_df()
 
@@ -836,7 +941,6 @@ get_data_dtcc_most_recent_trades <-
     all_data <-
       all_data %>%
       parse_for_underlying_asset() %>%
-      r
       suppressWarnings() %>%
       select(which(colMeans(is.na(.)) < 1))
 
@@ -896,7 +1000,7 @@ get_c_url_data <-
       dtcc_df %>%
       mutate_at(dtcc_df %>% select(
         matches(
-          "PRICE_NOTATION2|PRICE_NOTATION3|OPTION_EXPIRATION_DATE|OPTION_LOCK_PERIOD|OPTION_PREMIUM|ADDITIONAL_PRICE_NOTATION|ROUNDED_NOTIONAL_AMOUNT_1|ROUNDED_NOTIONAL_AMOUNT_2|OPTION_STRIKE_PRICE"
+          "PRICE_NOTATION2|PRICE_NOTATION3|OPTION_EXPIRATION_DATE|OPTION_LOCK_PERIOD|OPTION_PREMIUM|ADDITIONAL_PRICE_NOTATION|ROUNDED_NOTIONAL_AMOUNT_1|ROUNDED_NOTIONAL_AMOUNT_2|OPTION_STRIKE_PRICE|ORIGINAL_DISSEMINATION_ID"
         )
       ) %>% names(),
       funs(. %>% as.character()))
@@ -921,17 +1025,6 @@ get_data_today <-
     return(data)
   }
 
-#' Get days cleared DTCC trades by asset type
-#'
-#' @param assets type of DTCC cleared financial product \code{NULL, COMMODITIES, CREDITS, EQUITIES, FOREX, RATES}
-#' @param nest_data return a nested data frame \code{TRUE, FALSE}
-#' @param return_message return a message \code{TRUE, FALSE}
-#'
-#' @return
-#' @export
-#' @import rvest httr dplyr stringr curlconverter tidyr purrr
-#' @examples
-#' get_data_dtcc_today(assets = NULL, return_message = TRUE, nest_data = FALSE)
 get_data_dtcc_today <-
   function(assets = NULL,
            nest_data = TRUE,
@@ -966,10 +1059,12 @@ get_data_dtcc_today <-
     get_data_today_safe <-
       purrr::possibly(get_data_today, data_frame())
 
-    if (!assets %>% is_null()) {
+    if (!assets %>% is_null() | assets %>% length() > 0) {
+      assets <-
+        assets %>% str_to_upper()
       assets_options <-
         df_types$nameAsset %>% unique()
-      if (assets %>% str_to_lower() %in% assets_options %>% sum() == 0) {
+      if (assets %>% str_to_upper() %in% assets_options %>% sum() == 0) {
         stop(
           list(
             "Assets can only be:\n",
@@ -985,6 +1080,7 @@ get_data_dtcc_today <-
 
     urls <-
       df_types$urlData
+
     all_data <-
       urls %>%
       sort(decreasing = T) %>%
@@ -992,7 +1088,9 @@ get_data_dtcc_today <-
         get_data_today(dtcc_url = x) %>%
           mutate(urlData = x)
       }) %>%
-      mutate(dateData = Sys.Date())
+      mutate(dateData = Sys.Date()) %>%
+      mutate_at(.cols = c('ORIGINAL_DISSEMINATION_ID'),
+                funs(. %>% as.numeric()))
 
     if (all_data %>% nrow() == 0) {
       return(all_data)
@@ -1010,6 +1108,18 @@ get_data_dtcc_today <-
       select(idAssetType, nameAsset, everything()) %>%
       suppressMessages()
 
+    all_data <-
+      all_data %>%
+      mutate_at(
+        all_data %>% select(matches("^priceNotation")) %>% names(),
+        funs(. %>% as.character() %>% readr::parse_number())
+      )
+    if ('isCleared' %in% names(all_data)) {
+      all_data <-
+        all_data %>%
+        mutate(isCleared = ifelse(isCleared == "C", TRUE, FALSE))
+    }
+
     if (return_message) {
       list(
         "Parsed ",
@@ -1020,12 +1130,161 @@ get_data_dtcc_today <-
         purrr::invoke(paste0, .) %>%
         message()
     }
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest(-c(dateData, nameAsset), .key = 'dataDTCC')
+    }
+    return(all_data)
+  }
 
+
+# all ---------------------------------------------------------------------
+
+
+#' DTCC trades by date and product
+#'
+#' This function returns information on derivatives trades cleared by the
+#' The Depository Trust & Clearing Corporation [DTCC] for specified dates
+#' and product types.
+#'
+#' @param assets type of DTCC cleared financial product \itemize{
+#' \item \code{NULL}: returns all product types (default)
+#' \item \code{COMMODITIES}: Commodities
+#' \item \code{CREDITS}: Credit Default Swaps
+#' \item \code{EQUITIES}: Equities
+#' \item \code{FOREX}: Foreign Exchange
+#' \item \code{RATES}: Interest Rates
+#' }
+#' @note Use \code{\link{get_data_dtcc_most_recent_trades}} for most recent trades
+#' @references \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
+#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset and action
+#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @param start_date date starting, must be in year-day-format
+#' @param end_date date ending, must be in year-month-day format
+#' @param include_today include today's trades
+#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @references \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
+#' @param return_message \code{TRUE} return a message after data import
+#' @param nest_data \code{TRUE} return nested data frame
+#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
+#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @export
+#' @family DTCC
+#' @family transaction data
+#' @import curl dplyr purrr readr lubridate stringr tidyr curlconverter
+#' @examples
+#' \dontrun{
+#' get_data_dtcc_trades()
+#' get_data_dtcc_trades(start_date = "2017-01-16")
+#' get_data_dtcc_trades(assets = c('credits', 'equities'), include_today = TRUE, start_date = '2017-01-10', end_date = Sys.Date(), nest_data = FALSE)
+#' }
+
+get_data_dtcc_trades <-
+  function(assets = NULL,
+           include_today = TRUE,
+           start_date = NULL,
+           end_date = NULL,
+           nest_data = TRUE,
+           return_message = TRUE) {
+    all_data <-
+      data_frame()
+
+    if (!assets %>% is_null()) {
+      assets <-
+        assets %>% str_to_upper()
+    }
+
+    if (include_today) {
+      today <-
+        get_data_dtcc_today(assets = assets,
+                            nest_data = FALSE,
+                            return_message = return_message)
+      if (today %>% nrow() > 0) {
+        today <-
+          today %>%
+          resolve_dtcc_name_df() %>%
+          select(which(colMeans(is.na(.)) < 1))
+
+        today <-
+          today %>%
+          mutate_at(today %>% select(matches(
+            "dateTime|idDisseminationOriginal|^date"
+          )) %>% names(),
+          funs(. %>% as.character())) %>%
+          mutate_at(today %>% select(matches("^amount|priceOptionStrike")) %>% names(),
+                    funs(. %>% as.numeric())) %>%
+          suppressWarnings()
+
+        all_data <-
+          all_data %>%
+          bind_rows(today)
+      }
+    }
+
+    if (!start_date %>% is_null()) {
+      if (end_date %>% is_null()) {
+        end_date <-
+          Sys.Date()
+      }
+
+      data <-
+        get_data_dtcc_assets_days(
+          assets = assets,
+          start_date = start_date,
+          end_date = end_date,
+          nest_data = FALSE,
+          return_message = return_message
+        )
+
+      data <-
+        data %>%
+        resolve_dtcc_name_df() %>%
+        mutate_at(data %>% select(
+          matches(
+            "^dateTime|idDisseminationOriginal|^date|^priceNotation"
+          )
+        ) %>% names(),
+        funs(. %>% as.character()))
+
+      data <-
+        data %>%
+        mutate_at(
+          data %>% select(matches("^priceNotation")) %>% names(),
+          funs(. %>% as.character() %>% readr::parse_number())
+        )
+
+
+
+      if (data %>% nrow() > 0) {
+        all_data <-
+          all_data %>%
+          bind_rows(data)
+      }
+    }
+
+    all_data <-
+      all_data %>%
+      mutate_at(all_data %>% select(matches("^dateTime[A-Z]")) %>% names(),
+                funs(. %>% lubridate::ymd_hms())) %>%
+      mutate_at(
+        all_data %>% select(matches("^date[A-Z]")) %>% select(-matches("^dateTime")) %>% names(),
+        funs(. %>% lubridate::ymd())
+      ) %>%
+      mutate_at(all_data %>% select(matches("^idDissemination")) %>% names(),
+                funs(. %>% as.character() %>% as.integer())) %>%
+      select(-c(urlData, idAssetType)) %>%
+      suppressMessages() %>%
+      suppressWarnings()
+
+    all_data <-
+      all_data %>%
+      arrange(desc(idDissemination))
 
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(dateData, nameAsset, typeAction), .key = 'dataDTCC')
+        nest(-c(dateData, nameAsset), .key = dataDTCC)
     }
     return(all_data)
   }

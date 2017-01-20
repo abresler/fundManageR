@@ -2,11 +2,45 @@
 % Please edit documentation in R/rank_and_filed_functions.R
 \name{get_data_sec_securities_filing_counts}
 \alias{get_data_sec_securities_filing_counts}
-\title{Get securities registration filing counts}
+\title{SEC Filing Counts}
 \usage{
 get_data_sec_securities_filing_counts(return_message = TRUE)
 }
+\arguments{
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+a \code{data_frame}
+}
 \description{
-Get securities registration filing counts
+This function returns counts of SEC filings
+by the type of form by year since 1994
+}
+\examples{
+get_data_sec_securities_filing_counts()
+}
+\seealso{
+Other SEC: \code{\link{get_data_mmf_owned_debt_securities}},
+  \code{\link{get_data_recent_insider_trades}},
+  \code{\link{get_data_rf_leis}},
+  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_sec_bankruptcies}},
+  \code{\link{get_data_sec_broker_dealers}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_cusips}},
+  \code{\link{get_data_sec_failed_to_deliver_securities}},
+  \code{\link{get_data_sec_filer}},
+  \code{\link{get_data_sec_filing_entities}},
+  \code{\link{get_data_sec_foia_requests}},
+  \code{\link{get_data_sec_investment_companies}},
+  \code{\link{get_data_sec_money_market_funds}},
+  \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_securities_metrics_by_exchange}},
+  \code{\link{get_data_sec_xbrl_periods}},
+  \code{\link{get_data_securities_offerings}},
+  \code{\link{get_data_us_public_companies}},
+  \code{\link{get_dictionary_sec_filing_codes}},
+  \code{\link{get_dictionary_sec_form_codes}}
 }
 

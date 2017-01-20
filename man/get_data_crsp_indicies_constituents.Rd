@@ -2,19 +2,34 @@
 % Please edit documentation in R/crisp.R
 \name{get_data_crsp_indicies_constituents}
 \alias{get_data_crsp_indicies_constituents}
-\title{Get CRSP constituency data by index}
+\title{CRSP index constituents}
 \usage{
 get_data_crsp_indicies_constituents(nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
-\item{nest_data}{return nested data frame \code{TRUE, FALSE}}
+\item{nest_data}{\code{TRUE} return nested data frame}
 
-\item{return_message}{return a message after data is parsed \code{TRUE, FALSE}}
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 }
 \description{
-Get CRSP constituency data by index
+This function returns information
+about a CRSP index's constituents
 }
 \examples{
 get_data_crsp_indicies_constituents(nest_data = FALSE, return_message = TRUE)
+}
+\references{
+\href{http://crsp.com}{The Center for Research in Security Prices}
+}
+\seealso{
+Other CRSP: \code{\link{get_data_crsp_files}},
+  \code{\link{get_data_crsp_indicies_returns}}
+
+Other index constituents: \code{\link{get_data_msci_indicies_constituents}},
+  \code{\link{get_data_nareit_constituent_years}},
+  \code{\link{get_data_sp500_constituents}}
 }
 

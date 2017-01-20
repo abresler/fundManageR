@@ -1,39 +1,375 @@
 
+
 # functions ---------------------------------------------------------------
 
 resolve_names_to_upper <-
   function(data) {
     data <-
       data %>%
-      mutate_at(data %>%
-                  keep(is_character) %>%
-                  select(-matches("url")) %>% names(),
-                funs(. %>% str_to_upper()))
+      mutate_at(
+        data %>%
+          keep(is_character) %>%
+          select(-matches("url")) %>% names(),
+        funs(. %>% str_to_upper())
+      )
 
     return(data)
   }
 
 remove_duplicate_columns <-
   function(data) {
-  column_ids <-
-    data_frame(name = names(data)) %>%
-    mutate(idColumn = 1:n()) %>%
-    group_by(name) %>%
-    mutate(countCol = 1:n()) %>%
-    filter(idColumn == min(idColumn)) %>%
-    .$idColumn
+    column_ids <-
+      data_frame(name = names(data)) %>%
+      mutate(idColumn = 1:n()) %>%
+      group_by(name) %>%
+      mutate(countCol = 1:n()) %>%
+      filter(idColumn == min(idColumn)) %>%
+      .$idColumn
 
-  data <-
-    data[,column_ids]
-  return(data)
-}
+    data <-
+      data[, column_ids]
+    return(data)
+  }
+
+
+
+
+# xbrl --------------------------------------------------------------------
+
+parse_sec_filing_index <-
+  function(url = "https://www.sec.gov/Archives/edgar/data/1326801/0001326801-16-000087-index.htm",
+           return_message = TRUE) {
+    page <-
+      url %>%
+      read_html()
+
+    cik <-
+      url %>%
+      str_split('data/') %>%
+      flatten_chr() %>%
+      .[[2]] %>%
+      str_split('/') %>%
+      flatten_chr() %>%
+      .[[1]] %>%
+      as.numeric()
+
+    values <-
+      page %>%
+      html_nodes('.info') %>%
+      html_text()
+
+    items <-
+      page %>%
+      html_nodes('.infoHead') %>%
+      html_text()
+
+    all_items <-
+      items %>%
+      map_chr(function(x) {
+        is_zero <-
+          x %>% str_count('\\ ') == 0
+
+        if (x == 'Accepted') {
+          return("datetimeAccepted")
+        }
+
+        if (x == 'Documents') {
+          return('countDocuments')
+        }
+        if (x == "items") {
+          return('descriptionItems')
+        }
+
+        if (is_zero) {
+          return('item' %>% paste0(x))
+        }
+
+        if (x == "Period of Report") {
+          return("datePeriodReport")
+        }
+
+        if (x == "429 Reference" | x %>% str_detect("Reference")) {
+          return("reference429")
+        }
+
+        name_items <-
+          x %>% str_split('\\ ') %>%
+          flatten_chr()
+
+        first <-
+          name_items[name_items %>% length()] %>% str_to_lower()
+
+        end <-
+          name_items[1:(name_items %>% length() - 1)] %>%
+          paste0(collapse = '') %>%
+          str_to_title()
+
+        final_name <-
+          list(first, end) %>% purrr::invoke(paste0, .)
+        return(final_name)
+      })
+
+    df_metadata <-
+      data_frame(item = all_items,
+                 value = values) %>%
+      mutate(urlSECFilingDirectory = url) %>%
+      spread(item, value)
+
+    df_metadata <-
+      df_metadata %>%
+      mutate_at(df_metadata %>% select(matches('count')) %>% names(),
+                funs(. %>% as.numeric())) %>%
+      mutate_at(
+        df_metadata %>% select(matches('^date[A-Z]')) %>%  select(-matches("datetime"))  %>% names(),
+        funs(. %>% lubridate::ymd())
+      ) %>%
+      mutate_at(
+        df_metadata %>% select(matches('^datetime')) %>%  select(-matches("datetime"))  %>% names(),
+        funs(. %>% lubridate::ymd_hms())
+      )
+
+    urlSECFiling <-
+      page %>%
+      html_nodes('#formDiv a') %>%
+      html_attr('href') %>%
+      paste0('https://www.sec.gov', .)
+
+    namehref <-
+      page %>%
+      html_nodes('#formDiv a') %>%
+      html_text()
+
+    files <-
+      page %>%
+      html_nodes('td:nth-child(2)') %>%
+      html_text()
+    wrong_length <-
+      !(namehref %>% length() == files %>% length())
+
+    if (wrong_length) {
+      namehref <-
+        namehref[namehref %>% str_detect("\\.")]
+      urlSECFiling <-
+        urlSECFiling[2:length(urlSECFiling)]
+    }
+
+    df_files <-
+      data_frame(nameFile = files,
+                 nameHref = namehref,
+                 urlSECFile = urlSECFiling) %>%
+      tidyr::separate(nameHref,
+                      into = c('nameHREF', 'typeFile'),
+                      sep = '\\.') %>%
+      mutate(urlSECFilingDirectory = url) %>%
+      mutate(
+        nameFile = ifelse(nameFile == '', NA, nameFile),
+        isXBRLInstanceFile = ifelse(nameFile %>% str_detect("XBRL INSTANCE"), TRUE, FALSE),
+        isImage = ifelse(typeFile %in% c('jpg', 'gif', 'tiff', 'png'), TRUE, FALSE),
+        isPDF = ifelse(typeFile %in% c('pdf'), TRUE, FALSE)
+      )
+
+    df_files <-
+      df_files %>%
+      left_join(df_metadata) %>%
+      mutate(idCIK = cik) %>%
+      select(idCIK, matches("date"), matches("count"), everything()) %>%
+      suppressWarnings() %>%
+      suppressMessages()
+
+    if (return_message) {
+      list("Parsed: ", url) %>%
+        purrr::invoke(paste0, .) %>%
+        message()
+    }
+    return(df_files)
+  }
+
+parse_xbrl_filer_url <-
+  function(url = "https://www.sec.gov/Archives/edgar/data/1037540/000165642316000023/bxp-20160930.xml",
+           return_message = TRUE) {
+    options(stringsAsFactors = FALSE, scipen = 999999)
+    cik <-
+      url %>%
+      str_split('data/') %>%
+      flatten_chr() %>%
+      .[[2]] %>%
+      str_split('/') %>%
+      flatten_chr() %>%
+      .[[1]] %>%
+      as.numeric()
+    td <-
+      tempdir()
+    tf <-
+      tempfile(tmpdir = td, fileext = ".xml")
+
+    url %>%
+      curl::curl_download(destfile = tf)
+
+    doc <-
+      tf %>%
+      XBRL::xbrlParse()
+
+    ## Get a data frame with facts:
+    df_fct <-
+      XBRL::xbrlProcessFacts(doc) %>%
+      as_data_frame()
+
+    df_fct <-
+      df_fct %>%
+      mutate(
+        isNumber = ifelse(!fact %>% readr::parse_number() %>% is.na(), TRUE, FALSE),
+        amountFact = ifelse(isNumber == TRUE, fact %>% readr::parse_number(), NA)
+      ) %>%
+      separate(elementId,
+               c('codeElement', 'nameElement'),
+               sep = '\\_',
+               remove = FALSE) %>%
+      suppressWarnings()
+    ## Get a data frame with contexts:
+    df_cts <-
+      XBRL::xbrlProcessContexts(doc) %>%
+      as_data_frame()
+    ## Get a data frame with units:
+    df_unt <-
+      XBRL::xbrlProcessUnits(doc) %>%
+      as_data_frame()
+
+    df_sch <-
+      XBRL::xbrlGetSchemaName(doc) %>%
+      as_data_frame()
+
+    df_footnotes <-
+      XBRL::xbrlProcessFootnotes(doc) %>%
+      as_data_frame()
+
+
+    ## Free the external memory used:
+    XBRL::xbrlFree(doc)
+    url_xsd <-
+      url %>% str_replace(".xml", ".xsd")
+    url_xsd %>%
+      curl_download(destfile = tf)
+
+    ## Parse the schema file:
+    docS <-
+      tf %>%
+      XBRL::xbrlParse()
+    ## Get roles:
+    df_rls <-
+      docS %>%
+      XBRL::xbrlProcessRoles() %>%
+      as_data_frame()
+
+    ## calculation
+    url_cal <-
+      url %>% str_replace(".xml", "_cal.xml")
+
+    url_cal %>%
+      curl_download(destfile = tf)
+
+    docS <-
+      tf %>%
+      XBRL::xbrlParse()
+
+    df_calcs <-
+      docS %>%
+      XBRL::xbrlProcessArcs(arcType = 'calculation') %>%
+      as_data_frame()
+
+    ## definition
+    url_def <-
+      url %>% str_replace(".xml", "_def.xml")
+
+    url_def %>%
+      curl_download(destfile = tf)
+
+    docS <-
+      tf %>%
+      XBRL::xbrlParse()
+
+    df_defs <-
+      docS %>%
+      XBRL::xbrlProcessArcs(arcType = 'definition') %>%
+      as_data_frame()
+
+    ## labels
+    url_lab <-
+      url %>% str_replace(".xml", "_lab.xml")
+
+    url_lab %>%
+      curl_download(destfile = tf)
+
+    docS <-
+      tf %>%
+      XBRL::xbrlParse()
+
+    df_labels <-
+      docS %>%
+      XBRL::xbrlProcessLabels() %>%
+      as_data_frame()
+
+    ## presentation
+    url_pre <-
+      url %>% str_replace(".xml", "_pre.xml")
+
+    url_pre %>%
+      curl_download(destfile = tf)
+
+    docS <-
+      tf %>%
+      XBRL::xbrlParse()
+
+    ## Free the external memory used:
+    tf %>%
+      unlink()
+    data <-
+      data_frame(
+        idCIK = cik,
+        urlSECFile = url,
+        dataFacts = list(df_fct),
+        dataContexts = list(df_cts),
+        dataUnits = list(df_unt),
+        dataFootnotes = list(df_footnotes),
+        dataRoles = list(df_rls),
+        dataCalculations = list(df_calcs) ,
+        dataDefinitions = list(df_defs),
+        dataLabel = list(df_labels)
+      )
+    td %>% unlink()
+    tf %>% unlink()
+    if (return_message) {
+      list("Parsed: ", url) %>%
+        purrr::invoke(paste0, .) %>% message()
+    }
+    return(data)
+  }
 
 # dictionaries ------------------------------------------------------------
 
 get_filer_type_df <-
   function() {
-    data_frame(idTypeFilerOwner = c('insider', 'private' , 'broker_dealer', 'transfer_agent', 'ia', 'msd', 'bank', 'inv_co'),
-               typeFilerOwner = c('Insider', 'Private Placement', 'Broker Dealer', 'Transfer Agent', 'Investment Advisor','Bank', 'Municipal Securities Dealer', 'Investment Company')) %>%
+    data_frame(
+      idTypeFilerOwner = c(
+        'insider',
+        'private' ,
+        'broker_dealer',
+        'transfer_agent',
+        'ia',
+        'msd',
+        'bank',
+        'inv_co'
+      ),
+      typeFilerOwner = c(
+        'Insider',
+        'Private Placement',
+        'Broker Dealer',
+        'Transfer Agent',
+        'Investment Advisor',
+        'Bank',
+        'Municipal Securities Dealer',
+        'Investment Company'
+      )
+    ) %>%
       mutate_all(str_to_upper)
   }
 
@@ -55,21 +391,87 @@ get_general_name_df <-
           "street_2",
           "type",
           "zip_code",
-          "private_industry", "private_issuer", "private_type",
-          'fund_type', 'is_owned', 'detail', 'yahoo', 'ticker', 'lei', 'quarterly', 'annual', 'a_instant', 'a_periodic', 'q_instant', 'q_periodic', 'mda', 'midas', 'midased','owned',
-          "description", "filed", "filed_time", "filer_type",
-          "form", "form_type", "id", "link_filing", "parsed", 'investors', 'sold', 'total',
-          "owned_category", "owned_cik", "owned_name",
-          "owned_ticker",  "code", "price", "traded", "trans", 'bought', 'dt', 'ndt',
-          "market_cap", "sector", "x_cat", "x_code",
-          "ask", "bid", "book_val", "dps", "ebitda",
-          "eps", "open", "pe_ratio", "prev_close", "short_ratio", "year_high",
-          "year_low","dt_first",
-          "filer_name", "first_update", "last_update", "owned_company",
-          'ndt_first', 'etf', 'filer', 'ipo_year', 'insider', 'fund', 'trades',
-          "asset_backed", "business_dev", "closed_end_fund",
-          "insurance", "money_management", "money_market_fund",
-          "mutual_fund", "uit", "classes", "series_id", "series_name"
+          "private_industry",
+          "private_issuer",
+          "private_type",
+          'fund_type',
+          'is_owned',
+          'detail',
+          'yahoo',
+          'ticker',
+          'lei',
+          'quarterly',
+          'annual',
+          'a_instant',
+          'a_periodic',
+          'q_instant',
+          'q_periodic',
+          'mda',
+          'midas',
+          'midased',
+          'owned',
+          "description",
+          "filed",
+          "filed_time",
+          "filer_type",
+          "form",
+          "form_type",
+          "id",
+          "link_filing",
+          "parsed",
+          'investors',
+          'sold',
+          'total',
+          "owned_category",
+          "owned_cik",
+          "owned_name",
+          "owned_ticker",
+          "code",
+          "price",
+          "traded",
+          "trans",
+          'bought',
+          'dt',
+          'ndt',
+          "market_cap",
+          "sector",
+          "x_cat",
+          "x_code",
+          "ask",
+          "bid",
+          "book_val",
+          "dps",
+          "ebitda",
+          "eps",
+          "open",
+          "pe_ratio",
+          "prev_close",
+          "short_ratio",
+          "year_high",
+          "year_low",
+          "dt_first",
+          "filer_name",
+          "first_update",
+          "last_update",
+          "owned_company",
+          'ndt_first',
+          'etf',
+          'filer',
+          'ipo_year',
+          'insider',
+          'fund',
+          'trades',
+          "asset_backed",
+          "business_dev",
+          "closed_end_fund",
+          "insurance",
+          "money_management",
+          "money_market_fund",
+          "mutual_fund",
+          "uit",
+          "classes",
+          "series_id",
+          "series_name"
 
         ),
         nameActual = c(
@@ -85,25 +487,88 @@ get_general_name_df <-
           "addressStreet1Entity",
           "addressStreet2Entity",
           "idTypeFiler",
-          "zipCodeEntity",
-          "industryEntity", "objectIssuer", "typeEntity",
-          'typeFund', 'idCIKOwnedBy', 'idFormTypeOwnedBy', 'objectYahoo', 'idTicker', 'idLEI', 'dateisoQuarterly', 'dateisoAnnual', 'isAnnualInstantFiler', 'isAnnualPeriodicFiler', 'isQuarterlyInstantFiler', 'isQuarterlyPeriodicFiler', 'idMDA', 'typeMidas', 'idMidas', 'detailsOwnedBy',
-          "descriptionData", "dateFiled", "datetimeFiled", "typeFiler",
-          "idForm", "typeForm", "idRF", "slugSEC", "isParsed", 'countInvestors', 'amountSold', 'amountOffering',
-          "typeCategoryOwned", "idCIKOwned", "nameEntityOwned",
+          "zipcodeEntity",
+          "industryEntity",
+          "objectIssuer",
+          "typeEntity",
+          'typeFund',
+          'idCIKOwnedBy',
+          'idFormTypeOwnedBy',
+          'objectYahoo',
+          'idTicker',
+          'idLEI',
+          'dateisoQuarterly',
+          'dateisoAnnual',
+          'isAnnualInstantFiler',
+          'isAnnualPeriodicFiler',
+          'isQuarterlyInstantFiler',
+          'isQuarterlyPeriodicFiler',
+          'idMDA',
+          'typeMidas',
+          'idMidas',
+          'detailsOwnedBy',
+          "descriptionData",
+          "dateFiled",
+          "datetimeFiled",
+          "typeFiler",
+          "idForm",
+          "typeForm",
+          "idRF",
+          "slugSEC",
+          "isParsed",
+          'countInvestors',
+          'amountSold',
+          'amountOffering',
+          "typeCategoryOwned",
+          "idCIKOwned",
+          "nameEntityOwned",
           "idTickerOwned",
-          "codeTransaction", "amountPrice", "idTicker", "countShares",
-          'isBought', 'dateOriginal', 'dateSecond',
-          "amountEquityMarketCap", "nameSector", "codeExchange", "idExchange",
-          "priceAsk", "priceBid", "priceBookValue", "amountDPS", "amountEBITDA",
-          "amountEPS", "priceOpen", "ratioPE", "priceClosePrevious", "ratioShort", "price52WeekHigh",
+          "codeTransaction",
+          "amountPrice",
+          "idTicker",
+          "countShares",
+          'isBought',
+          'dateOriginal',
+          'dateSecond',
+          "amountEquityMarketCap",
+          "nameSector",
+          "codeExchange",
+          "idExchange",
+          "priceAsk",
+          "priceBid",
+          "priceBookValue",
+          "amountDPS",
+          "amountEBITDA",
+          "amountEPS",
+          "priceOpen",
+          "ratioPE",
+          "priceClosePrevious",
+          "ratioShort",
+          "price52WeekHigh",
           "price52WeekLow",
           "dateFiledFirst",
-          "nameFiler", "dateFileUpdated", "dateLastUpdated", "nameCompanyOwned",
-          'dateFirstN', 'isETF', 'idCIK', 'yearIPO', 'idCIK', 'idCIK', 'countTrades',
-          "isAssetBackedFund", "isBusinessDevelopmentCompany", "isClosedEndFund",
-          "isInsuranceCompany", "isMoneyManager", "isMoneyMarketFund",
-          "isMutualFund", "isUIT", "descriptionClasses", "idSeries", "nameSeries"
+          "nameFiler",
+          "dateFileUpdated",
+          "dateLastUpdated",
+          "nameCompanyOwned",
+          'dateFirstN',
+          'isETF',
+          'idCIK',
+          'yearIPO',
+          'idCIK',
+          'idCIK',
+          'countTrades',
+          "isAssetBackedFund",
+          "isBusinessDevelopmentCompany",
+          "isClosedEndFund",
+          "isInsuranceCompany",
+          "isMoneyManager",
+          "isMoneyMarketFund",
+          "isMutualFund",
+          "isUIT",
+          "descriptionClasses",
+          "idSeries",
+          "nameSeries"
         )
       )
 
@@ -112,51 +577,195 @@ get_general_name_df <-
 
 get_private_name_df <-
   function() {
-    data_frame(nameRF =c("amended", "cik", "date", "exemption", "finders_fee", "industry",
-                         "minimum", "nonaccredited", "num_invested", "option", "proceeds_used",
-                         "sale_date", "sales_fee", "security", "total_offering", "total_remaining",
-                         "total_sold", "debt", "equity", "foreign_solicit", 'fund_type', 'hedge_fund', 'other', 'total_clar', 'mineral', 'combo', 'subsidiary'),
-               nameActual = c("dateAmmended", "idCIK", "dateFiling", "idExemption", "amountFindersFee", "nameIndustry",
-                              "amountMinimumInvestment", "countInvestorsNonAccredited", "countInvestors", "isOption", "amountProceedsUsed",
-                              "dateSale", "amountSaleFee", "isSecurity", "amountOffered", "amountRemaining",
-                              "amountSold", "isDebtSecurity", "isEquity", "isForeignSolicted", 'typeFund', 'isHedgeFund', 'detailOther', 'detailClarification', 'isMineralCompany', 'detailCombo', 'objectSubsidiary'))
+    data_frame(
+      nameRF = c(
+        "amended",
+        "cik",
+        "date",
+        "exemption",
+        "finders_fee",
+        "industry",
+        "minimum",
+        "nonaccredited",
+        "num_invested",
+        "option",
+        "proceeds_used",
+        "sale_date",
+        "sales_fee",
+        "security",
+        "total_offering",
+        "total_remaining",
+        "total_sold",
+        "debt",
+        "equity",
+        "foreign_solicit",
+        'fund_type',
+        'hedge_fund',
+        'other',
+        'total_clar',
+        'mineral',
+        'combo',
+        'subsidiary'
+      ),
+      nameActual = c(
+        "dateAmmended",
+        "idCIK",
+        "dateFiling",
+        "idExemption",
+        "amountFindersFee",
+        "nameIndustry",
+        "amountMinimumInvestment",
+        "countInvestorsNonAccredited",
+        "countInvestors",
+        "isOption",
+        "amountProceedsUsed",
+        "dateSale",
+        "amountSaleFee",
+        "isSecurity",
+        "amountOffered",
+        "amountRemaining",
+        "amountSold",
+        "isDebtSecurity",
+        "isEquity",
+        "isForeignSolicted",
+        'typeFund',
+        'isHedgeFund',
+        'detailOther',
+        'detailClarification',
+        'isMineralCompany',
+        'detailCombo',
+        'objectSubsidiary'
+      )
+    )
   }
 
-#' Get Form-D Category dictionry
+#' Form-D dictionary
 #'
-#' @return
+#' This function returns searchable
+#' industries for parsed SEC Form-D
+#' filings
+#'
+#' @return a \code{data_frame}
 #' @export
 #' @import dplyr
-#' @examples get_dictionary_form_d_categories()
+#' @examples
+#' get_dictionary_form_d_categories()
 get_dictionary_form_d_categories <-
-  function(){
+  function() {
     category_df <-
       dplyr::data_frame(
         idIndustry = 1:35,
-        nameIndustry = c("AGRICULTURE", "AIRLINES AND AIRPORTS", "BIOTECHNOLOGY", "BUSINESS SERVICES",
-                         "COAL MINING", "COMMERCIAL REAL ESTATE", "COMMERCIAL BANKING",
-                         "COMPUTERS", "CONSTRUCTION", "ELECTRIC UTILITIES", "ENERGY CONSERVATION",
-                         "ENVIORNMENTAL SERVICES", "HEALTH INSURANCE", "HOSPITALS AND PHYSICIANS",
-                         "INSURANCE", "INVESTING", "INVESTMENT BANKING", "LODGING AND CONVETION",
-                         "MANUFACTURING", "OIL AND GAS", "OTHER", "OTHER BANKING AND FINANCIAL SERVICES",
-                         "OTHER ENERGY", "OTHER HEALTH CARE", "OTHER REAL ESTATE", "OTHER TECHNOLOGY",
-                         "OTHER TRAVEL", "PHARMACEUTICALS", "POOLED INVESTMENT FUND",
-                         "REITS AND FINANCE", "RESIDENTIAL REAL ESTATE", "RESTAURANTS",
-                         "RETAIL", "TELECOMMUNICATIONS", "TRAVEL AND TOURISM"),
-        codeIndustryParent = c("OTHER", "TRAVEL", "HEALTH", "OTHER", "ENERGY", "REAL", "FINANCE",
-                               "TECH", "REAL", "ENERGY", "ENERGY", "ENERGY", "HEALTH", "HEALTH",
-                               "FINANCE", "FINANCE", "FINANCE", "TRAVEL", "OTHER", "ENERGY",
-                               "OTHER", "FINANCE", "ENERGY", "HEALTH", "REAL", "TECH", "TRAVEL",
-                               "HEALTH", "FINANCE", "REAL", "REAL", "OTHER", "OTHER", "TECH",
-                               "TRAVEL"),
-        nameIndustryParent = c("OTHER", "TRAVEL AND LEISURE", "HEALTHCARE", "OTHER", "ENERGY",
-                               "REAL ESTATE", "FINANCIAL", "TECHNOLOGY", "REAL ESTATE", "ENERGY",
-                               "ENERGY", "ENERGY", "HEALTHCARE", "HEALTHCARE", "FINANCIAL",
-                               "FINANCIAL", "FINANCIAL", "TRAVEL AND LEISURE", "OTHER", "ENERGY",
-                               "OTHER", "FINANCIAL", "ENERGY", "HEALTHCARE", "REAL ESTATE",
-                               "TECHNOLOGY", "TRAVEL AND LEISURE", "HEALTHCARE", "FINANCIAL",
-                               "REAL ESTATE", "REAL ESTATE", "OTHER", "OTHER", "TECHNOLOGY",
-                               "TRAVEL AND LEISURE")
+        nameIndustry = c(
+          "AGRICULTURE",
+          "AIRLINES AND AIRPORTS",
+          "BIOTECHNOLOGY",
+          "BUSINESS SERVICES",
+          "COAL MINING",
+          "COMMERCIAL REAL ESTATE",
+          "COMMERCIAL BANKING",
+          "COMPUTERS",
+          "CONSTRUCTION",
+          "ELECTRIC UTILITIES",
+          "ENERGY CONSERVATION",
+          "ENVIORNMENTAL SERVICES",
+          "HEALTH INSURANCE",
+          "HOSPITALS AND PHYSICIANS",
+          "INSURANCE",
+          "INVESTING",
+          "INVESTMENT BANKING",
+          "LODGING AND CONVETION",
+          "MANUFACTURING",
+          "OIL AND GAS",
+          "OTHER",
+          "OTHER BANKING AND FINANCIAL SERVICES",
+          "OTHER ENERGY",
+          "OTHER HEALTH CARE",
+          "OTHER REAL ESTATE",
+          "OTHER TECHNOLOGY",
+          "OTHER TRAVEL",
+          "PHARMACEUTICALS",
+          "POOLED INVESTMENT FUND",
+          "REITS AND FINANCE",
+          "RESIDENTIAL REAL ESTATE",
+          "RESTAURANTS",
+          "RETAIL",
+          "TELECOMMUNICATIONS",
+          "TRAVEL AND TOURISM"
+        ),
+        codeIndustryParent = c(
+          "OTHER",
+          "TRAVEL",
+          "HEALTH",
+          "OTHER",
+          "ENERGY",
+          "REAL",
+          "FINANCE",
+          "TECH",
+          "REAL",
+          "ENERGY",
+          "ENERGY",
+          "ENERGY",
+          "HEALTH",
+          "HEALTH",
+          "FINANCE",
+          "FINANCE",
+          "FINANCE",
+          "TRAVEL",
+          "OTHER",
+          "ENERGY",
+          "OTHER",
+          "FINANCE",
+          "ENERGY",
+          "HEALTH",
+          "REAL",
+          "TECH",
+          "TRAVEL",
+          "HEALTH",
+          "FINANCE",
+          "REAL",
+          "REAL",
+          "OTHER",
+          "OTHER",
+          "TECH",
+          "TRAVEL"
+        ),
+        nameIndustryParent = c(
+          "OTHER",
+          "TRAVEL AND LEISURE",
+          "HEALTHCARE",
+          "OTHER",
+          "ENERGY",
+          "REAL ESTATE",
+          "FINANCIAL",
+          "TECHNOLOGY",
+          "REAL ESTATE",
+          "ENERGY",
+          "ENERGY",
+          "ENERGY",
+          "HEALTHCARE",
+          "HEALTHCARE",
+          "FINANCIAL",
+          "FINANCIAL",
+          "FINANCIAL",
+          "TRAVEL AND LEISURE",
+          "OTHER",
+          "ENERGY",
+          "OTHER",
+          "FINANCIAL",
+          "ENERGY",
+          "HEALTHCARE",
+          "REAL ESTATE",
+          "TECHNOLOGY",
+          "TRAVEL AND LEISURE",
+          "HEALTHCARE",
+          "FINANCIAL",
+          "REAL ESTATE",
+          "REAL ESTATE",
+          "OTHER",
+          "OTHER",
+          "TECHNOLOGY",
+          "TRAVEL AND LEISURE"
+        )
       )
     return(category_df)
   }
@@ -166,100 +775,322 @@ get_insider_code_df <-
     insider_df <-
       data_frame(
         idInsiderTransaction =
-          c("A", "C", "D", "F", "G", "H", "I", "J", "K", "L", "M", "NONE",
-            "O", "P", "S", "U", "V", "W", "X", "Z"),
-        nameInsiderTransaction = c("AWARD", "CONVEYANCE", "DISPOSITION TO ISSUER", "PAYMENT WITH SECURITIES",
-                                   "GIFT", "EXPIRATION OF LONG DERIVATIVE POSITION", "DISCRETIONARY TRANSACTION",
-                                   "OTHER", "EQUITY SWAP OR SIMILAR", "SMALL ACQUISITIONS", "EXEMPT",
-                                   NA, "OTM EXERCISE", "PURCHASE", "SALE", "MERGER AND ACQUISITION",
-                                   "REPORTED EARLY", "WILL OR LAWS OF DESCENT", "ITM OR ATM EXERCISE",
-                                   "DEPOSIT INTO/WITHDRAWAL FROM VOTING TRUST"),
-        idTypeInsiderTransaction = c("A", "D", "D", "D", "D", NA, NA, NA, NA, "A", "A", NA, "A",
-          "A", "D", NA, NA, "D", "A", "D")
+          c(
+            "A",
+            "C",
+            "D",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "NONE",
+            "O",
+            "P",
+            "S",
+            "U",
+            "V",
+            "W",
+            "X",
+            "Z"
+          ),
+        nameInsiderTransaction = c(
+          "AWARD",
+          "CONVEYANCE",
+          "DISPOSITION TO ISSUER",
+          "PAYMENT WITH SECURITIES",
+          "GIFT",
+          "EXPIRATION OF LONG DERIVATIVE POSITION",
+          "DISCRETIONARY TRANSACTION",
+          "OTHER",
+          "EQUITY SWAP OR SIMILAR",
+          "SMALL ACQUISITIONS",
+          "EXEMPT",
+          NA,
+          "OTM EXERCISE",
+          "PURCHASE",
+          "SALE",
+          "MERGER AND ACQUISITION",
+          "REPORTED EARLY",
+          "WILL OR LAWS OF DESCENT",
+          "ITM OR ATM EXERCISE",
+          "DEPOSIT INTO/WITHDRAWAL FROM VOTING TRUST"
+        ),
+        idTypeInsiderTransaction = c(
+          "A",
+          "D",
+          "D",
+          "D",
+          "D",
+          NA,
+          NA,
+          NA,
+          NA,
+          "A",
+          "A",
+          NA,
+          "A",
+          "A",
+          "D",
+          NA,
+          NA,
+          "D",
+          "A",
+          "D"
+        )
       )
     return(insider_df)
   }
 
-#' Get SEC filing code dictionary
+#' SEC filing code dictionary
 #'
-#' @return
+#' This function returns a
+#' dictionary of SEC form filing types
+#'
+#' @return a \code{data_frame}
 #' @export
-#' @import dplyr
+#' @import dplyr stringr
+#' @family SEC
+#' @family dictionary
 #'
-#' @examples get_dictionary_sec_filing_codes()
+#' @examples
+#' get_dictionary_sec_filing_codes()
 get_dictionary_sec_filing_codes <-
   function() {
-    data_frame(idFormType = c("1.01", "1.02", "1.03", "1.04", "2.01", "2.02", "2.03", "2.04",
-                              "2.05", "2.06", "3.01", "3.02", "3.03", "4.01", "4.02", "5.01",
-                              "5.02", "5.03", "5.04", "5.05", "5.06", "5.07", "5.08", "6.01",
-                              "6.02", "6.03", "6.04", "6.05", "7.01", "8.01", "9.01"),
-               nameFormType = c("Entry into a Material Definitive Agreement", "Termination of a Material Definitive Agreement",
-                                "Bankruptcy or Receivership", "Mine Safety Ð Reporting of Shutdowns and Patterns of Violations",
-                                "Completion of Acquisition or Disposition of Assets", "Results of Operations and Financial Condition",
-                                "Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant",
-                                "Triggering Events That Accelerate or Increase a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement",
-                                "Costs Associated with Exit or Disposal Activities", "Material Impairments",
-                                "Notice of Delisting or Failure to Satisfy a Continued Listing Rule or Standard; Transfer of Listing",
-                                "Unregistered Sales of Equity Securities", "Material Modification to Rights of Security Holders",
-                                "Changes in Registrant's Certifying Accountant", "Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review",
-                                "Changes in Control of Registrant", "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
-                                "Amendments to Articles of Incorporation or Bylaws; Change in Fiscal Year",
-                                "Temporary Suspension of Trading Under Registrant's Employee Benefit Plans",
-                                "Amendments to the RegistrantÕs Code of Ethics, or Waiver of a Provision of the Code of Ethics",
-                                "Change in Shell Company Status", "Submission of Matters to a Vote of Security Holders",
-                                "Shareholder Director Nominations", "ABS Informational and Computational Material",
-                                "Change of Servicer or Trustee", "Change in Credit Enhancement or Other External Support",
-                                "Failure to Make a Required Distribution", "Securities Act Updating Disclosure",
-                                "Regulation FD Disclosure", "Other Events", "Financial Statements and Exhibits"
-               )
+    data_frame(
+      idFormType = c(
+        "1.01",
+        "1.02",
+        "1.03",
+        "1.04",
+        "2.01",
+        "2.02",
+        "2.03",
+        "2.04",
+        "2.05",
+        "2.06",
+        "3.01",
+        "3.02",
+        "3.03",
+        "4.01",
+        "4.02",
+        "5.01",
+        "5.02",
+        "5.03",
+        "5.04",
+        "5.05",
+        "5.06",
+        "5.07",
+        "5.08",
+        "6.01",
+        "6.02",
+        "6.03",
+        "6.04",
+        "6.05",
+        "7.01",
+        "8.01",
+        "9.01"
+      ),
+      nameFormType = c(
+        "Entry into a Material Definitive Agreement",
+        "Termination of a Material Definitive Agreement",
+        "Bankruptcy or Receivership",
+        "Mine Safety Ð Reporting of Shutdowns and Patterns of Violations",
+        "Completion of Acquisition or Disposition of Assets",
+        "Results of Operations and Financial Condition",
+        "Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant",
+        "Triggering Events That Accelerate or Increase a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement",
+        "Costs Associated with Exit or Disposal Activities",
+        "Material Impairments",
+        "Notice of Delisting or Failure to Satisfy a Continued Listing Rule or Standard; Transfer of Listing",
+        "Unregistered Sales of Equity Securities",
+        "Material Modification to Rights of Security Holders",
+        "Changes in Registrant's Certifying Accountant",
+        "Non-Reliance on Previously Issued Financial Statements or a Related Audit Report or Completed Interim Review",
+        "Changes in Control of Registrant",
+        "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+        "Amendments to Articles of Incorporation or Bylaws; Change in Fiscal Year",
+        "Temporary Suspension of Trading Under Registrant's Employee Benefit Plans",
+        "Amendments to the RegistrantÕs Code of Ethics, or Waiver of a Provision of the Code of Ethics",
+        "Change in Shell Company Status",
+        "Submission of Matters to a Vote of Security Holders",
+        "Shareholder Director Nominations",
+        "ABS Informational and Computational Material",
+        "Change of Servicer or Trustee",
+        "Change in Credit Enhancement or Other External Support",
+        "Failure to Make a Required Distribution",
+        "Securities Act Updating Disclosure",
+        "Regulation FD Disclosure",
+        "Other Events",
+        "Financial Statements and Exhibits"
+      ) %>% stringr::str_to_upper()
     )
 
   }
 
-get_form_code_df <-
+#' SEC form codes
+#'
+#' This function returns a
+#' dictionary of SEC form codes
+#'
+#' @return a \code{data_frame}
+#' @export
+#' @family SEC
+#' @family dictionary
+#'
+#' @examples
+#' get_dictionary_sec_form_codes()
+get_dictionary_sec_form_codes <-
   function() {
-    data_frame(idForm = c("R", "A", "Q", "CR", "REG", "REGX", "O", "P", "X", "W", "SEC",
-                          "PROXY", "CT", "IS", "CO", "T"),
-               nameForm = c("Other Report", "Annual Report", "Quarterly Report", "Current Report",
-                            "Registration", "Private Offering", "Ownership", "Prospectus",
-                            "Exemption", "Withdrawal", "SEC Correspondence", "Proxy Statement",
-                            "Confidential Treatment", "Initial Statement", "Change in Ownership",
-                            "Trades")
+    data_frame(
+      idForm = c(
+        "R",
+        "A",
+        "Q",
+        "CR",
+        "REG",
+        "REGX",
+        "O",
+        "P",
+        "X",
+        "W",
+        "SEC",
+        "PROXY",
+        "CT",
+        "IS",
+        "CO",
+        "T"
+      ),
+      nameForm = c(
+        "Other Report",
+        "Annual Report",
+        "Quarterly Report",
+        "Current Report",
+        "Registration",
+        "Private Offering",
+        "Ownership",
+        "Prospectus",
+        "Exemption",
+        "Withdrawal",
+        "SEC Correspondence",
+        "Proxy Statement",
+        "Confidential Treatment",
+        "Initial Statement",
+        "Change in Ownership",
+        "Trades"
+      ) %>% stringr::str_to_upper()
     )
   }
 
 get_company_type_df <-
   function() {
-    data_frame(idCompanyType = c("ic", "i", "ia", "bd", "m", "t", "b", "c", "p", "etf", "mmf",
-                                 "mf", "uit", "cef"),
-               nameCompanyType = c("Investment Company", "Insider", "Investment Adviser", "Broker-dealer",
-                                   "Municipal Securities Dealer", "Transfer Agent", "Bank", "Company",
-                                   "Private Issuer", "ETF", "Money Market Fund", "Mutual Fund",
-                                   "UIT", "Closed-end Fund"))
+    data_frame(
+      idCompanyType = c(
+        "ic",
+        "i",
+        "ia",
+        "bd",
+        "m",
+        "t",
+        "b",
+        "c",
+        "p",
+        "etf",
+        "mmf",
+        "mf",
+        "uit",
+        "cef"
+      ),
+      nameCompanyType = c(
+        "Investment Company",
+        "Insider",
+        "Investment Adviser",
+        "Broker-dealer",
+        "Municipal Securities Dealer",
+        "Transfer Agent",
+        "Bank",
+        "Company",
+        "Private Issuer",
+        "ETF",
+        "Money Market Fund",
+        "Mutual Fund",
+        "UIT",
+        "Closed-end Fund"
+      )
+    )
   }
 
-#' Get SEC rule dictionary
+#' SEC Rule dictionary
+#'
+#' This function retuns a
+#' dictionary of SEC rules
 #'
 #' @return
 #' @export
-#' @import dplyr
+#' @import dplyr stringr
 #'
-#' @examples get_dictionary_sec_rules()
+#' @examples
+#' get_dictionary_sec_rules()
 get_dictionary_sec_rules <-
   function() {
-    data_frame(idRule =c("06", "3C", "3C.7", "3C.1", "06b", "04", "46", "04.1", "04.2",
-                         "04.3", "05", "3C.6", "3C.5", "06c", "4a5", "3C.11", "3C.2",
-                         "3C.3", "3C.9", "3C.10", "3C.4", "3C.12", "3C.", "3C.14", "3"),
-               nameRule = c("Rule 506", "Investment Company Act Section 3c", "Investment Company Act Section 3c",
-                            "Investment Company Act Section 3c", "Rule 506b", "Rule 504",
-                            "Rule 506c", "Rule 504b(1)(i)", "Rule 504b(1)(ii)", "Rule 504b(1)(iii)",
-                            "Rule 505", "Investment Company Act Section 3c", "Investment Company Act Section 3c",
-                            "Rule 506c", "Securities Act Section 4(a)(5)", "Investment Company Act Section 3c",
-                            "Investment Company Act Section 3c", "Investment Company Act Section 3c",
-                            "Investment Company Act Section 3c", "Investment Company Act Section 3c",
-                            "Investment Company Act Section 3c", "Investment Company Act Section 3c",
-                            "Investment Company Act Section 3c", "Investment Company Act Section 3c",
-                            "Investment Company Act Section 3c")
+    data_frame(
+      idRule = c(
+        "06",
+        "3C",
+        "3C.7",
+        "3C.1",
+        "06b",
+        "04",
+        "46",
+        "04.1",
+        "04.2",
+        "04.3",
+        "05",
+        "3C.6",
+        "3C.5",
+        "06c",
+        "4a5",
+        "3C.11",
+        "3C.2",
+        "3C.3",
+        "3C.9",
+        "3C.10",
+        "3C.4",
+        "3C.12",
+        "3C.",
+        "3C.14",
+        "3"
+      ),
+      nameRule = c(
+        "Rule 506",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Rule 506b",
+        "Rule 504",
+        "Rule 506c",
+        "Rule 504b(1)(i)",
+        "Rule 504b(1)(ii)",
+        "Rule 504b(1)(iii)",
+        "Rule 505",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Rule 506c",
+        "Securities Act Section 4(a)(5)",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c",
+        "Investment Company Act Section 3c"
+      )
     ) %>%
       mutate_all(str_to_upper)
   }
@@ -273,88 +1104,95 @@ get_dictionary_sec_rules <-
 
 parse_13F_url <-
   function(url = "https://www.sec.gov/Archives/edgar/data/1393818/000095012316022469/xslForm13F_X01/form13fInfoTable.xml",
-                          return_message = TRUE) {
-  options(scipen =  9999)
-  url_params <-
-    url %>%
-    str_replace_all("https://www.sec.gov/Archives/edgar/data/", '') %>%
-    str_split('\\/') %>%
-    flatten_chr()
+           return_message = TRUE) {
+    options(scipen =  9999)
+    url_params <-
+      url %>%
+      str_replace_all("https://www.sec.gov/Archives/edgar/data/", '') %>%
+      str_split('\\/') %>%
+      flatten_chr()
 
-  cik <-
-    url_params[[1]] %>% as.numeric()
+    cik <-
+      url_params[[1]] %>% as.numeric()
 
-  page <-
-    url %>%
-    read_html()
+    page <-
+      url %>%
+      read_html()
 
-  tables <-
-    page %>%
-    html_table(fill = TRUE)
+    tables <-
+      page %>%
+      html_table(fill = TRUE)
 
-  df_13f <-
-    tables[[tables %>% length()]] %>%
-    as_data_frame() %>%
-    slice(-(1:3)) %>%
-    purrr::set_names(c('nameIssuer', 'classShares', 'idCUSIP', 'valueSecurity', 'countSecurity', 'typeBase', 'typeOption', 'typeDiscretion', 'idOtherManager', 'countSharesVotingSole', 'countSharesVotingShared', 'countSharesVotingNone'))
+    df_13f <-
+      tables[[tables %>% length()]] %>%
+      as_data_frame() %>%
+      slice(-(1:3)) %>%
+      purrr::set_names(
+        c(
+          'nameIssuer',
+          'classShares',
+          'idCUSIP',
+          'amountSecurityValueTotal',
+          'countSecurity',
+          'typeBase',
+          'typeOption',
+          'typeDiscretion',
+          'idOtherManager',
+          'countSharesVotingSole',
+          'countSharesVotingShared',
+          'countSharesVotingNone'
+        )
+      )
 
-  df_13f <-
-    df_13f %>%
-    mutate_at(df_13f %>% select(matches('value|count|idOtherManager')) %>% names(),
-              funs(. %>% str_trim %>% readr::parse_number())) %>%
-    suppressWarnings()
-
-
-  df_13f <-
-    df_13f %>%
-    mutate(valueSecurity = (valueSecurity * 1000) %>% formattable::currency(digits = 0),
-           priceSecurity = (valueSecurity / countSecurity) %>% formattable::currency(digits = 2),
-           idRow = 1:n())
-
-  count_df <-
-    df_13f %>%
-    select(idCUSIP, value = countSecurity, typeBase) %>%
-    left_join(
-      data_frame(typeBase = c("SH", "PRN"),
-                 item = c('countShares', 'valuePrincipal'))
-    ) %>%
-    select(-typeBase) %>%
-    mutate(idRow = 1:n()) %>%
-    spread(item, value) %>%
-    suppressWarnings() %>%
-    suppressMessages()
-
-  df_13f <-
-    df_13f %>%
-    select(-c(countSecurity, typeBase)) %>%
-    left_join(count_df) %>%
-    select(-idRow) %>%
-    suppressMessages()
-
-  df_13f <-
-    df_13f %>%
-    mutate_at(df_13f %>% select(matches("value")) %>% names,
-              funs(. %>% currency(digits = 0))) %>%
-    mutate_at(df_13f %>% select(matches("count")) %>% names,
-              funs(. %>% comma(digits = 0))) %>%
-    mutate(typeOption = typeOption %>% str_trim,
-           typeOption = ifelse(typeOption == '', NA, typeOption),
-           isEquitySecurity = classShares %>% str_detect("COM"),
-           idCIK = cik,
-           urlSEC = url) %>%
-    select(idCIK, isEquitySecurity, idCUSIP, nameIssuer, classShares, matches("value"), matches("price"),matches("count"),everything()) %>%
-    suppressWarnings()
-
-  if ('valuePrincipal' %in% names(df_13f)) {
     df_13f <-
       df_13f %>%
-      tidyr::separate(classShares, sep = '%',into = c('pctRateNote', 'remove'), remove = F) %>%
+      mutate_at(
+        df_13f %>% select(matches('value|count|idOtherManager')) %>% names(),
+        funs(. %>% str_trim %>% readr::parse_number())
+      ) %>%
+      suppressWarnings()
+
+
+    df_13f <-
+      df_13f %>%
       mutate(
-        pctPrincipal = (valueSecurity / valuePrincipal) %>% formattable::percent(),
-        priceStock = ifelse(valuePrincipal %>% is.na(), priceSecurity, NA) %>% formattable::currency(),
-        pctRateNote = ifelse(!valuePrincipal %>% is.na(), pctRateNote, NA),
-        pctRateNote = (pctRateNote %>% readr::parse_number() / 100) %>% formattable::percent(digits = 2),
-        pctYieldCurrent = ((pctRateNote * valuePrincipal) / valueSecurity) %>% formattable::percent(digits = 2)
+        amountSecurityValueTotal = (amountSecurityValueTotal * 1000) %>% formattable::currency(digits = 0),
+        priceSecurity = (amountSecurityValueTotal / countSecurity) %>% formattable::currency(digits = 2),
+        idRow = 1:n()
+      )
+
+    count_df <-
+      df_13f %>%
+      select(idCUSIP, value = countSecurity, typeBase) %>%
+      left_join(data_frame(
+        typeBase = c("SH", "PRN"),
+        item = c('countShares', 'amounPrincipalValueTotal')
+      )) %>%
+      select(-typeBase) %>%
+      mutate(idRow = 1:n()) %>%
+      spread(item, value) %>%
+      suppressWarnings() %>%
+      suppressMessages()
+
+    df_13f <-
+      df_13f %>%
+      select(-c(countSecurity, typeBase)) %>%
+      left_join(count_df) %>%
+      select(-idRow) %>%
+      suppressMessages()
+
+    df_13f <-
+      df_13f %>%
+      mutate_at(df_13f %>% select(matches("value")) %>% names,
+                funs(. %>% currency(digits = 0))) %>%
+      mutate_at(df_13f %>% select(matches("count")) %>% names,
+                funs(. %>% comma(digits = 0))) %>%
+      mutate(
+        typeOption = typeOption %>% str_trim,
+        typeOption = ifelse(typeOption == '', NA, typeOption),
+        isEquitySecurity = classShares %>% str_detect("COM"),
+        idCIK = cik,
+        urlSEC = url
       ) %>%
       select(
         idCIK,
@@ -363,22 +1201,60 @@ parse_13F_url <-
         nameIssuer,
         classShares,
         matches("value"),
-        matches("pct"),
         matches("price"),
         matches("count"),
         everything()
       ) %>%
       suppressWarnings()
 
-  }
+    if ('amounPrincipalValueTotal' %in% names(df_13f)) {
+      df_13f <-
+        df_13f %>%
+        tidyr::separate(
+          classShares,
+          sep = '%',
+          into = c('pctRateNote', 'remove'),
+          remove = F
+        ) %>%
+        mutate(
+          pctPrincipal = (amountSecurityValueTotal / amounPrincipalValueTotal) %>% formattable::percent(),
+          priceStock = ifelse(amounPrincipalValueTotal %>% is.na(), priceSecurity, NA) %>% formattable::currency(),
+          pctRateNote = ifelse(!amounPrincipalValueTotal %>% is.na(), pctRateNote, NA),
+          pctRateNote = (pctRateNote %>% readr::parse_number() / 100) %>% formattable::percent(digits = 2),
+          pctYieldCurrent = ((pctRateNote * amounPrincipalValueTotal) / amountSecurityValueTotal
+          ) %>% formattable::percent(digits = 2)
+        ) %>%
+        select(
+          idCIK,
+          isEquitySecurity,
+          idCUSIP,
+          nameIssuer,
+          classShares,
+          matches("value"),
+          matches("pct"),
+          matches("price"),
+          matches("count"),
+          everything()
+        ) %>%
+        suppressWarnings()
 
-  if (return_message) {
-    list("Parsed: ", url, '\nContains ', df_13f %>% select(idCUSIP) %>% distinct() %>% nrow(), ' securities valued at ', df_13f$valueSecurity %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0), '\n') %>%
-      purrr::invoke(paste0, .) %>%
-      message()
-  }
+    }
 
-  return(df_13f)
+    if (return_message) {
+      list(
+        "Parsed: ",
+        url,
+        '\nContains ',
+        df_13f %>% select(idCUSIP) %>% distinct() %>% nrow(),
+        ' securities valued at ',
+        df_13f$amountSecurityValueTotal %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0),
+        '\n'
+      ) %>%
+        purrr::invoke(paste0, .) %>%
+        message()
+    }
+
+    return(df_13f)
   }
 
 
@@ -386,50 +1262,109 @@ parse_13F_url <-
 get_small_issuer_name_df <-
   function() {
     data_frame(
-      nameSEC = c("Issuer CIK", "Issuer CCC", "DOS File Number", "Offering File Number",
-                  "Name", "Phone", "E-Mail Address", "Exact name of issuer as specified in the issuer's\n\t\t\t\t\tcharter",
-                  "Jurisdiction of Incorporation / Organization", "Year of Incorporation",
-                  "CIK", "Primary Standard Industrial Classification Code", "I.R.S. Employer Identification Number",
-                  "Total number of full-time employees", "Total number of part-time employees",
-                  "Address 1", "Address 2", "City", "State/Country", "Mailing Zip/ Postal Code",
-                  "Phone_1", "Name_1", "Address 1_1", "Address 2_1", "City_1",
-                  "State/Country_1", "Mailing Zip/ Postal Code_1", "Phone_2", "Cash and Cash Equivalents",
-                  "Investment Securities", "Total Investments", "Accounts and Notes Receivable",
-                  "Loans", "Property, Plant and Equipment (PP&E):", "Property and Equipment",
-                  "Total Assets", "Accounts Payable and Accrued Liabilities", "Policy Liabilities and Accruals",
-                  "Deposits", "Long Term Debt", "Total Liabilities", "Total Stockholders' Equity",
-                  "Total Liabilities and Equity", "Total Revenues", "Total Interest Income",
-                  "Costs and Expenses Applicable to Revenues", "Total Interest Expenses",
-                  "Depreciation and Amortization", "Net Income", "Earnings Per Share - Basic",
-                  "Earnings Per Share - Diluted", "Name of Auditor (if any)", "Name of Class (if any) Common Equity",
-                  "Common Equity Units Outstanding", "Common Equity CUSIP (if any):",
-                  "Common Equity Units Name of Trading Center or Quotation Medium (if any)",
-                  "Preferred Equity Name of Class (if any)", "Preferred Equity Units Outstanding",
-                  "Preferred Equity CUSIP (if any)", "Preferred Equity Name of Trading Center or Quotation Medium (if any)",
-                  "Preferred Equity Name of Class (if any)_1", "Preferred Equity Units Outstanding_1",
-                  "Preferred Equity CUSIP (if any)_1", "Preferred Equity Name of Trading Center or Quotation Medium (if any)_1",
-                  "Debt Securities Name of Class (if any)", "Debt Securities Units Outstanding",
-                  "Debt Securities CUSIP (if any):", "Debt Securities Name of Trading Center or Quotation Medium (if any)",
-                  "Number of securities offered", "Number of securities of that class outstanding",
-                  "Price per security", "The portion of the aggregate offering price\n\t\t\t\t\tattributable to securities being offered on behalf of the issuer",
-                  "The portion of the aggregate offering price\n\t\t\t\t\tattributable to securities being offered on behalf of selling\n\t\t\t\t\tsecurityholders",
-                  "The portion of the aggregate offering price\n\t\t\t\t\tattributable to all the securities of the issuer sold pursuant to a\n\t\t\t\t\tqualified offering statement within the 12 months before the\n\t\t\t\t\tqualification of this offering statement",
-                  "The estimated portion of aggregate sales attributable\n\t\t\t\t\tto securities that may be sold pursuant to any other qualified\n\t\t\t\t\toffering statement concurrently with securities being sold under\n\t\t\t\t\tthis offering statement",
-                  "Total (the sum of the aggregate offering price and\n\t\t\t\t\taggregate sales in the four preceding paragraphs)",
-                  "Underwriters - Name of Service Provider", "Underwriters - Fees",
-                  "Sales Commissions - Name of Service Provider", "Sales Commissions - Fee",
-                  "Finders' Fees - Name of Service Provider", "Finders' Fees - Fees",
-                  "Accounting or Audit  - Name of Service Provider", "Accounting or Audit  - Fees",
-                  "Legal - Name of Service Provider", "Legal - Fees", "Promoters - Name of Service Provider",
-                  "Promoters - Fees", "Blue Sky Compliance - Name of Service Provider",
-                  "Blue Sky Compliance - Fees", "CRD Number of any broker or dealer listed:",
-                  "Estimated net proceeds to the issuer", "Clarification of responses (if necessary)",
-                  "Selected States and Jurisdictions", "Selected States and Jurisdictions_1",
-                  "(a)Name of such issuer", "(b)(1) Title of securities issued",
-                  "(2) Total Amount of such securities issued", "(3) Amount of such securities sold by or for the\n\t\t\t\t\taccount of any person who at the time was a director, officer,\n\t\t\t\t\tpromoter or principal securityholder of the issuer of such\n\t\t\t\t\tsecurities, or was an underwriter of any securities of such issuer.",
-                  "(c)(1) Aggregate consideration for which the securities\n\t\t\t\t\twere issued and basis for computing the amount thereof.",
-                  "(2) Aggregate consideration for which the securities\n\t\t\t\t\tlisted in (b)(3) of this item (if any) were issued and the basis\n\t\t\t\t\tfor computing the amount thereof (if different from the basis\n\t\t\t\t\tdescribed in (c)(1)).",
-                  "(d) Indicate the section of the Securities Act or\n\t\t\t\t\tCommission rule or regulation relied upon for exemption from the\n\t\t\t\t\tregistration requirements of such Act and state briefly the facts\n\t\t\t\t\trelied upon for such exemption"
+      nameSEC = c(
+        "Issuer CIK",
+        "Issuer CCC",
+        "DOS File Number",
+        "Offering File Number",
+        "Name",
+        "Phone",
+        "E-Mail Address",
+        "Exact name of issuer as specified in the issuer's\n\t\t\t\t\tcharter",
+        "Jurisdiction of Incorporation / Organization",
+        "Year of Incorporation",
+        "CIK",
+        "Primary Standard Industrial Classification Code",
+        "I.R.S. Employer Identification Number",
+        "Total number of full-time employees",
+        "Total number of part-time employees",
+        "Address 1",
+        "Address 2",
+        "City",
+        "State/Country",
+        "Mailing Zip/ Postal Code",
+        "Phone_1",
+        "Name_1",
+        "Address 1_1",
+        "Address 2_1",
+        "City_1",
+        "State/Country_1",
+        "Mailing Zip/ Postal Code_1",
+        "Phone_2",
+        "Cash and Cash Equivalents",
+        "Investment Securities",
+        "Total Investments",
+        "Accounts and Notes Receivable",
+        "Loans",
+        "Property, Plant and Equipment (PP&E):",
+        "Property and Equipment",
+        "Total Assets",
+        "Accounts Payable and Accrued Liabilities",
+        "Policy Liabilities and Accruals",
+        "Deposits",
+        "Long Term Debt",
+        "Total Liabilities",
+        "Total Stockholders' Equity",
+        "Total Liabilities and Equity",
+        "Total Revenues",
+        "Total Interest Income",
+        "Costs and Expenses Applicable to Revenues",
+        "Total Interest Expenses",
+        "Depreciation and Amortization",
+        "Net Income",
+        "Earnings Per Share - Basic",
+        "Earnings Per Share - Diluted",
+        "Name of Auditor (if any)",
+        "Name of Class (if any) Common Equity",
+        "Common Equity Units Outstanding",
+        "Common Equity CUSIP (if any):",
+        "Common Equity Units Name of Trading Center or Quotation Medium (if any)",
+        "Preferred Equity Name of Class (if any)",
+        "Preferred Equity Units Outstanding",
+        "Preferred Equity CUSIP (if any)",
+        "Preferred Equity Name of Trading Center or Quotation Medium (if any)",
+        "Preferred Equity Name of Class (if any)_1",
+        "Preferred Equity Units Outstanding_1",
+        "Preferred Equity CUSIP (if any)_1",
+        "Preferred Equity Name of Trading Center or Quotation Medium (if any)_1",
+        "Debt Securities Name of Class (if any)",
+        "Debt Securities Units Outstanding",
+        "Debt Securities CUSIP (if any):",
+        "Debt Securities Name of Trading Center or Quotation Medium (if any)",
+        "Number of securities offered",
+        "Number of securities of that class outstanding",
+        "Price per security",
+        "The portion of the aggregate offering price\n\t\t\t\t\tattributable to securities being offered on behalf of the issuer",
+        "The portion of the aggregate offering price\n\t\t\t\t\tattributable to securities being offered on behalf of selling\n\t\t\t\t\tsecurityholders",
+        "The portion of the aggregate offering price\n\t\t\t\t\tattributable to all the securities of the issuer sold pursuant to a\n\t\t\t\t\tqualified offering statement within the 12 months before the\n\t\t\t\t\tqualification of this offering statement",
+        "The estimated portion of aggregate sales attributable\n\t\t\t\t\tto securities that may be sold pursuant to any other qualified\n\t\t\t\t\toffering statement concurrently with securities being sold under\n\t\t\t\t\tthis offering statement",
+        "Total (the sum of the aggregate offering price and\n\t\t\t\t\taggregate sales in the four preceding paragraphs)",
+        "Underwriters - Name of Service Provider",
+        "Underwriters - Fees",
+        "Sales Commissions - Name of Service Provider",
+        "Sales Commissions - Fee",
+        "Finders' Fees - Name of Service Provider",
+        "Finders' Fees - Fees",
+        "Accounting or Audit  - Name of Service Provider",
+        "Accounting or Audit  - Fees",
+        "Legal - Name of Service Provider",
+        "Legal - Fees",
+        "Promoters - Name of Service Provider",
+        "Promoters - Fees",
+        "Blue Sky Compliance - Name of Service Provider",
+        "Blue Sky Compliance - Fees",
+        "CRD Number of any broker or dealer listed:",
+        "Estimated net proceeds to the issuer",
+        "Clarification of responses (if necessary)",
+        "Selected States and Jurisdictions",
+        "Selected States and Jurisdictions_1",
+        "(a)Name of such issuer",
+        "(b)(1) Title of securities issued",
+        "(2) Total Amount of such securities issued",
+        "(3) Amount of such securities sold by or for the\n\t\t\t\t\taccount of any person who at the time was a director, officer,\n\t\t\t\t\tpromoter or principal securityholder of the issuer of such\n\t\t\t\t\tsecurities, or was an underwriter of any securities of such issuer.",
+        "(c)(1) Aggregate consideration for which the securities\n\t\t\t\t\twere issued and basis for computing the amount thereof.",
+        "(2) Aggregate consideration for which the securities\n\t\t\t\t\tlisted in (b)(3) of this item (if any) were issued and the basis\n\t\t\t\t\tfor computing the amount thereof (if different from the basis\n\t\t\t\t\tdescribed in (c)(1)).",
+        "(d) Indicate the section of the Securities Act or\n\t\t\t\t\tCommission rule or regulation relied upon for exemption from the\n\t\t\t\t\tregistration requirements of such Act and state briefly the facts\n\t\t\t\t\trelied upon for such exemption"
       ),
       nameItem = c(
         "idCIK",
@@ -541,7 +1476,7 @@ get_small_issuer_name_df <-
 
 parse_small_offering_data <-
   function(url = "https://www.sec.gov/Archives/edgar/data/1450158/000114420416141190/xsl1-A_X01/primary_doc.xml",
-           return_message = TRUE){
+           return_message = TRUE) {
     page <-
       url %>%
       read_html()
@@ -616,8 +1551,10 @@ parse_small_offering_data <-
 
     df <-
       df %>%
-      mutate_at(df %>% select(idCIK, matches("^amount|perShare|^count|^price|^year")) %>% names(),
-                funs(. %>% readr::parse_number())) %>%
+      mutate_at(df %>% select(idCIK, matches(
+        "^amount|perShare|^count|^price|^year"
+      )) %>% names(),
+      funs(. %>% readr::parse_number())) %>%
       mutate_at(df %>% select(matches("^perShare|^price")) %>% names(),
                 funs(. %>% formattable::currency(digits = 3))) %>%
       mutate_at(df %>% select(matches("^count")) %>% names(),
@@ -625,7 +1562,7 @@ parse_small_offering_data <-
       mutate_at(df %>% select(matches("^amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0)))
 
-    if ('locationsSecuritiesOffered' %in% names(df)){
+    if ('locationsSecuritiesOffered' %in% names(df)) {
       locations <-
         df$locationsSecuritiesOffered %>%
         str_split('\n') %>%
@@ -640,7 +1577,7 @@ parse_small_offering_data <-
         mutate(locationsSecuritiesOffered = locations)
     }
 
-    if ('locationsSecuritiesOfferedBroker' %in% names(df)){
+    if ('locationsSecuritiesOfferedBroker' %in% names(df)) {
       locations <-
         df$locationsSecuritiesOfferedBroker %>%
         str_split('\n') %>%
@@ -657,18 +1594,24 @@ parse_small_offering_data <-
 
     df <-
       df %>%
-      mutate(amountISEbitda = amountISRevenuesTotal - amountISCostsExpensesApplicableToRevenues,
-             amountISLeveredCashFlow = amountISNetIncome + amountISDepreciationAndAmortization,
-             amountISExpenseOther = (amountISNetIncome - (amountISEbitda - amountISDepreciationAndAmortization)),
-             pctReturnOnEquity = amountISNetIncome / amountBSEquityStockholders,
-             pctCashOnCash = amountISLeveredCashFlow / amountBSEquityStockholders,
-             pctReturnOnAssets = amountISNetIncome / amountBSAssetsTotal,
-             pctCurrentRatio = (amountBSCash + amountBSInvestmentSecurities + amountBSAccountsAndNotesReceivable) / (amountBSAccountsPayableAndAccruedLiabilities),
-             pctDebtYield = amountISEbitda / amountBSDebtLongTerm,
-             pctEbitdaMargin = amountISEbitda /  amountISRevenuesTotal,
-             pctCashFlowMargin = amountISLeveredCashFlow / amountISRevenuesTotal,
-             pctNetIncomeMargin = amountISNetIncome / amountISRevenuesTotal,
-             urlSEC = url)
+      mutate(
+        amountISEbitda = amountISRevenuesTotal - amountISCostsExpensesApplicableToRevenues,
+        amountISLeveredCashFlow = amountISNetIncome + amountISDepreciationAndAmortization,
+        amountISExpenseOther = (
+          amountISNetIncome - (amountISEbitda - amountISDepreciationAndAmortization)
+        ),
+        pctReturnOnEquity = amountISNetIncome / amountBSEquityStockholders,
+        pctCashOnCash = amountISLeveredCashFlow / amountBSEquityStockholders,
+        pctReturnOnAssets = amountISNetIncome / amountBSAssetsTotal,
+        pctCurrentRatio = (
+          amountBSCash + amountBSInvestmentSecurities + amountBSAccountsAndNotesReceivable
+        ) / (amountBSAccountsPayableAndAccruedLiabilities),
+        pctDebtYield = amountISEbitda / amountBSDebtLongTerm,
+        pctEbitdaMargin = amountISEbitda /  amountISRevenuesTotal,
+        pctCashFlowMargin = amountISLeveredCashFlow / amountISRevenuesTotal,
+        pctNetIncomeMargin = amountISNetIncome / amountISRevenuesTotal,
+        urlSEC = url
+      )
 
     if ('amountISInterestExpenses' %in% names(df)) {
       df <-
@@ -688,16 +1631,228 @@ parse_small_offering_data <-
   }
 
 # SEC - XBRL Asset --------------------------------------------------------
+generate_id_df <-
+  function(column_code = "codeInterestAccrualMethod",
+           column_name = 'nameInterestAccrualMethod',
+           codes = c(1:7, 98),
+           names = c(
+             "30/360",
+             "Actual/365",
+             "Actual/360",
+             "Actual/Actual",
+             "Actual/366",
+             "Simple",
+             "78s",
+             "Other"
+           )) {
+    data_frame(value = codes) %>%
+      mutate(idItem = 1:n(),
+             item = column_code) %>%
+      spread(item, value) %>%
+      left_join(
+        data_frame(value = names %>% str_to_upper()) %>%
+          mutate(idItem = 1:n(),
+                 item = column_name) %>%
+          spread(item, value)
+      ) %>%
+      suppressMessages()
+
+  }
+
+get_resolved_abs_code_book_df <-
+  function() {
+    dfs <-
+      list(
+        generate_id_df(
+          column_code = "codeInterestAccrualMethod",
+          column_name = 'nameInterestAccrualMethod',
+          codes = c(1:7, 98),
+          names = c(
+            "30/360",
+            "Actual/365",
+            "Actual/360",
+            "Actual/Actual",
+            "Actual/366",
+            "Simple",
+            "78s",
+            "Other"
+          )
+        ),
+        generate_id_df(
+          column_code = "codeOriginalInterestRateType",
+          column_name = 'nameOriginalInterestRateType',
+          codes = c(1:4),
+          names = c('FIXED', 'ARM', 'STEP', 'OTHER')
+        ),
+        generate_id_df(
+          column_code = "codeLienPositionSecuritization",
+          column_name = 'nameLienPositionSecuritization',
+          codes = c(1:3, 98, 99),
+          names = c('Primary', 'Secondary', 'Tertiary', 'Other', 'Unknown')
+        ),
+        generate_id_df(
+          column_code = "codeLoanStructure",
+          column_name = 'nameLoanStructure',
+          codes = c("A1", "A2", "B1", "B2", "C2", "MZ", "PP", "WK"),
+          names = c(
+            'A Note; A/B Participation Structure',
+            'A Note; A/B/C Participation Structure',
+            'B Note; A/B Participation Structure',
+            'Other',
+            'Unknown'
+          )
+        ),
+        generate_id_df(
+          column_code = "codePaymentType",
+          column_name = 'namePaymentType',
+          codes = c(1:7, 98),
+          names = c(
+            "Fully Amortizing",
+            "Fully Amortizing",
+            "Interest Only/Balloon",
+            "Interest Only/Amortizing",
+            "Interest Only/Amortizing/Balloon",
+            "Principal Only",
+            "Hyper - Amortization",
+            "Other"
+          )
+        ),
+        generate_id_df(
+          column_code = "codePaymentFrequency",
+          column_name = 'namePaymentFrequency',
+          codes = c(1, 3, 6, 12),
+          names = c("Monthly", "Quarterly", "Semi-Annually", "Annually", "Daily")
+        ),
+        generate_id_df(
+          column_code = "codePropertyType",
+          column_name = 'namePropertyType',
+          codes = c(
+            "CH",
+            "HC",
+            "IN",
+            "LO",
+            "MF",
+            "MH",
+            "MU",
+            "OF",
+            "RT",
+            "SE",
+            "SS",
+            "WH",
+            "ZZ",
+            "98"
+          ),
+          names = c(
+            "Cooperative housing",
+            "HealthCare",
+            "Industrial",
+            "Lodging",
+            "Multifamily",
+            "Mobile Home Park",
+            "Mixed Use",
+            "Office",
+            "Retail",
+            "Securities",
+            "Self Storage",
+            "Warehouse",
+            "Missing Information",
+            "Other"
+          )
+        ),
+        generate_id_df(
+          column_code = "codeValuationSourceSecuritization",
+          column_name = 'nameValuationSourceSecuritization',
+          codes = c("BPO", "MAI", "MS", "Non-MAI", "98", "SS"),
+          names = c(
+            "Broker price opinion",
+            "Certified MAI appraisal",
+            "Master servicer estimate",
+            "Non-certified MAI appraisal",
+            "Other",
+            "SS estimate"
+          )
+        ),
+        generate_id_df(
+          column_code = "codePropertyStatus",
+          column_name = 'namePropertyStatus',
+          codes = c(1:6),
+          names = c(
+            "In Foreclosure",
+            "REO",
+            "Defeased",
+            "Partial Release",
+            "Substituted",
+            'Same as at Securitization'
+          )
+        ),
+        generate_id_df(
+          column_code = "codeDefeasedStatus",
+          column_name = 'nameDefeasedStatus',
+          codes = c("F", "IP", "NX"),
+          names = c(
+            "Full Defeasance",
+            "Portion of Loan Previously Defeased",
+            "No Defeasance Occurred",
+            "Defeasance Not Allowable"
+          )
+        ),
+        generate_id_df(
+          column_code = "codeNetOperatingIncomeNetCashFlowSecuritization",
+          column_name = 'nameNetOperatingIncomeNetCashFlowSecuritization',
+          codes = c("CREFC", "PSA", "UW"),
+          names = c(
+            "Calculated using CREFC standard",
+            "Calculated using a definition given in the pooling and servicing agreement",
+            "Calculated using the underwriting method",
+            "Defeasance Not Allowable"
+          )
+        ),
+        generate_id_df(
+          column_code = "codeDebtServiceCoverageSecuritization",
+          column_name = 'nameDebtServiceCoverageSecuritization',
+          codes = c("A", "C", "F", "N", "P", "W"),
+          names = c(
+            "Average - Not all properties received financials, servicer allocates debt service only to properties where financials are received.",
+            'Consolidated - All properties reported on one "rolled up" financial from the borrower',
+            'Full - All Statements Collected for all properties',
+            'None Collected - no financial statements were received',
+            'Partial - Not all properties received financials, servicer to leave empty',
+            'Worst Case - Not all properties received financial statements, servicer allocates 100% of Debt Service to all properties where financials are received'
+          )
+        ),
+        generate_id_df(
+          column_code = "codeServicingAdvanceMethod",
+          column_name = 'nameServicingAdvanceMethod',
+          codes = c(1:3, 98, 99),
+          names = c(
+            "Actual Interest, Actual Principal",
+            "Scheduled Interest, Actual Principal",
+            "Other",
+            "unknown"
+          )
+        )
+      )
+
+
+    all_names_df <-
+      reduce(dfs, left_join) %>%
+      suppressMessages()
+    return(all_names_df)
+  }
+
+
 fix_asset_title <-
-  function(data, start_word = "tenant", replace_start = 'name') {
+  function(data,
+           start_word = "tenant",
+           replace_start = 'name') {
     start_word_search <-
       list("^", start_word) %>%
-      purrr::invoke(paste0,.)
+      purrr::invoke(paste0, .)
 
     change_title <-
       names(data) %>% str_count(start_word_search) %>% sum() > 0
 
-    if (change_title){
+    if (change_title) {
       replace_word <-
         replace_start %>% paste0(str_to_title(start_word))
 
@@ -710,7 +1865,7 @@ fix_asset_title <-
 
 remove_columns <-
   function(data, column_name = "numberAssetType") {
-    if (column_name %in% names(data)){
+    if (column_name %in% names(data)) {
       df <-
         data %>%
         select(-one_of(column_name))
@@ -723,414 +1878,987 @@ remove_columns <-
 
 get_asset_name_df <-
   function() {
-    data_frame(nameSEC = c("assetTypeNumber", "assetNumber", "assetGroupNumber", "reportPeriodBeginningDate",
-                           "reportPeriodEndDate", "issuerName", "originalIssuanceDate",
-                           "originalSecurityAmount", "originalSecurityTermNumber", "securityMaturityDate",
-                           "originalAmortizationTermNumber", "originalInterestRatePercentage",
-                           "accrualTypeCode", "interestRateTypeCode", "originalInterestOnlyTermNumber",
-                           "firstPaymentDate", "underwritingIndicator", "securityTitleName",
-                           "denominationNumber", "currencyName", "trusteeName", "secFileNumber",
-                           "cik", "callableIndicator", "paymentFrequencyCode", "zeroCouponIndicator",
-                           "assetAddedIndicator", "assetModifiedIndicator", "reportPeriodBeginningAssetBalanceAmount",
-                           "reportPeriodBeginningScheduledAssetBalanceAmount", "reportPeriodScheduledPaymentAmount",
-                           "reportPeriodInterestRatePercentage", "totalActualPaidAmount",
-                           "actualInterestCollectionPercentage", "actualPrincipalCollectedAmount",
-                           "actualOtherCollectionAmount", "otherPrincipalAdjustmentAmount",
-                           "otherInterestAdjustmentAmount", "scheduledInterestAmount", "scheduledPrincipalAmount",
-                           "endReportingPeriodActualBalanceAmount", "endReportingPeriodScheduledBalanceAmount",
-                           "servicingFeePercentage", "servicingFlatFeeAmount", "zeroBalanceCode",
-                           "zeroBalanceEffectiveDate", "remainingTermToMaturityNumber",
-                           "currentDelinquentStatusNumber", "paymentPastDueDaysNumber",
-                           "paymentPastDueNumber", "nextReportPeriodPaymentDueAmount", "nextDueDate",
-                           "primaryLoanServicerName", "mostRecentServicingTransferReceivedDate",
-                           "assetSubjectToDemandIndicator", "statusAssetSubjectToDemandCode",
-                           "repurchaseAmount", "demandResolutionDate", "repurchaserName",
-                           "repurchaseReplacementReasonCode", "reportPeriodBeginDate", "originalLoanPurposeCode",
-                           "originatorName", "originalLoanAmount", "originalLoanMaturityDate",
-                           "originalInterestRateTypeCode", "originalLienPositionCode", "mostRecentJuniorLoanBalanceAmount",
-                           "mostRecentJuniorLoanBalanceDate", "mostRecentSeniorLoanAmount",
-                           "mostRecentSeniorLoanAmountDate", "loanTypeMostSeniorLienCode",
-                           "mostSeniorLienHybridPeriodNumber", "mostSeniorLienNegativeAmortizationLimitPercentage",
-                           "mostSeniorLienOriginationDate", "prepaymentPenaltyIndicator",
-                           "negativeAmortizationIndicator", "modificationIndicator", "modificationNumber",
-                           "mortgageInsuranceRequirementIndicator", "balloonIndicator",
-                           "coveredHighCostCode", "servicerHazardInsuranceCode", "refinanceCashOutAmount",
-                           "totalOriginationDiscountAmount", "brokerIndicator", "channelCode",
-                           "nationalMortgageLicenseSystemCompanyNumber", "buyDownNumber",
-                           "loanDelinquencyAdvanceNumber", "originationARMIndexCode", "armMarginPercentage",
-                           "fullyIndexedRatePercentage", "initialFixedRatePeriodHybridARMNumber",
-                           "initialInterestRateDecreasePercentage", "initialInterestRateIncreasePercentage",
-                           "indexLookbackNumber", "subsequentInterestRateResetNumber", "lifetimeRateCeilingPercentage",
-                           "lifetimeRateFloorPercentage", "subsequentInterestRateDecreasePercentage",
-                           "subsequentInterestRateIncreasePercentage", "subsequentPaymentResetNumber",
-                           "armRoundCode", "armRoundPercentage", "optionArmIndicator", "paymentMethodAfterRecastCode",
-                           "initialMinimumPaymentAmount", "convertibleIndicator", "HELOCIndicator",
-                           "HELOCDrawNumber", "prepaymentPenaltyCalculationCode", "prepaymentPenaltyTypeCode",
-                           "prepaymentPenaltyTotalTermNumber", "prepaymentPenaltyHardTermNumber",
-                           "negativeAmortizationLimitAmount", "negativeAmortizationInitialRecastNumber",
-                           "negativeAmortizationSubsequentRecastNumber", "negativeAmortizationBalanceAmount",
-                           "initialFixedPaymentNumber", "initialPaymentCapPercentage", "subsequentPaymentCapPercentage",
-                           "initialMinimumPaymentResetNumber", "subsequentMinimumPaymentResetNumber",
-                           "minimumPaymentAmount", "geographicalLocation", "occupancyStatusCode",
-                           "mostRecentOccupancyStatusCode", "propertyTypeCode", "mostRecentPropertyValueAmount",
-                           "mostRecentPropertyValueTypeCode", "mostRecentPropertyValueDate",
-                           "mostRecentAVMModelCode", "mostRecentAVMConfidenceNumber", "originalCLTVPercentage",
-                           "originalLTVPercentage", "originalObligorNumber", "originalObligorCreditScoreNumber",
-                           "originalObligorCreditScoreType", "mostRecentObligorCreditScoreNumber",
-                           "mostRecentObligorCreditScoreType", "mostRecentObligorCreditScoreDate",
-                           "obligorIncomeVerificationLevelCode", "IRSForm4506TIndicator",
-                           "originatorFrontEndDTIPercentage", "originatorBackEndDTIPercentage",
-                           "obligorEmploymentVerificationCode", "obligorEmploymentLengthCode",
-                           "obligorAssetVerificationCode", "originalPledgedAssetsAmount",
-                           "qualificationMethodCode", "mortgageInsuranceCompanyName", "mortgageInsuranceCoveragePercentage",
-                           "poolInsuranceCompanyName", "poolInsuranceStopLossPercentage",
-                           "mortgageInsuranceCoverageTypeCode", "modificationIndicatorReportingPeriod",
-                           "nextPaymentDueDate", "advancingMethodCode", "servicingAdvanceMethodologyCode",
-                           "stopPrincipalInterestAdvancingDate", "reportingPeriodBeginningLoanBalanceAmount",
-                           "reportingPeriodBeginningScheduledLoanBalanceAmount", "nextReportingPeriodPaymentDueAmount",
-                           "reportingPeriodInterestRatePercentage", "nextInterestRatePercentage",
-                           "otherAssessedUncollectedServicerFeeamount", "otherServicingFeeRetainedByServicerAmount",
-                           "reportingPeriodEndActualBalanceAmount", "reportingPeriodEndScheduledBalanceAmount",
-                           "reportingPeriodScheduledPaymentAmount", "actualInterestCollectedAmount",
-                           "actualOtherCollectedAmount", "paidThroughDate", "interestPaidThroughDate",
-                           "paidFullAmount", "servicerAdvancedPrincipalAmount", "servicerAdvancedRepaidPrincipalAmount",
-                           "servicerAdvancedCumulativePrincipalAmount", "servicerAdvanceInterestAmount",
-                           "servicerAdvanceRepaidInterestAmount", "servicerAdvanceCumulativeInterestAmount",
-                           "servicerAdvanceTaxesInsuranceAmount", "servicerAdvanceRepaidTaxesInsuranceAmount",
-                           "servicerAdvanceCumulativeTaxesInsuranceAmount", "servicerAdvanceCorporateAmount",
-                           "servicerAdvanceRepaidCorporateAmount", "servicerAdvanceCumulativeCorporateAmount",
-                           "mostRecentTwelveMonthHistoryCode", "nextResetRatePercentage",
-                           "nextPaymentChangeDate", "nextInterestRateChangeDate", "nextResetPaymentAmount",
-                           "exercisedArmConversionOptionIndicator", "primaryServicerName",
-                           "masterServicerName", "specialServicerName", "subServicerName",
-                           "assetSubjectDemandIndicator", "assetSubjectDemandStatusCode",
-                           "repurchaseReplacementCode", "chargeOffPrincipalAmount", "chargeOffInterestAmount",
-                           "lossMitigationTypeCode", "mostRecentLoanModificationEventCode",
-                           "mostRecentLoanModificationEffectiveDate", "postModificationMaturityDate",
-                           "postModificationInterestRateTypeCode", "postModificationAmortizationTypeCode",
-                           "postModificationInterestPercentage", "postModificationFirstPaymentDate",
-                           "postModificationLoanBalanceAmount", "postModificationPrincipalInterestPaymentAmount",
-                           "totalCapAmount", "incomeVerificationIndicatorAtModification",
-                           "modificationFrontEndDebtToIncomePercentage", "modificationBackEndDebtToIncomePercentage",
-                           "totalDeferredAmount", "forgivenPrincipalCumulativeAmount", "forgivenPrincipalReportingPeriodAmount",
-                           "forgivenInterestCumulativeAmount", "forgivenInterestReportingPeriodAmount",
-                           "actualEndingBalanceTotalDebtAmount", "scheduledEndingBalanceTotalDebtAmount",
-                           "postModificationARMCode", "postModificationARMIndexCode", "postModificationMarginPercentage",
-                           "postModificationInterestResetNumber", "postModificationNextResetDate",
-                           "postModificationIndexLookbackNumber", "postModificationARMRoundingCode",
-                           "postModificationARMRoundingPercentage", "postModificationInitialMinimumPayment",
-                           "postModificationNextPaymentAdjustmentDate", "postModificationARMPaymentRecastFrequency",
-                           "postModificationLifetimeFloorPercentage", "postModificationLifetimeCeilingPercentage",
-                           "postModificationInitialInterestRateIncreasePercentage", "postModificationInitialInterestRateDecreasePercentage",
-                           "postModificationSubsequentInterestIncreasePercentage", "postModificationSubsequentInterestRateDecreasePercentage",
-                           "postModificationPaymentCapPercentage", "postModificationPaymentMethodAfterRecastCode",
-                           "postModificationARMInterestRateTeaserNumber", "postModificationARMPaymentTeaserNumber",
-                           "postModificationARMNegativeAmortizationIndicator", "postModificationARMNegativeAmortizationCapPercentage",
-                           "postModificationInterestOnlyTermNumber", "postModificationInterestOnlyLastPaymentDate",
-                           "postModificationBalloonAmount", "postModificationInterestRateStepIndicator",
-                           "postModificationStepInterestPercentage", "postModificationStepDate",
-                           "postModificationStepPrincipalInterestPaymentAmount", "postModificationStepNumber",
-                           "postModificationMaximumFutureStepAgreementPercentage", "postModificationMaximumStepAgreementRateDate",
-                           "nonInterestBearingDeferredPrincipalCumulativeAmount", "nonInterestBearingDeferredPrincipalReportingPeriodAmount",
-                           "recoveryDeferredPrincipalReportingPeriodAmount", "nonInterestBearingDeferredPaidFullAmount",
-                           "nonInterestBearingDeferredInterestFeeReportingPeriodAmount",
-                           "nonInterestBearingDeferredInterestFeeCumulativeAmount", "recoveryDeferredInterestFeeReportingPeriodAmount",
-                           "mostRecentForbearancePlanOrTrialModificationStartDate", "mostRecentForbearancePlanOrTrialModificationScheduledEndDate",
-                           "mostRecentTrialModificationViolatedDate", "mostRecentRepaymentPlanStartDate",
-                           "mostRecentRepaymentPlanScheduledEndDate", "mostRecentRepaymentPlanViolatedDate",
-                           "shortSaleAcceptedOfferAmount", "mostRecentLossMitigationExitDate",
-                           "mostRecentLossMitigationExitCode", "attorneyReferralDate", "foreclosureDelayReasonCode",
-                           "foreclosureExitDate", "foreclosureExitReasonCode", "noticeOfIntentDate",
-                           "mostRecentAcceptedREOOfferAmount", "mostRecentAcceptedREOOfferDate",
-                           "grossLiquidationProceedsAmount", "netSalesProceedsAmount", "reportingPeriodLossPassedToIssuingEntityAmount",
-                           "cumulativeTotalLossPassedToIssuingEntityAmount", "subsequentRecoveryAmount",
-                           "evictionIndicator", "reoExitDate", "reoExitReasonCode", "UPBLiquidationAmount",
-                           "servicingFeesClaimedAmount", "servicerAdvanceReimbursedPrincipalAmount",
-                           "servicerAdvanceReimbursedInterestAmount", "servicerAdvanceReimbursedTaxesInsuranceAmount",
-                           "servicerAdvanceReimbursedCorporateAmount", "REOManagementFeesAmount",
-                           "cashKeyDeedAmount", "performanceIncentiveFeesAmount", "mortgageInsuranceClaimFiledDate",
-                           "mortgageInsuranceClaimAmount", "mortgageInsuranceClaimPaidDate",
-                           "mortgageInsuranceClaimPaidAmount", "mortgageInsuranceClaimDeniedRescindedDate",
-                           "marketableTitleTransferDate", "nonPayStatusCode", "reportingActionCode",
-                           "GroupID", "reportingPeriodBeginningDate", "reportingPeriodEndDate",
-                           "originationDate", "originalTermLoanNumber", "maturityDate",
-                           "interestRateSecuritizationPercentage", "interestAccrualMethodCode",
-                           "firstLoanPaymentDueDate", "lienPositionSecuritizationCode",
-                           "loanStructureCode", "paymentTypeCode", "periodicPrincipalAndInterestPaymentSecuritizationAmount",
-                           "scheduledPrincipalBalanceSecuritizationAmount", "NumberPropertiesSecuritization",
-                           "NumberProperties", "graceDaysAllowedNumber", "interestOnlyIndicator",
-                           "prepaymentPremiumIndicator", "modifiedIndicator", "armIndexCode",
-                           "firstRateAdjustmentDate", "firstPaymentAdjustmentDate", "armMarginNumber",
-                           "lifetimeRateCapPercentage", "periodicRateIncreaseLimitPercentage",
-                           "periodicRateDecreaseLimitPercentage", "periodicPaymentAdjustmentMaximumAmount",
-                           "periodicPaymentAdjustmentMaximumPercent", "rateResetFrequencyCode",
-                           "paymentResetFrequencyCode", "indexLookbackDaysNumber", "prepaymentLockOutEndDate",
-                           "yieldMaintenanceEndDate", "prepaymentPremiumsEndDate", "maximumNegativeAmortizationAllowedPercentage",
-                           "maximumNegativeAmortizationAllowedAmount", "negativeAmortizationDeferredInterestCapAmount",
-                           "deferredInterestCumulativeAmount", "deferredInterestCollectedAmount",
-                           "property", "reportPeriodModificationIndicator", "reportPeriodBeginningScheduleLoanBalanceAmount",
-                           "totalScheduledPrincipalInterestDueAmount", "servicerTrusteeFeeRatePercentage",
-                           "unscheduledPrincipalCollectedAmount", "reportPeriodEndActualBalanceAmount",
-                           "reportPeriodEndScheduledLoanBalanceAmount", "hyperAmortizingDate",
-                           "servicingAdvanceMethodCode", "nonRecoverabilityIndicator", "totalPrincipalInterestAdvancedOutstandingAmount",
-                           "totalTaxesInsuranceAdvancesOutstandingAmount", "otherExpensesAdvancedOutstandingAmount",
-                           "paymentStatusLoanCode", "armIndexRatePercentage", "nextInterestRateChangeAdjustmentDate",
-                           "nextPaymentAdjustmentDate", "mostRecentSpecialServicerTransferDate",
-                           "mostRecentMasterServicerReturnDate", "realizedLossToTrustAmount",
-                           "liquidationPrepaymentCode", "liquidationPrepaymentDate", "prepaymentPremiumYieldMaintenanceReceivedAmount",
-                           "workoutStrategyCode", "lastModificationDate", "modificationCode",
-                           "postModificationPaymentAmount", "postModificationAmortizationPeriodAmount",
-                           "propertyName", "propertyAddress", "propertyCity", "propertyState",
-                           "propertyZip", "propertyCounty", "netRentableSquareFeetNumber",
-                           "netRentableSquareFeetSecuritizationNumber", "unitsBedsRoomsNumber",
-                           "unitsBedsRoomsSecuritizationNumber", "yearBuiltNumber", "yearLastRenovated",
-                           "valuationSecuritizationAmount", "valuationSourceSecuritizationCode",
-                           "valuationSecuritizationDate", "mostRecentValuationAmount", "mostRecentValuationDate",
-                           "mostRecentValuationSourceCode", "physicalOccupancySecuritizationPercentage",
-                           "mostRecentPhysicalOccupancyPercentage", "propertyStatusCode",
-                           "defeasanceOptionStartDate", "DefeasedStatusCode", "largestTenant",
-                           "squareFeetLargestTenantNumber", "leaseExpirationLargestTenantDate",
-                           "secondLargestTenant", "squareFeetSecondLargestTenantNumber",
-                           "leaseExpirationSecondLargestTenantDate", "thirdLargestTenant",
-                           "squareFeetThirdLargestTenantNumber", "leaseExpirationThirdLargestTenantDate",
-                           "financialsSecuritizationDate", "mostRecentFinancialsStartDate",
-                           "mostRecentFinancialsEndDate", "revenueSecuritizationAmount",
-                           "mostRecentRevenueAmount", "operatingExpensesSecuritizationAmount",
-                           "operatingExpensesAmount", "netOperatingIncomeSecuritizationAmount",
-                           "mostRecentNetOperatingIncomeAmount", "netCashFlowFlowSecuritizationAmount",
-                           "mostRecentNetCashFlowAmount", "netOperatingIncomeNetCashFlowSecuritizationCode",
-                           "netOperatingIncomeNetCashFlowCode", "mostRecentDebtServiceAmount",
-                           "debtServiceCoverageNetOperatingIncomeSecuritizationPercentage",
-                           "mostRecentDebtServiceCoverageNetOperatingIncomePercentage",
-                           "debtServiceCoverageNetCashFlowSecuritizationPercentage", "mostRecentDebtServiceCoverageNetCashFlowpercentage",
-                           "debtServiceCoverageSecuritizationCode", "mostRecentDebtServiceCoverageCode",
-                           "mostRecentAnnualLeaseRolloverReviewDate", "reportingPeriodEndingDate",
-                           "originalLoanTerm", "loanMaturityDate", "interestCalculationTypeCode",
-                           "originalFirstPaymentDate", "gracePeriodNumber", "subvented",
-                           "vehicleManufacturerName", "vehicleModelName", "vehicleNewUsedCode",
-                           "vehicleModelYear", "vehicleTypeCode", "vehicleValueAmount",
-                           "vehicleValueSourceCode", "obligorCreditScoreType", "obligorCreditScore",
-                           "coObligorIndicator", "paymentToIncomePercentage", "obligorGeographicLocation",
-                           "reportingPeriodModificationIndicator", "nextReportingPeriodPaymentAmountDue",
-                           "otherServicerFeeRetainedByServicer", "otherAssessedUncollectedServicerFeeAmount",
-                           "reportingPeriodActualEndBalanceAmount", "totalActualAmountPaid",
-                           "servicerAdvancedAmount", "currentDelinquencyStatus", "chargedoffPrincipalAmount",
-                           "recoveredAmount", "modificationTypeCode", "paymentExtendedNumber",
-                           "repossessedIndicator", "repossessedProceedsAmount", "reportingPeriodBeginDate",
-                           "acquisitionCost", "originalLeaseTermNumber", "scheduledTerminationDate",
-                           "gracePeriod", "baseResidualValue", "baseResidualSourceCode",
-                           "contractResidualValue", "lesseeCreditScoreType", "lesseeCreditScore",
-                           "lesseeIncomeVerificationLevelCode", "lesseeEmploymentVerificationCode",
-                           "coLesseePresentIndicator", "lesseeGeographicLocation", "remainingTermNumber",
-                           "reportingPeriodSecuritizationValueAmount", "securitizationDiscountRate",
-                           "otherLeaseLevelServicingFeesRetainedAmount", "reportingPeriodEndingActualBalanceAmount",
-                           "reportingPeriodEndActualSecuritizationAmount", "primaryLeaseServicerName",
-                           "DemandResolutionDate", "repurchaseOrReplacementReasonCode",
-                           "chargedOffAmount", "leaseExtended", "terminationIndicator",
-                           "excessFeeAmount", "liquidationProceedsAmount"),
-               nameActual = c("numberAssetType", "numberAsset", "numberAssetGroup", "dateReportPeriodBeginning",
-                              "dateReportPeriodEnd", "nameIssuer", "dateOriginalIssuance",
-                              "amountOriginalSecurity", "numberOriginalSecurityTerm", "dateSecurityMaturity",
-                              "numberOriginalAmortizationTerm", "percentageOriginalInterestRate",
-                              "codeAccrualType", "codeInterestRateType", "numberOriginalInterestOnlyTerm",
-                              "dateFirstPayment", "hasUnderwriting", "nameSecurityTitle", "numberDenomination",
-                              "nameCurrency", "nameTrustee", "numberSecFile", "idCIK", "hasCallable",
-                              "codePaymentFrequency", "hasZeroCoupon", "hasAssetAdded", "hasAssetModified",
-                              "amountReportPeriodBeginningAssetBalance", "amountReportPeriodBeginningScheduledAssetBalance",
-                              "amountReportPeriodScheduledPayment", "percentageReportPeriodInterestRate",
-                              "amountTotalActualPaid", "percentageActualInterestCollection",
-                              "amountActualPrincipalCollected", "amountActualOtherCollection",
-                              "amountOtherPrincipalAdjustment", "amountOtherInterestAdjustment",
-                              "amountScheduledInterest", "amountScheduledPrincipal", "amountEndReportingPeriodActualBalance",
-                              "amountEndReportingPeriodScheduledBalance", "percentageServicingFee",
-                              "amountServicingFlatFee", "codeZeroBalance", "dateZeroBalanceEffective",
-                              "numberRemainingTermToMaturity", "numberCurrentDelinquentStatus",
-                              "numberPaymentPastDueDays", "numberPaymentPastDue", "amountNextReportPeriodPaymentDue",
-                              "dateNextDue", "namePrimaryLoanServicer", "dateMostRecentServicingTransferReceived",
-                              "hasAssetSubjectToDemand", "codeStatusAssetSubjectToDemand",
-                              "amountRepurchase", "dateDemandResolution", "nameRepurchaser",
-                              "codeRepurchaseReplacementReason", "dateReportPeriodBegin", "codeOriginalLoanPurpose",
-                              "nameOriginator", "amountOriginalLoan", "dateOriginalLoanMaturity",
-                              "codeOriginalInterestRateType", "codeOriginalLienPosition", "amountMostRecentJuniorLoanBalance",
-                              "dateMostRecentJuniorLoanBalance", "amountMostRecentSeniorLoan",
-                              "dateMostRecentSeniorLoanAmount", "codeLoanTypeMostSeniorLien",
-                              "numberMostSeniorLienHybridPeriod", "percentageMostSeniorLienNegativeAmortizationLimit",
-                              "dateMostSeniorLienOrigination", "hasPrepaymentPenalty", "hasNegativeAmortization",
-                              "hasModification", "numberModification", "hasMortgageInsuranceRequirement",
-                              "hasBalloon", "codeCoveredHighCost", "codeServicerHazardInsurance",
-                              "amountRefinanceCashOut", "amountTotalOriginationDiscount", "hasBroker",
-                              "codeChannel", "numberNationalMortgageLicenseSystemCompany",
-                              "numberBuyDown", "numberLoanDelinquencyAdvance", "codeOriginationARMIndex",
-                              "percentageArmMargin", "percentageFullyIndexedRate", "numberInitialFixedRatePeriodHybridARM",
-                              "percentageInitialInterestRateDecrease", "percentageInitialInterestRateIncrease",
-                              "numberIndexLookback", "numberSubsequentInterestRateReset", "percentageLifetimeRateCeiling",
-                              "percentageLifetimeRateFloor", "percentageSubsequentInterestRateDecrease",
-                              "percentageSubsequentInterestRateIncrease", "numberSubsequentPaymentReset",
-                              "codeArmRound", "percentageArmRound", "hasOptionArm", "codePaymentMethodAfterRecast",
-                              "amountInitialMinimumPayment", "hasConvertible", "hasHELOC",
-                              "numberHELOCDraw", "codePrepaymentPenaltyCalculation", "codePrepaymentPenaltyType",
-                              "numberPrepaymentPenaltyTotalTerm", "numberPrepaymentPenaltyHardTerm",
-                              "amountNegativeAmortizationLimit", "numberNegativeAmortizationInitialRecast",
-                              "numberNegativeAmortizationSubsequentRecast", "amountNegativeAmortizationBalance",
-                              "numberInitialFixedPayment", "percentageInitialPaymentCap", "percentageSubsequentPaymentCap",
-                              "numberInitialMinimumPaymentReset", "numberSubsequentMinimumPaymentReset",
-                              "amountMinimumPayment", "locationGeographical", "codeOccupancyStatus",
-                              "codeMostRecentOccupancyStatus", "codePropertyType", "amountMostRecentPropertyValue",
-                              "codeMostRecentPropertyValueType", "dateMostRecentPropertyValue",
-                              "codeMostRecentAVMModel", "numberMostRecentAVMConfidence", "percentageOriginalCLTV",
-                              "percentageOriginalLTV", "numberOriginalObligor", "numberOriginalObligorCreditScore",
-                              "typeOriginalObligorCreditScore", "numberMostRecentObligorCreditScore",
-                              "typeMostRecentObligorCreditScore", "dateMostRecentObligorCreditScore",
-                              "codeObligorIncomeVerificationLevel", "hasIRSForm4506T", "percentageOriginatorFrontEndDTI",
-                              "percentageOriginatorBackEndDTI", "codeObligorEmploymentVerification",
-                              "codeObligorEmploymentLength", "codeObligorAssetVerification",
-                              "amountOriginalPledgedAssets", "codeQualificationMethod", "nameMortgageInsuranceCompany",
-                              "percentageMortgageInsuranceCoverage", "namePoolInsuranceCompany",
-                              "percentagePoolInsuranceStopLoss", "codeMortgageInsuranceCoverageType",
-                              "periodModificationHasReporting", "dateNextPaymentDue", "codeAdvancingMethod",
-                              "codeServicingAdvanceMethodology", "dateStopPrincipalInterestAdvancing",
-                              "amountReportingPeriodBeginningLoanBalance", "amountReportingPeriodBeginningScheduledLoanBalance",
-                              "amountNextReportingPeriodPaymentDue", "percentageReportingPeriodInterestRate",
-                              "percentageNextInterestRate", "feeamountOtherAssessedUncollectedServicer",
-                              "amountOtherServicingFeeRetainedByServicer", "amountReportingPeriodEndActualBalance",
-                              "amountReportingPeriodEndScheduledBalance", "amountReportingPeriodScheduledPayment",
-                              "amountActualInterestCollected", "amountActualOtherCollected",
-                              "datePaidThrough", "dateInterestPaidThrough", "amountPaidFull",
-                              "amountServicerAdvancedPrincipal", "amountServicerAdvancedRepaidPrincipal",
-                              "amountServicerAdvancedCumulativePrincipal", "amountServicerAdvanceInterest",
-                              "amountServicerAdvanceRepaidInterest", "amountServicerAdvanceCumulativeInterest",
-                              "amountServicerAdvanceTaxesInsurance", "amountServicerAdvanceRepaidTaxesInsurance",
-                              "amountServicerAdvanceCumulativeTaxesInsurance", "amountServicerAdvanceCorporate",
-                              "amountServicerAdvanceRepaidCorporate", "amountServicerAdvanceCumulativeCorporate",
-                              "codeMostRecentTwelveMonthHistory", "percentageNextResetRate",
-                              "dateNextPaymentChange", "dateNextInterestRateChange", "amountNextResetPayment",
-                              "hasExercisedArmConversionOption", "namePrimaryServicer", "nameMasterServicer",
-                              "nameSpecialServicer", "nameSubServicer", "hasAssetSubjectDemand",
-                              "codeAssetSubjectDemandStatus", "codeRepurchaseReplacement",
-                              "amountChargeOffPrincipal", "amountChargeOffInterest", "codeLossMitigationType",
-                              "codeMostRecentLoanModificationEvent", "dateMostRecentLoanModificationEffective",
-                              "datePostModificationMaturity", "codePostModificationInterestRateType",
-                              "codePostModificationAmortizationType", "percentagePostModificationInterest",
-                              "datePostModificationFirstPayment", "amountPostModificationLoanBalance",
-                              "amountPostModificationPrincipalInterestPayment", "amountTotalCap",
-                              "modificationIncomeVerificationHasAt", "percentageModificationFrontEndDebtToIncome",
-                              "percentageModificationBackEndDebtToIncome", "amountTotalDeferred",
-                              "amountForgivenPrincipalCumulative", "amountForgivenPrincipalReportingPeriod",
-                              "amountForgivenInterestCumulative", "amountForgivenInterestReportingPeriod",
-                              "amountActualEndingBalanceTotalDebt", "amountScheduledEndingBalanceTotalDebt",
-                              "codePostModificationARM", "codePostModificationARMIndex", "percentagePostModificationMargin",
-                              "numberPostModificationInterestReset", "datePostModificationNextReset",
-                              "numberPostModificationIndexLookback", "codePostModificationARMRounding",
-                              "percentagePostModificationARMRounding", "paymentPostModificationInitialMinimum",
-                              "datePostModificationNextPaymentAdjustment", "frequencyPostModificationARMPaymentRecast",
-                              "percentagePostModificationLifetimeFloor", "percentagePostModificationLifetimeCeiling",
-                              "percentagePostModificationInitialInterestRateIncrease", "percentagePostModificationInitialInterestRateDecrease",
-                              "percentagePostModificationSubsequentInterestIncrease", "percentagePostModificationSubsequentInterestRateDecrease",
-                              "percentagePostModificationPaymentCap", "codePostModificationPaymentMethodAfterRecast",
-                              "numberPostModificationARMInterestRateTeaser", "numberPostModificationARMPaymentTeaser",
-                              "hasPostModificationARMNegativeAmortization", "percentagePostModificationARMNegativeAmortizationCap",
-                              "numberPostModificationInterestOnlyTerm", "datePostModificationInterestOnlyLastPayment",
-                              "amountPostModificationBalloon", "hasPostModificationInterestRateStep",
-                              "percentagePostModificationStepInterest", "datePostModificationStep",
-                              "amountPostModificationStepPrincipalInterestPayment", "numberPostModificationStep",
-                              "percentagePostModificationMaximumFutureStepAgreement", "datePostModificationMaximumStepAgreementRate",
-                              "amountNonInterestBearingDeferredPrincipalCumulative", "amountNonInterestBearingDeferredPrincipalReportingPeriod",
-                              "amountRecoveryDeferredPrincipalReportingPeriod", "amountNonInterestBearingDeferredPaidFull",
-                              "amountNonInterestBearingDeferredInterestFeeReportingPeriod",
-                              "amountNonInterestBearingDeferredInterestFeeCumulative", "amountRecoveryDeferredInterestFeeReportingPeriod",
-                              "dateMostRecentForbearancePlanOrTrialModificationStart", "dateMostRecentForbearancePlanOrTrialModificationScheduledEnd",
-                              "dateMostRecentTrialModificationViolated", "dateMostRecentRepaymentPlanStart",
-                              "dateMostRecentRepaymentPlanScheduledEnd", "dateMostRecentRepaymentPlanViolated",
-                              "amountShortSaleAcceptedOffer", "dateMostRecentLossMitigationExit",
-                              "codeMostRecentLossMitigationExit", "dateAttorneyReferral", "codeForeclosureDelayReason",
-                              "dateForeclosureExit", "codeForeclosureExitReason", "dateNoticeOfIntent",
-                              "amountMostRecentAcceptedREOOffer", "dateMostRecentAcceptedREOOffer",
-                              "amountGrossLiquidationProceeds", "amountNetSalesProceeds", "amountReportingPeriodLossPassedToIssuingEntity",
-                              "amountCumulativeTotalLossPassedToIssuingEntity", "amountSubsequentRecovery",
-                              "hasEviction", "dateReoExit", "codeReoExitReason", "amountUPBLiquidation",
-                              "amountServicingFeesClaimed", "amountServicerAdvanceReimbursedPrincipal",
-                              "amountServicerAdvanceReimbursedInterest", "amountServicerAdvanceReimbursedTaxesInsurance",
-                              "amountServicerAdvanceReimbursedCorporate", "amountREOManagementFees",
-                              "amountCashKeyDeed", "amountPerformanceIncentiveFees", "dateMortgageInsuranceClaimFiled",
-                              "amountMortgageInsuranceClaim", "dateMortgageInsuranceClaimPaid",
-                              "amountMortgageInsuranceClaimPaid", "dateMortgageInsuranceClaimDeniedRescinded",
-                              "dateMarketableTitleTransfer", "codeNonPayStatus", "codeReportingAction",
-                              "idGroup", "dateReportingPeriodBeginning", "dateReportingPeriodEnd",
-                              "dateOrigination", "numberOriginalTermLoan", "dateMaturity",
-                              "percentageInterestRateSecuritization", "codeInterestAccrualMethod",
-                              "dateFirstLoanPaymentDue", "codeLienPositionSecuritization",
-                              "codeLoanStructure", "codePaymentType", "amountPeriodicPrincipalAndInterestPaymentSecuritization",
-                              "amountScheduledPrincipalBalanceSecuritization", "securitizationNumberProperties",
-                              "propertiesNumber", "numberGraceDaysAllowed", "hasInterestOnly",
-                              "hasPrepaymentPremium", "hasModified", "codeArmIndex", "dateFirstRateAdjustment",
-                              "dateFirstPaymentAdjustment", "numberArmMargin", "percentageLifetimeRateCap",
-                              "percentagePeriodicRateIncreaseLimit", "percentagePeriodicRateDecreaseLimit",
-                              "amountPeriodicPaymentAdjustmentMaximum", "percentPeriodicPaymentAdjustmentMaximum",
-                              "codeRateResetFrequency", "codePaymentResetFrequency", "numberIndexLookbackDays",
-                              "datePrepaymentLockOutEnd", "dateYieldMaintenanceEnd", "datePrepaymentPremiumsEnd",
-                              "percentageMaximumNegativeAmortizationAllowed", "amountMaximumNegativeAmortizationAllowed",
-                              "amountNegativeAmortizationDeferredInterestCap", "amountDeferredInterestCumulative",
-                              "amountDeferredInterestCollected", "propertyProperty", "hasReportPeriodModification",
-                              "amountReportPeriodBeginningScheduleLoanBalance", "amountTotalScheduledPrincipalInterestDue",
-                              "percentageServicerTrusteeFeeRate", "amountUnscheduledPrincipalCollected",
-                              "amountReportPeriodEndActualBalance", "amountReportPeriodEndScheduledLoanBalance",
-                              "dateHyperAmortizing", "codeServicingAdvanceMethod", "hasNonRecoverability",
-                              "amountTotalPrincipalInterestAdvancedOutstanding", "amountTotalTaxesInsuranceAdvancesOutstanding",
-                              "amountOtherExpensesAdvancedOutstanding", "codePaymentStatusLoan",
-                              "percentageArmIndexRate", "dateNextInterestRateChangeAdjustment",
-                              "dateNextPaymentAdjustment", "dateMostRecentSpecialServicerTransfer",
-                              "dateMostRecentMasterServicerReturn", "amountRealizedLossToTrust",
-                              "codeLiquidationPrepayment", "dateLiquidationPrepayment", "amountPrepaymentPremiumYieldMaintenanceReceived",
-                              "codeWorkoutStrategy", "dateLastModification", "codeModification",
-                              "amountPostModificationPayment", "amountPostModificationAmortizationPeriod",
-                              "nameProperty", "addressProperty", "cityProperty", "stateProperty",
-                              "zipProperty", "countyProperty", "numberNetRentableSquareFeet",
-                              "numberNetRentableSquareFeetSecuritization", "numberUnitsBedsRooms",
-                              "numberUnitsBedsRoomsSecuritization", "numberYearBuilt", "renovatedYearLast",
-                              "amountValuationSecuritization", "codeValuationSourceSecuritization",
-                              "dateValuationSecuritization", "amountMostRecentValuation", "dateMostRecentValuation",
-                              "codeMostRecentValuationSource", "percentagePhysicalOccupancySecuritization",
-                              "percentageMostRecentPhysicalOccupancy", "codePropertyStatus",
-                              "dateDefeasanceOptionStart", "codeDefeasedStatus", "tenantLargest",
-                              "numberSquareFeetLargestTenant", "dateLeaseExpirationLargestTenant",
-                              "tenantSecondLargest", "numberSquareFeetSecondLargestTenant",
-                              "dateLeaseExpirationSecondLargestTenant", "tenantThirdLargest",
-                              "numberSquareFeetThirdLargestTenant", "dateLeaseExpirationThirdLargestTenant",
-                              "dateFinancialsSecuritization", "dateMostRecentFinancialsStart",
-                              "dateMostRecentFinancialsEnd", "amountRevenueSecuritization",
-                              "amountMostRecentRevenue", "amountOperatingExpensesSecuritization",
-                              "amountOperatingExpenses", "amountNetOperatingIncomeSecuritization",
-                              "amountMostRecentNetOperatingIncome", "amountNetCashFlowFlowSecuritization",
-                              "amountMostRecentNetCashFlow", "codeNetOperatingIncomeNetCashFlowSecuritization",
-                              "codeNetOperatingIncomeNetCashFlow", "amountMostRecentDebtService",
-                              "percentageDebtServiceCoverageNetOperatingIncomeSecuritization",
-                              "percentageMostRecentDebtServiceCoverageNetOperatingIncome",
-                              "percentageDebtServiceCoverageNetCashFlowSecuritization", "flowpercentageMostRecentDebtServiceCoverageNetCash",
-                              "codeDebtServiceCoverageSecuritization", "codeMostRecentDebtServiceCoverage",
-                              "dateMostRecentAnnualLeaseRolloverReview", "dateReportingPeriodEnding",
-                              "termOriginalLoan", "dateLoanMaturity", "codeInterestCalculationType",
-                              "dateOriginalFirstPayment", "numberGracePeriod", "subventedSubvented",
-                              "nameVehicleManufacturer", "nameVehicleModel", "codeVehicleNewUsed",
-                              "yearVehicleModel", "codeVehicleType", "amountVehicleValue",
-                              "codeVehicleValueSource", "typeObligorCreditScore", "scoreObligorCredit",
-                              "hasCoObligor", "percentagePaymentToIncome", "locationObligorGeographic",
-                              "hasReportingPeriodModification", "dueNextReportingPeriodPaymentAmount",
-                              "servicerOtherServicerFeeRetainedBy", "amountOtherAssessedUncollectedServicerFee",
-                              "amountReportingPeriodActualEndBalance", "paidTotalActualAmount",
-                              "amountServicerAdvanced", "statusCurrentDelinquency", "amountChargedoffPrincipal",
-                              "amountRecovered", "codeModificationType", "numberPaymentExtended",
-                              "hasRepossessed", "amountRepossessedProceeds", "dateReportingPeriodBegin",
-                              "costAcquisition", "numberOriginalLeaseTerm", "dateScheduledTermination",
-                              "periodGrace", "valueBaseResidual", "codeBaseResidualSource",
-                              "valueContractResidual", "typeLesseeCreditScore", "scoreLesseeCredit",
-                              "codeLesseeIncomeVerificationLevel", "codeLesseeEmploymentVerification",
-                              "hasCoLesseePresent", "locationLesseeGeographic", "numberRemainingTerm",
-                              "amountReportingPeriodSecuritizationValue", "rateSecuritizationDiscount",
-                              "amountOtherLeaseLevelServicingFeesRetained", "amountReportingPeriodEndingActualBalance",
-                              "amountReportingPeriodEndActualSecuritization", "namePrimaryLeaseServicer",
-                              "dateDemandResolution", "codeRepurchaseOrReplacementReason",
-                              "amountChargedOff", "extendedLease", "hasTermination", "amountExcessFee",
-                              "amountLiquidationProceeds")
+    data_frame(
+      nameSEC = c(
+        "assetTypeNumber",
+        "assetNumber",
+        "assetGroupNumber",
+        "reportPeriodBeginningDate",
+        "reportPeriodEndDate",
+        "issuerName",
+        "originalIssuanceDate",
+        "originalSecurityAmount",
+        "originalSecurityTermNumber",
+        "securityMaturityDate",
+        "originalAmortizationTermNumber",
+        "originalInterestRatePercentage",
+        "accrualTypeCode",
+        "interestRateTypeCode",
+        "originalInterestOnlyTermNumber",
+        "firstPaymentDate",
+        "underwritingIndicator",
+        "securityTitleName",
+        "denominationNumber",
+        "currencyName",
+        "trusteeName",
+        "secFileNumber",
+        "cik",
+        "callableIndicator",
+        "paymentFrequencyCode",
+        "zeroCouponIndicator",
+        "assetAddedIndicator",
+        "assetModifiedIndicator",
+        "reportPeriodBeginningAssetBalanceAmount",
+        "reportPeriodBeginningScheduledAssetBalanceAmount",
+        "reportPeriodScheduledPaymentAmount",
+        "reportPeriodInterestRatePercentage",
+        "totalActualPaidAmount",
+        "actualInterestCollectionPercentage",
+        "actualPrincipalCollectedAmount",
+        "actualOtherCollectionAmount",
+        "otherPrincipalAdjustmentAmount",
+        "otherInterestAdjustmentAmount",
+        "scheduledInterestAmount",
+        "scheduledPrincipalAmount",
+        "endReportingPeriodActualBalanceAmount",
+        "endReportingPeriodScheduledBalanceAmount",
+        "servicingFeePercentage",
+        "servicingFlatFeeAmount",
+        "zeroBalanceCode",
+        "zeroBalanceEffectiveDate",
+        "remainingTermToMaturityNumber",
+        "currentDelinquentStatusNumber",
+        "paymentPastDueDaysNumber",
+        "paymentPastDueNumber",
+        "nextReportPeriodPaymentDueAmount",
+        "nextDueDate",
+        "primaryLoanServicerName",
+        "mostRecentServicingTransferReceivedDate",
+        "assetSubjectToDemandIndicator",
+        "statusAssetSubjectToDemandCode",
+        "repurchaseAmount",
+        "demandResolutionDate",
+        "repurchaserName",
+        "repurchaseReplacementReasonCode",
+        "reportPeriodBeginDate",
+        "originalLoanPurposeCode",
+        "originatorName",
+        "originalLoanAmount",
+        "originalLoanMaturityDate",
+        "originalInterestRateTypeCode",
+        "originalLienPositionCode",
+        "mostRecentJuniorLoanBalanceAmount",
+        "mostRecentJuniorLoanBalanceDate",
+        "mostRecentSeniorLoanAmount",
+        "mostRecentSeniorLoanAmountDate",
+        "loanTypeMostSeniorLienCode",
+        "mostSeniorLienHybridPeriodNumber",
+        "mostSeniorLienNegativeAmortizationLimitPercentage",
+        "mostSeniorLienOriginationDate",
+        "prepaymentPenaltyIndicator",
+        "negativeAmortizationIndicator",
+        "modificationIndicator",
+        "modificationNumber",
+        "mortgageInsuranceRequirementIndicator",
+        "balloonIndicator",
+        "coveredHighCostCode",
+        "servicerHazardInsuranceCode",
+        "refinanceCashOutAmount",
+        "totalOriginationDiscountAmount",
+        "brokerIndicator",
+        "channelCode",
+        "nationalMortgageLicenseSystemCompanyNumber",
+        "buyDownNumber",
+        "loanDelinquencyAdvanceNumber",
+        "originationARMIndexCode",
+        "armMarginPercentage",
+        "fullyIndexedRatePercentage",
+        "initialFixedRatePeriodHybridARMNumber",
+        "initialInterestRateDecreasePercentage",
+        "initialInterestRateIncreasePercentage",
+        "indexLookbackNumber",
+        "subsequentInterestRateResetNumber",
+        "lifetimeRateCeilingPercentage",
+        "lifetimeRateFloorPercentage",
+        "subsequentInterestRateDecreasePercentage",
+        "subsequentInterestRateIncreasePercentage",
+        "subsequentPaymentResetNumber",
+        "armRoundCode",
+        "armRoundPercentage",
+        "optionArmIndicator",
+        "paymentMethodAfterRecastCode",
+        "initialMinimumPaymentAmount",
+        "convertibleIndicator",
+        "HELOCIndicator",
+        "HELOCDrawNumber",
+        "prepaymentPenaltyCalculationCode",
+        "prepaymentPenaltyTypeCode",
+        "prepaymentPenaltyTotalTermNumber",
+        "prepaymentPenaltyHardTermNumber",
+        "negativeAmortizationLimitAmount",
+        "negativeAmortizationInitialRecastNumber",
+        "negativeAmortizationSubsequentRecastNumber",
+        "negativeAmortizationBalanceAmount",
+        "initialFixedPaymentNumber",
+        "initialPaymentCapPercentage",
+        "subsequentPaymentCapPercentage",
+        "initialMinimumPaymentResetNumber",
+        "subsequentMinimumPaymentResetNumber",
+        "minimumPaymentAmount",
+        "geographicalLocation",
+        "occupancyStatusCode",
+        "mostRecentOccupancyStatusCode",
+        "propertyTypeCode",
+        "mostRecentPropertyValueAmount",
+        "mostRecentPropertyValueTypeCode",
+        "mostRecentPropertyValueDate",
+        "mostRecentAVMModelCode",
+        "mostRecentAVMConfidenceNumber",
+        "originalCLTVPercentage",
+        "originalLTVPercentage",
+        "originalObligorNumber",
+        "originalObligorCreditScoreNumber",
+        "originalObligorCreditScoreType",
+        "mostRecentObligorCreditScoreNumber",
+        "mostRecentObligorCreditScoreType",
+        "mostRecentObligorCreditScoreDate",
+        "obligorIncomeVerificationLevelCode",
+        "IRSForm4506TIndicator",
+        "originatorFrontEndDTIPercentage",
+        "originatorBackEndDTIPercentage",
+        "obligorEmploymentVerificationCode",
+        "obligorEmploymentLengthCode",
+        "obligorAssetVerificationCode",
+        "originalPledgedAssetsAmount",
+        "qualificationMethodCode",
+        "mortgageInsuranceCompanyName",
+        "mortgageInsuranceCoveragePercentage",
+        "poolInsuranceCompanyName",
+        "poolInsuranceStopLossPercentage",
+        "mortgageInsuranceCoverageTypeCode",
+        "modificationIndicatorReportingPeriod",
+        "nextPaymentDueDate",
+        "advancingMethodCode",
+        "servicingAdvanceMethodologyCode",
+        "stopPrincipalInterestAdvancingDate",
+        "reportingPeriodBeginningLoanBalanceAmount",
+        "reportingPeriodBeginningScheduledLoanBalanceAmount",
+        "nextReportingPeriodPaymentDueAmount",
+        "reportingPeriodInterestRatePercentage",
+        "nextInterestRatePercentage",
+        "otherAssessedUncollectedServicerFeeamount",
+        "otherServicingFeeRetainedByServicerAmount",
+        "reportingPeriodEndActualBalanceAmount",
+        "reportingPeriodEndScheduledBalanceAmount",
+        "reportingPeriodScheduledPaymentAmount",
+        "actualInterestCollectedAmount",
+        "actualOtherCollectedAmount",
+        "paidThroughDate",
+        "interestPaidThroughDate",
+        "paidFullAmount",
+        "servicerAdvancedPrincipalAmount",
+        "servicerAdvancedRepaidPrincipalAmount",
+        "servicerAdvancedCumulativePrincipalAmount",
+        "servicerAdvanceInterestAmount",
+        "servicerAdvanceRepaidInterestAmount",
+        "servicerAdvanceCumulativeInterestAmount",
+        "servicerAdvanceTaxesInsuranceAmount",
+        "servicerAdvanceRepaidTaxesInsuranceAmount",
+        "servicerAdvanceCumulativeTaxesInsuranceAmount",
+        "servicerAdvanceCorporateAmount",
+        "servicerAdvanceRepaidCorporateAmount",
+        "servicerAdvanceCumulativeCorporateAmount",
+        "mostRecentTwelveMonthHistoryCode",
+        "nextResetRatePercentage",
+        "nextPaymentChangeDate",
+        "nextInterestRateChangeDate",
+        "nextResetPaymentAmount",
+        "exercisedArmConversionOptionIndicator",
+        "primaryServicerName",
+        "masterServicerName",
+        "specialServicerName",
+        "subServicerName",
+        "assetSubjectDemandIndicator",
+        "assetSubjectDemandStatusCode",
+        "repurchaseReplacementCode",
+        "chargeOffPrincipalAmount",
+        "chargeOffInterestAmount",
+        "lossMitigationTypeCode",
+        "mostRecentLoanModificationEventCode",
+        "mostRecentLoanModificationEffectiveDate",
+        "postModificationMaturityDate",
+        "postModificationInterestRateTypeCode",
+        "postModificationAmortizationTypeCode",
+        "postModificationInterestPercentage",
+        "postModificationFirstPaymentDate",
+        "postModificationLoanBalanceAmount",
+        "postModificationPrincipalInterestPaymentAmount",
+        "totalCapAmount",
+        "incomeVerificationIndicatorAtModification",
+        "modificationFrontEndDebtToIncomePercentage",
+        "modificationBackEndDebtToIncomePercentage",
+        "totalDeferredAmount",
+        "forgivenPrincipalCumulativeAmount",
+        "forgivenPrincipalReportingPeriodAmount",
+        "forgivenInterestCumulativeAmount",
+        "forgivenInterestReportingPeriodAmount",
+        "actualEndingBalanceTotalDebtAmount",
+        "scheduledEndingBalanceTotalDebtAmount",
+        "postModificationARMCode",
+        "postModificationARMIndexCode",
+        "postModificationMarginPercentage",
+        "postModificationInterestResetNumber",
+        "postModificationNextResetDate",
+        "postModificationIndexLookbackNumber",
+        "postModificationARMRoundingCode",
+        "postModificationARMRoundingPercentage",
+        "postModificationInitialMinimumPayment",
+        "postModificationNextPaymentAdjustmentDate",
+        "postModificationARMPaymentRecastFrequency",
+        "postModificationLifetimeFloorPercentage",
+        "postModificationLifetimeCeilingPercentage",
+        "postModificationInitialInterestRateIncreasePercentage",
+        "postModificationInitialInterestRateDecreasePercentage",
+        "postModificationSubsequentInterestIncreasePercentage",
+        "postModificationSubsequentInterestRateDecreasePercentage",
+        "postModificationPaymentCapPercentage",
+        "postModificationPaymentMethodAfterRecastCode",
+        "postModificationARMInterestRateTeaserNumber",
+        "postModificationARMPaymentTeaserNumber",
+        "postModificationARMNegativeAmortizationIndicator",
+        "postModificationARMNegativeAmortizationCapPercentage",
+        "postModificationInterestOnlyTermNumber",
+        "postModificationInterestOnlyLastPaymentDate",
+        "postModificationBalloonAmount",
+        "postModificationInterestRateStepIndicator",
+        "postModificationStepInterestPercentage",
+        "postModificationStepDate",
+        "postModificationStepPrincipalInterestPaymentAmount",
+        "postModificationStepNumber",
+        "postModificationMaximumFutureStepAgreementPercentage",
+        "postModificationMaximumStepAgreementRateDate",
+        "nonInterestBearingDeferredPrincipalCumulativeAmount",
+        "nonInterestBearingDeferredPrincipalReportingPeriodAmount",
+        "recoveryDeferredPrincipalReportingPeriodAmount",
+        "nonInterestBearingDeferredPaidFullAmount",
+        "nonInterestBearingDeferredInterestFeeReportingPeriodAmount",
+        "nonInterestBearingDeferredInterestFeeCumulativeAmount",
+        "recoveryDeferredInterestFeeReportingPeriodAmount",
+        "mostRecentForbearancePlanOrTrialModificationStartDate",
+        "mostRecentForbearancePlanOrTrialModificationScheduledEndDate",
+        "mostRecentTrialModificationViolatedDate",
+        "mostRecentRepaymentPlanStartDate",
+        "mostRecentRepaymentPlanScheduledEndDate",
+        "mostRecentRepaymentPlanViolatedDate",
+        "shortSaleAcceptedOfferAmount",
+        "mostRecentLossMitigationExitDate",
+        "mostRecentLossMitigationExitCode",
+        "attorneyReferralDate",
+        "foreclosureDelayReasonCode",
+        "foreclosureExitDate",
+        "foreclosureExitReasonCode",
+        "noticeOfIntentDate",
+        "mostRecentAcceptedREOOfferAmount",
+        "mostRecentAcceptedREOOfferDate",
+        "grossLiquidationProceedsAmount",
+        "netSalesProceedsAmount",
+        "reportingPeriodLossPassedToIssuingEntityAmount",
+        "cumulativeTotalLossPassedToIssuingEntityAmount",
+        "subsequentRecoveryAmount",
+        "evictionIndicator",
+        "reoExitDate",
+        "reoExitReasonCode",
+        "UPBLiquidationAmount",
+        "servicingFeesClaimedAmount",
+        "servicerAdvanceReimbursedPrincipalAmount",
+        "servicerAdvanceReimbursedInterestAmount",
+        "servicerAdvanceReimbursedTaxesInsuranceAmount",
+        "servicerAdvanceReimbursedCorporateAmount",
+        "REOManagementFeesAmount",
+        "cashKeyDeedAmount",
+        "performanceIncentiveFeesAmount",
+        "mortgageInsuranceClaimFiledDate",
+        "mortgageInsuranceClaimAmount",
+        "mortgageInsuranceClaimPaidDate",
+        "mortgageInsuranceClaimPaidAmount",
+        "mortgageInsuranceClaimDeniedRescindedDate",
+        "marketableTitleTransferDate",
+        "nonPayStatusCode",
+        "reportingActionCode",
+        "GroupID",
+        "reportingPeriodBeginningDate",
+        "reportingPeriodEndDate",
+        "originationDate",
+        "originalTermLoanNumber",
+        "maturityDate",
+        "interestRateSecuritizationPercentage",
+        "interestAccrualMethodCode",
+        "firstLoanPaymentDueDate",
+        "lienPositionSecuritizationCode",
+        "loanStructureCode",
+        "paymentTypeCode",
+        "periodicPrincipalAndInterestPaymentSecuritizationAmount",
+        "scheduledPrincipalBalanceSecuritizationAmount",
+        "NumberPropertiesSecuritization",
+        "NumberProperties",
+        "graceDaysAllowedNumber",
+        "interestOnlyIndicator",
+        "prepaymentPremiumIndicator",
+        "modifiedIndicator",
+        "armIndexCode",
+        "firstRateAdjustmentDate",
+        "firstPaymentAdjustmentDate",
+        "armMarginNumber",
+        "lifetimeRateCapPercentage",
+        "periodicRateIncreaseLimitPercentage",
+        "periodicRateDecreaseLimitPercentage",
+        "periodicPaymentAdjustmentMaximumAmount",
+        "periodicPaymentAdjustmentMaximumPercent",
+        "rateResetFrequencyCode",
+        "paymentResetFrequencyCode",
+        "indexLookbackDaysNumber",
+        "prepaymentLockOutEndDate",
+        "yieldMaintenanceEndDate",
+        "prepaymentPremiumsEndDate",
+        "maximumNegativeAmortizationAllowedPercentage",
+        "maximumNegativeAmortizationAllowedAmount",
+        "negativeAmortizationDeferredInterestCapAmount",
+        "deferredInterestCumulativeAmount",
+        "deferredInterestCollectedAmount",
+        "property",
+        "reportPeriodModificationIndicator",
+        "reportPeriodBeginningScheduleLoanBalanceAmount",
+        "totalScheduledPrincipalInterestDueAmount",
+        "servicerTrusteeFeeRatePercentage",
+        "unscheduledPrincipalCollectedAmount",
+        "reportPeriodEndActualBalanceAmount",
+        "reportPeriodEndScheduledLoanBalanceAmount",
+        "hyperAmortizingDate",
+        "servicingAdvanceMethodCode",
+        "nonRecoverabilityIndicator",
+        "totalPrincipalInterestAdvancedOutstandingAmount",
+        "totalTaxesInsuranceAdvancesOutstandingAmount",
+        "otherExpensesAdvancedOutstandingAmount",
+        "paymentStatusLoanCode",
+        "armIndexRatePercentage",
+        "nextInterestRateChangeAdjustmentDate",
+        "nextPaymentAdjustmentDate",
+        "mostRecentSpecialServicerTransferDate",
+        "mostRecentMasterServicerReturnDate",
+        "realizedLossToTrustAmount",
+        "liquidationPrepaymentCode",
+        "liquidationPrepaymentDate",
+        "prepaymentPremiumYieldMaintenanceReceivedAmount",
+        "workoutStrategyCode",
+        "lastModificationDate",
+        "modificationCode",
+        "postModificationPaymentAmount",
+        "postModificationAmortizationPeriodAmount",
+        "propertyName",
+        "propertyAddress",
+        "propertyCity",
+        "propertyState",
+        "propertyZip",
+        "propertyCounty",
+        "netRentableSquareFeetNumber",
+        "netRentableSquareFeetSecuritizationNumber",
+        "unitsBedsRoomsNumber",
+        "unitsBedsRoomsSecuritizationNumber",
+        "yearBuiltNumber",
+        "yearLastRenovated",
+        "valuationSecuritizationAmount",
+        "valuationSourceSecuritizationCode",
+        "valuationSecuritizationDate",
+        "mostRecentValuationAmount",
+        "mostRecentValuationDate",
+        "mostRecentValuationSourceCode",
+        "physicalOccupancySecuritizationPercentage",
+        "mostRecentPhysicalOccupancyPercentage",
+        "propertyStatusCode",
+        "defeasanceOptionStartDate",
+        "DefeasedStatusCode",
+        "largestTenant",
+        "squareFeetLargestTenantNumber",
+        "leaseExpirationLargestTenantDate",
+        "secondLargestTenant",
+        "squareFeetSecondLargestTenantNumber",
+        "leaseExpirationSecondLargestTenantDate",
+        "thirdLargestTenant",
+        "squareFeetThirdLargestTenantNumber",
+        "leaseExpirationThirdLargestTenantDate",
+        "financialsSecuritizationDate",
+        "mostRecentFinancialsStartDate",
+        "mostRecentFinancialsEndDate",
+        "revenueSecuritizationAmount",
+        "mostRecentRevenueAmount",
+        "operatingExpensesSecuritizationAmount",
+        "operatingExpensesAmount",
+        "netOperatingIncomeSecuritizationAmount",
+        "mostRecentNetOperatingIncomeAmount",
+        "netCashFlowFlowSecuritizationAmount",
+        "mostRecentNetCashFlowAmount",
+        "netOperatingIncomeNetCashFlowSecuritizationCode",
+        "netOperatingIncomeNetCashFlowCode",
+        "mostRecentDebtServiceAmount",
+        "debtServiceCoverageNetOperatingIncomeSecuritizationPercentage",
+        "mostRecentDebtServiceCoverageNetOperatingIncomePercentage",
+        "debtServiceCoverageNetCashFlowSecuritizationPercentage",
+        "mostRecentDebtServiceCoverageNetCashFlowpercentage",
+        "debtServiceCoverageSecuritizationCode",
+        "mostRecentDebtServiceCoverageCode",
+        "mostRecentAnnualLeaseRolloverReviewDate",
+        "reportingPeriodEndingDate",
+        "originalLoanTerm",
+        "loanMaturityDate",
+        "interestCalculationTypeCode",
+        "originalFirstPaymentDate",
+        "gracePeriodNumber",
+        "subvented",
+        "vehicleManufacturerName",
+        "vehicleModelName",
+        "vehicleNewUsedCode",
+        "vehicleModelYear",
+        "vehicleTypeCode",
+        "vehicleValueAmount",
+        "vehicleValueSourceCode",
+        "obligorCreditScoreType",
+        "obligorCreditScore",
+        "coObligorIndicator",
+        "paymentToIncomePercentage",
+        "obligorGeographicLocation",
+        "reportingPeriodModificationIndicator",
+        "nextReportingPeriodPaymentAmountDue",
+        "otherServicerFeeRetainedByServicer",
+        "otherAssessedUncollectedServicerFeeAmount",
+        "reportingPeriodActualEndBalanceAmount",
+        "totalActualAmountPaid",
+        "servicerAdvancedAmount",
+        "currentDelinquencyStatus",
+        "chargedoffPrincipalAmount",
+        "recoveredAmount",
+        "modificationTypeCode",
+        "paymentExtendedNumber",
+        "repossessedIndicator",
+        "repossessedProceedsAmount",
+        "reportingPeriodBeginDate",
+        "acquisitionCost",
+        "originalLeaseTermNumber",
+        "scheduledTerminationDate",
+        "gracePeriod",
+        "baseResidualValue",
+        "baseResidualSourceCode",
+        "contractResidualValue",
+        "lesseeCreditScoreType",
+        "lesseeCreditScore",
+        "lesseeIncomeVerificationLevelCode",
+        "lesseeEmploymentVerificationCode",
+        "coLesseePresentIndicator",
+        "lesseeGeographicLocation",
+        "remainingTermNumber",
+        "reportingPeriodSecuritizationValueAmount",
+        "securitizationDiscountRate",
+        "otherLeaseLevelServicingFeesRetainedAmount",
+        "reportingPeriodEndingActualBalanceAmount",
+        "reportingPeriodEndActualSecuritizationAmount",
+        "primaryLeaseServicerName",
+        "DemandResolutionDate",
+        "repurchaseOrReplacementReasonCode",
+        "chargedOffAmount",
+        "leaseExtended",
+        "terminationIndicator",
+        "excessFeeAmount",
+        "liquidationProceedsAmount"
+      ),
+      nameActual = c(
+        "numberAssetType",
+        "numberAsset",
+        "numberAssetGroup",
+        "dateReportPeriodBeginning",
+        "dateReportPeriodEnd",
+        "nameIssuer",
+        "dateOriginalIssuance",
+        "amountOriginalSecurity",
+        "numberOriginalSecurityTerm",
+        "dateSecurityMaturity",
+        "numberOriginalAmortizationTerm",
+        "percentageOriginalInterestRate",
+        "codeAccrualType",
+        "codeInterestRateType",
+        "numberOriginalInterestOnlyTerm",
+        "dateFirstPayment",
+        "hasUnderwriting",
+        "nameSecurityTitle",
+        "numberDenomination",
+        "nameCurrency",
+        "nameTrustee",
+        "numberSecFile",
+        "idCIK",
+        "hasCallable",
+        "codePaymentFrequency",
+        "hasZeroCoupon",
+        "hasAssetAdded",
+        "hasAssetModified",
+        "amountReportPeriodBeginningAssetBalance",
+        "amountReportPeriodBeginningScheduledAssetBalance",
+        "amountReportPeriodScheduledPayment",
+        "percentageReportPeriodInterestRate",
+        "amountTotalActualPaid",
+        "percentageActualInterestCollection",
+        "amountActualPrincipalCollected",
+        "amountActualOtherCollection",
+        "amountOtherPrincipalAdjustment",
+        "amountOtherInterestAdjustment",
+        "amountScheduledInterest",
+        "amountScheduledPrincipal",
+        "amountEndReportingPeriodActualBalance",
+        "amountEndReportingPeriodScheduledBalance",
+        "percentageServicingFee",
+        "amountServicingFlatFee",
+        "codeZeroBalance",
+        "dateZeroBalanceEffective",
+        "numberRemainingTermToMaturity",
+        "numberCurrentDelinquentStatus",
+        "numberPaymentPastDueDays",
+        "numberPaymentPastDue",
+        "amountNextReportPeriodPaymentDue",
+        "dateNextDue",
+        "namePrimaryLoanServicer",
+        "dateMostRecentServicingTransferReceived",
+        "hasAssetSubjectToDemand",
+        "codeStatusAssetSubjectToDemand",
+        "amountRepurchase",
+        "dateDemandResolution",
+        "nameRepurchaser",
+        "codeRepurchaseReplacementReason",
+        "dateReportPeriodBegin",
+        "codeOriginalLoanPurpose",
+        "nameOriginator",
+        "amountOriginalLoan",
+        "dateOriginalLoanMaturity",
+        "codeOriginalInterestRateType",
+        "codeOriginalLienPosition",
+        "amountMostRecentJuniorLoanBalance",
+        "dateMostRecentJuniorLoanBalance",
+        "amountMostRecentSeniorLoan",
+        "dateMostRecentSeniorLoanAmount",
+        "codeLoanTypeMostSeniorLien",
+        "numberMostSeniorLienHybridPeriod",
+        "percentageMostSeniorLienNegativeAmortizationLimit",
+        "dateMostSeniorLienOrigination",
+        "hasPrepaymentPenalty",
+        "hasNegativeAmortization",
+        "hasModification",
+        "numberModification",
+        "hasMortgageInsuranceRequirement",
+        "hasBalloon",
+        "codeCoveredHighCost",
+        "codeServicerHazardInsurance",
+        "amountRefinanceCashOut",
+        "amountTotalOriginationDiscount",
+        "hasBroker",
+        "codeChannel",
+        "numberNationalMortgageLicenseSystemCompany",
+        "numberBuyDown",
+        "numberLoanDelinquencyAdvance",
+        "codeOriginationARMIndex",
+        "percentageArmMargin",
+        "percentageFullyIndexedRate",
+        "numberInitialFixedRatePeriodHybridARM",
+        "percentageInitialInterestRateDecrease",
+        "percentageInitialInterestRateIncrease",
+        "numberIndexLookback",
+        "numberSubsequentInterestRateReset",
+        "percentageLifetimeRateCeiling",
+        "percentageLifetimeRateFloor",
+        "percentageSubsequentInterestRateDecrease",
+        "percentageSubsequentInterestRateIncrease",
+        "numberSubsequentPaymentReset",
+        "codeArmRound",
+        "percentageArmRound",
+        "hasOptionArm",
+        "codePaymentMethodAfterRecast",
+        "amountInitialMinimumPayment",
+        "hasConvertible",
+        "hasHELOC",
+        "numberHELOCDraw",
+        "codePrepaymentPenaltyCalculation",
+        "codePrepaymentPenaltyType",
+        "numberPrepaymentPenaltyTotalTerm",
+        "numberPrepaymentPenaltyHardTerm",
+        "amountNegativeAmortizationLimit",
+        "numberNegativeAmortizationInitialRecast",
+        "numberNegativeAmortizationSubsequentRecast",
+        "amountNegativeAmortizationBalance",
+        "numberInitialFixedPayment",
+        "percentageInitialPaymentCap",
+        "percentageSubsequentPaymentCap",
+        "numberInitialMinimumPaymentReset",
+        "numberSubsequentMinimumPaymentReset",
+        "amountMinimumPayment",
+        "locationGeographical",
+        "codeOccupancyStatus",
+        "codeMostRecentOccupancyStatus",
+        "codePropertyType",
+        "amountMostRecentPropertyValue",
+        "codeMostRecentPropertyValueType",
+        "dateMostRecentPropertyValue",
+        "codeMostRecentAVMModel",
+        "numberMostRecentAVMConfidence",
+        "percentageOriginalCLTV",
+        "percentageOriginalLTV",
+        "numberOriginalObligor",
+        "numberOriginalObligorCreditScore",
+        "typeOriginalObligorCreditScore",
+        "numberMostRecentObligorCreditScore",
+        "typeMostRecentObligorCreditScore",
+        "dateMostRecentObligorCreditScore",
+        "codeObligorIncomeVerificationLevel",
+        "hasIRSForm4506T",
+        "percentageOriginatorFrontEndDTI",
+        "percentageOriginatorBackEndDTI",
+        "codeObligorEmploymentVerification",
+        "codeObligorEmploymentLength",
+        "codeObligorAssetVerification",
+        "amountOriginalPledgedAssets",
+        "codeQualificationMethod",
+        "nameMortgageInsuranceCompany",
+        "percentageMortgageInsuranceCoverage",
+        "namePoolInsuranceCompany",
+        "percentagePoolInsuranceStopLoss",
+        "codeMortgageInsuranceCoverageType",
+        "periodModificationHasReporting",
+        "dateNextPaymentDue",
+        "codeAdvancingMethod",
+        "codeServicingAdvanceMethodology",
+        "dateStopPrincipalInterestAdvancing",
+        "amountReportingPeriodBeginningLoanBalance",
+        "amountReportingPeriodBeginningScheduledLoanBalance",
+        "amountNextReportingPeriodPaymentDue",
+        "percentageReportingPeriodInterestRate",
+        "percentageNextInterestRate",
+        "feeamountOtherAssessedUncollectedServicer",
+        "amountOtherServicingFeeRetainedByServicer",
+        "amountReportingPeriodEndActualBalance",
+        "amountReportingPeriodEndScheduledBalance",
+        "amountReportingPeriodScheduledPayment",
+        "amountActualInterestCollected",
+        "amountActualOtherCollected",
+        "datePaidThrough",
+        "dateInterestPaidThrough",
+        "amountPaidFull",
+        "amountServicerAdvancedPrincipal",
+        "amountServicerAdvancedRepaidPrincipal",
+        "amountServicerAdvancedCumulativePrincipal",
+        "amountServicerAdvanceInterest",
+        "amountServicerAdvanceRepaidInterest",
+        "amountServicerAdvanceCumulativeInterest",
+        "amountServicerAdvanceTaxesInsurance",
+        "amountServicerAdvanceRepaidTaxesInsurance",
+        "amountServicerAdvanceCumulativeTaxesInsurance",
+        "amountServicerAdvanceCorporate",
+        "amountServicerAdvanceRepaidCorporate",
+        "amountServicerAdvanceCumulativeCorporate",
+        "codeMostRecentTwelveMonthHistory",
+        "percentageNextResetRate",
+        "dateNextPaymentChange",
+        "dateNextInterestRateChange",
+        "amountNextResetPayment",
+        "hasExercisedArmConversionOption",
+        "namePrimaryServicer",
+        "nameMasterServicer",
+        "nameSpecialServicer",
+        "nameSubServicer",
+        "hasAssetSubjectDemand",
+        "codeAssetSubjectDemandStatus",
+        "codeRepurchaseReplacement",
+        "amountChargeOffPrincipal",
+        "amountChargeOffInterest",
+        "codeLossMitigationType",
+        "codeMostRecentLoanModificationEvent",
+        "dateMostRecentLoanModificationEffective",
+        "datePostModificationMaturity",
+        "codePostModificationInterestRateType",
+        "codePostModificationAmortizationType",
+        "percentagePostModificationInterest",
+        "datePostModificationFirstPayment",
+        "amountPostModificationLoanBalance",
+        "amountPostModificationPrincipalInterestPayment",
+        "amountTotalCap",
+        "modificationIncomeVerificationHasAt",
+        "percentageModificationFrontEndDebtToIncome",
+        "percentageModificationBackEndDebtToIncome",
+        "amountTotalDeferred",
+        "amountForgivenPrincipalCumulative",
+        "amountForgivenPrincipalReportingPeriod",
+        "amountForgivenInterestCumulative",
+        "amountForgivenInterestReportingPeriod",
+        "amountActualEndingBalanceTotalDebt",
+        "amountScheduledEndingBalanceTotalDebt",
+        "codePostModificationARM",
+        "codePostModificationARMIndex",
+        "percentagePostModificationMargin",
+        "numberPostModificationInterestReset",
+        "datePostModificationNextReset",
+        "numberPostModificationIndexLookback",
+        "codePostModificationARMRounding",
+        "percentagePostModificationARMRounding",
+        "paymentPostModificationInitialMinimum",
+        "datePostModificationNextPaymentAdjustment",
+        "frequencyPostModificationARMPaymentRecast",
+        "percentagePostModificationLifetimeFloor",
+        "percentagePostModificationLifetimeCeiling",
+        "percentagePostModificationInitialInterestRateIncrease",
+        "percentagePostModificationInitialInterestRateDecrease",
+        "percentagePostModificationSubsequentInterestIncrease",
+        "percentagePostModificationSubsequentInterestRateDecrease",
+        "percentagePostModificationPaymentCap",
+        "codePostModificationPaymentMethodAfterRecast",
+        "numberPostModificationARMInterestRateTeaser",
+        "numberPostModificationARMPaymentTeaser",
+        "hasPostModificationARMNegativeAmortization",
+        "percentagePostModificationARMNegativeAmortizationCap",
+        "numberPostModificationInterestOnlyTerm",
+        "datePostModificationInterestOnlyLastPayment",
+        "amountPostModificationBalloon",
+        "hasPostModificationInterestRateStep",
+        "percentagePostModificationStepInterest",
+        "datePostModificationStep",
+        "amountPostModificationStepPrincipalInterestPayment",
+        "numberPostModificationStep",
+        "percentagePostModificationMaximumFutureStepAgreement",
+        "datePostModificationMaximumStepAgreementRate",
+        "amountNonInterestBearingDeferredPrincipalCumulative",
+        "amountNonInterestBearingDeferredPrincipalReportingPeriod",
+        "amountRecoveryDeferredPrincipalReportingPeriod",
+        "amountNonInterestBearingDeferredPaidFull",
+        "amountNonInterestBearingDeferredInterestFeeReportingPeriod",
+        "amountNonInterestBearingDeferredInterestFeeCumulative",
+        "amountRecoveryDeferredInterestFeeReportingPeriod",
+        "dateMostRecentForbearancePlanOrTrialModificationStart",
+        "dateMostRecentForbearancePlanOrTrialModificationScheduledEnd",
+        "dateMostRecentTrialModificationViolated",
+        "dateMostRecentRepaymentPlanStart",
+        "dateMostRecentRepaymentPlanScheduledEnd",
+        "dateMostRecentRepaymentPlanViolated",
+        "amountShortSaleAcceptedOffer",
+        "dateMostRecentLossMitigationExit",
+        "codeMostRecentLossMitigationExit",
+        "dateAttorneyReferral",
+        "codeForeclosureDelayReason",
+        "dateForeclosureExit",
+        "codeForeclosureExitReason",
+        "dateNoticeOfIntent",
+        "amountMostRecentAcceptedREOOffer",
+        "dateMostRecentAcceptedREOOffer",
+        "amountGrossLiquidationProceeds",
+        "amountNetSalesProceeds",
+        "amountReportingPeriodLossPassedToIssuingEntity",
+        "amountCumulativeTotalLossPassedToIssuingEntity",
+        "amountSubsequentRecovery",
+        "hasEviction",
+        "dateReoExit",
+        "codeReoExitReason",
+        "amountUPBLiquidation",
+        "amountServicingFeesClaimed",
+        "amountServicerAdvanceReimbursedPrincipal",
+        "amountServicerAdvanceReimbursedInterest",
+        "amountServicerAdvanceReimbursedTaxesInsurance",
+        "amountServicerAdvanceReimbursedCorporate",
+        "amountREOManagementFees",
+        "amountCashKeyDeed",
+        "amountPerformanceIncentiveFees",
+        "dateMortgageInsuranceClaimFiled",
+        "amountMortgageInsuranceClaim",
+        "dateMortgageInsuranceClaimPaid",
+        "amountMortgageInsuranceClaimPaid",
+        "dateMortgageInsuranceClaimDeniedRescinded",
+        "dateMarketableTitleTransfer",
+        "codeNonPayStatus",
+        "codeReportingAction",
+        "idGroup",
+        "dateReportingPeriodBeginning",
+        "dateReportingPeriodEnd",
+        "dateOrigination",
+        "numberOriginalTermLoan",
+        "dateMaturity",
+        "percentageInterestRateSecuritization",
+        "codeInterestAccrualMethod",
+        "dateFirstLoanPaymentDue",
+        "codeLienPositionSecuritization",
+        "codeLoanStructure",
+        "codePaymentType",
+        "amountPeriodicPrincipalAndInterestPaymentSecuritization",
+        "amountScheduledPrincipalBalanceSecuritization",
+        "securitizationNumberProperties",
+        "propertiesNumber",
+        "numberGraceDaysAllowed",
+        "hasInterestOnly",
+        "hasPrepaymentPremium",
+        "hasModified",
+        "codeArmIndex",
+        "dateFirstRateAdjustment",
+        "dateFirstPaymentAdjustment",
+        "numberArmMargin",
+        "percentageLifetimeRateCap",
+        "percentagePeriodicRateIncreaseLimit",
+        "percentagePeriodicRateDecreaseLimit",
+        "amountPeriodicPaymentAdjustmentMaximum",
+        "percentPeriodicPaymentAdjustmentMaximum",
+        "codeRateResetFrequency",
+        "codePaymentResetFrequency",
+        "numberIndexLookbackDays",
+        "datePrepaymentLockOutEnd",
+        "dateYieldMaintenanceEnd",
+        "datePrepaymentPremiumsEnd",
+        "percentageMaximumNegativeAmortizationAllowed",
+        "amountMaximumNegativeAmortizationAllowed",
+        "amountNegativeAmortizationDeferredInterestCap",
+        "amountDeferredInterestCumulative",
+        "amountDeferredInterestCollected",
+        "propertyProperty",
+        "hasReportPeriodModification",
+        "amountReportPeriodBeginningScheduleLoanBalance",
+        "amountTotalScheduledPrincipalInterestDue",
+        "percentageServicerTrusteeFeeRate",
+        "amountUnscheduledPrincipalCollected",
+        "amountReportPeriodEndActualBalance",
+        "amountReportPeriodEndScheduledLoanBalance",
+        "dateHyperAmortizing",
+        "codeServicingAdvanceMethod",
+        "hasNonRecoverability",
+        "amountTotalPrincipalInterestAdvancedOutstanding",
+        "amountTotalTaxesInsuranceAdvancesOutstanding",
+        "amountOtherExpensesAdvancedOutstanding",
+        "codePaymentStatusLoan",
+        "percentageArmIndexRate",
+        "dateNextInterestRateChangeAdjustment",
+        "dateNextPaymentAdjustment",
+        "dateMostRecentSpecialServicerTransfer",
+        "dateMostRecentMasterServicerReturn",
+        "amountRealizedLossToTrust",
+        "codeLiquidationPrepayment",
+        "dateLiquidationPrepayment",
+        "amountPrepaymentPremiumYieldMaintenanceReceived",
+        "codeWorkoutStrategy",
+        "dateLastModification",
+        "codeModification",
+        "amountPostModificationPayment",
+        "amountPostModificationAmortizationPeriod",
+        "nameProperty",
+        "addressProperty",
+        "cityProperty",
+        "stateProperty",
+        "zipProperty",
+        "countyProperty",
+        "numberNetRentableSquareFeet",
+        "numberNetRentableSquareFeetSecuritization",
+        "numberUnitsBedsRooms",
+        "numberUnitsBedsRoomsSecuritization",
+        "numberYearBuilt",
+        "renovatedYearLast",
+        "amountValuationSecuritization",
+        "codeValuationSourceSecuritization",
+        "dateValuationSecuritization",
+        "amountMostRecentValuation",
+        "dateMostRecentValuation",
+        "codeMostRecentValuationSource",
+        "percentagePhysicalOccupancySecuritization",
+        "percentageMostRecentPhysicalOccupancy",
+        "codePropertyStatus",
+        "dateDefeasanceOptionStart",
+        "codeDefeasedStatus",
+        "tenantLargest",
+        "numberSquareFeetLargestTenant",
+        "dateLeaseExpirationLargestTenant",
+        "tenantSecondLargest",
+        "numberSquareFeetSecondLargestTenant",
+        "dateLeaseExpirationSecondLargestTenant",
+        "tenantThirdLargest",
+        "numberSquareFeetThirdLargestTenant",
+        "dateLeaseExpirationThirdLargestTenant",
+        "dateFinancialsSecuritization",
+        "dateMostRecentFinancialsStart",
+        "dateMostRecentFinancialsEnd",
+        "amountRevenueSecuritization",
+        "amountMostRecentRevenue",
+        "amountOperatingExpensesSecuritization",
+        "amountOperatingExpenses",
+        "amountNetOperatingIncomeSecuritization",
+        "amountMostRecentNetOperatingIncome",
+        "amountNetCashFlowFlowSecuritization",
+        "amountMostRecentNetCashFlow",
+        "codeNetOperatingIncomeNetCashFlowSecuritization",
+        "codeNetOperatingIncomeNetCashFlow",
+        "amountMostRecentDebtService",
+        "percentageDebtServiceCoverageNetOperatingIncomeSecuritization",
+        "percentageMostRecentDebtServiceCoverageNetOperatingIncome",
+        "percentageDebtServiceCoverageNetCashFlowSecuritization",
+        "flowpercentageMostRecentDebtServiceCoverageNetCash",
+        "codeDebtServiceCoverageSecuritization",
+        "codeMostRecentDebtServiceCoverage",
+        "dateMostRecentAnnualLeaseRolloverReview",
+        "dateReportingPeriodEnding",
+        "termOriginalLoan",
+        "dateLoanMaturity",
+        "codeInterestCalculationType",
+        "dateOriginalFirstPayment",
+        "numberGracePeriod",
+        "subventedSubvented",
+        "nameVehicleManufacturer",
+        "nameVehicleModel",
+        "codeVehicleNewUsed",
+        "yearVehicleModel",
+        "codeVehicleType",
+        "amountVehicleValue",
+        "codeVehicleValueSource",
+        "typeObligorCreditScore",
+        "scoreObligorCredit",
+        "hasCoObligor",
+        "percentagePaymentToIncome",
+        "locationObligorGeographic",
+        "hasReportingPeriodModification",
+        "dueNextReportingPeriodPaymentAmount",
+        "servicerOtherServicerFeeRetainedBy",
+        "amountOtherAssessedUncollectedServicerFee",
+        "amountReportingPeriodActualEndBalance",
+        "paidTotalActualAmount",
+        "amountServicerAdvanced",
+        "statusCurrentDelinquency",
+        "amountChargedoffPrincipal",
+        "amountRecovered",
+        "codeModificationType",
+        "numberPaymentExtended",
+        "hasRepossessed",
+        "amountRepossessedProceeds",
+        "dateReportingPeriodBegin",
+        "costAcquisition",
+        "numberOriginalLeaseTerm",
+        "dateScheduledTermination",
+        "periodGrace",
+        "valueBaseResidual",
+        "codeBaseResidualSource",
+        "valueContractResidual",
+        "typeLesseeCreditScore",
+        "scoreLesseeCredit",
+        "codeLesseeIncomeVerificationLevel",
+        "codeLesseeEmploymentVerification",
+        "hasCoLesseePresent",
+        "locationLesseeGeographic",
+        "numberRemainingTerm",
+        "amountReportingPeriodSecuritizationValue",
+        "rateSecuritizationDiscount",
+        "amountOtherLeaseLevelServicingFeesRetained",
+        "amountReportingPeriodEndingActualBalance",
+        "amountReportingPeriodEndActualSecuritization",
+        "namePrimaryLeaseServicer",
+        "dateDemandResolution",
+        "codeRepurchaseOrReplacementReason",
+        "amountChargedOff",
+        "extendedLease",
+        "hasTermination",
+        "amountExcessFee",
+        "amountLiquidationProceeds"
+      )
 
     )
   }
@@ -1138,13 +2866,18 @@ get_asset_name_df <-
 parse_asset_xbrl <-
   function(url = "https://www.sec.gov/Archives/edgar/data/1688957/000153949716004394/exh_102.xml",
            return_message = TRUE) {
+    url <-
+      url %>% str_replace_all('archives','\\Archives')
+
     cik <-
       url %>%
-      str_replace_all('https://www.sec.gov/Archives/edgar/data/','') %>%
+      str_split('/data/') %>%
+      flatten_chr() %>%
+      .[[2]] %>%
       str_split('\\/') %>%
       flatten_chr() %>%
       .[[1]] %>%
-      as.numeric()
+      readr::parse_number()
 
     xml_data <-
       url %>%
@@ -1156,31 +2889,36 @@ parse_asset_xbrl <-
 
     data <-
       1:length(xml_childs) %>%
-      map_df(function(x){
-
+      map_df(function(x) {
         child <-
           xml_childs[[x]]
 
         names <-
-          c(child %>%
+          c(
+            child %>%
               xml_children() %>%
               xml_name(),
             child %>%
               xml_children() %>%
               xml_children() %>%
-              xml_name())
+              xml_name()
+          )
 
         values <-
-          c(child %>%
+          c(
+            child %>%
               xml_children() %>%
               xml_text(),
             child %>%
               xml_children() %>%
               xml_children() %>%
-              xml_text())
+              xml_text()
+          )
 
         df <-
-          data_frame(idRow = x, item = names, value = values)
+          data_frame(idRow = x,
+                     item = names,
+                     value = values)
 
         col_order <-
           c('idRow', df$item)
@@ -1208,7 +2946,7 @@ parse_asset_xbrl <-
 
       has_names <-
         names(df_has) %>%
-        map_chr(function(x){
+        map_chr(function(x) {
           name_df %>%
             filter(nameSEC == x) %>%
             filter(idRow == min(idRow)) %>%
@@ -1226,7 +2964,7 @@ parse_asset_xbrl <-
     } else {
       actual_names <-
         names(data) %>%
-        map_chr(function(x){
+        map_chr(function(x) {
           name_df %>%
             filter(nameSEC == x) %>%
             filter(idRow == min(idRow)) %>%
@@ -1248,7 +2986,7 @@ parse_asset_xbrl <-
 
     data <-
       data %>%
-      fix_asset_title(start_word = 'tenant',replace_start = 'name')
+      fix_asset_title(start_word = 'tenant', replace_start = 'name')
 
     data <-
       data %>%
@@ -1261,7 +2999,12 @@ parse_asset_xbrl <-
     if ('numberAsset' %in% (names(data))) {
       data <-
         data %>%
-        tidyr::separate(numberAsset, into = c('numberLoan', 'numberProperty'), sep = '\\.', remove = FALSE) %>%
+        tidyr::separate(
+          numberAsset,
+          into = c('numberLoan', 'numberProperty'),
+          sep = '\\.',
+          remove = FALSE
+        ) %>%
         suppressWarnings()
     }
 
@@ -1279,11 +3022,15 @@ parse_asset_xbrl <-
 
     data <-
       data %>%
-      mutate_at(.cols =
-                  data %>% select(matches(
-                    "^id|^pct|^percent|^renovated|^amount|^count[A-Z]|year|area|ratio|^number"
-                  )) %>% select(-matches('county|country|idAssetNumber|date')) %>% names(),
-                funs(. %>% as.numeric())) %>%
+      mutate_at(
+        .cols =
+          data %>% select(
+            matches(
+              "^id|^pct|^percent|^renovated|^amount|^count[A-Z]|year|area|ratio|^number"
+            )
+          ) %>% select(-matches('county|country|idAssetNumber|date')) %>% names(),
+        funs(. %>% as.numeric())
+      ) %>%
       mutate_at(.cols = data %>% select(matches("^date")) %>% names(),
                 funs(. %>% lubridate::mdy())) %>%
       mutate_at(
@@ -1309,6 +3056,40 @@ parse_asset_xbrl <-
       resolve_names_to_upper() %>%
       select(-matches("idRow"))
 
+    df_codes <-
+      get_resolved_abs_code_book_df() %>%
+      suppressMessages()
+
+    name_types <-
+      df_codes %>% select(-idItem) %>% names() %>% str_replace_all('code|name', '') %>%
+      unique()
+
+    data <-
+      data %>%
+      mutate_at(data %>% select(
+        dplyr::matches(
+          "codeInterestAccrualMethod|codeOriginalInterestRateType|codeLienPositionSecuritization|codePaymentType|codePaymentFrequency|codeServicingAdvanceMethod|codePropertyStatus"
+        )
+      ) %>% names(),
+      funs(. %>% as.integer()))
+
+    for (name in name_types) {
+      code_df <-
+        df_codes %>% select(matches(name))
+
+      code_df <-
+        code_df[!code_df[[1]] %>% is.na(), ]
+
+      data <-
+        data %>%
+        left_join(code_df) %>%
+        suppressMessages()
+    }
+
+    data <-
+      data %>%
+      distinct()
+
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
@@ -1332,76 +3113,341 @@ parse_sec_url_for_cik <-
 
 get_loc_df <-
   function() {
-    data_frame(nameLocation = c("AFGHANISTAN", "ALAND ISLANDS", "ALBANIA", "ALGERIA", "AMERICAN SAMOA",
-                                "ANDORRA", "ANGOLA", "ANGUILLA", "ANTARCTICA", "ANTIGUA AND BARBUDA",
-                                "ARGENTINA", "ARMENIA", "ARUBA", "AUSTRALIA", "AUSTRIA", "AUSTRIA-HUNGARY",
-                                "AZERBAIJAN", "BADEN", "BAHAMAS", "BAHRAIN", "BANGLADESH", "BARBADOS",
-                                "BAVARIA", "BELARUS", "BELGIUM", "BELIZE", "BENIN", "BERMUDA",
-                                "BHUTAN", "BOLIVIA, PLURINATIONAL STATE OF", "BONAIRE, SINT EUSTATIUS AND SABA",
-                                "BOSNIA AND HERZEGOVINA", "BOTSWANA", "BOUVET ISLAND", "BRAZIL",
-                                "BRITISH INDIAN OCEAN TERRITORY", "BRUNEI DARUSSALAM", "BULGARIA",
-                                "BURKINA FASO", "BURUNDI", "CAMBODIA", "CAMEROON", "CANADA",
-                                "CABO VERDE", "CAYMAN ISLANDS", "CENTRAL AFRICAN REPUBLIC", "CHAD",
-                                "CHILE", "CHINA", "CHRISTMAS ISLAND", "COCOS (KEELING) ISLANDS",
-                                "COLOMBIA", "COMOROS", "CONGO, THE DEMOCRATIC REPUBLIC OF THE",
-                                "CONGO", "COOK ISLANDS", "COSTA RICA", "COTE D'IVOIRE", "CROATIA",
-                                "CUBA", "CURACAO", "CYPRUS", "CZECH REPUBLIC", "CZECHOSLOVAKIA",
-                                "DENMARK", "DJIBOUTI", "DOMINICA", "DOMINICAN REPUBLIC", "ECUADOR",
-                                "EGYPT", "EL SALVADOR", "EQUATORIAL GUINEA", "ERITREA", "ESTONIA",
-                                "ETHIOPIA", "FALKLAND ISLANDS (MALVINAS)", "FAROE ISLANDS", "FIJI",
-                                "FINLAND", "FRANCE", "FRENCH GUIANA", "FRENCH POLYNESIA", "FRENCH SOUTHERN TERRITORIES",
-                                "GABON", "GAMBIA", "GEORGIA", "GERMAN DEMOCRATIC REPUBLIC", "FEDERAL REPUBLIC OF GERMANY",
-                                "GERMANY", "GHANA", "GIBRALTAR", "GREECE", "GREENLAND", "GRENADA",
-                                "GUADELOUPE", "GUAM", "GUATEMALA", "GUERNSEY", "GUINEA", "GUINEA-BISSAU",
-                                "GUYANA", "HAITI", "HANOVER", "HEARD ISLAND AND MCDONALD ISLANDS",
-                                "HESSE ELECTORAL", "HESSE GRAND DUCAL", "HOLY SEE (VATICAN CITY STATE)",
-                                "HONDURAS", "HONG KONG", "HUNGARY", "ICELAND", "INDIA", "INDONESIA",
-                                "IRAN, ISLAMIC REPUBLIC OF", "IRAQ", "IRELAND", "ISLE OF MAN",
-                                "ISRAEL", "ITALY", "JAMAICA", "JAPAN", "JERSEY", "JORDAN", "KAZAKHSTAN",
-                                "KENYA", "KIRIBATI", "KOREA", "KOREA, DEMOCRATIC PEOPLE'S REPUBLIC OF",
-                                "KOREA, REPUBLIC OF", "KOSOVO", "KUWAIT", "KYRGYZSTAN", "LAO PEOPLE'S DEMOCRATIC REPUBLIC",
-                                "LATVIA", "LEBANON", "LESOTHO", "LIBERIA", "LIBYA", "LIECHTENSTEIN",
-                                "LITHUANIA", "LUXEMBOURG", "MACAO", "MACEDONIA, THE FORMER YUGOSLAV REPUBLIC OF",
-                                "MADAGASCAR", "MALAWI", "MALAYSIA", "MALDIVES", "MALI", "MALTA",
-                                "MARSHALL ISLANDS", "MARTINIQUE", "MAURITANIA", "MAURITIUS",
-                                "MAYOTTE", "MECKLENBURG SCHWERIN", "MEXICO", "MICRONESIA, FEDERATED STATES OF",
-                                "MODENA", "MOLDOVA, REPUBLIC OF", "MONACO", "MONGOLIA", "MONTENEGRO",
-                                "MONTSERRAT", "MOROCCO", "MOZAMBIQUE", "MYANMAR", "NAMIBIA",
-                                "NAURU", "NEPAL", "NETHERLANDS", "NETHERLANDS ANTILLES", "NEW CALEDONIA",
-                                "NEW ZEALAND", "NICARAGUA", "NIGER", "NIGERIA", "NIUE", "NORFOLK ISLAND",
-                                "NORTHERN MARIANA ISLANDS", "NORWAY", "OMAN", "PAKISTAN", "PALAU",
-                                "PALESTINE, STATE OF", "PANAMA", "PAPUA NEW GUINEA", "PARAGUAY",
-                                "PARMA", "PERU", "PHILIPPINES", "PITCAIRN", "POLAND", "PORTUGAL",
-                                "PUERTO RICO", "QATAR", "REPUBLIC OF VIETNAM", "REUNION", "ROMANIA",
-                                "RUSSIAN FEDERATION", "RWANDA", "SAINT BARTHELEMY", "SAINT HELENA, ASCENSION AND TRISTAN DA CUNHA",
-                                "SAINT KITTS AND NEVIS", "SAINT LUCIA", "SAINT MARTIN (FRENCH PART)",
-                                "SAINT PIERRE AND MIQUELON", "SAINT VINCENT AND THE GRENADINES",
-                                "SAMOA", "SAN MARINO", "SAO TOME AND PRINCIPE", "SAUDI ARABIA",
-                                "SAXONY", "SENEGAL", "SERBIA", "SEYCHELLES", "SIERRA LEONE",
-                                "SINGAPORE", "SINT MAARTEN (DUTCH PART)", "SLOVAKIA", "SLOVENIA",
-                                "SOLOMON ISLANDS", "SOMALIA", "SOUTH AFRICA", "SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS",
-                                "SOUTH SUDAN", "SPAIN", "SRI LANKA", "SUDAN", "SURINAME", "SVALBARD AND JAN MAYEN",
-                                "SWAZILAND", "SWEDEN", "SWITZERLAND", "SYRIAN ARAB REPUBLIC",
-                                "TAIWAN, PROVINCE OF CHINA", "TAJIKISTAN", "TANZANIA, UNITED REPUBLIC OF",
-                                "THAILAND", "TIMOR-LESTE", "TOGO", "TOKELAU", "TONGA", "TRINIDAD AND TOBAGO",
-                                "TUNISIA", "TURKEY", "TURKMENISTAN", "TURKS AND CAICOS ISLANDS",
-                                "TUSCANY", "TUVALU", "TWO SICILIES", "UGANDA", "UKRAINE", "UNITED ARAB EMIRATES",
-                                "UNITED KINGDOM", "UNITED STATES", "UNITED STATES MINOR OUTLYING ISLANDS",
-                                "URUGUAY", "UZBEKISTAN", "VANUATU", "VENEZUELA, BOLIVARIAN REPUBLIC OF",
-                                "VIET NAM", "VIRGIN ISLANDS, BRITISH", "VIRGIN ISLANDS, U.S.",
-                                "WALLIS AND FUTUNA", "WESTERN SAHARA", "WUERTTEMBURG", "YEMEN",
-                                "YEMEN ARAB REPUBLIC", "YEMEN PEOPLE'S REPUBLIC", "YUGOSLAVIA",
-                                "ZAMBIA", "ZANZIBAR", "ZIMBABWE", "ALABAMA", "ALASKA", "ARIZONA",
-                                "ARKANSAS", "CALIFORNIA", "COLORADO", "CONNECTICUT", "DELAWARE",
-                                "FLORIDA", "GEORGIA", "HAWAII", "IDAHO", "ILLINOIS", "INDIANA",
-                                "IOWA", "KANSAS", "KENTUCKY", "LOUISIANA", "MAINE", "MARYLAND",
-                                "MASSACHUSETTS", "MICHIGAN", "MINNESOTA", "MISSISSIPPI", "MISSOURI",
-                                "MONTANA", "NEBRASKA", "NEVADA", "NEW HAMPSHIRE", "NEW JERSEY",
-                                "NEW MEXICO", "NEW YORK", "NORTH CAROLINA", "NORTH DAKOTA", "OHIO",
-                                "OKLAHOMA", "OREGON", "PENNSYLVANIA", "RHODE ISLAND", "SOUTH CAROLINA",
-                                "SOUTH DAKOTA", "TENNESSEE", "TEXAS", "UTAH", "VERMONT", "VIRGINIA",
-                                "WASHINGTON", "WEST VIRGINIA", "WISCONSIN", "WYOMING", "DISTRICT OF COLUMBIA", "ENGLAND",
-                                "BRITISH VIRGIN ISLANDS", "NETHERLAND ANTILLES", "RUSSIA", "SOUTH KOREA", 'TAIWAN', "VENEZUELA", 'CHANNEL ISLANDS')
+    data_frame(
+      nameLocation = c(
+        "AFGHANISTAN",
+        "ALAND ISLANDS",
+        "ALBANIA",
+        "ALGERIA",
+        "AMERICAN SAMOA",
+        "ANDORRA",
+        "ANGOLA",
+        "ANGUILLA",
+        "ANTARCTICA",
+        "ANTIGUA AND BARBUDA",
+        "ARGENTINA",
+        "ARMENIA",
+        "ARUBA",
+        "AUSTRALIA",
+        "AUSTRIA",
+        "AUSTRIA-HUNGARY",
+        "AZERBAIJAN",
+        "BADEN",
+        "BAHAMAS",
+        "BAHRAIN",
+        "BANGLADESH",
+        "BARBADOS",
+        "BAVARIA",
+        "BELARUS",
+        "BELGIUM",
+        "BELIZE",
+        "BENIN",
+        "BERMUDA",
+        "BHUTAN",
+        "BOLIVIA, PLURINATIONAL STATE OF",
+        "BONAIRE, SINT EUSTATIUS AND SABA",
+        "BOSNIA AND HERZEGOVINA",
+        "BOTSWANA",
+        "BOUVET ISLAND",
+        "BRAZIL",
+        "BRITISH INDIAN OCEAN TERRITORY",
+        "BRUNEI DARUSSALAM",
+        "BULGARIA",
+        "BURKINA FASO",
+        "BURUNDI",
+        "CAMBODIA",
+        "CAMEROON",
+        "CANADA",
+        "CABO VERDE",
+        "CAYMAN ISLANDS",
+        "CENTRAL AFRICAN REPUBLIC",
+        "CHAD",
+        "CHILE",
+        "CHINA",
+        "CHRISTMAS ISLAND",
+        "COCOS (KEELING) ISLANDS",
+        "COLOMBIA",
+        "COMOROS",
+        "CONGO, THE DEMOCRATIC REPUBLIC OF THE",
+        "CONGO",
+        "COOK ISLANDS",
+        "COSTA RICA",
+        "COTE D'IVOIRE",
+        "CROATIA",
+        "CUBA",
+        "CURACAO",
+        "CYPRUS",
+        "CZECH REPUBLIC",
+        "CZECHOSLOVAKIA",
+        "DENMARK",
+        "DJIBOUTI",
+        "DOMINICA",
+        "DOMINICAN REPUBLIC",
+        "ECUADOR",
+        "EGYPT",
+        "EL SALVADOR",
+        "EQUATORIAL GUINEA",
+        "ERITREA",
+        "ESTONIA",
+        "ETHIOPIA",
+        "FALKLAND ISLANDS (MALVINAS)",
+        "FAROE ISLANDS",
+        "FIJI",
+        "FINLAND",
+        "FRANCE",
+        "FRENCH GUIANA",
+        "FRENCH POLYNESIA",
+        "FRENCH SOUTHERN TERRITORIES",
+        "GABON",
+        "GAMBIA",
+        "GEORGIA",
+        "GERMAN DEMOCRATIC REPUBLIC",
+        "FEDERAL REPUBLIC OF GERMANY",
+        "GERMANY",
+        "GHANA",
+        "GIBRALTAR",
+        "GREECE",
+        "GREENLAND",
+        "GRENADA",
+        "GUADELOUPE",
+        "GUAM",
+        "GUATEMALA",
+        "GUERNSEY",
+        "GUINEA",
+        "GUINEA-BISSAU",
+        "GUYANA",
+        "HAITI",
+        "HANOVER",
+        "HEARD ISLAND AND MCDONALD ISLANDS",
+        "HESSE ELECTORAL",
+        "HESSE GRAND DUCAL",
+        "HOLY SEE (VATICAN CITY STATE)",
+        "HONDURAS",
+        "HONG KONG",
+        "HUNGARY",
+        "ICELAND",
+        "INDIA",
+        "INDONESIA",
+        "IRAN, ISLAMIC REPUBLIC OF",
+        "IRAQ",
+        "IRELAND",
+        "ISLE OF MAN",
+        "ISRAEL",
+        "ITALY",
+        "JAMAICA",
+        "JAPAN",
+        "JERSEY",
+        "JORDAN",
+        "KAZAKHSTAN",
+        "KENYA",
+        "KIRIBATI",
+        "KOREA",
+        "KOREA, DEMOCRATIC PEOPLE'S REPUBLIC OF",
+        "KOREA, REPUBLIC OF",
+        "KOSOVO",
+        "KUWAIT",
+        "KYRGYZSTAN",
+        "LAO PEOPLE'S DEMOCRATIC REPUBLIC",
+        "LATVIA",
+        "LEBANON",
+        "LESOTHO",
+        "LIBERIA",
+        "LIBYA",
+        "LIECHTENSTEIN",
+        "LITHUANIA",
+        "LUXEMBOURG",
+        "MACAO",
+        "MACEDONIA, THE FORMER YUGOSLAV REPUBLIC OF",
+        "MADAGASCAR",
+        "MALAWI",
+        "MALAYSIA",
+        "MALDIVES",
+        "MALI",
+        "MALTA",
+        "MARSHALL ISLANDS",
+        "MARTINIQUE",
+        "MAURITANIA",
+        "MAURITIUS",
+        "MAYOTTE",
+        "MECKLENBURG SCHWERIN",
+        "MEXICO",
+        "MICRONESIA, FEDERATED STATES OF",
+        "MODENA",
+        "MOLDOVA, REPUBLIC OF",
+        "MONACO",
+        "MONGOLIA",
+        "MONTENEGRO",
+        "MONTSERRAT",
+        "MOROCCO",
+        "MOZAMBIQUE",
+        "MYANMAR",
+        "NAMIBIA",
+        "NAURU",
+        "NEPAL",
+        "NETHERLANDS",
+        "NETHERLANDS ANTILLES",
+        "NEW CALEDONIA",
+        "NEW ZEALAND",
+        "NICARAGUA",
+        "NIGER",
+        "NIGERIA",
+        "NIUE",
+        "NORFOLK ISLAND",
+        "NORTHERN MARIANA ISLANDS",
+        "NORWAY",
+        "OMAN",
+        "PAKISTAN",
+        "PALAU",
+        "PALESTINE, STATE OF",
+        "PANAMA",
+        "PAPUA NEW GUINEA",
+        "PARAGUAY",
+        "PARMA",
+        "PERU",
+        "PHILIPPINES",
+        "PITCAIRN",
+        "POLAND",
+        "PORTUGAL",
+        "PUERTO RICO",
+        "QATAR",
+        "REPUBLIC OF VIETNAM",
+        "REUNION",
+        "ROMANIA",
+        "RUSSIAN FEDERATION",
+        "RWANDA",
+        "SAINT BARTHELEMY",
+        "SAINT HELENA, ASCENSION AND TRISTAN DA CUNHA",
+        "SAINT KITTS AND NEVIS",
+        "SAINT LUCIA",
+        "SAINT MARTIN (FRENCH PART)",
+        "SAINT PIERRE AND MIQUELON",
+        "SAINT VINCENT AND THE GRENADINES",
+        "SAMOA",
+        "SAN MARINO",
+        "SAO TOME AND PRINCIPE",
+        "SAUDI ARABIA",
+        "SAXONY",
+        "SENEGAL",
+        "SERBIA",
+        "SEYCHELLES",
+        "SIERRA LEONE",
+        "SINGAPORE",
+        "SINT MAARTEN (DUTCH PART)",
+        "SLOVAKIA",
+        "SLOVENIA",
+        "SOLOMON ISLANDS",
+        "SOMALIA",
+        "SOUTH AFRICA",
+        "SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS",
+        "SOUTH SUDAN",
+        "SPAIN",
+        "SRI LANKA",
+        "SUDAN",
+        "SURINAME",
+        "SVALBARD AND JAN MAYEN",
+        "SWAZILAND",
+        "SWEDEN",
+        "SWITZERLAND",
+        "SYRIAN ARAB REPUBLIC",
+        "TAIWAN, PROVINCE OF CHINA",
+        "TAJIKISTAN",
+        "TANZANIA, UNITED REPUBLIC OF",
+        "THAILAND",
+        "TIMOR-LESTE",
+        "TOGO",
+        "TOKELAU",
+        "TONGA",
+        "TRINIDAD AND TOBAGO",
+        "TUNISIA",
+        "TURKEY",
+        "TURKMENISTAN",
+        "TURKS AND CAICOS ISLANDS",
+        "TUSCANY",
+        "TUVALU",
+        "TWO SICILIES",
+        "UGANDA",
+        "UKRAINE",
+        "UNITED ARAB EMIRATES",
+        "UNITED KINGDOM",
+        "UNITED STATES",
+        "UNITED STATES MINOR OUTLYING ISLANDS",
+        "URUGUAY",
+        "UZBEKISTAN",
+        "VANUATU",
+        "VENEZUELA, BOLIVARIAN REPUBLIC OF",
+        "VIET NAM",
+        "VIRGIN ISLANDS, BRITISH",
+        "VIRGIN ISLANDS, U.S.",
+        "WALLIS AND FUTUNA",
+        "WESTERN SAHARA",
+        "WUERTTEMBURG",
+        "YEMEN",
+        "YEMEN ARAB REPUBLIC",
+        "YEMEN PEOPLE'S REPUBLIC",
+        "YUGOSLAVIA",
+        "ZAMBIA",
+        "ZANZIBAR",
+        "ZIMBABWE",
+        "ALABAMA",
+        "ALASKA",
+        "ARIZONA",
+        "ARKANSAS",
+        "CALIFORNIA",
+        "COLORADO",
+        "CONNECTICUT",
+        "DELAWARE",
+        "FLORIDA",
+        "GEORGIA",
+        "HAWAII",
+        "IDAHO",
+        "ILLINOIS",
+        "INDIANA",
+        "IOWA",
+        "KANSAS",
+        "KENTUCKY",
+        "LOUISIANA",
+        "MAINE",
+        "MARYLAND",
+        "MASSACHUSETTS",
+        "MICHIGAN",
+        "MINNESOTA",
+        "MISSISSIPPI",
+        "MISSOURI",
+        "MONTANA",
+        "NEBRASKA",
+        "NEVADA",
+        "NEW HAMPSHIRE",
+        "NEW JERSEY",
+        "NEW MEXICO",
+        "NEW YORK",
+        "NORTH CAROLINA",
+        "NORTH DAKOTA",
+        "OHIO",
+        "OKLAHOMA",
+        "OREGON",
+        "PENNSYLVANIA",
+        "RHODE ISLAND",
+        "SOUTH CAROLINA",
+        "SOUTH DAKOTA",
+        "TENNESSEE",
+        "TEXAS",
+        "UTAH",
+        "VERMONT",
+        "VIRGINIA",
+        "WASHINGTON",
+        "WEST VIRGINIA",
+        "WISCONSIN",
+        "WYOMING",
+        "DISTRICT OF COLUMBIA",
+        "ENGLAND",
+        "BRITISH VIRGIN ISLANDS",
+        "NETHERLAND ANTILLES",
+        "RUSSIA",
+        "SOUTH KOREA",
+        'TAIWAN',
+        "VENEZUELA",
+        'CHANNEL ISLANDS'
+      )
     )
   }
 
@@ -1458,8 +3504,33 @@ parse_page_sub_multi_item_html <-
 parse_page_subsidiary_table_html <-
   function(page,
            numbers = 1:10,
-           hit_terms = c("Organized","STATE OR|STATE OF|JURISDICTION OF|JURISDICTION OF INCORPORATION OR ORGANIZATION|JURISDICTION|JURISDICTION OF INCORPORATION OR\nORGANIZATION", "NAME|ORGANIZED UNDER THE LAWS OF", 'STATE OF ORGANIZATION', 'STATE OR COUNTRY OF ORGANIZATION', 'NAME OF SUBSIDIARY','NAME', 'ENTITY NAME', 'the laws of', 'Percentage of voting', 'securities owned by', 'immediate parent', 'CERTAIN INTERMEDIARY SUBSIDIARIES', 'Note:', 'Organized', 'Under the', 'Laws of', 'OWNED BY', 'IMMEDIATE', 'PARENT', "OWNS", "CERTAIN INTERMEDIARY SUBSIDIARIES", 'PERCENTAGE', 'OF VOTING', 'SECURITIES')
-  ) {
+           hit_terms = c(
+             "Organized",
+             "STATE OR|STATE OF|JURISDICTION OF|JURISDICTION OF INCORPORATION OR ORGANIZATION|JURISDICTION|JURISDICTION OF INCORPORATION OR\nORGANIZATION",
+             "NAME|ORGANIZED UNDER THE LAWS OF",
+             'STATE OF ORGANIZATION',
+             'STATE OR COUNTRY OF ORGANIZATION',
+             'NAME OF SUBSIDIARY',
+             'NAME',
+             'ENTITY NAME',
+             'the laws of',
+             'Percentage of voting',
+             'securities owned by',
+             'immediate parent',
+             'CERTAIN INTERMEDIARY SUBSIDIARIES',
+             'Note:',
+             'Organized',
+             'Under the',
+             'Laws of',
+             'OWNED BY',
+             'IMMEDIATE',
+             'PARENT',
+             "OWNS",
+             "CERTAIN INTERMEDIARY SUBSIDIARIES",
+             'PERCENTAGE',
+             'OF VOTING',
+             'SECURITIES'
+           )) {
     is_ib1 <-
       page %>%
       html_nodes('b font') %>%
@@ -1489,11 +3560,11 @@ parse_page_subsidiary_table_html <-
     }
 
     has_date <-
-      items_bold %>% grep(month.name %>% str_to_upper() %>% paste(collapse = '|'),.) %>% length > 0
+      items_bold %>% grep(month.name %>% str_to_upper() %>% paste(collapse = '|'), .) %>% length > 0
 
     if (has_date) {
       date_data <-
-        items_bold[items_bold %>% grep(month.name %>% str_to_upper() %>% paste(collapse = '|'),.)] %>%
+        items_bold[items_bold %>% grep(month.name %>% str_to_upper() %>% paste(collapse = '|'), .)] %>%
         lubridate::mdy()
     } else {
       date_data <-
@@ -1505,7 +3576,7 @@ parse_page_subsidiary_table_html <-
       append(items_bold) %>%
       str_to_upper() %>%
       unique() %>%
-      append(list('(',letters, ')') %>%
+      append(list('(', letters, ')') %>%
                purrr::invoke(paste0, .)) %>%
       paste0(collapse = '|')
 
@@ -1538,7 +3609,9 @@ parse_page_subsidiary_table_html <-
           data_frame(item, value)
         }
       }) %>%
-      mutate(value = value %>% str_to_upper() %>% str_replace_all('\n  ', ' ') %>% str_replace_all('\u0096 ', '')) %>%
+      mutate(
+        value = value %>% str_to_upper() %>% str_replace_all('\n  ', ' ') %>% str_replace_all('\u0096 ', '')
+      ) %>%
       filter(!value == '')
 
     has_loc_key <-
@@ -1593,12 +3666,12 @@ parse_page_subsidiary_table_html <-
       filter(!value %>% str_detect(hit_terms))
 
     count_df <-
-      all_data %>% count(item,sort = T) %>%
+      all_data %>% count(item, sort = T) %>%
       arrange(item) %>%
       spread(item, n)
 
     off_one <-
-      (count_df[,2] %>% extract2(1)) - (count_df[,1] %>% extract2(1)) == 1
+      (count_df[, 2] %>% extract2(1)) - (count_df[, 1] %>% extract2(1)) == 1
 
     min_item <-
       count_df %>% gather(item, value) %>% filter(value == min(value)) %>% .$item
@@ -1606,7 +3679,7 @@ parse_page_subsidiary_table_html <-
     change_pct <-
       has_pct & (pct_col == min_item) %>% sum() > 0
 
-    if (change_pct){
+    if (change_pct) {
       pct_col <-
         names(count_df)[[3]]
     }
@@ -1614,7 +3687,7 @@ parse_page_subsidiary_table_html <-
     if (off_one) {
       df <-
         all_data$item %>% unique() %>%
-        map_df(function(x){
+        map_df(function(x) {
           has_data <-
             all_data %>%
             filter(item == x) %>%
@@ -1634,7 +3707,7 @@ parse_page_subsidiary_table_html <-
         filter(!value %>% str_detect(hit_terms)) %>%
         spread(item, value)
 
-      if (change_pct){
+      if (change_pct) {
         df <-
           df %>%
           select(-one_of(min_item))
@@ -1650,7 +3723,7 @@ parse_page_subsidiary_table_html <-
           html_table(fill = T)
         df <-
           1:length(tables) %>%
-          map_df(function(x){
+          map_df(function(x) {
             table_df <-
               tables[[x]] %>%
               data.frame(stringsAsFactors = FALSE) %>%
@@ -1661,9 +3734,24 @@ parse_page_subsidiary_table_html <-
               gather(column, value) %>%
               mutate(idColumn = 1:n()) %>%
               filter(!value %>% is.na()) %>%
-              left_join(data_frame(value = c("PROPERTY", "ENTITIES", "STATE OF FORMATION", "DATE OF FORMATION", " ",'General Information:'
-              ),
-              nameItem = c('nameProperty', 'nameSubsidiary', 'locationOrganizationSubsidiary', 'dateSubsidiaryFormed', 'locationOrganizationSubsidiary', 'nameSubsidiary'))) %>%
+              left_join(data_frame(
+                value = c(
+                  "PROPERTY",
+                  "ENTITIES",
+                  "STATE OF FORMATION",
+                  "DATE OF FORMATION",
+                  " ",
+                  'General Information:'
+                ),
+                nameItem = c(
+                  'nameProperty',
+                  'nameSubsidiary',
+                  'locationOrganizationSubsidiary',
+                  'dateSubsidiaryFormed',
+                  'locationOrganizationSubsidiary',
+                  'nameSubsidiary'
+                )
+              )) %>%
               suppressMessages()
             two_col <-
               column_df %>% nrow() == 2
@@ -1685,19 +3773,24 @@ parse_page_subsidiary_table_html <-
             table_df <-
               table_df %>%
               mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
-              mutate(nameSubsidiary = ifelse(nameSubsidiary == '', NA, nameSubsidiary)
-              ) %>%
+              mutate(nameSubsidiary = ifelse(nameSubsidiary == '', NA, nameSubsidiary)) %>%
               filter(!nameSubsidiary %>% is.na())
 
 
             if (two_col) {
               table_df <-
                 table_df %>%
-                tidyr::separate(locationOrganizationSubsidiary, into = c('locationOrganizationSubsidiary', 'dateSubsidiaryFormed'),
-                                sep = 'FORMED') %>%
+                tidyr::separate(
+                  locationOrganizationSubsidiary,
+                  into = c(
+                    'locationOrganizationSubsidiary',
+                    'dateSubsidiaryFormed'
+                  ),
+                  sep = 'FORMED'
+                ) %>%
                 suppressWarnings() %>%
                 mutate(locationOrganizationSubsidiary = locationOrganizationSubsidiary %>% str_replace_all('\\,', '')) %>%
-                mutate_all(funs(. %>% str_replace('\n','') %>% str_trim()))
+                mutate_all(funs(. %>% str_replace('\n', '') %>% str_trim()))
             }
 
 
@@ -1705,9 +3798,9 @@ parse_page_subsidiary_table_html <-
               table_df <-
                 table_df %>%
                 mutate(nameProperty = ifelse(nameProperty == '', NA, nameProperty)) %>%
-                mutate_all(funs(. %>% str_replace('\n|\n  |\n  ','') %>% str_trim())) %>%
-                mutate_all(funs(. %>% str_replace('\n','') %>% str_trim())) %>%
-                mutate_all(funs(. %>% str_replace('  ',' ') %>% str_trim())) %>%
+                mutate_all(funs(. %>% str_replace('\n|\n  |\n  ', '') %>% str_trim())) %>%
+                mutate_all(funs(. %>% str_replace('\n', '') %>% str_trim())) %>%
+                mutate_all(funs(. %>% str_replace('  ', ' ') %>% str_trim())) %>%
                 fill(nameProperty)
 
             }
@@ -1725,7 +3818,11 @@ parse_page_subsidiary_table_html <-
           df %>%
           mutate(idCIK = cik, urlSEC = url) %>%
           select(idCIK, nameSubsidiary, everything()) %>%
-          mutate(locationOrganizationSubsidiary = locationOrganizationSubsidiary %>% str_replace_all('A |LIMITED LIABILITY COMPANY|CORPORATION|LIMITED PARTNERSHIP') %>% str_trim())
+          mutate(
+            locationOrganizationSubsidiary = locationOrganizationSubsidiary %>% str_replace_all(
+              'A |LIMITED LIABILITY COMPANY|CORPORATION|LIMITED PARTNERSHIP'
+            ) %>% str_trim()
+          )
 
         return(df)
       }
@@ -1750,14 +3847,16 @@ parse_page_subsidiary_table_html <-
     df <-
       df %>%
       dplyr::rename(nameSubsidiary = X1) %>%
-      tidyr::separate(nameSubsidiary, sep = '\\(', into = c('nameSubsidiary', 'remove')) %>%
+      tidyr::separate(nameSubsidiary,
+                      sep = '\\(',
+                      into = c('nameSubsidiary', 'remove')) %>%
       select(-matches("remove")) %>%
       mutate(nameSubsidiary = nameSubsidiary %>% str_trim()) %>%
       suppressWarnings() %>%
       select(-matches("idSubsidiary"))
 
     if (has_pct) {
-      names(df)[names(df) %>% grep(pct_col,.)] <-
+      names(df)[names(df) %>% grep(pct_col, .)] <-
         'pctSubsidiaryOwned'
 
       df <-
@@ -1768,7 +3867,7 @@ parse_page_subsidiary_table_html <-
     }
 
     if (has_loc_key) {
-      names(df)[names(df) %>% grep(loc_col,.)] <-
+      names(df)[names(df) %>% grep(loc_col, .)] <-
         'locationOrganizationSubsidiary'
     }
 
@@ -1818,8 +3917,16 @@ parse_sec_subsidiary_url_html <-
 
         df <-
           data_frame(data) %>%
-          separate(data, sep = '\\(', into = c('nameSubsidiary', 'locationOrganizationSubsidiary')) %>%
-          separate(locationOrganizationSubsidiary, sep = '\\)', into = c('locationOrganizationSubsidiary', 'remove')) %>%
+          separate(
+            data,
+            sep = '\\(',
+            into = c('nameSubsidiary', 'locationOrganizationSubsidiary')
+          ) %>%
+          separate(
+            locationOrganizationSubsidiary,
+            sep = '\\)',
+            into = c('locationOrganizationSubsidiary', 'remove')
+          ) %>%
           select(-remove) %>%
           mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
           mutate(idCIK = cik, urlSEC = url) %>%
@@ -1874,7 +3981,10 @@ parse_sec_subsidiary_url_html <-
           left_join(loc_df) %>%
           fill(locationOrganizationSubsidiary) %>%
           mutate(urlSEC = url, idCIK = cik) %>%
-          select(idCIK, nameSubsidiary, locationOrganizationSubsidiary, everything()) %>%
+          select(idCIK,
+                 nameSubsidiary,
+                 locationOrganizationSubsidiary,
+                 everything()) %>%
           select(-idRow) %>%
           suppressMessages() %>%
           select(-matches("idSubsidiary"))
@@ -1913,7 +4023,9 @@ parse_sec_subsidiary_url_html <-
             data_frame(item, value)
           }
         }) %>%
-        mutate(value = value %>% str_to_upper() %>% str_replace_all('\n  ', ' ') %>% str_replace_all('\u0096 ', '')) %>%
+        mutate(
+          value = value %>% str_to_upper() %>% str_replace_all('\n  ', ' ') %>% str_replace_all('\u0096 ', '')
+        ) %>%
         filter(!value == '')
 
 
@@ -1930,7 +4042,23 @@ parse_sec_subsidiary_url_html <-
           unique()
       }
 
-      hit_terms_in <- c("Organized","STATE OR|STATE OF|JURISDICTION OF|JURISDICTION OF INCORPORATION OR ORGANIZATION|JURISDICTION|JURISDICTION OF INCORPORATION OR\nORGANIZATION", "NAME|ORGANIZED UNDER THE LAWS OF", 'STATE OF ORGANIZATION', 'STATE OR COUNTRY OF ORGANIZATION', 'NAME OF SUBSIDIARY','NAME', 'ENTITY NAME', 'the laws of', 'Percentage of voting', 'securities owned by', 'immediate parent', 'CERTAIN INTERMEDIARY SUBSIDIARIES', 'PERCENT OWNED')
+      hit_terms_in <-
+        c(
+          "Organized",
+          "STATE OR|STATE OF|JURISDICTION OF|JURISDICTION OF INCORPORATION OR ORGANIZATION|JURISDICTION|JURISDICTION OF INCORPORATION OR\nORGANIZATION",
+          "NAME|ORGANIZED UNDER THE LAWS OF",
+          'STATE OF ORGANIZATION',
+          'STATE OR COUNTRY OF ORGANIZATION',
+          'NAME OF SUBSIDIARY',
+          'NAME',
+          'ENTITY NAME',
+          'the laws of',
+          'Percentage of voting',
+          'securities owned by',
+          'immediate parent',
+          'CERTAIN INTERMEDIARY SUBSIDIARIES',
+          'PERCENT OWNED'
+        )
       hit_terms <-
         hit_terms %>%
         str_to_upper() %>%
@@ -1943,7 +4071,8 @@ parse_sec_subsidiary_url_html <-
       has_pct_col <-
         all_data %>%
         filter(value %in% "100") %>%
-        nrow() > 0 | (all_data %>% filter(value %>% str_detect('PERCENT')) %>% nrow() > 0)
+        nrow() > 0 |
+        (all_data %>% filter(value %>% str_detect('PERCENT')) %>% nrow() > 0)
 
       if (has_pct_col) {
         pct_col <-
@@ -1963,7 +4092,7 @@ parse_sec_subsidiary_url_html <-
         mutate(valueNC = value %>% nchar()) %>%
         filter(!value %>% str_detect("PERCENT"))
 
-      if (!has_pct_col){
+      if (!has_pct_col) {
         all_data <-
           all_data %>%
           filter(valueNC > 3)
@@ -2030,7 +4159,8 @@ parse_sec_subsidiary_url_html <-
 
 # url = 'https://www.sec.gov/Archives/edgar/data/19617/000095012301002499/y46253ex21-1.txt'
 parse_sec_subsidiary_url_text <-
-  function(url = "https://www.sec.gov/Archives/edgar/data/899689/000104746903007996/a2104897zex-21.txt", return_message = TRUE) {
+  function(url = "https://www.sec.gov/Archives/edgar/data/899689/000104746903007996/a2104897zex-21.txt",
+           return_message = TRUE) {
     cik <-
       url %>%
       parse_sec_url_for_cik()
@@ -2045,7 +4175,7 @@ parse_sec_subsidiary_url_text <-
 
     if (has_s) {
       data <-
-        data[(data %>% grep("<S>",.) %>% .[[1]] + 1):length(data)]
+        data[(data %>% grep("<S>", .) %>% .[[1]] + 1):length(data)]
     }
 
     data <-
@@ -2056,7 +4186,7 @@ parse_sec_subsidiary_url_text <-
 
     df <-
       1:length(data) %>%
-      map_df(function(x){
+      map_df(function(x) {
         item <-
           data[[x]]
 
@@ -2079,27 +4209,39 @@ parse_sec_subsidiary_url_text <-
           items %>% length() == 2
         if (two_items) {
           table_data <-
-            data_frame(idSubsidiary = x, nameSubsidiary = items[[1]], locationOrganizationSubsidiary = items[[2]])
+            data_frame(
+              idSubsidiary = x,
+              nameSubsidiary = items[[1]],
+              locationOrganizationSubsidiary = items[[2]]
+            )
         }
         three_items <-
           items %>% length() == 3
         if (three_items) {
           table_data <-
-            data_frame(idSubsidiary = x, nameSubsidiary = items[[1]], locationOrganizationSubsidiary = items[[2]],
-                       pctSubsidiaryOwned = items[[3]] %>% as.numeric() / 100
-                       )
+            data_frame(
+              idSubsidiary = x,
+              nameSubsidiary = items[[1]],
+              locationOrganizationSubsidiary = items[[2]],
+              pctSubsidiaryOwned = items[[3]] %>% as.numeric() / 100
+            )
         }
 
         table_data <-
           table_data %>%
-          mutate(isChildSubsidiary = ifelse(nameSubsidiary %>% substr(1,1) == "-", TRUE, FALSE),
-                 nameSubsidiary = nameSubsidiary %>% str_replace('\\-','') %>% str_trim())
+          mutate(
+            isChildSubsidiary = ifelse(nameSubsidiary %>% substr(1, 1) == "-", TRUE, FALSE),
+            nameSubsidiary = nameSubsidiary %>% str_replace('\\-', '') %>% str_trim()
+          )
         return(table_data)
       }) %>%
       mutate(idCIK = cik, urlSEC = url) %>%
       select(-matches("idSubsidiary")) %>%
-      select(idCIK, nameSubsidiary, locationOrganizationSubsidiary, everything()) %>%
-      filter(!nameSubsidiary %in% c('NAME','ORGANIZED UNDER'))
+      select(idCIK,
+             nameSubsidiary,
+             locationOrganizationSubsidiary,
+             everything()) %>%
+      filter(!nameSubsidiary %in% c('NAME', 'ORGANIZED UNDER'))
 
     df <-
       df %>%
@@ -2115,7 +4257,8 @@ parse_sec_subsidiary_url_text <-
   }
 
 parse_sec_subsidiary_url  <-
-  function(url = "https://www.sec.gov/Archives/edgar/data/34088/000003408816000065/xomexhibit21.htm", return_message = TRUE)  {
+  function(url = "https://www.sec.gov/Archives/edgar/data/34088/000003408816000065/xomexhibit21.htm",
+           return_message = TRUE)  {
     is_text <-
       url %>%
       str_detect("txt")
@@ -2145,12 +4288,12 @@ parse_sec_subsidiary_url  <-
 
 # utilities ---------------------------------------------------------------
 separate_column <-
-  function(data, column_name = "idExemption"){
+  function(data, column_name = "idExemption") {
     has_splits <-
       data %>%
       select(one_of(column_name)) %>%
       magrittr::extract2(1) %>%
-      map_dbl(function(x){
+      map_dbl(function(x) {
         x %>% str_count('\\|')
       }) %>%
       sum(na.rm = T) > 0
@@ -2163,15 +4306,15 @@ separate_column <-
       data %>%
       select(one_of(column_name)) %>%
       magrittr::extract2(1) %>%
-      map_dbl(function(x){
+      map_dbl(function(x) {
         x %>% str_count('\\|')
       }) %>%
       max()
 
     column_names <-
       0:max_split %>%
-      map_chr(function(x){
-        if (x == 0){
+      map_chr(function(x) {
+        if (x == 0) {
           return(column_name)
         }
         column_name %>% paste0(x)
@@ -2303,7 +4446,7 @@ resolve_name_df <-
 
       has_names <-
         names(df_has) %>%
-        map_chr(function(x){
+        map_chr(function(x) {
           name_df %>%
             filter(nameRF == x) %>%
             filter(idRow == min(idRow)) %>%
@@ -2322,16 +4465,19 @@ resolve_name_df <-
       data <-
         data %>%
         mutate_at(.cols =
-                    data %>% select(matches("idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year")) %>% names,
-                  funs(. %>% readr::parse_number())
-        ) %>%
+                    data %>% select(
+                      matches(
+                        "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
+                      )
+                    ) %>% names,
+                  funs(. %>% readr::parse_number())) %>%
         suppressWarnings()
       return(data)
     }
 
     actual_names <-
       names(data) %>%
-      map_chr(function(x){
+      map_chr(function(x) {
         name_df %>%
           filter(nameRF == x) %>%
           filter(idRow == min(idRow)) %>%
@@ -2345,9 +4491,12 @@ resolve_name_df <-
     data <-
       data %>%
       mutate_at(.cols =
-                  data %>% select(matches("idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year")) %>% names,
-                funs(. %>% readr::parse_number())
-                ) %>%
+                  data %>% select(
+                    matches(
+                      "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
+                    )
+                  ) %>% names,
+                funs(. %>% readr::parse_number())) %>%
       suppressWarnings()
 
     return(data)
@@ -2357,16 +4506,22 @@ resolve_name_df <-
 
 # industries --------------------------------------------------------------
 
-#' Get SIC codes and classifications
+#' SIC Codes
 #'
-#' @param filter_duplicates
+#' This function returns Standard Industrial Classification [SIC]
+#' codes and the corresponding
+#' North American Industry Classification System [NAICS] identification.
 #'
-#' @return
+#' @param filter_duplicates \code{TRUE} removes duplicate entries
+#'
+#' @return a \d
 #' @export
 #' @import dplyr
 #' @importFrom readr read_csv
 #' @importFrom tidyr separate
+#' @family dictionary
 #' @examples
+#' get_data_sic_codes(filter_duplicates = TRUE)
 get_data_sic_codes <-
   function(filter_duplicates = TRUE) {
     sic <-
@@ -2406,33 +4561,46 @@ get_data_sic_codes <-
 
 # file_codes --------------------------------------------------------------
 
-#' Get SEC file code descriptions
+#' SEC Prefix Laws
 #'
-#' @return
+#' This function returns prefix
+#' descriptions of SEC rules and the
+#' law that created the rule
+#'
+#' @return a  \code{data_frame}
 #' @export
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
 #' @importFrom readr read_csv
 #' @examples
-get_data_sec_file_codes <-
+#' @family dictionary
+#' @family SEC
+#' get_data_sec_rules()
+get_data_sec_rules <-
   function() {
     codes <-
       "http://rankandfiled.com/static/export/file_numbers.csv" %>%
       parse_rank_and_filed_data(column_names = c("idPrefixSEC", "typeFiling", "nameLawSEC")) %>%
-      mutate(typeFiling = ifelse(typeFiling == '', NA, typeFiling))
+      mutate(typeFiling = ifelse(typeFiling == '', NA, typeFiling)) %>%
+      mutate_all(str_to_upper)
 
     return(codes)
   }
 
 # countries ---------------------------------------------------------------
-#' Get location code data
+#' Locations
 #'
-#' @return
+#' This function returns location codes
+#' and the name the location
+#'
+#' @return a \code{data_frame}
 #' @export
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
 #' @importFrom readr read_csv
-#' @examples get_data_location_codes()
+#' @family dictionary
+#' @examples
+#' get_data_location_codes()
 get_data_location_codes <-
   function() {
     countries <-
@@ -2441,49 +4609,24 @@ get_data_location_codes <-
     countries
   }
 
-
-# cusips ------------------------------------------------------------------
-get_data_rf_cusips <-
-  function(return_message = TRUE) {
-    cusips <-
-      'http://rankandfiled.com/static/export/cusip_ticker.csv' %>%
-      parse_rank_and_filed_data(column_names = c('nameIssuer', 'idTicker', 'idCUSIP', 'idCIK')) %>%
-      mutate(
-        nameIssuer = nameIssuer %>% stringr::str_to_upper(),
-        idCIK = ifelse(idCIK == '', NA, idCIK),
-        idCIK = idCIK %>% as.numeric(),
-        idTicker = ifelse(idTicker == '', NA, idTicker)
-      ) %>%
-      suppressWarnings()
-
-    cusips <-
-      cusips %>%
-      resolve_cik_url()
-
-    if (return_message) {
-      list(
-        "You acquired data for ",
-        cusips %>% nrow() %>% formattable::comma(digits = 0),
-        " United States cusiped issuers"
-      ) %>%
-        purrr::invoke(paste0, .) %>% message()
-    }
-    return(cusips)
-  }
-
 # leis --------------------------------------------------------------------
 
-#' Get US domiciled LEI issuers
+#' LEIs
 #'
-#' @param return_message
+#' This function returns \href{https://en.wikipedia.org/wiki/Legal_Entity_Identifier}{Legal Entity Identifier}s
+#' for entities registered with the SEC
 #'
-#' @return
+#' @param return_message \code{TRUE} return a message after data import
 #' @export
 #' @import dplyr purrr formattable
 #' @importFrom  tidyr separate
 #' @importFrom readr read_csv
+#' @family entity search
+#' @family SEC
+#' @family Rank and Filed
 #' @examples
-get_data_leis <-
+#' get_data_rf_leis()
+get_data_rf_leis <-
   function(return_message = TRUE) {
     leis <-
       "http://rankandfiled.com/static/export/cik_lei.csv" %>%
@@ -2645,19 +4788,26 @@ get_data_us_tickers <-
 
 
 
-    # debt_securities ---------------------------------------------------------
-#' Get data money market owned securities
+# debt_securities ---------------------------------------------------------
+#' Money Market Debt Securities
 #'
-#' @param return_message
+#' This function returns
+#' debt securities owned by money market funds.
 #'
-#' @return
+#' @param return_message \code{TRUE} return a message after data import
+#'
+#' @return a \code{data_frame}
 #' @export
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
 #' @importFrom readr read_csv
 #' @importFrom stringr str_to_upper
 #' @importFrom lubridate ymd
+#' @family SEC
+#' @family Rank and Filed
+#' @family securities search
 #' @examples
+#' get_data_mmf_owned_debt_securities(return_message = TRUE)
 get_data_mmf_owned_debt_securities <-
   function(return_message = TRUE) {
     debt <-
@@ -2677,8 +4827,12 @@ get_data_mmf_owned_debt_securities <-
         nameIssuer = nameIssuer %>% stringr::str_to_upper(),
         nameSecurity = nameSecurity %>% stringr::str_to_upper(),
         idCIK = idCIK %>% as.numeric(),
-        dateMaturity = dateMaturity %>% lubridate::ymd()
-      )
+        dateMaturity = dateMaturity %>% lubridate::ymd(),
+        categorySecurity = categorySecurity %>% stringr::str_to_upper(),
+        ratingSecurity = ratingSecurity %>% str_to_upper()
+      ) %>%
+      select(categorySecurity, idCUSIP, nameSecurity, everything()) %>%
+      filter(!idCUSIP %>% is.na())
 
     debt <-
       debt %>%
@@ -2693,17 +4847,24 @@ get_data_mmf_owned_debt_securities <-
 
 
 # 13fs --------------------------------------------------------------------
-#' Get 13F owned compaines
+#' 13F owned companies
 #'
-#' @param return_message
+#' This function returns companies
+#' reported in as owned by a 13-F filer.
+#' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return
+#'
+#' @return a \code{data_frame}
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
 #' @importFrom readr read_csv
 #' @export
-#'
+#' @family entity search
+#' @family SEC
+#' @family Rank and Filed
+#' @family securities search
 #' @examples
+#' get_data_sec_13F_companies()
 get_data_sec_13F_companies <-
   function(return_message = TRUE) {
     data <-
@@ -2738,68 +4899,28 @@ get_data_sec_13F_companies <-
     return(data)
   }
 
-# mutual_funds ------------------------------------------------------------
-
-#' Get SEC registered mutual funds
-#'
-#' @param return_message
-#' @import dplyr purrr
-#' @importFrom  tidyr separate
-#' @importFrom readr read_csv
-#' @return
-#' @export
-#'
-#' @examples
-get_data_sec_mutual_funds <-
-  function(return_message = TRUE) {
-    funds <-
-      'http://rankandfiled.com/static/export/funds.csv' %>%
-      parse_rank_and_filed_data(
-        column_names = c(
-          'idCIK',
-          'nameEntitySECRegistration',
-          'nameFundFamily',
-          'idTicker' ,
-          'nameFund',
-          'typeFund'
-        )
-      ) %>%
-      mutate(idCIK = idCIK %>% as.numeric()) %>%
-      arrange(nameEntitySECRegistration)
-
-    funds <-
-      funds %>%
-      resolve_cik_url() %>%
-      select(idCIK, idTicker, nameFund, typeFund, everything())
-
-    funds <-
-      funds %>%
-      mutate_at(funds %>% select(matches("name")) %>% names,
-                funs(. %>% stringr::str_to_upper()))
-
-    if (return_message) {
-      funds %>%
-        print_message(table_name = 'SEC Registered Mutual Funds')
-    }
-    return(funds)
-  }
-
-
-
 # securities_filings ------------------------------------------------------
 
-#' Get most recent insider trades
+#' Insider trades, most recent
 #'
-#' @param return_message
+#' This function returns the most recent insider
+#' trades as filed with the SEC.
+#'
+#' @param return_message \code{TRUE} return a message after data import
+#' @param nest_data \code{TRUE} return nested data frame
+#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 #' @import dplyr purrr tidyr readr lubridate stringr
 #' @importFrom jsonlite fromJSON
-#' @return
 #' @export
-#'
+#' @family SEC
+#' @family Rank and Filed
+#' @family securities transaction
 #' @examples
+#' get_data_recent_insider_trades(nest_data = TRUE)
 
 get_data_recent_insider_trades <-
-  function(return_message = TRUE) {
+  function(nest_data = FALSE,
+           return_message = TRUE) {
     options(scipen = 9999)
     json_data <-
       "http://rankandfiled.com/data/buy_sell" %>%
@@ -2933,32 +5054,47 @@ get_data_recent_insider_trades <-
         .cols = all_data %>% select(matches("count")) %>% names(),
         funs(. %>% as.numeric %>% formattable::comma(digits = 0))
       ) %>%
+      mutate_at(
+        .cols = all_data %>% select(matches("name|type")) %>% names(),
+        funs(. %>% stringr::str_to_upper())
+      ) %>%
       arrange(nameCompany, nameTable)
 
     if (return_message) {
-      all_data %>%
-        filter(typeInsider == 'Person') %>%
-        filter(!namePerson %>% is.na()) %>%
-        print_message(table_name = 'Insider Transactions, Last 7 Days')
+      list("You got ", all_data %>% nrow() %>% formattable::comma(digits = 0), ' Insider Transactions from the last 7 days') %>%
+        purrr::reduce(paste0) %>%
+        message()
     }
 
     all_data <-
       all_data %>%
       resolve_cik_url()
 
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest(-c(nameTable, typeInsider, typeTransaction), .key = dataInsiderTrades)
+    }
+
     return(all_data)
 
   }
 
-#' Get securities registration filing counts
+#' SEC Filing Counts
 #'
-#' @param return_message
+#' This function returns counts of SEC filings
+#' by the type of form by year since 1994
+#'
+#' @param return_message \code{TRUE} return a message after data import
 #' @import dplyr purrr tidyr readr lubridate stringr formattable
 #' @importFrom jsonlite fromJSON
-#' @return
+#' @return a \code{data_frame}
 #' @export
+#' @family SEC
+#' @family Rank and Fild
 #'
 #' @examples
+#' get_data_sec_securities_filing_counts()
 get_data_sec_securities_filing_counts <-
   function(return_message = TRUE) {
     data_frame(
@@ -2969,7 +5105,7 @@ get_data_sec_securities_filing_counts <-
         "IPOs",
         "IPO Withdrawls",
         "Merger"
-      )
+      ) %>% stringr::str_to_upper()
     )
 
     filing_count_data <-
@@ -2980,7 +5116,8 @@ get_data_sec_securities_filing_counts <-
       mutate(idForm = c('D', 'W', 'S-1', 'S-3', 'S-4')) %>%
       select(idForm, everything()) %>%
       gather(yearFiling, countFilings, -idForm) %>%
-      mutate(yearFiling = yearFiling %>% as.numeric()) %>%
+      mutate(yearFiling = yearFiling %>% as.numeric(),
+             countFilings = countFilings %>% formattable::comma(digits = 0)) %>%
       filter(countFilings > 0)
 
     if (return_message) {
@@ -3003,7 +5140,7 @@ get_data_sec_securities_filing_counts <-
 generate_securities_urls <-
   function() {
     count_df <-
-      get_data_securities_filing_counts(return_message = FALSE) %>%
+      get_data_sec_securities_filing_counts(return_message = FALSE) %>%
       mutate(lengthOut = (countFilings %/% 50) + 1)
 
     url_df <-
@@ -3044,61 +5181,79 @@ parse_securities_url <-
 
     if (has_data) {
       data <-
-      url %>%
-      jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-      .$detail %>%
-      data.frame(stringsAsFactors = FALSE) %>%
-      dplyr::as_data_frame() %>%
-      purrr::set_names(c('dateFiling', 'offering')) %>%
-      suppressWarnings() %>%
-      suppressMessages()
+        url %>%
+        jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
+        .$detail %>%
+        data.frame(stringsAsFactors = FALSE) %>%
+        dplyr::as_data_frame() %>%
+        purrr::set_names(c('dateFiling', 'offering')) %>%
+        suppressWarnings() %>%
+        suppressMessages()
 
-    data <-
-      data %>%
-      mutate(dateFiling = dateFiling %>% lubridate::ymd()) %>%
-      tidyr::separate(
-        offering,
-        into = column_names,
-        sep = '\\*'
-      ) %>%
-      clean_names() %>%
-      clean_ticker() %>%
-      clean_cik() %>%
-      resolve_cik_url() %>%
-      suppressWarnings() %>%
-      suppressMessages()
+      data <-
+        data %>%
+        mutate(dateFiling = dateFiling %>% lubridate::ymd()) %>%
+        tidyr::separate(offering,
+                        into = column_names,
+                        sep = '\\*') %>%
+        clean_names() %>%
+        clean_ticker() %>%
+        clean_cik() %>%
+        resolve_cik_url() %>%
+        suppressWarnings() %>%
+        suppressMessages()
 
-    data <-
-      data %>%
-      mutate_at(.cols =
-                  data %>% select(matches("^amount|^count|idIndustry")) %>% names(),
-                funs(. %>% as.numeric())
-      )
+      data <-
+        data %>%
+        mutate_at(.cols =
+                    data %>% select(matches("^amount|^count|idIndustry")) %>% names(),
+                  funs(. %>% as.numeric()))
 
-    if (return_message) {
-      list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
-    }
+      if (return_message) {
+        list("Parsed: ", url) %>%
+          purrr::invoke(paste0, .) %>% message()
+      }
 
-    return(data)
+      return(data)
     }
   }
 
-#' Get Securities Offering data
+#' Securities offerings
 #'
-#' @param year_forms
-#' @param forms
-#' @param return_message
+#' This function returns securities offering
+#' data by form type and year from 1994 onward.
 #'
-#' @return
+#' @param year_forms years to search starting in 1994, \code{NULL} returns all years
+#' @param forms forms to use in search \itemize{
+#' \item \code{NULL}: returns all (default)
+#' \item \code{D}: Exempt offerings
+#' \item \code{W}: Secondary sales
+#' \item \code{S-1}: Initial public offerings
+#' \item \code{S-4}: Initial public offering withdrawls
+#' }
+#' @param return_message \code{TRUE} return a message after data import
+#' @param nest_data \code{TRUE} return nested data frame
+#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
+#' where \code{nest_data} is \code{FALSE} a data_frame
 #' @export
-#'
+#' @family SEC
+#' @family entity search
+#' @family securities search
+#' @family Rank and Filed
 #' @examples
+#' #' \dontrun{
+#'
+#' ## All Securities Filings
+#' get_data_securities_offerings(year_forms = NULL, forms = NULL, return_message = TRUE, nest_data = TRUE)
+#'
+#' ## IPOs since 1999
+#' get_data_securities_offerings(year_forms = 1999:2017, forms = "S-1", return_message = TRUE, nest_data = FALSE)
+#' }
 get_data_securities_offerings <-
   function(year_forms = NULL,
            forms = NULL,
+           nest_data = FALSE,
            return_message = TRUE) {
-
     url_df <-
       generate_securities_urls()
 
@@ -3138,17 +5293,19 @@ get_data_securities_offerings <-
       all_data %>%
       left_join(data_frame(
         idForm =
-          c("S-4", "S-3", "S-1", "W", "D"),
+          c("S-4", "S-3", "S-1", "W", "D", "F-4", "F-3", "F-1", "REGDEX"),
         typeForm =
           c(
             "Merger",
             "Secondary Offering",
             "IPO",
             "IPO Withdrawl",
-            "Exempt Offering"
-          )
+            "Exempt Offering",
+            "Foreign Issuer Merger", "Foreign Private Issuer", "Foreign Public Issuer", "Paper Filing"
+          ) %>% str_to_upper()
       )) %>%
-      select(dateFiling, typeForm, idForm, everything()) %>%
+      mutate(yearFiling = dateFiling %>% lubridate::year()) %>%
+      select(yearFiling, dateFiling, typeForm, idForm, everything()) %>%
       suppressMessages()
 
     if (return_message) {
@@ -3164,6 +5321,13 @@ get_data_securities_offerings <-
         message()
     }
 
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest(-c(idForm, typeForm), .key = dataOfferings)
+
+    }
+
     return(all_data)
 
   }
@@ -3174,8 +5338,10 @@ get_data_securities_offerings <-
 generate_search_name <-
   function(entity_name = "Rockwood Capital") {
     json_url <-
-      list("http://rankandfiled.com/data/search?q=",
-           entity_name %>% stringr::str_to_lower() %>% URLencode()) %>%
+      list(
+        "http://rankandfiled.com/data/search?q=",
+        entity_name %>% stringr::str_to_lower() %>% URLencode()
+      ) %>%
       purrr::invoke(paste0, .)
 
     return(json_url)
@@ -3194,7 +5360,7 @@ parse_rf_search_name <-
       data_frame(
         idTypeFiler = c('f', 'i', 'c'),
         typeFiler = c('Filer', 'Insider',
-                          'Company'),
+                      'Company'),
         slugFiler = c('filers', 'insiders', 'public')
       )
 
@@ -3204,9 +5370,11 @@ parse_rf_search_name <-
                       sep = '\\*',
                       into = c('nameEntity', 'X2')) %>%
       mutate(nameEntity = nameEntity %>% stringr::str_to_upper()) %>%
-      separate(X2,
-               into = c('idCompanyType', 'idCIKTicker', 'idTypeFiler'),
-               sep = '\\#') %>%
+      separate(
+        X2,
+        into = c('idCompanyType', 'idCIKTicker', 'idTypeFiler'),
+        sep = '\\#'
+      ) %>%
       mutate(idCIK = idCIKTicker %>% readr::parse_number()) %>%
       left_join(type_df) %>%
       left_join(get_company_type_df()) %>%
@@ -3217,7 +5385,13 @@ parse_rf_search_name <-
       data %>%
       mutate(
         urlDataRF =
-          list('http://rankandfiled.com/#/', slugFiler, '/', idCIKTicker, '/filings') %>% purrr::invoke(paste0, .)
+          list(
+            'http://rankandfiled.com/#/',
+            slugFiler,
+            '/',
+            idCIKTicker,
+            '/filings'
+          ) %>% purrr::invoke(paste0, .)
       ) %>%
       select(-slugFiler)
 
@@ -3239,7 +5413,7 @@ parse_rf_search_name <-
         suppressWarnings()
     }
 
-  return(data)
+    return(data)
   }
 
 get_data_sec_entity <-
@@ -3248,41 +5422,77 @@ get_data_sec_entity <-
     json_url <-
       entity_name %>%
       generate_search_name()
+    parse_rf_search_name_safe <-
+      possibly(parse_rf_search_name, data_frame())
 
     data <-
       json_url %>%
-      parse_rf_search_name() %>%
+      parse_rf_search_name_safe() %>%
       mutate(nameEntitySearch = entity_name) %>%
       select(nameEntitySearch, matches("^name"), everything())
 
+    if (data %>% nrow() == 0) {
+      return(data_frame())
+    }
+
+    has_names <-
+      data$nameEntity %>% str_detect(pattern = '\\|') %>% sum() > 0
+
+
+    if (has_names) {
+      data <-
+        data %>%
+        separate(nameEntity, into = c('nameEntity', 'namePerson'), sep = '\\|') %>%
+        suppressMessages() %>%
+        suppressWarnings()
+    }
+
+    if ('nameCompany' %in% names(data)) {
+     data <-
+       data %>%
+        mutate(namePerson = ifelse(namePerson %>% is.na(), nameCompany, namePerson)) %>%
+        select(-nameCompany) %>%
+        dplyr::rename(nameCompany = namePerson)
+    }
+
+
     if (return_message) {
-      list("Returned ",
-           data %>% nrow(),
-           ' SEC registered entities matching the name ',
-           entity_name) %>%
+      list(
+        "Returned ",
+        data %>% nrow(),
+        ' SEC registered entities matching the name ',
+        entity_name
+      ) %>%
         purrr::invoke(paste0, .) %>% message()
     }
 
     return(data)
   }
 
-#' Get SEC filing entities for specified name
+#' SEC filing entity metdata
 #'
-#' @param entity_names
-#' @param return_message
+#' This function returns metadata for
+#' any SEC filing entity that matching user
+#' inputs
 #'
-#' @return
+#' @param entity_names vector of names to search
+#' @param return_message return a message \code{TRUE, FALSE}
+#'
+#' @return a \code{data_frame}
 #' @export
 #' @import purrr dplyr stringr tidyr formattable
 #' @importFrom jsonlite fromJSON
-#'
+#' @family SEC
+#' @family Rank and Filed
+#' @family entity search
 #' @examples
+#' get_data_sec_filing_entities(entity_names = c('Rockwood Capital', 'Vornado', 'Two Sigma'))
 get_data_sec_filing_entities <-
   function(entity_names = c('Rockwood Capital', 'Vornado', 'Two Sigma'),
            return_message = TRUE) {
-
     no_entry <-
-      (entity_names %>% purrr::is_null() | !'entity_names' %>% exists())
+      (entity_names %>% purrr::is_null() |
+         !'entity_names' %>% exists())
 
     if (no_entry) {
       stop("Please enter a search name")
@@ -3293,13 +5503,15 @@ get_data_sec_filing_entities <-
 
     all_data <-
       entity_names %>%
-      map_df(function(x){
+      map_df(function(x) {
         get_data_sec_entity_safe(entity_name = x, return_message = return_message)
       })
 
     has_double_entities <-
       all_data$nameEntity %>%
-      map_dbl(function(x){x %>% str_count('\\|')}) %>%
+      map_dbl(function(x) {
+        x %>% str_count('\\|')
+      }) %>%
       sum(na.rm = T) > 0
 
     if (has_double_entities) {
@@ -3309,7 +5521,7 @@ get_data_sec_filing_entities <-
 
       entites_df <-
         1:nrow(all_data) %>%
-        map_df(function(x){
+        map_df(function(x) {
           entity <-
             all_data$nameEntity[[x]]
 
@@ -3329,8 +5541,10 @@ get_data_sec_filing_entities <-
           }
 
           entity_df <-
-            data_frame(idRow = x, item = 'nameEntity', value = entities) %>%
-            mutate(countItems = 1:n() -1,
+            data_frame(idRow = x,
+                       item = 'nameEntity',
+                       value = entities) %>%
+            mutate(countItems = 1:n() - 1,
                    item = ifelse(countItems == 0, item, paste0(item, countItems))) %>%
             select(-countItems) %>%
             spread(item, value)
@@ -3352,131 +5566,171 @@ get_data_sec_filing_entities <-
 
 # form_ds -----------------------------------------------------------------
 
-#' Get SEC Form D data by industry
+#' SEC Form-D's
 #'
-#' @param industries
-#' @param form_years
-#' @param months
-#' @param return_message
+#' This function returns data for SEC Form D's by
+#' specified industry
+#'
+#' \code{get_data_sec_form_ds()} queries all SEC filed form-d's since 2009 and returns the associated data.
+#' the default parameters search every industry and year which you
+#' can change by modifying the parameters
+#'
+#' @param industries industries to search options: \itemize{
+#' \item \code{NULL: returns all industries(default)
+#' \item \code{ENERGY}: energy sector
+#' \item \code{FINANCIAL}: financial sector
+#' \item \code{HEALTHCARE}: health-care sector
+#' \item \code{OTHER}: all other sectors
+#' \item \code{REAL ESTATE}: real estate sector
+#' \item \code{TECHNOLOGY}: technology sector
+#' \item \code{TRAVEL AND LEISURE}: travel and leisure sector
+#' }
+#' @param form_years years to search options are \itemize{
+#' \item \code{NULL}: all years (default)
+#' \item \code{2009-present}: search years
+#' }
+#' @param months months to search \itemize{
+#' \item \code{NULL}: all months (default)
+#' \code{1:12}: numeric month
+#' @param return_message \code{TRUE} return a message after data import
+#' @param nest_data \code{TRUE} return nested data frame
 #' @import purrr dplyr stringr tidyr formattable lubridate
 #' @importFrom jsonlite fromJSON
-#' @return
+#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
+#' where \code{nest_data} is \code{FALSE} a data_frame
+
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' get_data_sec_form_ds()
+#' get_data_sec_form_ds(years = 2012:2017, industries = c("Real Estate", "Technology", "Other"))
+#' }
 get_data_sec_form_ds <-
   function(industries = NULL,
            form_years = NULL,
            months = NULL,
+           nest_data = FALSE,
            return_message = TRUE) {
-  now_year <-
-    Sys.Date() %>% lubridate::year()
+    now_year <-
+      Sys.Date() %>% lubridate::year()
 
-  now_month <-
-    Sys.Date() %>% lubridate::month()
-
-  if (now_month %>% nchar == 1) {
     now_month <-
-      "0" %>% paste0(., now_month)
-  } else {
-    now_month <-
-      now_month %>%
-      as.character()
-  }
+      Sys.Date() %>% lubridate::month()
 
-  now_period <-
-    list(now_year, now_month) %>%
-    purrr::invoke(paste0, .)
-
-  years <-
-    2009:(now_year)
-
-  months_names <-
-    c("01",
-      "02",
-      "03",
-      "04",
-      "05",
-      "06",
-      "07",
-      "08",
-      "09",
-      "10",
-      "11",
-      "12")
-
-  period_df <-
-    tidyr::crossing(year = years, month = months_names) %>%
-    tidyr::unite(namePeriod, year, month, sep = '', remove = FALSE) %>%
-    mutate(idPeriod = 1:n(),
-           codeMonth = month,
-           month = month %>% as.numeric())
-
-  now <-
-    period_df %>%
-    filter(namePeriod == now_period) %>%
-    .$idPeriod
-
-  period_df <-
-    period_df %>%
-    filter(idPeriod <= now)
-
-  if ('form_years' %>% exists() & !form_years %>% purrr::is_null()) {
-    period_df <-
-      period_df %>%
-      filter(year %in% form_years)
-  }
-
-  if ('months' %>% exists() & !months %>% purrr::is_null()) {
-   period_df <-
-     period_df %>%
-      filter(month %in% months)
-  }
-
-  periods <-
-    period_df$namePeriod
-
-  category_df <-
-    get_dictionary_form_d_categories()
-
-  if ('industries' %>% exists() & !industries %>% purrr::is_null()) {
-    industries <-
-      industries %>% str_to_upper()
-    industry_names <-
-      c(
-        "ENERGY",
-        "FINANCIAL",
-        "HEALTHCARE",
-        "OTHER",
-        "REAL ESTATE",
-        "TECHNOLOGY",
-        "TRAVEL AND LEISURE"
-      )
-    if (!industries %in% industry_names) {
-      stop(
-        list(
-          "Sorry industries can only be\n",
-          industry_names %>% paste0(collapse = '\n')
-        ) %>%
-          purrr::invoke(paste0, .)
-      )
+    if (now_month %>% nchar == 1) {
+      now_month <-
+        "0" %>% paste0(., now_month)
+    } else {
+      now_month <-
+        now_month %>%
+        as.character()
     }
 
+    now_period <-
+      list(now_year, now_month) %>%
+      purrr::invoke(paste0, .)
+
+    years <-
+      2009:(now_year)
+
+    months_names <-
+      c("01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09",
+        "10",
+        "11",
+        "12")
+
+    period_df <-
+      tidyr::crossing(year = years, month = months_names) %>%
+      tidyr::unite(namePeriod, year, month, sep = '', remove = FALSE) %>%
+      mutate(
+        idPeriod = 1:n(),
+        codeMonth = month,
+        month = month %>% as.numeric()
+      )
+
+    now <-
+      period_df %>%
+      filter(namePeriod == now_period) %>%
+      .$idPeriod
+
+    period_df <-
+      period_df %>%
+      filter(idPeriod <= now)
+
+    if ('form_years' %>% exists() &
+        !form_years %>% purrr::is_null()) {
+      period_df <-
+        period_df %>%
+        filter(year %in% form_years)
+    }
+
+    if ('months' %>% exists() & !months %>% purrr::is_null()) {
+      period_df <-
+        period_df %>%
+        filter(month %in% months)
+    }
+
+    periods <-
+      period_df$namePeriod
+
     category_df <-
-      category_df %>%
-      filter(nameIndustryParent %in% industries)
-  }
+      get_dictionary_form_d_categories()
 
-  category_ids <-
-    category_df$idIndustry
+    if ('industries' %>% exists() &
+        !industries %>% purrr::is_null()) {
+      industries <-
+        industries %>% str_to_upper()
+      industry_names <-
+        c(
+          "ENERGY",
+          "FINANCIAL",
+          "HEALTHCARE",
+          "OTHER",
+          "REAL ESTATE",
+          "TECHNOLOGY",
+          "TRAVEL AND LEISURE"
+        )
+      if (!industries %in% industry_names) {
+        stop(
+          list(
+            "Sorry industries can only be\n",
+            industry_names %>% paste0(collapse = '\n')
+          ) %>%
+            purrr::invoke(paste0, .)
+        )
+      }
 
-  urls <-
-    tidyr::crossing(namePeriod = periods, idCategory = category_ids) %>%
-    mutate(urlJSON = list('http://rankandfiled.com/data/private_selection?month=', namePeriod, '&ind=', idCategory) %>% purrr::invoke(paste0,.)) %>%
-    .$urlJSON
+      category_df <-
+        category_df %>%
+        filter(nameIndustryParent %in% industries)
+    }
 
-  parse_securities_url_safe <-
-    purrr::possibly(parse_securities_url, NULL)
+    category_ids <-
+      category_df$idIndustry
+
+    urls <-
+      tidyr::crossing(namePeriod = periods, idCategory = category_ids) %>%
+      mutate(
+        urlJSON = list(
+          'http://rankandfiled.com/data/private_selection?month=',
+          namePeriod,
+          '&ind=',
+          idCategory
+        ) %>% purrr::invoke(paste0, .)
+      ) %>%
+      .$urlJSON
+
+    parse_securities_url_safe <-
+      purrr::possibly(parse_securities_url, NULL)
 
     all_data <-
       urls %>%
@@ -3534,6 +5788,12 @@ get_data_sec_form_ds <-
         purrr::invoke(paste0, .) %>%
         message()
     }
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest(-nameIndustryParent, .key = dataFormDs)
+    }
     return(all_data)
   }
 
@@ -3544,7 +5804,17 @@ get_data_sec_form_ds <-
 get_cik_url_df <-
   function(cik = 1138621) {
     slugs <-
-      c('general', 'filings', 'private', 'fundraising', 'traders', 'clevel', 'mda', 'owners', 'subsidiaries')
+      c(
+        'general',
+        'filings',
+        'private',
+        'fundraising',
+        'traders',
+        'clevel',
+        'mda',
+        'owners',
+        'subsidiaries'
+      )
 
     url_json <-
       list('http://rankandfiled.com/data/filer/', cik, '/', slugs) %>%
@@ -3552,7 +5822,17 @@ get_cik_url_df <-
 
     url_df <-
       dplyr::data_frame(
-        nameTable = c('General', 'Filings', 'Private', 'Fundraising', 'Traders', 'C Level', 'MDA', 'Owners', 'Subsidiaries'),
+        nameTable = c(
+          'General',
+          'Filings',
+          'Private',
+          'Fundraising',
+          'Traders',
+          'C Level',
+          'MDA',
+          'Owners',
+          'Subsidiaries'
+        ),
         urlJSON = url_json
       )
     return(url_df)
@@ -3562,7 +5842,6 @@ parse_json_general_filing <-
   function(url = "http://rankandfiled.com/data/filer/1468327/general",
            nest_data = TRUE,
            return_message = TRUE) {
-
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
@@ -3597,7 +5876,6 @@ parse_json_general_filing <-
 
     if (!'nameEntity' %in% names(data)) {
       if (is_company) {
-
         ticker <-
           data$company
 
@@ -3641,6 +5919,27 @@ parse_json_general_filing <-
                 as.numeric) %>%
       mutate(urlJSONGeneral = url,
              nameEntity = nameEntity %>% stringr::str_to_upper())
+    has_address <-
+      names(data) %in% c('addressStreet1Entity',
+                         'stateEntity',
+                         'cityEntity',
+                         'zipcodeEntity') %>% sum() == 4
+    if (has_address) {
+      data <-
+        data %>%
+        mutate(
+          addressEntity = list(
+            addressStreet1Entity,
+            ' ',
+            cityEntity,
+            ' ',
+            stateEntity,
+            ', ',
+            zipcodeEntity
+          ) %>% purrr::invoke(paste0, .)
+        ) %>%
+        select(idCIK, matches("nameEntity"), addressEntity, everything())
+    }
 
     if ('detailsOwnedBy' %in% names(data)) {
       data <-
@@ -3651,15 +5950,15 @@ parse_json_general_filing <-
     if ('detailsOwns' %in% names(data)) {
       detail_df <-
         1:length(data$detailsOwns) %>%
-        map_df(function(x){
+        map_df(function(x) {
           detail_value <-
             data$detailsOwns[[x]]
 
-          if (detail_value %>% is.na()){
+          if (detail_value %>% is.na()) {
             df <-
               data_frame(idRow = x, nameCompanyOwns = NA)
 
-            if (nest_data){
+            if (nest_data) {
               df <-
                 df %>%
                 nest(-idRow, .key = dataCompaniesOwns)
@@ -3669,17 +5968,20 @@ parse_json_general_filing <-
           }
 
           values <-
-            detail_value %>% str_replace('\\|','') %>%
+            detail_value %>% str_replace('\\|', '') %>%
             str_split('\\|') %>%
             flatten_chr()
 
           df_data <-
             data_frame(value = values) %>%
-            tidyr::separate(value, into = c('idTickerOwns', 'other'),
+            tidyr::separate(value,
+                            into = c('idTickerOwns', 'other'),
                             sep = '\\:') %>%
-            tidyr::separate(other, into = c('nameCompanyOwns', 'other'),
+            tidyr::separate(other,
+                            into = c('nameCompanyOwns', 'other'),
                             sep = '\\_') %>%
-            tidyr::separate(other, into = c('roleOwner', 'dateOwner'),
+            tidyr::separate(other,
+                            into = c('roleOwner', 'dateOwner'),
                             sep = '\\#') %>%
             mutate(nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                    idRow = x) %>%
@@ -3724,11 +6026,13 @@ parse_json_general_filing <-
 
     data <-
       data %>%
-      select(nameEntity,
-             idCIK,
-             matches("typeCategory"),
-             matches("idtypeCompany"),
-             everything())
+      select(
+        nameEntity,
+        idCIK,
+        matches("typeCategory"),
+        matches("idtypeCompany"),
+        everything()
+      )
 
     if (return_message) {
       list("Parsed: ", url) %>%
@@ -3742,13 +6046,12 @@ parse_json_general_filing <-
 parse_json_filings <-
   function(url = "http://rankandfiled.com/data/filer/1138621/filings",
            return_message = TRUE) {
-
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/filings','') %>%
+      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/filings', '') %>%
       as.numeric()
 
     json_data <-
@@ -3763,7 +6066,7 @@ parse_json_filings <-
           'dateFiling',
           'codeFiling',
           'typeForm',
-          'X1',
+          'baseIndex',
           'detailOffering',
           'slugSEC',
           'idSECSlug'
@@ -3782,11 +6085,25 @@ parse_json_filings <-
             '/',
             slugSEC
           ) %>% purrr::invoke(paste0, .)
+        ),
+        pageSlug = idSECSlug %>% str_replace_all('\\-',''),
+        urlSECFilingDirectory = ifelse(
+          idSECSlug %>% str_detect('\\-'),
+          list(
+            "https://www.sec.gov/Archives/edgar/data/",
+            idCIK,
+            '/',
+            pageSlug,
+            '/',
+            idSECSlug,
+            '-index.htm'
+          ) %>% purrr::reduce(paste0),
+          NA
         )
       ) %>%
       select(-matches("^X")) %>%
       suppressMessages() %>%
-      select(-slugSEC) %>%
+      select(-c(slugSEC, pageSlug)) %>%
       select(idCIK, dateFiling, everything())
 
     if (return_message) {
@@ -3801,7 +6118,6 @@ parse_json_private <-
   function(url = "http://rankandfiled.com/data/filer/1438171/private",
            nest_data = TRUE,
            return_message = TRUE) {
-
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
@@ -3838,110 +6154,114 @@ parse_json_private <-
       resolve_names_to_upper()
 
     if (offering_data %>% ncol >= 9) {
-    offering_data <-
-      offering_data %>%
-      separate_column(column_name = 'idExemption') %>%
-      separate_column(column_name = 'dateAmmended') %>%
-      separate_column(column_name = 'amountFindersFee') %>%
-      separate_column(column_name = 'countInvestors') %>%
-      separate_column(column_name = 'countInvestorsNonAccredited') %>%
-      separate_column(column_name = 'amountOffered') %>%
-      separate_column(column_name = 'amountRemaining') %>%
-      separate_column(column_name = 'amountSold')
+      offering_data <-
+        offering_data %>%
+        separate_column(column_name = 'idExemption') %>%
+        separate_column(column_name = 'dateAmmended') %>%
+        separate_column(column_name = 'amountFindersFee') %>%
+        separate_column(column_name = 'countInvestors') %>%
+        separate_column(column_name = 'countInvestorsNonAccredited') %>%
+        separate_column(column_name = 'amountOffered') %>%
+        separate_column(column_name = 'amountRemaining') %>%
+        separate_column(column_name = 'amountSold')
 
 
-    offering_data <-
-      offering_data %>%
-      mutate_at(.cols = offering_data %>% select(matches("^is")) %>% names,
-                funs(. %>% as.logical())) %>%
-      mutate_at(.cols = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
-                funs(. %>% as.numeric())) %>%
-      mutate_at(.cols = offering_data %>% select(matches("^date")) %>% names,
-                funs(. %>% lubridate::ymd())) %>%
-      mutate_at(.cols = offering_data %>% select(matches("^amount")) %>% names,
-                funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(.cols = offering_data %>% select(matches("^count")) %>% names,
-                funs(. %>% formattable::comma(digits = 0))) %>%
-      suppressWarnings()
+      offering_data <-
+        offering_data %>%
+        mutate_at(.cols = offering_data %>% select(matches("^is")) %>% names,
+                  funs(. %>% as.logical())) %>%
+        mutate_at(.cols = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
+                  funs(. %>% as.numeric())) %>%
+        mutate_at(.cols = offering_data %>% select(matches("^date")) %>% names,
+                  funs(. %>% lubridate::ymd())) %>%
+        mutate_at(.cols = offering_data %>% select(matches("^amount")) %>% names,
+                  funs(. %>% formattable::currency(digits = 0))) %>%
+        mutate_at(.cols = offering_data %>% select(matches("^count")) %>% names,
+                  funs(. %>% formattable::comma(digits = 0))) %>%
+        suppressWarnings()
     } else {
       offering_data <-
-      offering_data %>%
-      mutate_at(.cols = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
-              funs(. %>% as.numeric())) %>%
-      mutate_at(.cols = offering_data %>% select(matches("^date")) %>% names,
-                funs(. %>% lubridate::ymd()))
+        offering_data %>%
+        mutate_at(.cols = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
+                  funs(. %>% as.numeric())) %>%
+        mutate_at(.cols = offering_data %>% select(matches("^date")) %>% names,
+                  funs(. %>% lubridate::ymd()))
     }
 
     has_relations <-
       '_related_people' %in% names(json_data$offering_history)
 
     if (has_relations) {
-    relation_df <-
-      1:(json_data$offering_history$amended %>% length()) %>%
-      map_df(function(x){
-        if (!json_data$offering_history$`_related_people`[[x]] %>% purrr::is_null()) {
-        relation_data <-
-          json_data$offering_history$`_related_people`[[x]] %>% mutate(
-            name =
-              ifelse(
-                name %>% substr(1, 3) %>% str_detect('\\-'),
-                name %>% str_replace_all('\\-', '') %>% str_trim,
-                name %>% str_trim
-              )
-          ) %>%
-          tidyr::unite(nameRelation, name, relation, sep = '-') %>%
-          .$nameRelation %>% paste0(collapse = '&')
-        } else {
-          relation_data <-
-            NA
-        }
-        data_frame(nameRelation = relation_data)
-      }) %>%
-      resolve_names_to_upper()
+      relation_df <-
+        1:(json_data$offering_history$amended %>% length()) %>%
+        map_df(function(x) {
+          if (!json_data$offering_history$`_related_people`[[x]] %>% purrr::is_null()) {
+            relation_data <-
+              json_data$offering_history$`_related_people`[[x]] %>% mutate(
+                name =
+                  ifelse(
+                    name %>% substr(1, 3) %>% str_detect('\\-'),
+                    name %>% str_replace_all('\\-', '') %>% str_trim,
+                    name %>% str_trim
+                  )
+              ) %>%
+              tidyr::unite(nameRelation, name, relation, sep = '-') %>%
+              .$nameRelation %>% paste0(collapse = '&')
+          } else {
+            relation_data <-
+              NA
+          }
+          data_frame(nameRelation = relation_data)
+        }) %>%
+        resolve_names_to_upper()
 
-    relation_df <-
-      1:nrow(relation_df) %>%
-      map_df(function(x){
-        person_title <-
-          relation_df$nameRelation[[x]] %>%
-          str_split('\\&') %>%
-          flatten_chr() %>%
-          str_to_upper() %>%
-          str_trim()
+      relation_df <-
+        1:nrow(relation_df) %>%
+        map_df(function(x) {
+          person_title <-
+            relation_df$nameRelation[[x]] %>%
+            str_split('\\&') %>%
+            flatten_chr() %>%
+            str_to_upper() %>%
+            str_trim()
 
-        df <-
-          data_frame(idRow = x, person_title) %>%
-          tidyr::separate(person_title, sep = '\\-', into = c('nameRelatedParty', 'titleRelatedParty')) %>%
-          mutate(countItem = 1:n() - 1) %>%
-          gather(item, value, -c(idRow, countItem)) %>%
-          arrange(countItem)
+          df <-
+            data_frame(idRow = x, person_title) %>%
+            tidyr::separate(
+              person_title,
+              sep = '\\-',
+              into = c('nameRelatedParty', 'titleRelatedParty')
+            ) %>%
+            mutate(countItem = 1:n() - 1) %>%
+            gather(item, value, -c(idRow, countItem)) %>%
+            arrange(countItem)
 
-        df <-
+          df <-
             df %>%
             mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
             select(-countItem)
-        column_order <-
-          c('idRow', df$item)
+          column_order <-
+            c('idRow', df$item)
 
-        df <-
-          df %>%
-          spread(item, value) %>%
-          select(one_of(column_order))
-
-        if (nest_data) {
           df <-
             df %>%
-            nest(-idRow, .key = dataRelations)
-        }
-        return(df)
-      })
+            spread(item, value) %>%
+            select(one_of(column_order))
 
-    offering_data <-
-      offering_data %>%
-      mutate(idRow = 1:n()) %>%
-      left_join(relation_df) %>%
-      suppressMessages() %>%
-      select(-idRow)
+          if (nest_data) {
+            df <-
+              df %>%
+              nest(-idRow, .key = dataRelations)
+          }
+          return(df)
+        })
+
+      offering_data <-
+        offering_data %>%
+        mutate(idRow = 1:n()) %>%
+        left_join(relation_df) %>%
+        suppressMessages() %>%
+        select(-idRow)
     }
 
     has_brokers <-
@@ -3969,7 +6289,7 @@ parse_json_private <-
 
       broker_df <-
         1:nrow(broker_df) %>%
-        map_df(function(x){
+        map_df(function(x) {
           broker_crd <-
             broker_df$nameBrokerCRD[[x]] %>%
             str_split('\\|') %>%
@@ -3979,7 +6299,11 @@ parse_json_private <-
 
           if (broker_crd %>% is.na() %>% sum() > 0) {
             df <-
-              data_frame(idRow = x, nameBroker = "NONE", idCRDBroker = NA)
+              data_frame(
+                idRow = x,
+                nameBroker = "NONE",
+                idCRDBroker = NA
+              )
             if (nest_data) {
               df <-
                 df %>%
@@ -3990,7 +6314,9 @@ parse_json_private <-
 
           df <-
             data_frame(idRow = x, broker_crd) %>%
-            tidyr::separate(broker_crd, sep = '\\&', into = c('nameBroker', 'idCRDBroker')) %>%
+            tidyr::separate(broker_crd,
+                            sep = '\\&',
+                            into = c('nameBroker', 'idCRDBroker')) %>%
             mutate(countItem = 1:n() - 1) %>%
             gather(item, value, -c(idRow, countItem)) %>%
             arrange(countItem) %>%
@@ -4029,7 +6355,7 @@ parse_json_private <-
 
     if ('date' %in% names(status_df)) {
       initial_date <-
-      status_df$date
+        status_df$date
     } else {
       initial_date <-
         NA
@@ -4037,7 +6363,7 @@ parse_json_private <-
 
     if ('entity_type' %in% names(status_df)) {
       typeEntity <-
-      status_df$entity_type
+        status_df$entity_type
     } else {
       typeEntity <-
         NA
@@ -4067,7 +6393,19 @@ parse_json_private <-
         hasOver5FileFilings = has_five,
         urlJSONFilings = url
       ) %>%
-      select(idCIK, dateInitialFiling, typeEntity, locationJurisdiction, hasOver5FileFilings, matches("nameIndustry"), matches("typeFund"), matches("^is"), matches("^amount"), matches("^count"), everything()) %>%
+      select(
+        idCIK,
+        dateInitialFiling,
+        typeEntity,
+        locationJurisdiction,
+        hasOver5FileFilings,
+        matches("nameIndustry"),
+        matches("typeFund"),
+        matches("^is"),
+        matches("^amount"),
+        matches("^count"),
+        everything()
+      ) %>%
       resolve_names_to_upper() %>%
       select(which(colMeans(is.na(.)) < 1))
 
@@ -4093,11 +6431,19 @@ parse_json_fundraising <-
     fundraising_df <-
       json_data$results %>%
       as_data_frame() %>%
-      purrr::set_names(c('idCIKs', 'nameCompanies', 'isCIKFiler', 'namePerson', 'offeringsValues')) %>%
-      mutate(idPerson = 1:n(),
-             idCIK = url %>% str_replace_all('http://rankandfiled.com/data/filer/|/fundraising', '') %>% as.numeric(),
-             namePerson = namePerson %>% str_replace_all('\\-','') %>% stringr::str_to_upper() %>% str_trim(),
-             urlJSONFundraising = url) %>%
+      purrr::set_names(c(
+        'idCIKs',
+        'nameCompanies',
+        'isCIKFiler',
+        'namePerson',
+        'offeringsValues'
+      )) %>%
+      mutate(
+        idPerson = 1:n(),
+        idCIK = url %>% str_replace_all('http://rankandfiled.com/data/filer/|/fundraising', '') %>% as.numeric(),
+        namePerson = namePerson %>% str_replace_all('\\-', '') %>% stringr::str_to_upper() %>% str_trim(),
+        urlJSONFundraising = url
+      ) %>%
       suppressWarnings()
 
     company_name_df <-
@@ -4219,7 +6565,7 @@ parse_json_traders <-
 
     options(scipen = 9999)
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/traders','') %>%
+      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/traders', '') %>%
       as.numeric()
     traders <-
       json_data$owners$count
@@ -4228,9 +6574,11 @@ parse_json_traders <-
       json_data$owners$owners %>%
       as_data_frame() %>%
       purrr::set_names(c('nameEntityTrader', 'idCIKTrader', 'titleEntityTrader')) %>%
-      mutate(nameEntityTrader = nameEntityTrader %>% str_to_upper(),
-             idCIKTrader = idCIKTrader %>% as.numeric(),
-             idCIK = cik) %>%
+      mutate(
+        nameEntityTrader = nameEntityTrader %>% str_to_upper(),
+        idCIKTrader = idCIKTrader %>% as.numeric(),
+        idCIK = cik
+      ) %>%
       select(idCIK, everything()) %>%
       mutate(countTraders = traders) %>%
       resolve_names_to_upper()
@@ -4256,20 +6604,36 @@ parse_json_clevel <-
 
     options(scipen = 9999)
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/clevel','') %>%
+      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/clevel', '') %>%
       as.numeric()
 
     clevel_df <-
       json_data$clevel %>%
       as_data_frame() %>%
-      tidyr::separate(value, into = c("idCIKCSuite", "nameEntityCSuite", "dateStartCSuite", "dateEndCSuite", "nameCSuiteRole", 'codeCSuiteRole'), sep = '\\*') %>%
-      mutate(idCIKCSuite = idCIKCSuite %>% as.numeric(),
-             nameEntityCSuite = nameEntityCSuite %>% str_to_upper(),
-             idCIK = cik,
-             dateStartCSuite = dateStartCSuite %>% lubridate::ymd(),
-             dateEndCSuite = dateEndCSuite %>% lubridate::ymd()
-             ) %>%
-      select(idCIK, idCIKCSuite, nameEntityCSuite, codeCSuiteRole, everything()) %>%
+      tidyr::separate(
+        value,
+        into = c(
+          "idCIKCSuite",
+          "nameEntityCSuite",
+          "dateStartCSuite",
+          "dateEndCSuite",
+          "nameCSuiteRole",
+          'codeCSuiteRole'
+        ),
+        sep = '\\*'
+      ) %>%
+      mutate(
+        idCIKCSuite = idCIKCSuite %>% as.numeric(),
+        nameEntityCSuite = nameEntityCSuite %>% str_to_upper(),
+        idCIK = cik,
+        dateStartCSuite = dateStartCSuite %>% lubridate::ymd(),
+        dateEndCSuite = dateEndCSuite %>% lubridate::ymd()
+      ) %>%
+      select(idCIK,
+             idCIKCSuite,
+             nameEntityCSuite,
+             codeCSuiteRole,
+             everything()) %>%
       mutate(isActiveCSuite = ifelse(dateEndCSuite %>% is.na(), TRUE, FALSE)) %>%
       resolve_names_to_upper()
 
@@ -4282,7 +6646,8 @@ parse_json_clevel <-
   }
 
 parse_json_mda <-
-  function(url = "http://rankandfiled.com/data/filer/1326801/mda", return_message = TRUE) {
+  function(url = "http://rankandfiled.com/data/filer/1326801/mda",
+           return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
@@ -4294,7 +6659,7 @@ parse_json_mda <-
     options(scipen = 9999)
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/mda','') %>%
+      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/mda', '') %>%
       as.numeric()
 
     data <-
@@ -4328,7 +6693,6 @@ parse_json_owners <-
   function(url = "http://rankandfiled.com/data/filer/1326801/owners",
            nest_data = TRUE,
            return_message = TRUE) {
-
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
@@ -4338,13 +6702,12 @@ parse_json_owners <-
       fromJSON()
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/owners','') %>%
+      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/owners', '') %>%
       as.numeric()
 
     general_df <-
       data_frame(idCIK = cik,
-               idCIKOwned = json_data$insiders$cik %>% as.numeric()
-               )
+                 idCIKOwned = json_data$insiders$cik %>% as.numeric())
 
     has_filer <-
       'filer' %in% names(json_data$insiders)
@@ -4378,82 +6741,85 @@ parse_json_owners <-
       }
 
       names(filing_df) <-
-        names(filing_df) %>% str_replace('OwnedBy','') %>%
+        names(filing_df) %>% str_replace('OwnedBy', '') %>%
         paste0('Owner')
       if ('detailsOwner' %in% names(filing_df)) {
-      detail_df <-
-        1:length(filing_df$detailsOwner) %>%
-        map_df(function(x){
-          detail_value <-
-            filing_df$detailsOwner[[x]]
+        detail_df <-
+          1:length(filing_df$detailsOwner) %>%
+          map_df(function(x) {
+            detail_value <-
+              filing_df$detailsOwner[[x]]
 
-          if (detail_value %>% is.na()){
-            df <-
-              data_frame(idRow = x, nameCompanyOwned = NA)
-
-            if (nest_data) {
+            if (detail_value %>% is.na()) {
               df <-
-                df %>%
-                nest(-idRow, .key = dataCompaniesOwned)
+                data_frame(idRow = x, nameCompanyOwned = NA)
+
+              if (nest_data) {
+                df <-
+                  df %>%
+                  nest(-idRow, .key = dataCompaniesOwned)
+              }
+              return(df)
             }
-            return(df)
-          }
 
-          values <-
-            detail_value %>% str_replace('\\|','') %>%
-            str_split('\\|') %>%
-            flatten_chr()
+            values <-
+              detail_value %>% str_replace('\\|', '') %>%
+              str_split('\\|') %>%
+              flatten_chr()
 
-          df_data <-
-            data_frame(value = values) %>%
-            tidyr::separate(value, into = c('idTickerOwned', 'other'),
-                            sep = '\\:') %>%
-            tidyr::separate(other, into = c('nameCompanyOwned', 'other'),
-                            sep = '\\_') %>%
-            tidyr::separate(other, into = c('roleOwned', 'dateOwned'),
-                            sep = '\\#') %>%
-            mutate(nameCompanyOwned = nameCompanyOwned %>% str_to_upper(),
-                   idRow = x) %>%
-            gather(item, value, -idRow, na.rm = TRUE) %>%
-            group_by(item) %>%
-            mutate(count = 1:n() - 1) %>%
-            ungroup() %>%
-            arrange((count)) %>%
-            mutate(item = ifelse(count == 0, item, paste0(item, count))) %>%
-            select(-count)
+            df_data <-
+              data_frame(value = values) %>%
+              tidyr::separate(value,
+                              into = c('idTickerOwned', 'other'),
+                              sep = '\\:') %>%
+              tidyr::separate(other,
+                              into = c('nameCompanyOwned', 'other'),
+                              sep = '\\_') %>%
+              tidyr::separate(other,
+                              into = c('roleOwned', 'dateOwned'),
+                              sep = '\\#') %>%
+              mutate(nameCompanyOwned = nameCompanyOwned %>% str_to_upper(),
+                     idRow = x) %>%
+              gather(item, value, -idRow, na.rm = TRUE) %>%
+              group_by(item) %>%
+              mutate(count = 1:n() - 1) %>%
+              ungroup() %>%
+              arrange((count)) %>%
+              mutate(item = ifelse(count == 0, item, paste0(item, count))) %>%
+              select(-count)
 
-          column_order <-
-            c('idRow', df_data$item)
+            column_order <-
+              c('idRow', df_data$item)
 
-          df_data <-
-            df_data %>%
-            spread(item, value) %>%
-            select(one_of(column_order)) %>%
-            resolve_names_to_upper()
-
-          if (nest_data) {
             df_data <-
               df_data %>%
-              nest(-idRow, .key = dataCompaniesOwned)
-          }
+              spread(item, value) %>%
+              select(one_of(column_order)) %>%
+              resolve_names_to_upper()
 
-          return(df_data)
-        }) %>%
-        suppressWarnings()
+            if (nest_data) {
+              df_data <-
+                df_data %>%
+                nest(-idRow, .key = dataCompaniesOwned)
+            }
 
-      detail_df <-
-        detail_df %>%
-        mutate_at(.cols = detail_df %>% select(matches("date")) %>% names(),
-                  funs(. %>% ymd())) %>%
-        suppressWarnings()
+            return(df_data)
+          }) %>%
+          suppressWarnings()
 
-      filing_df <-
-        filing_df %>%
-        mutate(idRow = 1:n()) %>%
-        select(-detailsOwner) %>%
-        left_join(detail_df) %>%
-        select(-idRow) %>%
-        suppressMessages()
+        detail_df <-
+          detail_df %>%
+          mutate_at(.cols = detail_df %>% select(matches("date")) %>% names(),
+                    funs(. %>% ymd())) %>%
+          suppressWarnings()
+
+        filing_df <-
+          filing_df %>%
+          mutate(idRow = 1:n()) %>%
+          select(-detailsOwner) %>%
+          left_join(detail_df) %>%
+          select(-idRow) %>%
+          suppressMessages()
       }
 
       general_df <-
@@ -4467,7 +6833,7 @@ parse_json_owners <-
     if (has_companies) {
       company_df <-
         1:nrow(general_df) %>%
-        map_df(function(x){
+        map_df(function(x) {
           has_no_data <-
             json_data$insiders$companies[[x]] %>%
             nrow() == 0
@@ -4507,7 +6873,7 @@ parse_json_owners <-
             select(-count)
 
           column_order <-
-            c('idRow','nameFiler', df_data$item)
+            c('idRow', 'nameFiler', df_data$item)
 
           df_data <-
             df_data %>%
@@ -4531,9 +6897,11 @@ parse_json_owners <-
         mutate_at(.cols =
                     company_df %>% select(matches("idCIK")) %>% names(),
                   .funs = as.numeric) %>%
-        mutate_at(.cols =
-                    company_df %>% select(matches("nameCompany")) %>% names(),
-                  .funs = stringr::str_to_upper)
+        mutate_at(
+          .cols =
+            company_df %>% select(matches("nameCompany")) %>% names(),
+          .funs = stringr::str_to_upper
+        )
 
       general_df <-
         general_df %>%
@@ -4550,14 +6918,19 @@ parse_json_owners <-
 
     general_df <-
       general_df %>%
-      select(idCIK, idCIKOwned, nameEntityOwner, matches("nameFiler"), everything()) %>%
+      select(idCIK,
+             idCIKOwned,
+             nameEntityOwner,
+             matches("nameFiler"),
+             everything()) %>%
       resolve_names_to_upper()
 
     return(general_df)
   }
 
 parse_json_public_filers <-
-  function(url = "http://rankandfiled.com/data/filer/1353254/all?start=0", return_message = TRUE){
+    function(url = "http://rankandfiled.com/data/filer/1680780/all?start=0",
+           return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
@@ -4569,7 +6942,7 @@ parse_json_public_filers <-
     options(scipen = 9999)
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/all','') %>%
+      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/all', '') %>%
       str_split('\\?') %>%
       flatten_chr() %>%
       .[[1]] %>%
@@ -4581,35 +6954,71 @@ parse_json_public_filers <-
 
     filing_df <-
       filing_df %>%
-      separate(value, into = c("idRF", "idForm", "detailForm", "typeReport", "typeFiling", "slugSEC", "X7", "dateFiling", "X9"),
-               sep = '\\*'
+      separate(
+        value,
+        into = c(
+          "idRF",
+          "idForm",
+          "detailForm",
+          "typeReport",
+          "typeFiling",
+          "slugSEC",
+          "idSECSlug",
+          "dateFiling",
+          "X9"
+        ),
+        sep = '\\*'
       ) %>%
       select(-matches("X")) %>%
-      mutate(idCIK = cik,
-             urlSEC = ifelse(
-               slugSEC == "None",
-               NA,
-               list(
-                 "https://www.sec.gov/Archives/edgar/data/",
-                 idCIK,
-                 '/',
-                 slugSEC
-               ) %>% purrr::invoke(paste0, .)
-             )) %>%
+      suppressMessages() %>%
       suppressWarnings()
 
     filing_df <-
       filing_df %>%
-      mutate(typeFiling = typeFiling %>% str_to_upper(),
-             dateFiling = dateFiling %>% as.numeric() %>% lubridate::ymd(),
-             detailForm = ifelse(detailForm == '', NA, detailForm),
-             typeReport = ifelse(typeReport == '', NA, typeReport),
-             is13FFiling = (urlSEC %>% str_detect("xslForm13F")) & (typeFiling == "HOLDINGS")
+      mutate(
+        idCIK = cik,
+        pageSlug = idSECSlug %>% str_replace_all('\\-',''),
+        urlSECFilingDirectory = ifelse(
+          idSECSlug %>% str_detect('\\-'),
+          list(
+            "https://www.sec.gov/Archives/edgar/data/",
+            idCIK,
+            '/',
+            pageSlug,
+            '/',
+            idSECSlug,
+            '-index.htm'
+          ) %>% purrr::reduce(paste0),
+          NA
+        ),
+        urlSEC = ifelse(
+          slugSEC == "None",
+          NA,
+          list(
+            "https://www.sec.gov/Archives/edgar/data/",
+            idCIK,
+            '/',
+            slugSEC
+          ) %>% purrr::invoke(paste0, .)
+        )
+      ) %>%
+      select(-pageSlug) %>%
+      suppressWarnings()
+
+    filing_df <-
+      filing_df %>%
+      mutate(
+        typeFiling = typeFiling %>% str_to_upper(),
+        dateFiling = dateFiling %>% as.numeric() %>% lubridate::ymd(),
+        detailForm = ifelse(detailForm == '', NA, detailForm),
+        typeReport = ifelse(typeReport == '', NA, typeReport),
+        is13FFiling = (urlSEC %>% str_detect("xslForm13F")) &
+          (typeFiling == "HOLDINGS")
       ) %>%
       tidyr::fill(dateFiling) %>%
       tidyr::fill(detailForm) %>%
       select(-slugSEC) %>%
-      left_join(get_form_code_df()) %>%
+      left_join(get_dictionary_sec_form_codes()) %>%
       tidyr::fill(nameForm) %>%
       select(idCIK, idRF, idForm, nameForm, everything()) %>%
       suppressMessages() %>%
@@ -4626,7 +7035,8 @@ parse_json_public_filers <-
   }
 
 parse_json_subsidiaries <-
-  function(url = "http://rankandfiled.com/data/filer/34088/subsidiaries", return_message = TRUE) {
+  function(url = "http://rankandfiled.com/data/filer/34088/subsidiaries",
+           return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
@@ -4634,23 +7044,23 @@ parse_json_subsidiaries <-
 
     name_df <-
       data_frame(
-      nameRF = c(
-        "cik",
-        "country",
-        "first_filed",
-        "last_filed",
-        "name",
-        "percent"
-      ),
-      nameActual = c(
-        'idCIK',
-        'locationOrganizationSubsidiary',
-        'dateFirstFiled',
-        'dateLastFiled',
-        'nameSubsidiary',
-        'pctSubsidiaryOwned'
-      )
-    ) %>%
+        nameRF = c(
+          "cik",
+          "country",
+          "first_filed",
+          "last_filed",
+          "name",
+          "percent"
+        ),
+        nameActual = c(
+          'idCIK',
+          'locationOrganizationSubsidiary',
+          'dateFirstFiled',
+          'dateLastFiled',
+          'nameSubsidiary',
+          'pctSubsidiaryOwned'
+        )
+      ) %>%
       mutate(idRow = 1:n())
 
     data <-
@@ -4672,7 +7082,7 @@ parse_json_subsidiaries <-
 
       has_names <-
         names(df_has) %>%
-        map_chr(function(x){
+        map_chr(function(x) {
           name_df %>%
             filter(nameRF == x) %>%
             filter(idRow == min(idRow)) %>%
@@ -4691,16 +7101,19 @@ parse_json_subsidiaries <-
       data <-
         data %>%
         mutate_at(.cols =
-                    data %>% select(matches("idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year")) %>% names,
-                  funs(. %>% readr::parse_number())
-        ) %>%
+                    data %>% select(
+                      matches(
+                        "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
+                      )
+                    ) %>% names,
+                  funs(. %>% readr::parse_number())) %>%
         suppressWarnings()
       return(data)
     }
 
     actual_names <-
       names(data) %>%
-      map_chr(function(x){
+      map_chr(function(x) {
         name_df %>%
           filter(nameRF == x) %>%
           filter(idRow == min(idRow)) %>%
@@ -4711,29 +7124,33 @@ parse_json_subsidiaries <-
       data %>%
       purrr::set_names(actual_names)
 
+    data <-
+      data %>%
+      mutate(
+        idCIK = idCIK %>% as.numeric(),
+        nameSubsidiary = nameSubsidiary %>% str_to_upper(),
+        locationOrganizationSubsidiary = locationOrganizationSubsidiary %>% str_to_upper()
+      )
+    has_pct <-
+      'pctSubsidiaryOwned' %in% names(data)
+    if (has_pct) {
       data <-
         data %>%
-      mutate(idCIK = idCIK %>% as.numeric(),
-             nameSubsidiary = nameSubsidiary %>% str_to_upper(),
-             locationOrganizationSubsidiary = locationOrganizationSubsidiary %>% str_to_upper())
-      has_pct <-
-        'pctSubsidiaryOwned' %in% names(data)
-      if (has_pct) {
-        data <-
-          data %>%
-          mutate(pctSubsidiaryOwned = pctSubsidiaryOwned %>% as.numeric(),
-                 pctSubsidiaryOwned = pctSubsidiaryOwned / 100)
-      }
+        mutate(
+          pctSubsidiaryOwned = pctSubsidiaryOwned %>% as.numeric(),
+          pctSubsidiaryOwned = pctSubsidiaryOwned / 100
+        )
+    }
 
-      data <-
-        data %>%
-        mutate_at(.cols = data %>% select(matches("date")) %>% names(),
-                  funs(. %>% lubridate::ymd()))
+    data <-
+      data %>%
+      mutate_at(.cols = data %>% select(matches("date")) %>% names(),
+                funs(. %>% lubridate::ymd()))
 
-      data <-
-        data %>%
-        filter(!locationOrganizationSubsidiary %>% is.na()) %>%
-        resolve_names_to_upper()
+    data <-
+      data %>%
+      filter(!locationOrganizationSubsidiary %>% is.na()) %>%
+      resolve_names_to_upper()
 
     if (return_message) {
       list("Parsed: ", url) %>%
@@ -4743,8 +7160,8 @@ parse_json_subsidiaries <-
   }
 
 parse_cik_filings <-
-  function(cik = 1527559, return_message = TRUE) {
-
+  function(cik = 1527559,
+           return_message = TRUE) {
     general_url <-
       list('http://rankandfiled.com/data/filer/', cik, '/general') %>%
       purrr::invoke(paste0, .)
@@ -4782,15 +7199,22 @@ parse_cik_filings <-
     filing_pages <-
       general_df$countFilings %/% 50
 
-    if (filing_pages > 0 ) {
+    if (filing_pages > 0) {
       filing_urls <-
-        list('http://rankandfiled.com/data/filer/', cik, '/all?start=', seq(0, by = 50, length.out = filing_pages)) %>%
+        list(
+          'http://rankandfiled.com/data/filer/',
+          cik,
+          '/all?start=',
+          seq(0, by = 50, length.out = filing_pages)
+        ) %>%
         purrr::invoke(paste0, .)
-      }
+    }
 
     if (filing_pages == 0) {
       filing_urls <-
-        list('http://rankandfiled.com/data/filer/', cik, '/all?start=0') %>%
+        list('http://rankandfiled.com/data/filer/',
+             cik,
+             '/all?start=0') %>%
         purrr::invoke(paste0, .)
     }
 
@@ -4828,12 +7252,16 @@ parse_cik_filings <-
 
       report_df <-
         1:nrow(report_df) %>%
-        map_df(function(x){
+        map_df(function(x) {
           is_none <-
             report_df$typeReport[[x]] == 'None'
 
-          if (is_none){
-            return(data_frame(idRow = report_df$idRow[[x]], idFormType = 'None', nameFormType = NA))
+          if (is_none) {
+            return(data_frame(
+              idRow = report_df$idRow[[x]],
+              idFormType = 'None',
+              nameFormType = NA
+            ))
           }
 
           row_df <-
@@ -4849,7 +7277,7 @@ parse_cik_filings <-
             left_join(report_dict_df) %>%
             gather(item, value, -idRow) %>%
             group_by(item) %>%
-            mutate(countItems = 1:n() -1) %>%
+            mutate(countItems = 1:n() - 1) %>%
             ungroup() %>%
             mutate(item = ifelse(countItems == 0, item, paste0(item, countItems))) %>%
             arrange(countItems) %>%
@@ -4878,8 +7306,13 @@ parse_cik_filings <-
 
 
     if (return_message) {
-      list("Parsed ", all_filings %>% nrow() %>% formattable::comma(digits = 0), ' SEC Filings for ', entity) %>%
-        purrr::invoke(paste0,.) %>%
+      list(
+        "Parsed ",
+        all_filings %>% nrow() %>% formattable::comma(digits = 0),
+        ' SEC Filings for ',
+        entity
+      ) %>%
+        purrr::invoke(paste0, .) %>%
         message()
     }
     all_filings <-
@@ -4898,396 +7331,490 @@ parse_cik_data <-
       get_cik_url_df()
 
     table_options <-
-      c('General', 'CIK Filings','Filings', 'Private Offerings', 'Related Parties', 'Traders', 'C Level', 'MDA', 'Owners', 'Insider Trades', 'Trades', 'Subsidiaries')
+      c(
+        'General',
+        'CIK Filings',
+        'Filings',
+        'Private Offerings',
+        'Related Parties',
+        'Traders',
+        'C Level',
+        'MDA',
+        'Owners',
+        'Insider Trades',
+        'Trades',
+        'Subsidiaries'
+      )
 
     null_tables <-
       tables %>% purrr::is_null()
-      if(null_tables) {
-        tables <-
-          c('General', 'CIK Filings','Filings', 'Private Offerings', 'Related Parties', 'Traders', 'C Level', 'MDA', 'Owners', 'Insider Trades', 'Trades', 'Subsidiaries')
-      }
+    if (null_tables) {
+      tables <-
+        c(
+          'General',
+          'CIK Filings',
+          'Filings',
+          'Private Offerings',
+          'Related Parties',
+          'Traders',
+          'C Level',
+          'MDA',
+          'Owners',
+          'Insider Trades',
+          'Trades',
+          'Subsidiaries'
+        )
+    }
     missing_tables <-
       (tables %>% str_to_upper()) %in% (table_options %>% str_to_upper()) %>% sum() == 0
     if (missing_tables) {
-      stop(list("Sorry Tables Can Only Be:", '\n', paste0(table_options, collapse = '\n')) %>%
-             purrr::invoke(paste0,.))
+      stop(list(
+        "Sorry Tables Can Only Be:",
+        '\n',
+        paste0(table_options, collapse = '\n')
+      ) %>%
+        purrr::invoke(paste0, .))
     }
 
     table_options <-
       table_options %>% str_to_upper()
 
-  tables <-
-    tables %>% str_to_upper()
-
-  if (!'GENERAL' %in% tables) {
     tables <-
-      tables %>%
-      append('GENERAL')
-  }
+      tables %>% str_to_upper()
 
-  has_general <-
-    'general' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    if (!'GENERAL' %in% tables) {
+      tables <-
+        tables %>%
+        append('GENERAL')
+    }
 
-  has_filings <-
-    'filings' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_general <-
+      'general' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_cik_filings <-
-    'cik filings' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_filings <-
+      'filings' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_private <-
-    'private offerings' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_cik_filings <-
+      'cik filings' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_related <-
-    'related parties' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_private <-
+      'private offerings' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_traders <-
-    'traders' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_related <-
+      'related parties' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_clevel <-
-    'c level' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_traders <-
+      'traders' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_mda <-
-    'mda' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_clevel <-
+      'c level' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_owners <-
-    'owners' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_mda <-
+      'mda' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_insider_trades <-
-    'insider trades' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_owners <-
+      'owners' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  has_subs <-
-    'subsidiaries' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
+    has_insider_trades <-
+      'insider trades' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-  if (has_general) {
-    parse_json_general_filing_safe <-
-      purrr::possibly(parse_json_general_filing, data_frame())
-    general_df <-
-      url_df$urlJSON[[1]] %>%
-      parse_json_general_filing_safe(nest_data = nest_data,
-                                return_message = return_message) %>%
-      mutate(nameEntity = nameEntity %>% str_to_upper())
+    has_subs <-
+      'subsidiaries' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
-    if (general_df %>% nrow() == 0) {
+    if (has_general) {
+      parse_json_general_filing_safe <-
+        purrr::possibly(parse_json_general_filing, data_frame())
       general_df <-
-        data_frame(idCIK = cik,
-                   nameEntity = NA)
+        url_df$urlJSON[[1]] %>%
+        parse_json_general_filing_safe(nest_data = nest_data,
+                                       return_message = return_message) %>%
+        mutate(nameEntity = nameEntity %>% str_to_upper())
+
+      if (general_df %>% nrow() == 0) {
+        general_df <-
+          data_frame(idCIK = cik,
+                     nameEntity = NA)
+      }
+    } else {
+      general_df <-
+        data_frame(idCIK = cik)
     }
-  } else {
-    general_df <-
-      data_frame(idCIK = cik)
-  }
 
 
-  if (has_filings) {
-    parse_json_filings_safe <-
-      purrr::possibly(parse_json_filings, data_frame())
+    if (has_filings) {
+      parse_json_filings_safe <-
+        purrr::possibly(parse_json_filings, data_frame())
 
-    filing_df <-
-      url_df$urlJSON[[2]] %>%
-      parse_json_filings_safe(return_message = return_message) %>%
-      mutate_if(is_character,
-                str_to_upper)
-
-    has_rows  <-
-      filing_df %>% nrow() > 0
-
-    if (has_rows) {
       filing_df <-
-        filing_df %>%
-        left_join(
-          general_df %>% select(idCIK, nameEntity)
-        ) %>%
-        select(nameEntity, idCIK, everything()) %>%
-        suppressMessages()
+        url_df$urlJSON[[2]] %>%
+        parse_json_filings_safe(return_message = return_message) %>%
+        mutate_if(is_character,
+                  str_to_upper)
+
+      has_rows  <-
+        filing_df %>% nrow() > 0
+
+      if (has_rows) {
+        filing_df <-
+          filing_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          suppressMessages()
+      }
+    } else {
+      filing_df <-
+        data_frame(idCIK = cik)
     }
-  } else {
-    filing_df <-
-      data_frame(idCIK = cik)
-  }
 
 
-  if (has_private) {
-    parse_json_private_safe <-
-      purrr::possibly(parse_json_private, data_frame())
+    if (has_private) {
+      parse_json_private_safe <-
+        purrr::possibly(parse_json_private, data_frame())
 
-    private_df <-
-      url_df$urlJSON[[3]] %>%
-      parse_json_private_safe(nest_data = nest_data,
-                         return_message = return_message)
-
-    has_rows  <-
-      private_df %>% nrow() > 0
-
-    if (has_rows) {
       private_df <-
-        private_df %>%
-        left_join(
-          general_df %>% select(idCIK, nameEntity)
-        ) %>%
-        select(nameEntity, idCIK, everything()) %>%
-        suppressMessages()
+        url_df$urlJSON[[3]] %>%
+        parse_json_private_safe(nest_data = nest_data,
+                                return_message = return_message)
+
+      has_rows  <-
+        private_df %>% nrow() > 0
+
+      if (has_rows) {
+        private_df <-
+          private_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          suppressMessages()
+      }
+    } else {
+      private_df <-
+        data_frame(idCIK = cik)
     }
-  } else {
-    private_df <-
-      data_frame(idCIK = cik)
-  }
 
 
-  if (has_related) {
-    parse_json_fundraising_safe <-
-      purrr::possibly(parse_json_fundraising, data_frame())
+    if (has_related) {
+      parse_json_fundraising_safe <-
+        purrr::possibly(parse_json_fundraising, data_frame())
 
-    fundraising_df <-
-      url_df$urlJSON[[4]] %>%
-      parse_json_fundraising_safe(nest_data = nest_data,
-                             return_message = return_message)
-
-    has_rows  <-
-      fundraising_df %>% nrow() > 0
-    if (has_rows) {
       fundraising_df <-
-        fundraising_df %>%
-        left_join(
-          general_df %>% select(idCIK, nameEntity)
-        ) %>%
-        select(nameEntity, idCIK, everything()) %>%
-        suppressMessages()
+        url_df$urlJSON[[4]] %>%
+        parse_json_fundraising_safe(nest_data = nest_data,
+                                    return_message = return_message)
+
+      has_rows  <-
+        fundraising_df %>% nrow() > 0
+      if (has_rows) {
+        fundraising_df <-
+          fundraising_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          suppressMessages()
+      }
+    } else {
+      fundraising_df <-
+        data_frame(idCIK = cik)
     }
-  } else {
-    fundraising_df <-
-      data_frame(idCIK = cik)
-  }
 
-  if (has_traders) {
-    parse_json_traders_safe <-
-      purrr::possibly(parse_json_traders, data_frame())
+    if (has_traders) {
+      parse_json_traders_safe <-
+        purrr::possibly(parse_json_traders, data_frame())
 
-    traders_df <-
-      url_df$urlJSON[[5]] %>%
-      parse_json_traders_safe(return_message = return_message)
-
-    has_rows  <-
-      traders_df %>% nrow() > 0
-    if (has_rows) {
       traders_df <-
-        traders_df %>%
-        left_join(
-          general_df %>% select(idCIK, nameEntity)
-        ) %>%
-        select(nameEntity, idCIK, everything()) %>%
-        suppressMessages()
+        url_df$urlJSON[[5]] %>%
+        parse_json_traders_safe(return_message = return_message)
+
+      has_rows  <-
+        traders_df %>% nrow() > 0
+      if (has_rows) {
+        traders_df <-
+          traders_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          suppressMessages()
+      }
+    } else {
+      traders_df <-
+        data_frame(idCIK = cik)
     }
-  } else {
-    traders_df <-
-      data_frame(idCIK = cik)
-  }
 
 
-  if (has_clevel) {
-    parse_json_clevel_safe <-
-      purrr::possibly(parse_json_clevel, data_frame())
+    if (has_clevel) {
+      parse_json_clevel_safe <-
+        purrr::possibly(parse_json_clevel, data_frame())
 
-    clevel_df <-
-      url_df$urlJSON[[6]] %>%
-      parse_json_clevel_safe(return_message = return_message)
-
-    has_rows  <-
-      clevel_df %>% nrow() > 0
-    if (has_rows) {
       clevel_df <-
-        clevel_df %>%
-        left_join(
-          general_df %>% select(idCIK, nameEntity)
-        ) %>%
-        select(nameEntity, idCIK, everything()) %>%
-        suppressMessages()
+        url_df$urlJSON[[6]] %>%
+        parse_json_clevel_safe(return_message = return_message)
+
+      has_rows  <-
+        clevel_df %>% nrow() > 0
+      if (has_rows) {
+        clevel_df <-
+          clevel_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          suppressMessages()
+      }
+    } else {
+      clevel_df <-
+        data_frame(idCIK = cik)
     }
-  } else {
-    clevel_df <-
-      data_frame(idCIK = cik)
-  }
 
-  if (has_mda) {
-    parse_json_mda_safe <-
-      purrr::possibly(parse_json_mda, data_frame())
+    if (has_mda) {
+      parse_json_mda_safe <-
+        purrr::possibly(parse_json_mda, data_frame())
 
-    mda_df <-
-      url_df$urlJSON[[7]] %>%
-      parse_json_mda_safe(return_message = return_message)
-
-    has_rows  <-
-      mda_df %>% nrow() > 0
-
-    if (has_rows) {
       mda_df <-
-        mda_df %>%
-        left_join(
-          general_df %>% select(idCIK, nameEntity)
-        ) %>%
-        select(nameEntity, idCIK, everything()) %>%
-        suppressMessages()
+        url_df$urlJSON[[7]] %>%
+        parse_json_mda_safe(return_message = return_message)
+
+      has_rows  <-
+        mda_df %>% nrow() > 0
+
+      if (has_rows) {
+        mda_df <-
+          mda_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          suppressMessages()
+      }
+    } else {
+      mda_df <-
+        data_frame(idCIK = cik)
     }
-  } else {
-    mda_df <-
-      data_frame(idCIK = cik)
-  }
 
-  if (has_owners) {
-    parse_json_owners_safe <-
-      purrr::possibly(parse_json_owners, data_frame())
+    if (has_owners) {
+      parse_json_owners_safe <-
+        purrr::possibly(parse_json_owners, data_frame())
 
-    owners_df <-
-      url_df$urlJSON[[8]] %>%
-      parse_json_owners_safe(nest_data = nest_data,
-                             return_message = return_message)
-
-    if ('idTypeFilerOwner' %in% names(owners_df)) {
       owners_df <-
-        owners_df %>%
-        left_join(get_filer_type_df()) %>%
-        select(idCIK:nameEntityOwner, typeFilerOwner, everything()) %>%
-        suppressMessages()
-    }
+        url_df$urlJSON[[8]] %>%
+        parse_json_owners_safe(nest_data = nest_data,
+                               return_message = return_message)
 
-    has_rows  <-
-      owners_df %>% nrow() > 0
-    if (has_rows) {
+      if ('idTypeFilerOwner' %in% names(owners_df)) {
+        owners_df <-
+          owners_df %>%
+          left_join(get_filer_type_df()) %>%
+          select(idCIK:nameEntityOwner, typeFilerOwner, everything()) %>%
+          suppressMessages()
+      }
+
+      has_rows  <-
+        owners_df %>% nrow() > 0
+      if (has_rows) {
+        owners_df <-
+          owners_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          select(-matches("dateiso")) %>%
+          suppressMessages()
+      }
+    } else {
       owners_df <-
-        owners_df %>%
-        left_join(
-          general_df %>% select(idCIK, nameEntity)
-        ) %>%
-        select(nameEntity, idCIK, everything()) %>%
-        select(-matches("dateiso")) %>%
-        suppressMessages()
+        data_frame(idCIK = cik)
     }
-  } else {
-    owners_df <-
-      data_frame(idCIK = cik)
-  }
 
-  if (has_cik_filings) {
-    parse_cik_filings_safe <-
-    purrr::possibly(parse_cik_filings, data_frame())
+    if (has_cik_filings) {
+      parse_cik_filings_safe <-
+        purrr::possibly(parse_cik_filings, data_frame())
 
-  cik_filing_df <-
-    parse_cik_filings_safe(cik = cik, return_message = return_message )
-  } else {
-    cik_filing_df <-
-      data_frame(idCIK = cik)
-  }
+      cik_filing_df <-
+        parse_cik_filings_safe(cik = cik, return_message = return_message)
+    } else {
+      cik_filing_df <-
+        data_frame(idCIK = cik)
+    }
 
-  if (has_insider_trades) {
+    if (has_insider_trades) {
+      parse_insider_trades_safe <-
+        purrr::possibly(parse_insider_trades, data_frame())
 
-  parse_insider_trades_safe <-
-    purrr::possibly(parse_insider_trades, data_frame())
+      insider_trade_df <-
+        parse_insider_trades_safe(cik = cik,
+                                  nest_data = nest_data,
+                                  return_message = return_message)
 
-  insider_trade_df <-
-    parse_insider_trades_safe(cik = cik, nest_data = nest_data,
-                              return_message = return_message)
+      has_rows  <-
+        insider_trade_df %>% nrow() > 0
 
-  has_rows  <-
-    insider_trade_df %>% nrow() > 0
+      if (has_rows) {
+        insider_trade_df <-
+          insider_trade_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          suppressMessages()
+      }
+    } else {
+      insider_trade_df <-
+        data_frame(idCIK = cik)
+    }
 
-  if (has_rows) {
-    insider_trade_df <-
-      insider_trade_df %>%
-      left_join(
-        general_df %>% select(idCIK, nameEntity)
-      ) %>%
-      select(nameEntity, idCIK, everything()) %>%
-      suppressMessages()
-  }
-  } else {
-    insider_trade_df <-
-      data_frame(idCIK = cik)
-  }
+    if (has_subs) {
+      parse_json_subsidiaries_safe <-
+        purrr::possibly(parse_json_subsidiaries, data_frame())
 
-  if (has_subs) {
-    parse_json_subsidiaries_safe <-
-      purrr::possibly(parse_json_subsidiaries, data_frame())
-
-    sub_df <-
-      url_df$urlJSON[[9]] %>%
-      parse_json_subsidiaries(return_message = return_message)
-
-    has_rows  <-
-      sub_df %>% nrow() > 0
-    if (has_rows) {
       sub_df <-
-        sub_df %>%
-        left_join(
-          general_df %>% select(idCIK, nameEntity)
-        ) %>%
-        select(nameEntity, idCIK, everything()) %>%
-        suppressMessages()
+        url_df$urlJSON[[9]] %>%
+        parse_json_subsidiaries(return_message = return_message)
+
+      has_rows  <-
+        sub_df %>% nrow() > 0
+      if (has_rows) {
+        sub_df <-
+          sub_df %>%
+          left_join(general_df %>% select(idCIK, nameEntity)) %>%
+          select(nameEntity, idCIK, everything()) %>%
+          suppressMessages()
+      }
+    } else {
+      sub_df <-
+        data_frame(idCIK = cik)
     }
-  } else {
-    sub_df <-
-      data_frame(idCIK = cik)
+
+    if ('nameEntity' %in% names(general_df)) {
+      nameEntity <-
+        general_df$nameEntity %>%
+        str_to_upper()
+    } else {
+      nameEntity <-
+        NA
+    }
+
+
+    all_data <-
+      data_frame(
+        idCIK = cik,
+        nameEntity,
+        nameTable = c(
+          'General',
+          'CIK Filings',
+          'Filings',
+          'Private Offerings',
+          'Related Parties',
+          'Traders',
+          'C Level',
+          'MDA',
+          'Owners',
+          'Insider Trades',
+          'Subsidiaries'
+        ),
+        dataTable = list(
+          general_df,
+          cik_filing_df,
+          filing_df,
+          private_df,
+          fundraising_df,
+          traders_df,
+          clevel_df,
+          mda_df,
+          owners_df,
+          insider_trade_df,
+          sub_df
+        )
+      )
+
+    if (return_message) {
+      list("\nParsed SEC Private Filing Data for CIK: ",
+           cik,
+           ' - ',
+           nameEntity,
+           "\n") %>%
+        purrr::invoke(paste0, .) %>%
+        message()
+    }
+
+    all_data <-
+      all_data %>%
+      mutate(countCols = dataTable %>% purrr::map_dbl(ncol)) %>%
+      filter(countCols > 1) %>%
+      suppressWarnings() %>%
+      select(-matches("countCols"))
+
+    return(all_data)
   }
 
-  if ('nameEntity' %in% names(general_df)) {
-    nameEntity <-
-      general_df$nameEntity %>%
-      str_to_upper()
-  } else {
-    nameEntity <-
-      NA
-  }
-
-
-  all_data <-
-    data_frame(
-      idCIK = cik,
-      nameEntity,
-      nameTable = c('General', 'CIK Filings','Filings', 'Private Offerings', 'Related Parties', 'Traders', 'C Level', 'MDA', 'Owners', 'Insider Trades', 'Subsidiaries'),
-      dataTable = list(general_df, cik_filing_df,filing_df, private_df, fundraising_df, traders_df, clevel_df, mda_df, owners_df, insider_trade_df, sub_df)
-    )
-
-  if (return_message) {
-    list("\nParsed SEC Private Filing Data for CIK: ", cik, ' - ',nameEntity, "\n") %>%
-      purrr::invoke(paste0, .) %>%
-      message()
-  }
-
-  all_data <-
-    all_data %>%
-    mutate(countCols = dataTable %>% purrr::map_dbl(ncol)) %>%
-    filter(countCols > 1) %>%
-    suppressWarnings() %>%
-    select(-matches("countCols"))
-
-  return(all_data)
-  }
-
-#' Get SEC filer data
+#' SEC filer
 #'
-#' @param entity_names
-#' @param tickers
-#' @param ciks
-#' @param tables
-#' @param assign_to_environment
-#' @param return_message
-#' @import dplyr tidyr purrr stringr formattable readr lubridate
+#' This is function imports data
+#' for a specified SEC filing entity.  An
+#' SEC filing entity can be a person, public company or
+#' private filer.  This function requires that the entity has a
+#' Central Index Key [CIK].
+#'
+#' The function acquires information for the
+#' specified tables and will auto parse forms if the filer has them and
+#' the user activates these parameters.
+#'
+#' @param entity_names vector names to search
+#' @param tickers character vector of ticker symbols to search
+#' @param ciks numeric vector of CIKs
+#' @param tables tables to include if they exist \itemize{
+#' \code{NULL, General, CIK Filings, Filings, Private Offerings, Related Parties, Traders, C Level, MDA, Owners, Insider Trades, Trades}
+#' \code{NULL}: selects all tables
+#' \item \code{General}: general information about the filer
+#' \item \code{CIK Filings}: summarised filings for a CIK
+#' \item \code{Filings}: summarised filings for an entity, slightly different than \code{CIK Filings}
+#' \item \code{Private Offerings}: parses any private offerings
+#' \item \code{Related Parties}:  parses any related parties [people]
+#' \item \code{Traders}: parses major traders
+#' \item \code{C Level}: parses information about executives
+#' \item \code{MDA}: parses text from company 10-K Management Discussion and Analysis [MDA] section
+#' \item \code{Owners}: parses information about major owners
+#' \item \code{Insider Trades}: parses insider trade information
+#' \item \code{Trades}: parses all trade information
+#' }
+#' @param parse_all_filing_url_data \code{TRUE} parses every SEC fling link
+#' @param parse_xbrl_filings \code{TRUE} parse XBRL for public companies, data starts in 2009
+#' @param parse_subsidiaries \code{TRUE} parse all filer subsidiaries (default)
+#' @param parse_13Fs \code{TRUE} parse \href{https://en.wikipedia.org/wiki/Form_13F}{13F's} for institutional managers
+#' @param parse_asset_data \code{TRUE} parses ABS XML for \href{https://www.sec.gov/info/edgar/specifications/absxml.htm}{ABS Asset Data}
+#' filing entities (default)
+#' @param parse_small_offering_data \code{TRUE} parses \href{https://www.sec.gov/info/smallbus/secg/rccomplianceguide-051316.htm}{Regulation CrowdFunding}
+#' Form 1-A data if any exists for a filer (default)
+#' @param nest_data return a nested data frame \code{TRUE, FALSE}
+#' @param assign_to_environment \code{true} assigns individual data frames to your environment
+#' @param return_message \code{TRUE} return a message after data import
+#' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl
 #' @importFrom jsonlite fromJSON
-#' @return
+#' @export
+#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
+#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @family SEC
+#' @family Rank and Filed
+#' @family XBRL
+#' @family entity search
+#' @family fund search
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' get_data_sec_filer(entity_names = 'HLT Holdco', tickers = c('BX', 'FB'),
+#' nest_data = TRUE, parse_subsidiaries = TRUE,
+#' parse_13Fs = TRUE, assign_to_environment = TRUE,
+#' return_message = TRUE)
+#'
+#' ## Small Asset Filer Example
+#'
+#' ## ABS Example
+#'
+#' #XBRL Example
+#'
+#'}
 get_data_sec_filer <-
   function(entity_names = NULL,
            tickers = NULL,
            ciks = NULL,
            tables = NULL,
            nest_data = TRUE,
-           include_subsidiaries = TRUE,
-           include_13Fs = TRUE,
-           include_asset_data = TRUE,
-           include_small_offering_data = TRUE,
+           parse_all_filing_url_data = FALSE,
+           parse_xbrl_filings = FALSE,
+           parse_subsidiaries = TRUE,
+           parse_13Fs = TRUE,
+           parse_asset_data = TRUE,
+           parse_small_offering_data = TRUE,
            assign_to_environment = TRUE,
            return_message = TRUE) {
-
     has_entities <-
       (('entity_names' %>% exists()) &
          (!entity_names %>% purrr::is_null()))
@@ -5295,280 +7822,468 @@ get_data_sec_filer <-
     has_ciks <-
       (('ciks' %>% exists()) & (!ciks %>% purrr::is_null()))
 
-      has_tickers <-
-        (('tickers' %>% exists()) & (!tickers %>% purrr::is_null()))
+    has_tickers <-
+      (('tickers' %>% exists()) & (!tickers %>% purrr::is_null()))
 
-      has_nothing <-
-        ((!has_ciks) & (!has_entities) & (!has_tickers))
+    has_nothing <-
+      ((!has_ciks) & (!has_entities) & (!has_tickers))
 
-      has_tables <-
-        (!tables %>% purrr::is_null()) #(('tables' %>% exists()) |
+    has_tables <-
+      (!tables %>% purrr::is_null()) #(('tables' %>% exists()) |
 
-      if (has_nothing) {
-        stop("Please enter a CIK, ticker, or an entity name")
-      }
+    if (has_nothing) {
+      stop("Please enter a CIK, ticker, or an entity name")
+    }
 
-      all_ciks <-
-        c()
+    all_ciks <-
+      c()
 
-      if (has_entities) {
-        get_data_sec_filing_entities_safe <-
-          purrr::possibly(get_data_sec_filing_entities, data_frame())
+    if (has_entities) {
+      get_data_sec_filing_entities_safe <-
+        purrr::possibly(get_data_sec_filing_entities, data_frame())
 
-        search_df <-
-          entity_names %>%
-          get_data_sec_filing_entities_safe(return_message = return_message)
+      search_df <-
+        entity_names %>%
+        get_data_sec_filing_entities_safe(return_message = return_message)
 
-        has_rows <-
-          search_df %>% nrow() > 0
+      has_rows <-
+        search_df %>% nrow() > 0
 
-        if (has_rows) {
-          search_ciks <-
-            search_df %>%
-            filter(idTypeFiler == 'f') %>%
-            .$idCIK
-          all_ciks <-
-            all_ciks %>%
-            append(search_ciks)
-        }
-      }
-
-      if (has_ciks) {
+      if (has_rows) {
+        search_ciks <-
+          search_df %>%
+          .$idCIK
         all_ciks <-
           all_ciks %>%
-          append(ciks)
+          append(search_ciks)
       }
+    }
 
-      parse_cik_data_safe <-
-        possibly(parse_cik_data, NULL)
+    if (has_ciks) {
+      all_ciks <-
+        all_ciks %>%
+        append(ciks)
+    }
 
-      if (all_ciks %>% length() > 0) {
-        all_data <-
-          all_ciks %>%
-          sort() %>%
+    parse_cik_data_safe <-
+      possibly(parse_cik_data, NULL)
+
+    if (all_ciks %>% length() > 0) {
+      all_data <-
+        all_ciks %>%
+        sort() %>%
+        map_df(function(x) {
+          parse_cik_data_safe(
+            tables = tables,
+            nest_data = nest_data,
+            cik = x,
+            return_message = return_message
+          )
+        }) %>%
+        mutate(
+          urlRankAndFiled =
+            list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>% purrr::invoke(paste0, .)
+        ) %>%
+        select(idCIK, nameEntity, urlRankAndFiled, nameTable, dataTable) %>%
+        distinct() %>%
+        suppressWarnings()
+    }
+
+    if (has_tickers) {
+      parse_ticker_data_safe <-
+        purrr::possibly(parse_ticker_data, data_frame())
+
+      table_exists <-
+        'all_data' %>% exists()
+
+      if (table_exists) {
+        all_ticker_data <-
+          tickers %>%
           map_df(function(x) {
-            parse_cik_data_safe(
-              tables = tables,
+            parse_ticker_data_safe(
+              ticker = x,
               nest_data = nest_data,
-              cik = x,
+              tables = tables,
               return_message = return_message
             )
           }) %>%
-          mutate(
-            urlRankAndFiled =
-              list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>% purrr::invoke(paste0, .)
-          ) %>%
-          select(idCIK, nameEntity, urlRankAndFiled, nameTable, dataTable) %>%
-          distinct() %>%
           suppressWarnings()
-      }
-
-      if (has_tickers) {
-        parse_ticker_data_safe <-
-          purrr::possibly(parse_ticker_data, data_frame())
-
-        table_exists <-
-          'all_data' %>% exists()
-
-        if (table_exists) {
-          all_ticker_data <-
-            tickers %>%
-            map_df(function(x) {
-              parse_ticker_data_safe(
-                ticker = x,
-                nest_data = nest_data,
-                tables = tables,
-                return_message = return_message
-              )
-            }) %>%
-            suppressWarnings()
-
-          all_data <-
-            all_data %>%
-            bind_rows(all_ticker_data)
-        } else {
-          all_data <-
-            tickers %>%
-            map_df(function(x) {
-              parse_ticker_data_safe(ticker = x,
-                                     tables = tables,
-                                     return_message = return_message)
-            }) %>%
-            suppressWarnings()
-        }
-      }
-
-      if (has_tables) {
-        table_options <-
-          c(
-            'General',
-            'CIK Filings',
-            'Filings',
-            'Private Offerings',
-            'Related Parties',
-            'Traders',
-            'C Level',
-            'MDA',
-            'Owners',
-            'Insider Trades',
-            'Trades'
-          )
-        table_names <-
-          tables %>% str_to_lower() %>% paste0(collapse = "|")
-
-        wrong_table <-
-          table_options %>% str_to_lower() %>% str_count(table_names) %>% sum() == 0
-
-        if (wrong_table) {
-          stop("Sorry tables can only be:\n" %>% paste0(paste0(table_options, collapse = '\n')))
-        }
 
         all_data <-
           all_data %>%
-          mutate(table = nameTable %>% str_to_lower()) %>%
-          filter(table %>% str_detect(table_names)) %>%
-          select(-table)
+          bind_rows(all_ticker_data)
+      } else {
+        all_data <-
+          tickers %>%
+          map_df(function(x) {
+            parse_ticker_data_safe(
+              ticker = x,
+              tables = tables,
+              return_message = return_message
+            )
+          }) %>%
+          suppressWarnings()
       }
+    }
 
-      if (!'all_data' %>% exists()) {
-        return(data_frame())
-      }
+    if (has_tables) {
+      table_options <-
+        c(
+          'General',
+          'CIK Filings',
+          'Filings',
+          'Private Offerings',
+          'Related Parties',
+          'Traders',
+          'C Level',
+          'MDA',
+          'Owners',
+          'Insider Trades',
+          'Trades'
+        )
+      table_names <-
+        tables %>% str_to_lower() %>% paste0(collapse = "|")
 
-      missing_ciks <-
-        all_ciks[!all_ciks %in% all_data$idCIK] %>% length() > 0
+      wrong_table <-
+        table_options %>% str_to_lower() %>% str_count(table_names) %>% sum() == 0
 
-      if (missing_ciks) {
-        list("Missing ", all_ciks[!all_ciks %in% all_data$idCIK] %>% paste(collapse = ', ')) %>%
-          purrr::invoke(paste0, .) %>%
-          message()
+      if (wrong_table) {
+        stop("Sorry tables can only be:\n" %>% paste0(paste0(table_options, collapse = '\n')))
       }
 
       all_data <-
         all_data %>%
-        select(-matches("urlRankAndFiled"))
+        mutate(table = nameTable %>% str_to_lower()) %>%
+        filter(table %>% str_detect(table_names)) %>%
+        select(-table)
+    }
 
-      has_filings <-
-        c('CIK Filings', 'Filings') %in% all_data$nameTable %>% sum() > 0
+    if (!'all_data' %>% exists()) {
+      return(data_frame())
+    }
 
-      if (has_filings){
-        filing_df <-
-          all_data %>%
-          filter(nameTable %in% c('Filings','CIK Filings')) %>%
-          select(dataTable) %>%
-          unnest() %>%
+    missing_ciks <-
+      all_ciks[!all_ciks %in% all_data$idCIK] %>% length() > 0
+
+    if (missing_ciks) {
+      list("Missing ", all_ciks[!all_ciks %in% all_data$idCIK] %>% paste(collapse = ', ')) %>%
+        purrr::invoke(paste0, .) %>%
+        message()
+    }
+
+    all_data <-
+      all_data %>%
+      select(-matches("urlRankAndFiled"))
+
+    has_filings <-
+      c('CIK Filings', 'Filings') %in% all_data$nameTable %>% sum() > 0
+
+    if (has_filings) {
+      filing_df <-
+        all_data %>%
+        filter(nameTable %in% c('Filings', 'CIK Filings')) %>%
+        select(dataTable) %>%
+        unnest() %>%
+        distinct()
+
+
+      filing_df <-
+        filing_df %>%
+        mutate_at(filing_df %>% select(matches("^url")) %>% names(),
+                  funs(. %>% str_to_lower()))
+
+
+      filing_df <-
+        filing_df %>%
+        mutate_at(filing_df %>% select(matches("url^[A-Z]")) %>% names(),
+                  funs(. %>% str_replace_all('archives', 'Archives')))
+
+      filing_df <-
+        filing_df %>%
+        mutate(urlSECFilingDirectory = urlSECFilingDirectory %>% gsub('archives', 'Archives',.),
+               urlSEC = urlSEC %>% gsub('archives', 'Archives',.))
+
+      has_13fs <-
+        (filing_df %>%
+           .$is13FFiling %>% sum(na.rm = TRUE)) > 0 & (parse_13Fs)
+
+      has_subsidiaries <-
+        (filing_df %>%
+           filter(typeFiling == "SUBSIDIARIES OF THE REGISTRANT") %>%
+           nrow() > 0) & (parse_subsidiaries)
+
+      has_asset_data <-
+        (filing_df %>%
+           filter(typeFiling == "ABS ASSET DATA FILE") %>%
+           nrow() > 0) & (parse_asset_data)
+
+      has_small_offering_data <-
+        (filing_df %>%
+           filter(typeFiling == "SMALL OFFERING") %>%
+           nrow() > 0) & (parse_small_offering_data)
+
+      if (parse_all_filing_url_data) {
+        df_index <-
+          filing_df %>%
+          filter(!urlSECFilingDirectory %>% is.na()) %>%
+          select(dateFiling, nameEntity, urlSECFilingDirectory) %>%
           distinct()
 
-        has_13fs <-
-          (filing_df %>%
-          .$is13FFiling %>% sum(na.rm = TRUE)) > 0 & (include_13Fs)
+        df_index <-
+          df_index %>%
+          mutate(urlSECFilingDirectory = urlSECFilingDirectory %>% str_replace_all('archives','Archives'))
 
-        has_subsidiaries <-
-          (filing_df %>%
-          filter(typeFiling == "SUBSIDIARIES OF THE REGISTRANT") %>%
-          nrow() > 0) & (include_subsidiaries)
+        parse_sec_filing_index_safe <-
+          purrr::possibly(parse_sec_filing_index, data_frame())
 
-        has_asset_data <-
-          (filing_df %>%
-             filter(typeFiling == "ABS ASSET DATA FILE") %>%
-             nrow() > 0) & (include_asset_data)
+        df_all_filing_urls <-
+          df_index$urlSECFilingDirectory %>%
+          map_df(function(x) {
+            parse_sec_filing_index_safe(url = x, return_message = return_message)
+          })
+        has_data <-
+          df_all_filing_urls %>% nrow() > 0
+      if (has_data) {
+        df_all_filing_urls <-
+          df_all_filing_urls %>%
+          left_join(df_index) %>%
+          suppressWarnings() %>%
+          select(-nameEntity) %>%
+          left_join(filing_df %>% select(idCIK, nameEntity) %>% distinct()) %>%
+          select(dateFiling,
+                 nameEntity,
+                 urlSECFilingDirectory,
+                 everything()) %>%
+          suppressMessages()
 
-        has_small_offering_data <-
-          (filing_df %>%
-             filter(typeFiling == "SMALL OFFERING") %>%
-             nrow() > 0) & (include_small_offering_data)
 
-        if (has_13fs) {
-          urls_13F <-
-            filing_df %>%
-            filter(is13FFiling == TRUE) %>%
-            .$urlSEC %>%
-            unique()
-
-          parse_13F_url_safe <-
-            purrr::possibly(parse_13F_url, data_frame())
-
-          df_13f <-
-            1:length(urls_13F) %>%
-            map_df(function(x) {
-              parse_13F_url_safe(url = urls_13F[[x]], return_message = return_message)
-            }) %>%
-            suppressWarnings() %>%
-            select(-matches("remove")) %>%
-            resolve_names_to_upper()
-
-          df_13f <-
-            df_13f %>%
-            left_join(filing_df %>% select(idCIK, nameEntity, dateFiling, urlSEC)) %>%
-            select(idCIK, nameEntity, dateFiling, everything()) %>%
-            suppressMessages()
-
-          if (nest_data) {
-            df_13f <-
-              df_13f %>%
-              nest(-c(dateFiling, idCIK, nameEntity), .key = data13F)
-
-          }
-
-          a_13f_df <-
-            df_13f %>%
-            group_by(idCIK, nameEntity) %>%
-            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
-            ungroup() %>%
-            mutate(nameTable = 'Filings 13F')
-
-          all_data <-
-            all_data %>%
-            bind_rows(
-              a_13f_df
+        if (parse_xbrl_filings) {
+          df_xbrl_urls <-
+            df_all_filing_urls %>%
+            filter(isXBRLInstanceFile == TRUE) %>%
+            select(
+              dateFiling,
+              nameEntity,
+              idCIK,
+              isXBRLInstanceFile,
+              urlSECFilingDirectory,
+              urlSECFile
             )
         }
 
-        if (has_subsidiaries) {
-          parse_sec_subsidiary_url_safe <-
-            purrr::possibly(parse_sec_subsidiary_url, data_frame())
+        if (nest_data) {
+          df_all_filing_urls <-
+            df_all_filing_urls %>%
+            nest(-c(idCIK, nameEntity), .key = dataAllFilings)
+        }
 
-          has_list <-
-            filing_df %>%
-            filter(typeFiling == "LIST OF SUBSIDIARIES") %>%
-            nrow() > 0
+        a_all_filings <-
+          df_all_filing_urls %>%
+          group_by(idCIK, nameEntity) %>%
+          nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+          ungroup() %>%
+          mutate(nameTable = 'All Filing Links')
 
-          sub_url_df <-
+        all_data <-
+          all_data %>%
+          bind_rows(a_all_filings)
+
+        }
+      }
+
+      if (parse_xbrl_filings) {
+        no_xbrl_urls <-
+          !'df_xbrl_urls' %>% exists()
+
+        if (no_xbrl_urls) {
+          df_index <-
             filing_df %>%
-            filter(typeFiling %in% c("SUBSIDIARIES OF THE REGISTRANT", "SUBSIDIARIES OF HOLDING COMPANY")) %>%
+            filter(!urlSECFilingDirectory %>% is.na()) %>%
+            select(dateFiling, nameEntity, urlSECFilingDirectory)
+
+          parse_sec_filing_index_safe <-
+            purrr::possibly(parse_sec_filing_index, data_frame())
+
+          df_all_filing_urls <-
+            df_index$urlSECFilingDirectory %>%
+            map_df(function(x) {
+              parse_sec_filing_index(url = x, return_message = return_message)
+            })
+
+          df_all_filing_urls <-
+            df_all_filing_urls %>%
+            left_join(df_index) %>%
+            suppressWarnings() %>%
+            select(-nameEntity) %>%
+            left_join(filing_df %>% select(idCIK, nameEntity) %>% distinct()) %>%
+            select(dateFiling,
+                   nameEntity,
+                   urlSECFilingDirectory,
+                   everything()) %>%
+            suppressMessages()
+
+          df_xbrl_urls <-
+            df_all_filing_urls %>%
+            filter(isXBRLInstanceFile == TRUE) %>%
+            select(
+              dateFiling,
+              nameEntity,
+              idCIK,
+              isXBRLInstanceFile,
+              urlSECFilingDirectory,
+              urlSECFile
+            )
+        }
+
+        parse_xbrl_filer_url_safe <-
+          purrr::possibly(parse_xbrl_filer_url, data_frame())
+
+        all_xbrl <-
+          df_xbrl_urls$urlSECFile %>%
+          map_df(function(x) {
+            parse_xbrl_filer_url_safe(url = x, return_message = return_message)
+          })
+        if (all_xbrl %>% nrow() > 0) {
+          all_xbrl <-
+            all_xbrl %>%
+            left_join(
+              df_xbrl_urls %>% select(
+                nameEntity,
+                dateFiling,
+                urlSECFile,
+                urlSECFilingDirectory
+              )
+            ) %>%
+            select(idCIK,
+                   nameEntity,
+                   urlSECFilingDirectory,
+                   everything()) %>%
+            group_by(idCIK, nameEntity) %>%
+            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+            ungroup() %>%
+            mutate(nameTable = 'XBRL Filings') %>%
+            suppressMessages()
+
+          all_data <-
+            all_data %>%
+            bind_rows(all_xbrl)
+        }
+      }
+
+      if (has_13fs) {
+        urls_13F <-
+          filing_df %>%
+          filter(is13FFiling == TRUE) %>%
+          .$urlSEC %>%
+          unique()
+
+        parse_13F_url_safe <-
+          purrr::possibly(parse_13F_url, data_frame())
+
+        df_13f <-
+          1:length(urls_13F) %>%
+          map_df(function(x) {
+            parse_13F_url_safe(url = urls_13F[[x]], return_message = return_message)
+          }) %>%
+          suppressWarnings() %>%
+          select(-matches("remove")) %>%
+          resolve_names_to_upper()
+        if (df_13f %>% nrow() > 0) {
+        df_13f <-
+          df_13f %>%
+          left_join(filing_df %>% select(idCIK, nameEntity, dateFiling, urlSEC)) %>%
+          select(idCIK, nameEntity, dateFiling, everything()) %>%
+          suppressMessages()
+
+        if (nest_data) {
+          df_13f <-
+            df_13f %>%
+            nest(-c(dateFiling, idCIK, nameEntity), .key = data13F)
+
+        }
+
+        a_13f_df <-
+          df_13f %>%
+          group_by(idCIK, nameEntity) %>%
+          nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+          ungroup() %>%
+          mutate(nameTable = 'Filings 13F')
+
+        all_data <-
+          all_data %>%
+          bind_rows(a_13f_df)
+        }
+      }
+
+      if (has_subsidiaries) {
+        parse_sec_subsidiary_url_safe <-
+          purrr::possibly(parse_sec_subsidiary_url, data_frame())
+
+        has_list <-
+          filing_df %>%
+          filter(typeFiling == "LIST OF SUBSIDIARIES") %>%
+          nrow() > 0
+
+        sub_url_df <-
+          filing_df %>%
+          filter(
+            typeFiling %in% c(
+              "SUBSIDIARIES OF THE REGISTRANT",
+              "SUBSIDIARIES OF HOLDING COMPANY"
+            )
+          ) %>%
+          select(dateFiling, nameEntity, urlSEC) %>%
+          distinct()
+
+        if (has_list) {
+          sub_url_list_df <-
+            filing_df %>%
+            filter(
+              typeFiling %>% str_detect(
+                "LIST OF SUBSIDIARIES|LIST OF SIGNIFICANT SUBSIDIARIES|LIST OF SIGNIFCANT"
+              )
+            ) %>%
             select(dateFiling, nameEntity, urlSEC) %>%
             distinct()
 
-          if (has_list) {
-            sub_url_list_df <-
-              filing_df %>%
-              filter(typeFiling %>% str_detect("LIST OF SUBSIDIARIES|LIST OF SIGNIFICANT SUBSIDIARIES|LIST OF SIGNIFCANT")) %>%
-              select(dateFiling, nameEntity, urlSEC) %>%
-              distinct()
-
-            if ('sub_url_df' %>% exists()) {
-              sub_url_df <-
-                sub_url_list_df %>%
-                bind_rows(sub_url_df)
-            } else {
-              sub_url_df <-
-                sub_url_list_df
-            }
+          if ('sub_url_df' %>% exists()) {
+            sub_url_df <-
+              sub_url_list_df %>%
+              bind_rows(sub_url_df)
+          } else {
+            sub_url_df <-
+              sub_url_list_df
           }
+        }
 
-          sub_df <-
-            sub_url_df %>%
-            arrange(dateFiling) %>%
-            .$urlSEC %>%
-            map_df(function(x){
-              parse_sec_subsidiary_url_safe(url = x, return_message = return_message)
-            }) %>%
-            suppressWarnings()
+        sub_df <-
+          sub_url_df %>%
+          arrange(dateFiling) %>%
+          .$urlSEC %>%
+          map_df(function(x) {
+            parse_sec_subsidiary_url_safe(url = x, return_message = return_message)
+          }) %>%
+          suppressWarnings()
 
-          if (sub_df %>% nrow() > 0) {
+        if (sub_df %>% nrow() > 0) {
           sub_df <-
             sub_df %>%
             select(-matches("X|date")) %>%
-            filter(!nameSubsidiary %in% c('(I)', '(II)', '(III)', '(IV)', '(V)', '(VI)', '(VII)', '(VIII)', '(IX)', '(X)', 'PART A')) %>%
+            filter(
+              !nameSubsidiary %in% c(
+                '(I)',
+                '(II)',
+                '(III)',
+                '(IV)',
+                '(V)',
+                '(VI)',
+                '(VII)',
+                '(VIII)',
+                '(IX)',
+                '(X)',
+                'PART A'
+              )
+            ) %>%
             left_join(sub_url_df) %>%
             select(idCIK, dateFiling, everything()) %>%
             suppressMessages() %>%
@@ -5577,10 +8292,15 @@ get_data_sec_filer <-
           active_date_df <-
             sub_df %>%
             group_by(nameSubsidiary) %>%
-            summarise(dateFirstFiled = min(dateFiling, na.rm = TRUE),
-                      dateLastFiled = max(dateFiling, na.rm = TRUE),
-                      isActiveSubsidiary = ifelse(dateLastFiled == sub_df$dateFiling %>% max(na.rm = TRUE), TRUE, FALSE)
-                      ) %>%
+            summarise(
+              dateFirstFiled = min(dateFiling, na.rm = TRUE),
+              dateLastFiled = max(dateFiling, na.rm = TRUE),
+              isActiveSubsidiary = ifelse(
+                dateLastFiled == sub_df$dateFiling %>% max(na.rm = TRUE),
+                TRUE,
+                FALSE
+              )
+            ) %>%
             ungroup()
 
           sub_df <-
@@ -5632,9 +8352,7 @@ get_data_sec_filer <-
             all_data <-
               all_data %>%
               filter(!nameTable == 'Subsidiaries') %>%
-              bind_rows(
-                a_sub_df
-              )
+              bind_rows(a_sub_df)
 
           } else {
             if (nest_data) {
@@ -5652,145 +8370,149 @@ get_data_sec_filer <-
             all_data <-
               all_data %>%
               filter(!nameTable == 'Subsidiaries') %>%
-              bind_rows(
-                a_sub_df
-              )
+              bind_rows(a_sub_df)
           }
-          }
-        }
-
-        if (has_small_offering_data) {
-          url_df <-
-            filing_df %>%
-            filter(typeFiling == "SMALL OFFERING") %>%
-            select(dateFiling, nameEntity, urlSEC) %>%
-            distinct()
-
-          parse_small_offering_data_safe <-
-            purrr::possibly(parse_small_offering_data, data_frame())
-
-          offering_df <-
-            url_df$urlSEC %>%
-            map_df(function(x) {
-              parse_small_offering_data(url = x, return_message = return_message)
-            }) %>%
-            select(-matches("^NA")) %>%
-            suppressWarnings()
-
-          offering_df <-
-            offering_df %>%
-            mutate_at(offering_df %>% select(matches("^perShare|^price")) %>% names(),
-                      funs(. %>% formattable::currency(digits = 3))) %>%
-            mutate_at(offering_df %>% select(matches("^count")) %>% names(),
-                      funs(. %>% formattable::comma(digits = 0))) %>%
-            mutate_at(offering_df %>% select(matches("^amount")) %>% names(),
-                      funs(. %>% formattable::currency(digits = 0))) %>%
-            mutate_at(offering_df %>% select(matches("^percent|^pct")) %>% names(),
-                      funs(. %>% formattable::percent(digits = 3)))
-
-          offering_df <-
-            offering_df %>%
-            left_join(url_df) %>%
-            suppressMessages() %>%
-            select(idCIK, nameEntity, dateFiling, everything())
-
-          if (nest_data) {
-            offering_df <-
-              offering_df %>%
-              nest(-c(dateFiling, idCIK, nameEntity), .key = dataSmallOffering)
-          }
-
-          a_offering_df <-
-            offering_df %>%
-            group_by(idCIK, nameEntity) %>%
-            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
-            ungroup() %>%
-            mutate(nameTable = 'Small Offerings')
-
-          all_data <-
-            all_data %>%
-            bind_rows(
-              a_offering_df
-            )
-
-        }
-
-        if (has_asset_data) {
-          url_df <-
-            filing_df %>%
-            filter(typeFiling == "ABS ASSET DATA FILE") %>%
-            select(dateFiling, nameEntity, urlSEC) %>%
-            distinct()
-
-          parse_asset_xbrl_safe <-
-            purrr::possibly(parse_asset_xbrl, data_frame())
-
-          xbrl_df <-
-            url_df$urlSEC %>%
-            map_df(function(x) {
-              parse_asset_xbrl_safe(url = x, return_message = return_message)
-            }) %>%
-            suppressWarnings()
-
-          xbrl_df <-
-            xbrl_df %>%
-            mutate_at(.cols =
-                        xbrl_df %>% select(
-                          matches(
-                            "^id|^pct|^percent|^renovated|^amount|^count[A-Z]|year|area|ratio|^number"
-                          )
-                        ) %>% select(-matches('county|country|idAssetNumber|date')) %>% names(),
-                      funs(. %>% as.numeric())) %>%
-            mutate_at(.cols = xbrl_df %>% select(matches("^date")) %>% names(),
-                      funs(. %>% lubridate::mdy())) %>%
-            mutate_at(
-              .cols = xbrl_df %>% select(matches("^number|^count")) %>% select(-matches('county|country|numberAsset')) %>% names(),
-              funs(. %>% formattable::comma(digits = 0))
-            ) %>%
-            mutate_at(.cols = xbrl_df %>% select(matches("^ratio")) %>% names(),
-                      funs(. %>% formattable::comma(digits = 3))) %>%
-            mutate_at(.cols = xbrl_df %>% select(matches("^amount")) %>% names(),
-                      funs(. %>% formattable::currency(digits = 0))) %>%
-            mutate_at(.cols = xbrl_df %>% select(matches("^pct|^percent")) %>% names(),
-                      funs(. %>% formattable::percent(digits = 3)))
-
-          xbrl_df <-
-            xbrl_df %>%
-            left_join(url_df) %>%
-            suppressMessages() %>%
-            select(idCIK, nameEntity, dateFiling, everything())
-
-          if (nest_data) {
-            xbrl_df <-
-              xbrl_df %>%
-              nest(-c(dateFiling, idCIK, nameEntity), .key = dataAssetXBRL)
-          }
-
-          a_xbrl <-
-            xbrl_df %>%
-            group_by(idCIK, nameEntity) %>%
-            nest(-c(idCIK, nameEntity), .key = dataTable) %>%
-            ungroup() %>%
-            mutate(nameTable = 'Asset XBRL')
-
-          all_data <-
-            all_data %>%
-            bind_rows(
-              a_xbrl
-            )
         }
       }
-      if (assign_to_environment) {
+
+      if (has_small_offering_data) {
+        url_df <-
+          filing_df %>%
+          filter(typeFiling == "SMALL OFFERING") %>%
+          select(dateFiling, nameEntity, urlSEC) %>%
+          distinct()
+
+        parse_small_offering_data_safe <-
+          purrr::possibly(parse_small_offering_data, data_frame())
+
+        offering_df <-
+          url_df$urlSEC %>%
+          map_df(function(x) {
+            parse_small_offering_data(url = x, return_message = return_message)
+          }) %>%
+          select(-matches("^NA")) %>%
+          suppressWarnings()
+
+        offering_df <-
+          offering_df %>%
+          mutate_at(
+            offering_df %>% select(matches("^perShare|^price")) %>% names(),
+            funs(. %>% formattable::currency(digits = 3))
+          ) %>%
+          mutate_at(offering_df %>% select(matches("^count")) %>% names(),
+                    funs(. %>% formattable::comma(digits = 0))) %>%
+          mutate_at(
+            offering_df %>% select(matches("^amount")) %>% names(),
+            funs(. %>% formattable::currency(digits = 0))
+          ) %>%
+          mutate_at(offering_df %>% select(matches("^percent|^pct")) %>% names(),
+                    funs(. %>% formattable::percent(digits = 3)))
+
+        offering_df <-
+          offering_df %>%
+          left_join(url_df) %>%
+          suppressMessages() %>%
+          select(idCIK, nameEntity, dateFiling, everything())
+
+        if (nest_data) {
+          offering_df <-
+            offering_df %>%
+            nest(-c(dateFiling, idCIK, nameEntity), .key = dataSmallOffering)
+        }
+
+        a_offering_df <-
+          offering_df %>%
+          group_by(idCIK, nameEntity) %>%
+          nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+          ungroup() %>%
+          mutate(nameTable = 'Small Offerings')
+
+        all_data <-
+          all_data %>%
+          bind_rows(a_offering_df)
+
+      }
+
+      if (has_asset_data) {
+        url_df <-
+          filing_df %>%
+          filter(typeFiling == "ABS ASSET DATA FILE") %>%
+          select(dateFiling, nameEntity, urlSEC) %>%
+          distinct()
+
+        parse_asset_xbrl_safe <-
+          purrr::possibly(parse_asset_xbrl, data_frame())
+
+        xbrl_df <-
+          url_df$urlSEC %>%
+          map_df(function(x) {
+            parse_asset_xbrl_safe(url = x, return_message = return_message)
+          }) %>%
+          suppressWarnings()
+
+        xbrl_df <-
+          xbrl_df %>%
+          mutate_at(
+            .cols =
+              xbrl_df %>% select(
+                matches(
+                  "^id|^pct|^percent|^renovated|^amount|^count[A-Z]|year|area|ratio|^number"
+                )
+              ) %>% select(-matches(
+                'county|country|idAssetNumber|date'
+              )) %>% names(),
+            funs(. %>% as.numeric())
+          ) %>%
+          mutate_at(.cols = xbrl_df %>% select(matches("^date")) %>% names(),
+                    funs(. %>% lubridate::mdy())) %>%
+          mutate_at(
+            .cols = xbrl_df %>% select(matches("^number|^count")) %>% select(-matches('county|country|numberAsset')) %>% names(),
+            funs(. %>% formattable::comma(digits = 0))
+          ) %>%
+          mutate_at(.cols = xbrl_df %>% select(matches("^ratio")) %>% names(),
+                    funs(. %>% formattable::comma(digits = 3))) %>%
+          mutate_at(.cols = xbrl_df %>% select(matches("^amount")) %>% names(),
+                    funs(. %>% formattable::currency(digits = 0))) %>%
+          mutate_at(.cols = xbrl_df %>% select(matches("^pct|^percent")) %>% names(),
+                    funs(. %>% formattable::percent(digits = 3)))
+
+        xbrl_df <-
+          xbrl_df %>%
+          left_join(url_df) %>%
+          suppressMessages() %>%
+          select(idCIK, nameEntity, dateFiling, everything())
+
+        if (nest_data) {
+          xbrl_df <-
+            xbrl_df %>%
+            nest(-c(dateFiling, idCIK, nameEntity), .key = dataAssetXBRL)
+        }
+
+        a_xbrl <-
+          xbrl_df %>%
+          group_by(idCIK, nameEntity) %>%
+          nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+          ungroup() %>%
+          mutate(nameTable = 'Asset XBRL')
+
+        all_data <-
+          all_data %>%
+          bind_rows(a_xbrl)
+      }
+    }
+
+    if (assign_to_environment) {
       table_name_df <-
         all_data %>%
         select(nameTable) %>%
         distinct() %>%
-        mutate(nameDF =
-                 list('dataFiler', nameTable %>% str_replace_all('\\ ','')) %>% purrr::invoke(paste0,.)
-               )
+        mutate(
+          nameDF =
+            list('dataFiler', nameTable %>% str_replace_all('\\ ', '')) %>% purrr::invoke(paste0, .)
+        )
 
       1:nrow(table_name_df) %>%
-        walk(function(x){
+        walk(function(x) {
           df_name <-
             table_name_df %>% slice(x) %>% .$nameDF
 
@@ -5811,12 +8533,10 @@ get_data_sec_filer <-
           }
 
           if (!'nameEntity' %in% names(df_data)) {
-           df_data <-
-             df_data %>%
-             left_join(
-               all_data %>% select(idCIK, nameEntity)
-             ) %>%
-             suppressMessages()
+            df_data <-
+              df_data %>%
+              left_join(all_data %>% select(idCIK, nameEntity)) %>%
+              suppressMessages()
           }
 
           df_data <-
@@ -5824,8 +8544,10 @@ get_data_sec_filer <-
             mutate_at(.cols =
                         df_data %>% select(matches("^amount|^price|^value")) %>% names(),
                       funs(. %>% formattable::currency(digits = 2))) %>%
-            mutate_at(.cols = df_data %>% select(matches("^count[A-Z]")) %>% select(-matches("country")) %>% names(),
-                      funs(. %>% formattable::comma(digits = 0))) %>%
+            mutate_at(
+              .cols = df_data %>% select(matches("^count[A-Z]")) %>% select(-matches("country")) %>% names(),
+              funs(. %>% formattable::comma(digits = 0))
+            ) %>%
             select(
               idCIK,
               nameEntity,
@@ -5839,7 +8561,7 @@ get_data_sec_filer <-
               matches("^detail[A-Z]"),
               everything()
             ) %>%
-            select(idCIK, nameEntity,everything()) %>%
+            select(idCIK, nameEntity, everything()) %>%
             arrange(nameEntity, idCIK) %>%
             distinct() %>%
             select(-matches("countTraders"))
@@ -5847,10 +8569,22 @@ get_data_sec_filer <-
           if (df_name == "dataFilerInsiderTrades") {
             df_data <-
               df_data %>%
-              select(idCIK, nameEntity, matches("idTicker"), matches("dateTrade"), matches("idCIKOwner"), matches("nameEntityOwner"), matches("idInsiderType"), everything())
+              select(
+                idCIK,
+                nameEntity,
+                matches("idTicker"),
+                matches("dateTrade"),
+                matches("idCIKOwner"),
+                matches("nameEntityOwner"),
+                matches("idInsiderType"),
+                everything()
+              )
           }
-
-          assign(x = df_name, eval(df_data), env = .GlobalEnv)
+          assign(x = df_name,
+                 eval(df_data %>% select(which(
+                   colMeans(is.na(.)) < 1
+                 ))),
+                 envir = .GlobalEnv)
 
         })
     }
@@ -5866,8 +8600,8 @@ parse_json_general_insider <-
            nest_data = TRUE,
            return_message = TRUE) {
     url <-
-    list('http://rankandfiled.com/data/insider/', cik, '/general') %>%
-      purrr::invoke(paste0,.)
+      list('http://rankandfiled.com/data/insider/', cik, '/general') %>%
+      purrr::invoke(paste0, .)
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
@@ -5915,11 +8649,11 @@ parse_json_general_insider <-
       if ('detailsOwns' %in% names(filing_df)) {
         detail_df <-
           1:length(filing_df$detailsOwns) %>%
-          map_df(function(x){
+          map_df(function(x) {
             detail_value <-
               filing_df$detailsOwns[[x]]
 
-            if (detail_value %>% is.na()){
+            if (detail_value %>% is.na()) {
               df <-
                 data_frame(idRow = x, nameCompanyOwns = NA)
               if (nest_data) {
@@ -5931,17 +8665,20 @@ parse_json_general_insider <-
             }
 
             values <-
-              detail_value %>% str_replace('\\|','') %>%
+              detail_value %>% str_replace('\\|', '') %>%
               str_split('\\|') %>%
               flatten_chr()
 
             df_data <-
               data_frame(value = values) %>%
-              tidyr::separate(value, into = c('idTickerOwns', 'other'),
+              tidyr::separate(value,
+                              into = c('idTickerOwns', 'other'),
                               sep = '\\:') %>%
-              tidyr::separate(other, into = c('nameCompanyOwns', 'other'),
+              tidyr::separate(other,
+                              into = c('nameCompanyOwns', 'other'),
                               sep = '\\_') %>%
-              tidyr::separate(other, into = c('roleOwner', 'dateOwner'),
+              tidyr::separate(other,
+                              into = c('roleOwner', 'dateOwner'),
                               sep = '\\#') %>%
               mutate(nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                      idRow = x) %>%
@@ -6033,15 +8770,23 @@ parse_json_general_insider <-
       if ('status_history' %in% names(companies_df)) {
         status_df <-
           1:length(companies_df$status_history) %>%
-          map_df(function(x){
+          map_df(function(x) {
             df <-
               companies_df$status_history[[x]] %>%
               as_data_frame() %>%
               mutate(idRow = x) %>%
               select(-matches("other|pair_id")) %>%
               gather(item, value, -idRow) %>%
-              left_join(data_frame(item = c('date', 'officer', 'title', 'ten_percent', 'director'),
-                                   nameItem = c('dateAppointment', 'isOfficer', 'titleOfficer', 'is10PercentOwner', 'isDirector'))) %>%
+              left_join(data_frame(
+                item = c('date', 'officer', 'title', 'ten_percent', 'director'),
+                nameItem = c(
+                  'dateAppointment',
+                  'isOfficer',
+                  'titleOfficer',
+                  'is10PercentOwner',
+                  'isDirector'
+                )
+              )) %>%
               select(-item) %>%
               group_by(nameItem) %>%
               mutate(countItem = 1:n() - 1) %>%
@@ -6057,9 +8802,11 @@ parse_json_general_insider <-
         status_df <-
           status_df %>%
           mutate_at(status_df %>% select(matches("date")) %>% names(),
-                    funs(. %>% lubridate:::ymd())) %>%
+                    funs(. %>% lubridate::ymd())) %>%
           mutate_at(status_df %>% select(matches("is")) %>% names(),
-                    funs(. %>% as.logical()))
+                    funs(. %>% as.logical())) %>%
+          mutate_at(status_df %>% select(matches("date")) %>% names(),
+                    funs(. %>% as.character()))
 
         companies_df <-
           companies_df %>%
@@ -6067,12 +8814,11 @@ parse_json_general_insider <-
           left_join(status_df) %>%
           suppressWarnings() %>%
           suppressMessages() %>%
-          select(-idRow) %>%
-          gather(item, value, -c(idCIK, nameFiler)) %>%
-          group_by(item) %>%
+          gather(item, value, -c(idCIK, nameFiler, idRow)) %>%
+          group_by(item, idRow) %>%
           mutate(countItem = 1:n() - 1) %>%
           ungroup() %>%
-          mutate(item = ifelse(countItem == 0, item, item %>% paste0("_", countItem))) %>%
+          mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
           select(-countItem) %>%
           suppressWarnings()
 
@@ -6085,6 +8831,13 @@ parse_json_general_insider <-
           select(one_of(col_order)) %>%
           suppressWarnings()
 
+        companies_df <-
+          companies_df %>%
+          mutate_at(status_df %>% select(matches("date")) %>% names(),
+                    funs(. %>% lubridate::ymd())) %>%
+          mutate_at(status_df %>% select(matches("^is|^has")) %>% names(),
+                    funs(. %>% as.logical()))
+
       } else {
         companies_df <-
           company_name_df
@@ -6094,15 +8847,13 @@ parse_json_general_insider <-
         companies_df <-
           companies_df %>%
           mutate(idRow = 1:n()) %>%
-          nest(-idRow, .key = dataDetailsCompaniesOwned)
+          nest(-c(idRow, idCIK), .key = dataDetailsCompaniesOwned)
       }
 
       general_df <-
         general_df %>%
         mutate(idRow = 1:n()) %>%
-        left_join(
-          companies_df
-        ) %>%
+        left_join(companies_df) %>%
         select(-idRow) %>%
         suppressMessages()
 
@@ -6142,7 +8893,7 @@ parse_insider_trade_json_url <-
     options(scipen = 9999)
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/insider/|/trades','') %>%
+      url %>% str_replace_all('http://rankandfiled.com/data/insider/|/trades', '') %>%
       str_split('\\?') %>%
       flatten_chr() %>%
       .[[1]] %>%
@@ -6156,9 +8907,10 @@ parse_insider_trade_json_url <-
 
     count_columns <-
       trade_df$trade %>%
-      map_dbl(function(x) {x %>%
-          str_count('\\*')}
-          ) %>%
+      map_dbl(function(x) {
+        x %>%
+          str_count('\\*')
+      }) %>%
       max() + 1
 
     column_names <-
@@ -6171,12 +8923,25 @@ parse_insider_trade_json_url <-
       suppressWarnings()
 
     trade_df_names <-
-      c('dateTrade',
-        "idCIK", "idCIKOwns", "idInsiderType", "countSharesOwned",
-        "descriptionOption", "idTypeInsiderTransaction", "amountPrice",
-        "countShares", "idInsiderTransaction", "X10",
-        "detailOwnershipIndirect", "priceExcercised", "dateOptionExcercisable",
-        "dateOptionExpiry", "countSharesOptions", "typeSecurityOption", "X17"
+      c(
+        'dateTrade',
+        "idCIK",
+        "idCIKOwns",
+        "idInsiderType",
+        "countSharesOwned",
+        "descriptionOption",
+        "idTypeInsiderTransaction",
+        "amountPrice",
+        "countShares",
+        "idInsiderTransaction",
+        "X10",
+        "detailOwnershipIndirect",
+        "priceExcercised",
+        "dateOptionExcercisable",
+        "dateOptionExpiry",
+        "countSharesOptions",
+        "typeSecurityOption",
+        "X17"
       )
 
     trade_df <-
@@ -6194,19 +8959,26 @@ parse_insider_trade_json_url <-
                 .funs = readr::parse_number) %>%
       left_join(data_frame(
         idInsiderType = c("D", "ND"),
-        typeInsider = c("Director", "Non-Director"))) %>%
+        typeInsider = c("Director", "Non-Director")
+      )) %>%
       left_join(get_insider_code_df()) %>%
-      left_join(data_frame(idTypeInsiderTransaction = c("A", "D", "None"),
-                           typeInsiderTransaction = c('Purchase', 'Sale', 'None'),
-                           isBought = c(TRUE, FALSE, NA))) %>%
+      left_join(
+        data_frame(
+          idTypeInsiderTransaction = c("A", "D", "None"),
+          typeInsiderTransaction = c('Purchase', 'Sale', 'None'),
+          isBought = c(TRUE, FALSE, NA)
+        )
+      ) %>%
       suppressMessages() %>%
       suppressWarnings()
 
     trade_df <-
       trade_df %>%
-      mutate(countShares = ifelse(isBought == T, countShares, -countShares),
-             amountTransaction = countShares * amountPrice,
-             urlJSON = url)
+      mutate(
+        countShares = ifelse(isBought == T, countShares, -countShares),
+        amountTransaction = countShares * amountPrice,
+        urlJSON = url
+      )
 
 
     if (return_message) {
@@ -6224,10 +8996,11 @@ parse_insider_trades <-
            return_message = TRUE) {
     url_general <-
       list('http://rankandfiled.com/data/insider/', cik, '/general') %>%
-      purrr::invoke(paste0,.)
+      purrr::invoke(paste0, .)
 
     general_df <-
-      parse_json_general_insider(cik = cik, nest_data = nest_data,
+      parse_json_general_insider(cik = cik,
+                                 nest_data = nest_data,
                                  return_message = TRUE)
 
     cik <-
@@ -6241,7 +9014,12 @@ parse_insider_trades <-
       general_df$countTrades %/% 50
 
     trade_urls <-
-      list('http://rankandfiled.com/data/insider/', cik, '/trades?start=', seq(0, by = 50, length.out = count_trades)) %>%
+      list(
+        'http://rankandfiled.com/data/insider/',
+        cik,
+        '/trades?start=',
+        seq(0, by = 50, length.out = count_trades)
+      ) %>%
       purrr::invoke(paste0, .)
 
     parse_insider_trade_json_url_safe <-
@@ -6249,7 +9027,7 @@ parse_insider_trades <-
 
     all_data <-
       trade_urls %>%
-      purrr::map_df(function(x){
+      purrr::map_df(function(x) {
         parse_insider_trade_json_url(url = x, return_message = return_message)
       }) %>%
       distinct()
@@ -6258,16 +9036,18 @@ parse_insider_trades <-
       all_data$idCIKOwns %>% unique()
 
     company_urls_general <-
-      list('http://rankandfiled.com/data/filer/', ciks_owned, '/general') %>%
-      purrr::invoke(paste0,.)
+      list('http://rankandfiled.com/data/filer/',
+           ciks_owned,
+           '/general') %>%
+      purrr::invoke(paste0, .)
 
     owned_company_df <-
       company_urls_general %>%
-      map_df(function(x){
+      map_df(function(x) {
         parse_json_general_filing(url = x,
                                   return_message = TRUE,
                                   nest_data = nest_data)
-        })
+      })
 
     owned_df <-
       owned_company_df %>%
@@ -6280,10 +9060,15 @@ parse_insider_trades <-
     all_data <-
       all_data %>%
       mutate(nameInsider = insider) %>%
-      left_join(
-        owned_df
+      left_join(owned_df) %>%
+      select(
+        dateTrade,
+        nameInsider,
+        idCIK,
+        nameEntityOwns,
+        matches('idCIKOwns|idTickerOwns'),
+        everything()
       ) %>%
-      select(dateTrade, nameInsider, idCIK, nameEntityOwns, matches('idCIKOwns|idTickerOwns'),everything()) %>%
       suppressWarnings() %>%
       suppressMessages()
 
@@ -6295,8 +9080,13 @@ parse_insider_trades <-
                 funs(. %>% formattable::comma(digits = 0)))
 
     if (return_message) {
-      list("Parsed ", all_data %>% nrow() %>% formattable::comma(digits = 0), ' insider transactions for ', insider) %>%
-        purrr::invoke(paste0,.) %>%
+      list(
+        "Parsed ",
+        all_data %>% nrow() %>% formattable::comma(digits = 0),
+        ' insider transactions for ',
+        insider
+      ) %>%
+        purrr::invoke(paste0, .) %>%
         message()
     }
     return(all_data)
@@ -6307,7 +9097,8 @@ parse_insider_filings <-
            nest_data = TRUE,
            return_message = TRUE) {
     general_df <-
-      parse_json_general_insider(cik = cik, nest_data = nest_data,
+      parse_json_general_insider(cik = cik,
+                                 nest_data = nest_data,
                                  return_messag = TRUE)
 
     cik <-
@@ -6321,7 +9112,12 @@ parse_insider_filings <-
       general_df$countFilings %/% 50
 
     filing_urls <-
-      list('http://rankandfiled.com/data/filer/', cik, '/all?start=', seq(0, by = 50, length.out = count_filings)) %>%
+      list(
+        'http://rankandfiled.com/data/filer/',
+        cik,
+        '/all?start=',
+        seq(0, by = 50, length.out = count_filings)
+      ) %>%
       purrr::invoke(paste0, .)
 
     parse_json_public_filers_safe <-
@@ -6339,7 +9135,7 @@ parse_insider_filings <-
 
     if (return_message) {
       list("Parsed ", all_filings %>% nrow(), ' SEC Filings for ', insider) %>%
-        purrr::invoke(paste0,.) %>%
+        purrr::invoke(paste0, .) %>%
         message()
     }
 
@@ -6351,11 +9147,12 @@ parse_insider_filings <-
 generate_fund_general_url <-
   function(cik = 1034621) {
     list('http://rankandfiled.com/data/fund/', cik, '/general') %>%
-      purrr::invoke(paste0,.)
+      purrr::invoke(paste0, .)
   }
 
 parse_json_fund_general <-
-  function(cik = 1034621, return_message = TRUE) {
+  function(cik = 1034621,
+           return_message = TRUE) {
     url <-
       cik %>%
       generate_fund_general_url()
@@ -6390,8 +9187,8 @@ parse_json_fund_general <-
       general_df <-
         general_df %>%
         left_join(json_data$funds %>%
-        resolve_name_df() %>%
-        mutate(idCIK = cik)) %>%
+                    resolve_name_df() %>%
+                    mutate(idCIK = cik)) %>%
         suppressMessages()
     }
 
@@ -6443,7 +9240,11 @@ parse_json_fund_general <-
 
     general_df <-
       general_df %>%
-      select(idCIK, nameEntity, matches("name"), matches("id"), everything())
+      select(idCIK,
+             nameEntity,
+             matches("name"),
+             matches("id"),
+             everything())
 
     if (return_message) {
       list("Parsed: ", url) %>%
@@ -6468,7 +9269,9 @@ get_most_recent_rf_id <-
 
 
 parse_filing_stream <-
-  function(url = "http://rankandfiled.com/data/latest?group=ALL&filer=All", return_message = TRUE) {
+  function(url = "http://rankandfiled.com/data/latest?group=ALL&filer=All",
+           nest_data = TRUE,
+           return_message = TRUE) {
     json_data <-
       url %>%
       jsonlite::fromJSON()
@@ -6506,6 +9309,8 @@ parse_filing_stream <-
                 funs(. %>% as.numeric())) %>%
       mutate_at(general_df %>% select(matches("^is|^has")) %>% names(),
                 funs(. %>% as.logical())) %>%
+      mutate_at(general_df %>% select(matches("^description|^type")) %>% names(),
+                funs(. %>% stringr::str_to_upper())) %>%
       mutate(urlSEC = ifelse(
         slugSEC == "None",
         NA,
@@ -6534,16 +9339,89 @@ parse_filing_stream <-
       filer_df <-
         filer_df %>%
         resolve_name_df()
+
       if ('name' %in% names(filer_df)) {
         filer_df <-
           filer_df %>%
-          mutate(nameEntity = nameEntity %>% stringr::str_to_upper()) %>%
-          select(-name)
+          dplyr::rename(nameLegal = name) %>%
+          mutate(nameEntity = nameEntity %>% stringr::str_to_upper())
       }
       filer_df <-
         filer_df %>%
         mutate_at(filer_df %>% select(matches("idRF|idCIK")) %>% names(),
-                  funs(. %>% as.numeric()))
+                  funs(. %>% as.numeric())) %>%
+        mutate_at(filer_df %>% select(matches("^name|^industry|^typeFund|^details")) %>% names(),
+                  funs(. %>% stringr::str_to_upper()))
+
+      if ('detailsOwnedBy' %in% names(filer_df)) {
+        filer_df <-
+          filer_df %>%
+          dplyr::rename(detailsOwns = detailsOwnedBy)
+
+        filer_df <-
+          filer_df %>%
+          mutate(idRow = 1:n(),
+                 detailsOwns = detailsOwns %>% str_replace("\\|", ''))
+
+        owns_df <-
+          1:nrow(filer_df) %>%
+          map_df(function(x) {
+            owns <-
+              filer_df$detailsOwns[[x]] %>%
+              str_split("\\|") %>%
+              flatten_chr()
+
+            df <-
+              data_frame(idRow = x, owns) %>%
+              tidyr::separate(owns,
+                              into = c('idTickerOwns', 'owns'),
+                              sep = '\\:') %>%
+              tidyr::separate(owns,
+                              into = c('nameCompanyOwns', 'owns'),
+                              sep = '\\_') %>%
+              tidyr::separate(
+                owns,
+                into = c('typeOwnerOwns', 'dateOwnershipOwns'),
+                sep = '\\#'
+              ) %>%
+              mutate(countItem = 1:n() - 1) %>%
+              mutate(
+                nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
+                idTickerOwns = idTickerOwns %>% str_to_upper()
+              ) %>%
+              gather(item, value, -c(idRow, countItem)) %>%
+              mutate(value = ifelse(value == '', NA, value)) %>%
+              mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
+              arrange(countItem) %>%
+              select(-countItem)
+
+            col_order <-
+              c('idRow', df$item)
+            df <-
+              df %>%
+              spread(item, value) %>%
+              select(one_of(col_order))
+
+            df <-
+              df %>%
+              mutate_at(df %>% select(matches("date")) %>% names(),
+                        funs(. %>% lubridate::ymd()))
+
+            if (nest_data) {
+              df <-
+                df %>%
+                nest(-idRow, .key = dataCompaniesOwns)
+            }
+            return(df)
+          }) %>%
+          suppressWarnings()
+
+        filer_df <-
+          filer_df %>%
+          left_join(owns_df) %>%
+          select(-idRow) %>%
+          suppressMessages()
+      }
 
 
       general_df <-
@@ -6553,7 +9431,9 @@ parse_filing_stream <-
           filer_df %>%
             mutate(idRow = 1:n()) %>%
             dplyr::rename(idCIKFiler = idCIK) %>%
-            select(one_of(c('idCIKFiler', 'idRow'), names(filer_df)[!names(filer_df) %in% names(general_df)]))
+            select(one_of(
+              c('idCIKFiler', 'idRow'), names(filer_df)[!names(filer_df) %in% names(general_df)]
+            ))
         ) %>%
         select(-matches("^object|idRow")) %>%
         distinct() %>%
@@ -6571,7 +9451,7 @@ parse_filing_stream <-
 
       offering_df <-
         1:nrow(general_df) %>%
-        map_df(function(x){
+        map_df(function(x) {
           offering <-
             json_data$filings$offerings[[x]]
 
@@ -6592,10 +9472,9 @@ parse_filing_stream <-
             mutate(idRow = x) %>%
             gather(item, value, -idRow) %>%
             group_by(item) %>%
-            mutate(countItem = 1:n()-1) %>%
-            ungroup %>%
-            mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))
-            ) %>%
+            mutate(countItem = 1:n() - 1) %>%
+            ungroup() %>%
+            mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
             arrange(countItem) %>%
             select(-countItem)
 
@@ -6605,7 +9484,7 @@ parse_filing_stream <-
           offering <-
             offering_long %>%
             spread(item, value) %>%
-            select(one_of(c('idRow',col_order)))
+            select(one_of(c('idRow', col_order)))
 
           offering <-
             offering %>%
@@ -6613,11 +9492,24 @@ parse_filing_stream <-
                       funs(. %>% as.numeric())) %>%
             mutate_at(offering %>% select(matches("^date")) %>% names(),
                       funs(. %>% lubridate::ymd()))
+
+          if (nest_data) {
+            offering <-
+              offering %>%
+              nest(-idRow, .key = dataOfferings)
+          }
+          return(offering)
         }) %>%
         select(idRow, everything())
 
+      offering_df <-
+        offering_df %>%
+        mutate_at(matches("^nameIndustry"),
+                  funs(. %>% str_to_upper()))
+
       general_df <-
         general_df %>%
+        mutate(idRow = 1:n()) %>%
         select(-matches("nameIndustry")) %>%
         left_join(offering_df) %>%
         select(-idRow) %>%
@@ -6634,7 +9526,6 @@ parse_filing_stream <-
     has_trades <-
       'trades' %in% names(json_data$filings)
 
-
     if (has_trades) {
       general_df <-
         general_df %>%
@@ -6642,8 +9533,7 @@ parse_filing_stream <-
 
       trade_df <-
         1:nrow(general_df) %>%
-        map_df(function(x){
-
+        map_df(function(x) {
           trades <-
             json_data$filings$trades[[x]]
 
@@ -6681,9 +9571,11 @@ parse_filing_stream <-
 
             trades <-
               trades %>%
-              mutate(isBought = ifelse(isBought %>% is.na(),FALSE, TRUE ),
-                     countShares = ifelse(isBought == T, countShares, -countShares),
-                     amountTransaction = countShares * amountPrice)
+              mutate(
+                isBought = ifelse(isBought %>% is.na(), FALSE, TRUE),
+                countShares = ifelse(isBought == T, countShares, -countShares),
+                amountTransaction = countShares * amountPrice
+              )
           }
 
           trades_long <-
@@ -6710,16 +9602,24 @@ parse_filing_stream <-
                       funs(. %>% as.numeric())) %>%
             mutate_at(trades %>% select(matches("^date")) %>% names(),
                       funs(. %>% lubridate::ymd()))
+
+          if (nest_data) {
+            trades <-
+              trades %>%
+              nest(-idRow, .key = dataTrades)
+          }
+          return(trades)
         }) %>%
         select(idRow, everything())
 
-       names(trade_df)[names(trade_df) %>% str_detect('dateFiling')] <-
+      names(trade_df)[names(trade_df) %>% str_detect('dateFiling')] <-
         trade_df %>% select(matches("dateFiling")) %>% names() %>%
         str_replace_all("dateFiling", 'dateFilingInsider')
 
 
-       general_df <-
+      general_df <-
         general_df %>%
+        mutate(idRow = 1:n()) %>%
         select(-matches("nameIndustry")) %>%
         left_join(trade_df %>% select(-matches("idTicker")), by = 'idRow') %>%
         select(-idRow) %>%
@@ -6732,9 +9632,13 @@ parse_filing_stream <-
       mutate_at(.cols = general_df %>% select(matches("nameEntity")) %>% names(),
                 funs(. %>% str_to_upper())) %>%
       suppressWarnings() %>%
-      ungroup %>%
-      select(-matches("^object[A-Z]|^slug")) %>%
-      select(idCIK, nameEntity, matches("name"), matches("id"), everything())
+      ungroup() %>%
+      select(-matches("^object[A-Z]|^slug|dateiso")) %>%
+      select(idCIK,
+             nameEntity,
+             matches("name"),
+             matches("id"),
+             everything())
 
 
     if (return_message) {
@@ -6747,7 +9651,8 @@ parse_filing_stream <-
 
 get_data_sec_filing_stream <-
   function(filers = 'All',
-           filing_name = 'All',
+           filing_name = 'Registrations',
+           nest_data = TRUE,
            return_message = TRUE) {
     both_all <-
       filers == 'All' & filing_name == 'All'
@@ -6772,131 +9677,230 @@ get_data_sec_filing_stream <-
 
       data <-
         urls %>%
-        map_df(function(x){
-          parse_filing_stream_safe(url = x)
+        map_df(function(x) {
+          parse_filing_stream_safe(url = x, nest_data = nest_data)
         }) %>%
         distinct() %>%
-        select(idRF,
-               idCIK,
-               matches("nameEntity"),
-               matches("idTicker"),
-               matches("dateFiled"),
-               matches("datetimeFiled"),
-               matches("^name"),
-               matches("^date"),
-               matches("^id"),
-               matches("^type"),
-               matches("^description"),
-               everything()
+        select(
+          idRF,
+          idCIK,
+          matches("nameEntity"),
+          matches("idTicker"),
+          matches("dateFiled"),
+          matches("datetimeFiled"),
+          matches("^name"),
+          matches("^date"),
+          matches("^id"),
+          matches("^type"),
+          matches("^description"),
+          everything()
         ) %>%
-        mutate(urlRankAndFiled = list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>%
-                 purrr::invoke(paste0, .))
+        mutate(
+          urlRankAndFiled = list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>%
+            purrr::invoke(paste0, .)
+        )
 
 
     } else {
-    filer_names <-
-      c('All', 'Corporate Insider', 'Companies', 'Investment Company') %>%
-      str_to_upper()
+      filer_names <-
+        c('All',
+          'Corporate Insider',
+          'Companies',
+          'Investment Company') %>%
+        str_to_upper()
 
-    filing_names <-
-      c('Annual Reports', 'Quarterly Reports', 'Current Reports', 'Other Reports', 'Registrations',
-        'Private Offerings', 'Ownership', 'Prospectuses', 'Exemptions', 'Withdrawals', 'Correspondence', 'Proxy Statements', 'Confidential', 'All') %>% str_to_upper()
+      filing_names <-
+        c(
+          'Annual Reports',
+          'Quarterly Reports',
+          'Current Reports',
+          'Other Reports',
+          'Registrations',
+          'Private Offerings',
+          'Ownership',
+          'Prospectuses',
+          'Exemptions',
+          'Withdrawals',
+          'Correspondence',
+          'Proxy Statements',
+          'Confidential',
+          'All'
+        ) %>% str_to_upper()
 
-    no_filers <-
-      !filers %>% str_to_upper() %in% filer_names
+      no_filers <-
+        !filers %>% str_to_upper() %in% filer_names
 
-    if (no_filers) {
-      stop(list("Filers can only be:\n", filer_names %>%  stringr::str_to_title() %>% paste0(collapse = '\n')) %>%
-             purrr::invoke(paste0,.))
-    }
-    no_filing_names <-
-      !filing_name %>% str_to_upper() %in% filing_names
+      if (no_filers) {
+        stop(
+          list(
+            "Filers can only be:\n",
+            filer_names %>%  stringr::str_to_title() %>% paste0(collapse = '\n')
+          ) %>%
+            purrr::invoke(paste0, .)
+        )
+      }
+      no_filing_names <-
+        !filing_name %>% str_to_upper() %in% filing_names
 
-    if (no_filing_names) {
-      stop(list("Filing names can only be:\n", filing_names %>%  stringr::str_to_title() %>% paste0(collapse = '\n')) %>%
-             purrr::invoke(paste0,.))
-    }
+      if (no_filing_names) {
+        stop(
+          list(
+            "Filing names can only be:\n",
+            filing_names %>%  stringr::str_to_title() %>% paste0(collapse = '\n')
+          ) %>%
+            purrr::invoke(paste0, .)
+        )
+      }
 
-    filer_type_df <-
-      data_frame(codeFiler = c('All', 'insider', 'company','inv_co'),
-                 nameFiler = filer_names)
+      filer_type_df <-
+        data_frame(
+          codeFiler = c('All', 'insider', 'company', 'inv_co'),
+          nameFiler = filer_names
+        )
 
-    slug_filer <-
-      filer_type_df %>%
-      filter(nameFiler == filers %>% str_to_upper()) %>%
-      .$codeFiler
+      slug_filer <-
+        filer_type_df %>%
+        filter(nameFiler == filers %>% str_to_upper()) %>%
+        .$codeFiler
 
-    filing_name_df <-
-      data_frame(codeFiling  = c("A", "Q", "CR", "R", "REG", "REGX", "O", "P","X", "W",
-                                 "SEC",  "PROXY", "CT", "ALL"),
-                 nameFiling = filing_names)
+      filing_name_df <-
+        data_frame(
+          codeFiling  = c(
+            "A",
+            "Q",
+            "CR",
+            "R",
+            "REG",
+            "REGX",
+            "O",
+            "P",
+            "X",
+            "W",
+            "SEC",
+            "PROXY",
+            "CT",
+            "ALL"
+          ),
+          nameFiling = filing_names
+        )
 
-    slug_type <-
-      filing_name_df %>%
-      filter(nameFiling == filing_name %>% str_to_upper()) %>%
-      .$codeFiling
+      slug_type <-
+        filing_name_df %>%
+        filter(nameFiling == filing_name %>% str_to_upper()) %>%
+        .$codeFiling
 
-    mr_id <-
-      get_most_recent_rf_id()
+      mr_id <-
+        get_most_recent_rf_id()
 
-    url_json <-
-      list('http://rankandfiled.com/data/latest?id=',
-           mr_id,
-           '&group=',
-           slug_type,
-           '&filer=',
-           slug_filer) %>%
-      purrr::invoke(paste0, .)
+      url_json <-
+        list(
+          'http://rankandfiled.com/data/latest?id=',
+          mr_id,
+          '&group=',
+          slug_type,
+          '&filer=',
+          slug_filer
+        ) %>%
+        purrr::invoke(paste0, .)
 
-    data <-
-      url_json %>%
-      parse_filing_stream() %>%
-      select(idRF,
-             idCIK,
-             matches("nameEntity"),
-             matches("idTicker"),
-             matches("dateFiled"),
-             matches("datetimeFiled"),
-             matches("^name"),
-             matches("^date"),
-             matches("^id"),
-             matches("^type"),
-             matches("^description"),
-             everything()
-             ) %>%
-      mutate(urlRankAndFiled = list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>%
-               purrr::invoke(paste0, .))
+      data <-
+        url_json %>%
+        parse_filing_stream() %>%
+        select(
+          idRF,
+          idCIK,
+          matches("nameEntity"),
+          matches("idTicker"),
+          matches("dateFiled"),
+          matches("datetimeFiled"),
+          matches("^name"),
+          matches("^date"),
+          matches("^id"),
+          matches("^type"),
+          matches("^description"),
+          everything()
+        ) %>%
+        mutate(
+          urlRankAndFiled = list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>%
+            purrr::invoke(paste0, .)
+        )
     }
 
     if (return_message) {
-      list("\nParsed Most Recent filings for ", filers, ' Filers\n', filing_name, ' Form Type\n' ) %>%
-        purrr::invoke(paste0,.) %>%
+      list("\nParsed Most Recent filings for ",
+           filers,
+           ' Filers\n',
+           filing_name,
+           ' Form Type\n') %>%
+        purrr::invoke(paste0, .) %>%
         message()
     }
     return(data)
   }
 
 
-#' Get SEC Filing Stream Data
+#' SEC filing stream
 #'
-#' @param filers
-#' @param filing_names
-#' @param return_message
+#' This function returns the most recent SEC filings
+#' for specified filer type by filing type.
+#'
+#' @param filers type of filer \itemize{
+#' \item \code{All}: all filer types (default)
+#' \item \code{Corporate Insider}: corporate insiders
+#' \item \code{Companies}:
+#' \itm \code{Investment Company} acquires investment compan
+#' @param filing_names type of filing \itemize{
+#' \item \code{Annual Reports}: annual report
+#' \item \code{Quarterly Reports}: quarterly report
+#' \item \code{Current Reports}: current report
+#' \item \code{Other Reports}: other reports
+#' \item \code{Registrations}: securities registration
+#' \item \code{Private Offerings}: private securities offerings
+#' \item \code{Ownership}: ownership
+#' \item \code{Prospectuses}: securities prospectus
+#' \item \code{Exemptions}: exempt securities
+#' \item \code{Withdrawals}: securities withdrawls
+#' \item \code{Correspondence}: SEC correspondence
+#' \item \code{Proxy Statements}:  proxy issuances
+#' \item \code{\item \code{Confidential}: confidential information}
+#' }
+#' @param return_message return a message
 #' @import dplyr tidyr purrr stringr formattable readr lubridate
 #' @importFrom jsonlite fromJSON
 #' @return
 #' @export
 #'
 #' @examples
+#' #' \dontrun{
+#' get_data_sec_filing_streams(filers = 'All', filing_names = 'Annual Reports')
+#' }
+#'
 get_data_sec_filing_streams <-
-  function(filers = c('All','Corporate Insider', 'Companies', 'Investment Company'),
-           filing_names = c('All','Annual Reports', 'Quarterly Reports', 'Current Reports', 'Other Reports', 'Registrations',
-                            'Private Offerings', 'Ownership', 'Prospectuses', 'Exemptions', 'Withdrawals', 'Correspondence', 'Proxy Statements', 'Confidential'),
+  function(filers = c('All', 'Corporate Insider', 'Companies', 'Investment Company'),
+           filing_names = c(
+             'All',
+             'Annual Reports',
+             'Quarterly Reports',
+             'Current Reports',
+             'Other Reports',
+             'Registrations',
+             'Private Offerings',
+             'Ownership',
+             'Prospectuses',
+             'Exemptions',
+             'Withdrawals',
+             'Correspondence',
+             'Proxy Statements',
+             'Confidential'
+           ),
+           nest_data = TRUE,
            return_message = TRUE) {
     type_df <-
-      expand.grid(nameFiler = filers,
-                nameFiling = filing_names,
-                stringsAsFactors = FALSE) %>%
+      expand.grid(
+        nameFiler = filers,
+        nameFiling = filing_names,
+        stringsAsFactors = FALSE
+      ) %>%
       as_data_frame()
 
     get_data_sec_filing_stream_safe <-
@@ -6908,6 +9912,7 @@ get_data_sec_filing_streams <-
         get_data_sec_filing_stream_safe(
           filers = type_df$nameFiler[[x]],
           filing_name = type_df$nameFiling[[x]],
+          nest_data = nest_data,
           return_message = return_message
         )
       }) %>%
@@ -6918,6 +9923,12 @@ get_data_sec_filing_streams <-
       ungroup() %>%
       select(-idRow)
 
+    all_data <-
+      all_data %>%
+      select(-matches("dateiso")) %>%
+      mutate_at(all_data %>% select(matches("^name|^description|^industry|^typeEntity")) %>% names(),
+                funs(. %>% stringr::str_to_upper()))
+
     return(all_data)
   }
 
@@ -6925,8 +9936,10 @@ get_data_sec_filing_streams <-
 # publics -----------------------------------------------------------------
 generate_ticker_general_url <-
   function(ticker = "FB") {
-    list("http://rankandfiled.com/data/company/", ticker, '/general') %>%
-      purrr::invoke(paste0,.)
+    list("http://rankandfiled.com/data/company/",
+         ticker,
+         '/general') %>%
+      purrr::invoke(paste0, .)
   }
 
 
@@ -6973,23 +9986,23 @@ parse_json_public_general <-
                     select(-matches("codeExchange")))
 
       if ('amountEquityMarketCap' %in% names(general_df)) {
-       general_df <-
-         general_df %>%
-         mutate(amountEquityMarketCap = amountEquityMarketCap %>% formattable::currency(digits = 0))
+        general_df <-
+          general_df %>%
+          mutate(amountEquityMarketCap = amountEquityMarketCap %>% formattable::currency(digits = 0))
       }
 
       if ('nameIndustry' %in% names(general_df)) {
         has_semi <-
           general_df$nameIndustry %>% str_detect('\\:')
         if (has_semi) {
-        general_df <-
-          general_df %>%
-          tidyr::separate(
-            nameIndustry,
-            into = c('nameIndustry', 'nameSubIndustry'),
-            sep = '\\: '
-          ) %>%
-          suppressWarnings()
+          general_df <-
+            general_df %>%
+            tidyr::separate(
+              nameIndustry,
+              into = c('nameIndustry', 'nameSubIndustry'),
+              sep = '\\: '
+            ) %>%
+            suppressWarnings()
         }
       }
 
@@ -7007,11 +10020,13 @@ parse_json_public_general <-
         json_data$snapshot %>%
         as_data_frame()
 
-      if ('ebitda' %in% names(snap_shot_df)){
+      if ('ebitda' %in% names(snap_shot_df)) {
         snap_shot_df <-
           snap_shot_df %>%
-          mutate(digitEBITDA = ebitda %>% substr(start = (ebitda %>% nchar()) ,
-                                                 stop = ebitda %>% nchar()))
+          mutate(digitEBITDA = ebitda %>% substr(
+            start = (ebitda %>% nchar()) ,
+            stop = ebitda %>% nchar()
+          ))
       }
 
       snap_shot_df <-
@@ -7022,8 +10037,13 @@ parse_json_public_general <-
       if ('digitEBITDA' %in% names(snap_shot_df)) {
         snap_shot_df <-
           snap_shot_df %>%
-          mutate(amountEBITDA = ifelse(digitEBITDA == "B", amountEBITDA * 1000000000,
-                                       amountEBITDA * 1000000)) %>%
+          mutate(
+            amountEBITDA = ifelse(
+              digitEBITDA == "B",
+              amountEBITDA * 1000000000,
+              amountEBITDA * 1000000
+            )
+          ) %>%
           select(-digitEBITDA)
       }
 
@@ -7040,7 +10060,10 @@ parse_json_public_general <-
     }
 
     has_filer <-
-      (('filer' %in% names(json_data) & json_data$filer %>% as_data_frame() %>% ncol > 2))
+      ((
+        'filer' %in% names(json_data) &
+          json_data$filer %>% as_data_frame() %>% ncol > 2
+      ))
 
     if (has_filer) {
       filer_df <-
@@ -7063,7 +10086,7 @@ parse_json_public_general <-
 
         owns_df <-
           1:nrow(filer_df) %>%
-          map_df(function(x){
+          map_df(function(x) {
             owns <-
               filer_df$detailsOwns[[x]] %>%
               str_split("\\|") %>%
@@ -7071,12 +10094,22 @@ parse_json_public_general <-
 
             df <-
               data_frame(idRow = x, owns) %>%
-              tidyr::separate(owns, into = c('idTickerOwns', 'owns'), sep = '\\:') %>%
-              tidyr::separate(owns, into = c('nameCompanyOwns', 'owns'), sep = '\\_') %>%
-              tidyr::separate(owns, into = c('typeOwnerOwns', 'dateOwnershipOwns'), sep = '\\#') %>%
+              tidyr::separate(owns,
+                              into = c('idTickerOwns', 'owns'),
+                              sep = '\\:') %>%
+              tidyr::separate(owns,
+                              into = c('nameCompanyOwns', 'owns'),
+                              sep = '\\_') %>%
+              tidyr::separate(
+                owns,
+                into = c('typeOwnerOwns', 'dateOwnershipOwns'),
+                sep = '\\#'
+              ) %>%
               mutate(countItem = 1:n() - 1) %>%
-              mutate(nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
-                     idTickerOwns = idTickerOwns %>% str_to_upper()) %>%
+              mutate(
+                nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
+                idTickerOwns = idTickerOwns %>% str_to_upper()
+              ) %>%
               gather(item, value, -c(idRow, countItem)) %>%
               mutate(value = ifelse(value == '', NA, value)) %>%
               mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
@@ -7128,7 +10161,17 @@ parse_json_public_general <-
       if ('addressStreet1Entity' %in% names(filer_df)) {
         filer_df <-
           filer_df %>%
-          mutate(addressEntity = list(addressStreet1Entity, ' ', cityEntity, ' ',stateEntity, ', ', zipCodeEntity) %>% purrr::invoke(paste0,.)) %>%
+          mutate(
+            addressEntity = list(
+              addressStreet1Entity,
+              ' ',
+              cityEntity,
+              ' ',
+              stateEntity,
+              ', ',
+              zipcodeEntity
+            ) %>% purrr::invoke(paste0, .)
+          ) %>%
           select(nameEntity, addressEntity, everything())
       }
 
@@ -7137,9 +10180,7 @@ parse_json_public_general <-
 
       general_df <-
         general_df %>%
-        bind_cols(
-          filer_df %>% select(one_of(filer_cols))
-        ) %>%
+        bind_cols(filer_df %>% select(one_of(filer_cols))) %>%
         select(idCIK, matches("nameEntity"), everything()) %>%
         select(-matches("detailsOwns"))
     }
@@ -7147,11 +10188,11 @@ parse_json_public_general <-
     if ('detailsOwns' %in% names(general_df)) {
       detail_df <-
         1:length(general_df$detailsOwns) %>%
-        map_df(function(x){
+        map_df(function(x) {
           detail_value <-
             general_df$detailsOwns[[x]]
 
-          if (detail_value %>% is.na()){
+          if (detail_value %>% is.na()) {
             df <-
               data_frame(idRow = x, nameCompanyOwns = NA)
             if (nest_data) {
@@ -7163,17 +10204,20 @@ parse_json_public_general <-
           }
 
           values <-
-            detail_value %>% str_replace('\\|','') %>%
+            detail_value %>% str_replace('\\|', '') %>%
             str_split('\\|') %>%
             flatten_chr()
 
           df_data <-
             data_frame(value = values) %>%
-            tidyr::separate(value, into = c('idTickerOwns', 'other'),
+            tidyr::separate(value,
+                            into = c('idTickerOwns', 'other'),
                             sep = '\\:') %>%
-            tidyr::separate(other, into = c('nameCompanyOwns', 'other'),
+            tidyr::separate(other,
+                            into = c('nameCompanyOwns', 'other'),
                             sep = '\\_') %>%
-            tidyr::separate(other, into = c('roleOwner', 'dateOwner'),
+            tidyr::separate(other,
+                            into = c('roleOwner', 'dateOwner'),
                             sep = '\\#') %>%
             mutate(nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                    idRow = x) %>%
@@ -7220,8 +10264,10 @@ parse_json_public_general <-
 
     general_df <-
       general_df %>%
-      mutate(urlTickerRankandFiled = list('http://rankandfiled.com/#/public/',idTicker,'/filings') %>% purrr::invoke(paste0,.),
-             urlJSON = url)
+      mutate(
+        urlTickerRankandFiled = list('http://rankandfiled.com/#/public/', idTicker, '/filings') %>% purrr::invoke(paste0, .),
+        urlJSON = url
+      )
 
     if (return_message) {
       list("Parsed: ", url) %>%
@@ -7229,7 +10275,7 @@ parse_json_public_general <-
     }
 
     return(general_df)
-}
+  }
 
 parse_company_general <-
   function(ticker = "FB",
@@ -7240,15 +10286,17 @@ parse_company_general <-
       parse_json_public_general(nest_data = nest_data,
                                 return_message = return_message)
     if ('nameEntity' %in% names(data)) {
-    data <-
-      data %>%
-      mutate(nameCompany = nameEntity) %>%
-      select(idCIK, idTicker, nameEntity, nameCompany, everything()) %>%
-      select(-matches("dateiso"))
+      data <-
+        data %>%
+        mutate(nameCompany = nameEntity) %>%
+        select(idCIK, idTicker, nameEntity, nameCompany, everything()) %>%
+        select(-matches("dateiso"))
     } else {
       df_name <-
-        list('http://rankandfiled.com/data/filer/', data$idCIK, '/general') %>%
-        purrr::invoke(paste0,.) %>%
+        list('http://rankandfiled.com/data/filer/',
+             data$idCIK,
+             '/general') %>%
+        purrr::invoke(paste0, .) %>%
         parse_json_general_filing()
 
       entity <-
@@ -7269,7 +10317,8 @@ parse_company_general <-
   }
 
 parse_json_trades <-
-  function(url = "http://rankandfiled.com/data/filer/1326801/trades?start=0", return_message = TRUE){
+  function(url = "http://rankandfiled.com/data/filer/1326801/trades?start=0",
+           return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(data_frame())
     }
@@ -7281,7 +10330,7 @@ parse_json_trades <-
     options(scipen = 9999)
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/trades','') %>%
+      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/trades', '') %>%
       str_split('\\?') %>%
       flatten_chr() %>%
       .[[1]] %>%
@@ -7295,12 +10344,28 @@ parse_json_trades <-
 
     trade_df <-
       trade_df %>%
-      separate(trade, into = c("idCIKOwner", "idCIK", "idInsiderType", "countSharesOwned",
-                               "descriptionOption", "idTypeInsiderTransaction", "amountPrice",
-                               "countShares", "idInsiderTransaction", "X10",
-                               "detailOwnershipIndirect", "priceExcercised", "dateOptionExcercisable",
-                               "dateOptionExpiry", "countSharesOptions", "typeSecurityOption", "X17"),
-               sep = '\\*'
+      separate(
+        trade,
+        into = c(
+          "idCIKOwner",
+          "idCIK",
+          "idInsiderType",
+          "countSharesOwned",
+          "descriptionOption",
+          "idTypeInsiderTransaction",
+          "amountPrice",
+          "countShares",
+          "idInsiderTransaction",
+          "X10",
+          "detailOwnershipIndirect",
+          "priceExcercised",
+          "dateOptionExcercisable",
+          "dateOptionExpiry",
+          "countSharesOptions",
+          "typeSecurityOption",
+          "X17"
+        ),
+        sep = '\\*'
       ) %>%
       suppressWarnings() %>%
       select(-matches("X"))
@@ -7315,18 +10380,25 @@ parse_json_trades <-
                 .funs = readr::parse_number) %>%
       left_join(data_frame(
         idInsiderType = c("D", "ND"),
-        typeInsider = c("Director", "Non-Director"))) %>%
+        typeInsider = c("Director", "Non-Director")
+      )) %>%
       left_join(get_insider_code_df()) %>%
-      left_join(data_frame(idTypeInsiderTransaction = c("A", "D", "None"),
-                           typeInsiderTransaction = c('Purchase', 'Sale', 'None'),
-                           isBought = c(TRUE, FALSE, NA))) %>%
+      left_join(
+        data_frame(
+          idTypeInsiderTransaction = c("A", "D", "None"),
+          typeInsiderTransaction = c('Purchase', 'Sale', 'None'),
+          isBought = c(TRUE, FALSE, NA)
+        )
+      ) %>%
       suppressMessages()
 
     trade_df <-
       trade_df %>%
-      mutate(countShares = ifelse(isBought == T, countShares, -countShares),
-             amountTransaction = countShares * amountPrice,
-             urlJSON = url)
+      mutate(
+        countShares = ifelse(isBought == T, countShares, -countShares),
+        amountTransaction = countShares * amountPrice,
+        urlJSON = url
+      )
 
     has_indirect_owner <-
       trade_df$detailOwnershipIndirect %>% str_count("By") %>% sum() > 0
@@ -7334,8 +10406,12 @@ parse_json_trades <-
     if (has_indirect_owner) {
       trade_df <-
         trade_df %>%
-        tidyr::separate(detailOwnershipIndirect, into = c('remove',"nameOwnerIndirect"),
-                        remove = FALSE,sep = 'By ') %>%
+        tidyr::separate(
+          detailOwnershipIndirect,
+          into = c('remove', "nameOwnerIndirect"),
+          remove = FALSE,
+          sep = 'By '
+        ) %>%
         mutate(nameOwnerIndirect = nameOwnerIndirect %>% str_trim() %>% str_to_upper()) %>%
         select(-remove) %>%
         suppressWarnings()
@@ -7349,7 +10425,8 @@ parse_json_trades <-
   }
 
 parse_trades <-
-  function(ticker = "FB", nest_data = TRUE,
+  function(ticker = "FB",
+           nest_data = TRUE,
            return_message = TRUE) {
     general_df <-
       parse_company_general(ticker = ticker, nest_data)
@@ -7358,76 +10435,87 @@ parse_trades <-
       general_df$idCIK
 
     trader_url <-
-      list("http://rankandfiled.com/data/filer/",cik, '/traders') %>%
-      purrr::invoke(paste0,.)
+      list("http://rankandfiled.com/data/filer/", cik, '/traders') %>%
+      purrr::invoke(paste0, .)
 
     count_trades <-
-        parse_json_traders(url = trader_url) %>%
-        .$countTraders %>% unique() %/% 50
+      parse_json_traders(url = trader_url) %>%
+      .$countTraders %>% unique() %/% 50
 
-      trade_urls <-
-        list('http://rankandfiled.com/data/filer/', cik, '/trades?start=', seq(0, by = 50, length.out = count_trades)) %>%
-        purrr::invoke(paste0, .)
+    trade_urls <-
+      list(
+        'http://rankandfiled.com/data/filer/',
+        cik,
+        '/trades?start=',
+        seq(0, by = 50, length.out = count_trades)
+      ) %>%
+      purrr::invoke(paste0, .)
 
-      parse_json_trades_safe <-
-        purrr::possibly(parse_json_trades, NULL)
+    parse_json_trades_safe <-
+      purrr::possibly(parse_json_trades, NULL)
 
-      all_trades <-
-        trade_urls %>%
-        map_df(function(x) {
-          parse_json_trades_safe(url = x, return_message = return_message)
-        }) %>%
-        distinct() %>%
-        suppressWarnings()
+    all_trades <-
+      trade_urls %>%
+      map_df(function(x) {
+        parse_json_trades_safe(url = x, return_message = return_message)
+      }) %>%
+      distinct() %>%
+      suppressWarnings()
 
-      owners_df <-
-        list("http://rankandfiled.com/data/filer/",cik, '/owners') %>%
-        purrr::invoke(paste0,.) %>%
-        parse_json_owners(nest_data = nest_data)
+    owners_df <-
+      list("http://rankandfiled.com/data/filer/", cik, '/owners') %>%
+      purrr::invoke(paste0, .) %>%
+      parse_json_owners(nest_data = nest_data)
 
-      entity <-
-        general_df$nameEntity
+    entity <-
+      general_df$nameEntity
 
-      all_trades <-
-        all_trades %>%
-        left_join(
-          owners_df %>%
-        select(idCIKOwner = idCIKOwned, nameEntityOwner) %>%
-        distinct()) %>%
-        suppressMessages()
+    all_trades <-
+      all_trades %>%
+      left_join(owners_df %>%
+                  select(idCIKOwner = idCIKOwned, nameEntityOwner) %>%
+                  distinct()) %>%
+      suppressMessages()
 
-      entity_name <-
-        general_df$nameEntity
+    entity_name <-
+      general_df$nameEntity
 
-      all_trades <-
-        all_trades %>%
-        mutate(nameEntity = entity_name,
-               idTicker = ticker) %>%
-        select(idCIK, nameEntity, idTicker,dateTrade, idCIKOwner, nameEntityOwner, everything()) %>%
-        suppressWarnings() %>%
-        suppressMessages()
+    all_trades <-
+      all_trades %>%
+      mutate(nameEntity = entity_name,
+             idTicker = ticker) %>%
+      select(idCIK,
+             nameEntity,
+             idTicker,
+             dateTrade,
+             idCIKOwner,
+             nameEntityOwner,
+             everything()) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
-      all_trades <-
-        all_trades %>%
-        mutate_at(.cols = all_trades %>% select(matches("count")) %>% names,
-                  funs(. %>% formattable::comma(digits = 0))) %>%
-        mutate_at(.cols = all_trades %>% select(matches("amount|price")) %>% names,
-                  funs(. %>% formattable::currency(digits = 2))) %>%
-        select(idCIK:countShares, amountTransaction, everything()) %>%
-        resolve_names_to_upper()
+    all_trades <-
+      all_trades %>%
+      mutate_at(.cols = all_trades %>% select(matches("count")) %>% names,
+                funs(. %>% formattable::comma(digits = 0))) %>%
+      mutate_at(.cols = all_trades %>% select(matches("amount|price")) %>% names,
+                funs(. %>% formattable::currency(digits = 2))) %>%
+      select(idCIK:countShares, amountTransaction, everything()) %>%
+      resolve_names_to_upper()
 
-      if (return_message) {
-        list("Parsed ", all_trades %>% nrow(), ' trades for ', entity) %>%
-          purrr::invoke(paste0,.) %>%
-          message()
-      }
+    if (return_message) {
+      list("Parsed ", all_trades %>% nrow(), ' trades for ', entity) %>%
+        purrr::invoke(paste0, .) %>%
+        message()
+    }
 
-      return(all_trades)
+    return(all_trades)
 
   }
 
 parse_public_filings <-
-  function(ticker = "FB", return_message = TRUE) {
+  function(ticker = "FB",
+           return_message = TRUE) {
     general_df <-
       parse_company_general(ticker = ticker)
 
@@ -7438,7 +10526,12 @@ parse_public_filings <-
       general_df$countFilings %/% 50
 
     filing_urls <-
-      list('http://rankandfiled.com/data/filer/', cik, '/all?start=', seq(0, by = 50, length.out = filing_pages)) %>%
+      list(
+        'http://rankandfiled.com/data/filer/',
+        cik,
+        '/all?start=',
+        seq(0, by = 50, length.out = filing_pages)
+      ) %>%
       purrr::invoke(paste0, .)
 
     parse_json_public_filers_safe <-
@@ -7460,13 +10553,17 @@ parse_public_filings <-
       mutate(idTicker = ticker,
              nameCompany = entity,
              nameEntity = entity) %>%
-      select(idCIK, idTicker, nameEntity, nameCompany, dateFiling,
+      select(idCIK,
+             idTicker,
+             nameEntity,
+             nameCompany,
+             dateFiling,
              idRF,
              everything())
 
     if (return_message) {
       list("Parsed ", all_filings %>% nrow(), ' SEC Filings for ', entity) %>%
-        purrr::invoke(paste0,.) %>%
+        purrr::invoke(paste0, .) %>%
         message()
     }
     return(all_filings)
@@ -7477,10 +10574,22 @@ parse_ticker_data <-
            nest_data = TRUE,
            tables = NULL,
            return_message = TRUE) {
-
     if (tables %>% is_null()) {
       tables <-
-        c('General', 'CIK Filings','Filings', 'Private Offerings', 'Related Parties', 'Traders', 'C Level', 'MDA', 'Owners', 'Insider Trades', 'Trades', 'Subsidiaries')
+        c(
+          'General',
+          'CIK Filings',
+          'Filings',
+          'Private Offerings',
+          'Related Parties',
+          'Traders',
+          'C Level',
+          'MDA',
+          'Owners',
+          'Insider Trades',
+          'Trades',
+          'Subsidiaries'
+        )
     }
     ticker <-
       ticker %>% str_to_upper()
@@ -7496,8 +10605,8 @@ parse_ticker_data <-
 
     general <-
       parse_company_general_safe(ticker = ticker,
-                            nest_data = nest_data,
-                            return_message = return_message) %>%
+                                 nest_data = nest_data,
+                                 return_message = return_message) %>%
       suppressWarnings()
 
     has_trades <-
@@ -7505,10 +10614,10 @@ parse_ticker_data <-
 
     if (has_trades) {
       trades <-
-      parse_trades_safe(ticker = ticker,
-                   nest_data = nest_data,
-                   return_message = return_message) %>%
-      suppressWarnings()
+        parse_trades_safe(ticker = ticker,
+                          nest_data = nest_data,
+                          return_message = return_message) %>%
+        suppressWarnings()
     } else {
       trades <-
         data_frame(idTicker = ticker)
@@ -7520,16 +10629,18 @@ parse_ticker_data <-
                      nest_data = nest_data,
                      return_message = return_message)
 
-    if ('General'%in% cik_data$nameTable) {
+    if ('General' %in% cik_data$nameTable) {
       cik_data <-
         cik_data %>%
         filter(!nameTable == 'General')
     }
     all_data <-
-      data_frame(nameEntity = general$nameEntity,
-               idCIK = general$idCIK,
-               nameTable = c('Company Profile', 'Insider Trades'),
-               dataTable = list(general, trades)) %>%
+      data_frame(
+        nameEntity = general$nameEntity,
+        idCIK = general$idCIK,
+        nameTable = c('Company Profile', 'Insider Trades'),
+        dataTable = list(general, trades)
+      ) %>%
       bind_rows(cik_data) %>%
       mutate(countCols = dataTable %>% map_dbl(ncol)) %>%
       filter(countCols > 1) %>%
@@ -7545,21 +10656,37 @@ parse_ticker_data <-
 
   }
 
-#' Get United States public securities descriptive data
+#' US Public Company snapshot
 #'
-#' @param merge_type
-#' @param return_message
+#' This function returns snapshot details
+#' of X public companies.  Information includes
+#' corporate metadata, valuation metrics, and more.
 #'
-#' @return
+#' @param merge_type how to merge general information for public companies \itemize{
+#' \item \code{NULL} and \code{MATCH}: only acquires metadata for unmatched batch import companies (default)
+#' #' \item \code{ALL}: returns general information for all companies
+#' }
+#' @param return_message \code{TRUE} return a message after data import
+#'
+#' @return a \code{data_frame}
 #' @export
 #' @import dplyr tidyr purrr stringr formattable readr lubridate
 #' @importFrom jsonlite fromJSON
+#' @family SEC
+#' @family real-time data
+#' @family Rank and Filed
+#' @family entity search
 #' @examples
+#' \dontrun{
+#' get_data_us_public_companies(merge_type = NULL)
+#'
+#' }
 get_data_us_public_companies <-
-  function(merge_type = NULL, return_message = TRUE) {
-
+  function(merge_type = NULL,
+           return_message = TRUE) {
     no_merge <-
-      (!'merge_type' %>% exists()) | (merge_type %>% purrr::is_null())
+      (!'merge_type' %>% exists()) |
+      (merge_type %>% purrr::is_null())
 
     if (no_merge) {
       merge_type <-
@@ -7612,24 +10739,40 @@ get_data_us_public_companies <-
         )
       )) %>%
       suppressMessages() %>%
-      left_join(
-        data_frame(idExchange = c('N', 'Q', 'A'),
-                   nameExchange = c('NYSE', 'NASDAQ', 'NYSE ARCA'))
-      ) %>%
-      mutate(amountEquityMarketCap = ifelse(idTicker == 'BRK-A', amountEquityMarketCap * 100000000000, amountEquityMarketCap),
-             codeLocationBusiness = ifelse(codeLocationBusiness == '', codeLocationIncorporation, codeLocationBusiness),
-             codeLocationIncorporation = ifelse(codeLocationIncorporation == '', NA, codeLocationIncorporation),
-             countSharesOutstanding = ifelse(priceOpen > 0,
-                                             ((amountEquityMarketCap / priceOpen) %>% formattable::comma(digits = 2)),
-                                             NA),
-             pct52WeekHigh = ifelse(priceOpen > 0,
-                                    ((priceOpen / price52WeekHigh) %>% formattable::percent()),
-                                    NA),
-             pct52WeekLow = ifelse(priceOpen > 0,
-                                   ((priceOpen / price52WeekLow) %>% formattable::percent()),
-                                   NA),
-             amountEquityMarketCap = (amountEquityMarketCap %>% formattable::currency(digits = 0)),
-             urlTickerRankandFiled = list('http://rankandfiled.com/#/public/',idTicker,'/filings') %>% purrr::invoke(paste0,.)
+      left_join(data_frame(
+        idExchange = c('N', 'Q', 'A'),
+        nameExchange = c('NYSE', 'NASDAQ', 'NYSE ARCA')
+      )) %>%
+      mutate(
+        amountEquityMarketCap = ifelse(
+          idTicker == 'BRK-A',
+          amountEquityMarketCap * 100000000000,
+          amountEquityMarketCap
+        ),
+        codeLocationBusiness = ifelse(
+          codeLocationBusiness == '',
+          codeLocationIncorporation,
+          codeLocationBusiness
+        ),
+        codeLocationIncorporation = ifelse(
+          codeLocationIncorporation == '',
+          NA,
+          codeLocationIncorporation
+        ),
+        countSharesOutstanding = ifelse(priceOpen > 0,
+                                        ((amountEquityMarketCap / priceOpen) %>% formattable::comma(digits = 2)
+                                        ),
+                                        NA),
+        pct52WeekHigh = ifelse(priceOpen > 0,
+                               ((priceOpen / price52WeekHigh) %>% formattable::percent()
+                               ),
+                               NA),
+        pct52WeekLow = ifelse(priceOpen > 0,
+                              ((priceOpen / price52WeekLow) %>% formattable::percent()
+                              ),
+                              NA),
+        amountEquityMarketCap = (amountEquityMarketCap %>% formattable::currency(digits = 0)),
+        urlTickerRankandFiled = list('http://rankandfiled.com/#/public/', idTicker, '/filings') %>% purrr::invoke(paste0, .)
       ) %>%
       select(idTicker:idSector, nameSector, everything()) %>%
       suppressMessages()
@@ -7685,7 +10828,7 @@ get_data_us_public_companies <-
 
     dup_general_df <-
       dup_count_df$idTicker %>%
-      map_df(function(x){
+      map_df(function(x) {
         parse_company_general(ticker = x)
       }) %>%
       arrange(idTicker)
@@ -7705,13 +10848,15 @@ get_data_us_public_companies <-
 
     company_data <-
       company_data %>%
-      mutate_at(.cols = c('price52WeekLow', 'priceOpen', 'price52WeekHigh'),
-                funs(. %>% formattable::currency(digits = 2))) %>%
+      mutate_at(
+        .cols = c('price52WeekLow', 'priceOpen', 'price52WeekHigh'),
+        funs(. %>% formattable::currency(digits = 2))
+      ) %>%
       mutate_at(.cols = c('amountEquityMarketCap'),
                 funs(. %>% formattable::currency(digits = 0))) %>%
       mutate_at(.cols = c('countSharesOutstanding'),
                 funs(. %>% formattable::comma(digits = 2))) %>%
-      mutate_at(.cols = c('pct52WeekLow','pct52WeekHigh'),
+      mutate_at(.cols = c('pct52WeekLow', 'pct52WeekHigh'),
                 funs(. %>% formattable::percent(digits = 2))) %>%
       suppressWarnings()
 
@@ -7725,7 +10870,7 @@ get_data_us_public_companies <-
       general_data <-
         company_data$idTicker %>%
         unique() %>%
-        map_df(function(x){
+        map_df(function(x) {
           parse_company_general(ticker = x, return_message = return_message)
         }) %>%
         suppressWarnings()
@@ -7742,13 +10887,24 @@ get_data_us_public_companies <-
                          "price52WeekLow",
                          "price52WeekHigh",
                          "urlTickerRankandFiled"
-                       ))
-                     )) %>%
+                       )
+                     ))) %>%
         dplyr::rename(nameCompany = nameEntity) %>%
-        select(idTicker, nameCompany, idCIK, idSector, nameSector, nameExchange, everything())
+        select(idTicker,
+               nameCompany,
+               idCIK,
+               idSector,
+               nameSector,
+               nameExchange,
+               everything())
 
       if (return_message) {
-        list("Acquired data for ", company_data %>% nrow() %>% formattable::comma(digits = 0),' US stocks with a combined market capitalization of ', company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)) %>%
+        list(
+          "Acquired data for ",
+          company_data %>% nrow() %>% formattable::comma(digits = 0),
+          ' US stocks with a combined market capitalization of ',
+          company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)
+        ) %>%
           purrr::invoke(paste0, .) %>%
           message()
       }
@@ -7763,10 +10919,17 @@ get_data_us_public_companies <-
       company_data <-
         company_data %>%
         left_join(
-        all_tickers %>%
-        filter(!urlTickerRankandFiled %>% is.na()) %>%
-        select(idTicker, idCIK, nameCompany, codeLocationBusiness, idSIC, classificationSIC)
-      ) %>%
+          all_tickers %>%
+            filter(!urlTickerRankandFiled %>% is.na()) %>%
+            select(
+              idTicker,
+              idCIK,
+              nameCompany,
+              codeLocationBusiness,
+              idSIC,
+              classificationSIC
+            )
+        ) %>%
         suppressMessages()
 
       count_df <-
@@ -7790,7 +10953,7 @@ get_data_us_public_companies <-
         purrr::possibly(parse_company_general, data_frame)
       dup_general_df <-
         dup_tickers %>%
-        map_df(function(x){
+        map_df(function(x) {
           parse_company_general(ticker = x)
         }) %>%
         arrange(idTicker) %>%
@@ -7843,7 +11006,7 @@ get_data_us_public_companies <-
 
       dup_general_df <-
         dup_tickers %>%
-        map_df(function(x){
+        map_df(function(x) {
           parse_company_general(ticker = x)
         }) %>%
         arrange(idTicker) %>%
@@ -7853,9 +11016,7 @@ get_data_us_public_companies <-
         dup_df %>%
         select(-c(nameCompany, idCIK)) %>%
         distinct() %>%
-        left_join(
-          dup_general_df %>% select(idTicker, nameCompany = nameEntity, idCIK)
-        ) %>%
+        left_join(dup_general_df %>% select(idTicker, nameCompany = nameEntity, idCIK)) %>%
         suppressMessages()
 
       missing_name_df <-
@@ -7870,19 +11031,36 @@ get_data_us_public_companies <-
         match_df %>%
         bind_rows(missing_name_df) %>%
         arrange(desc(amountEquityMarketCap)) %>%
-        select(idCIK, idTicker, nameCompany, idExchange, idSector, nameSector, idSIC, classificationSIC, everything()) %>%
-        mutate_at(.cols = c('price52WeekLow', 'priceOpen', 'price52WeekHigh'),
-                  funs(. %>% formattable::currency(digits = 2))) %>%
+        select(
+          idCIK,
+          idTicker,
+          nameCompany,
+          idExchange,
+          idSector,
+          nameSector,
+          idSIC,
+          classificationSIC,
+          everything()
+        ) %>%
+        mutate_at(
+          .cols = c('price52WeekLow', 'priceOpen', 'price52WeekHigh'),
+          funs(. %>% formattable::currency(digits = 2))
+        ) %>%
         mutate_at(.cols = c('amountEquityMarketCap'),
                   funs(. %>% formattable::currency(digits = 0))) %>%
         mutate_at(.cols = c('countSharesOutstanding'),
                   funs(. %>% formattable::comma(digits = 2))) %>%
-        mutate_at(.cols = c('pct52WeekLow','pct52WeekHigh'),
+        mutate_at(.cols = c('pct52WeekLow', 'pct52WeekHigh'),
                   funs(. %>% formattable::percent(digits = 2))) %>%
         suppressWarnings()
 
       if (return_message) {
-        list("Acquired data for ", company_data %>% nrow() %>% formattable::comma(digits = 0),' US Stocks with a combined market capitalization of ', company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)) %>%
+        list(
+          "Acquired data for ",
+          company_data %>% nrow() %>% formattable::comma(digits = 0),
+          ' US Stocks with a combined market capitalization of ',
+          company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)
+        ) %>%
           purrr::invoke(paste0, .) %>%
           message()
       }

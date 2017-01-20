@@ -6,8 +6,8 @@ packrat/
 .Rprofile
 .httr-oauth
 .DS_Store
-tests/
+test/
 old/
 .Rprofile
 rsconnect/
-old/
+dev/

@@ -2,24 +2,47 @@
 % Please edit documentation in R/nareit.R
 \name{get_data_nareit_state_info}
 \alias{get_data_nareit_state_info}
-\title{Get NAREIT member property holdings by state}
+\title{NAREIT properties by state}
 \usage{
 get_data_nareit_state_info(include_reit_hq = TRUE,
   include_reit_holdings = TRUE, nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
-\item{include_reit_hq}{include REIT headquarter locations \code{TRUE, FALSE}}
+\item{include_reit_hq}{\code{TRUE} include REIT headquarter locations}
 
-\item{include_reit_holdings}{include REIT aggregate holdings \code{TRUE, FALSE}}
+\item{include_reit_holdings}{\code{TRUE} include REIT aggregate holdings}
 
-\item{nest_data}{return a nested data frame \code{TRUE, FALSE}}
+\item{nest_data}{\code{TRUE} return nested data frame}
 
-\item{return_message}{return a message \code{TRUE, FALSE}}
+\item{return_message}{\code{TRUE} return a message after data import}
+}
+\value{
+nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 }
 \description{
-Get NAREIT member property holdings by state
+This function returns information about REIT owned
+holdings by state.
 }
 \examples{
 get_data_nareit_state_info(include_reit_hq = TRUE, include_reit_holdings = TRUE, nest_data = TRUE, return_message = TRUE)
+}
+\references{
+\href{http://nareit.org}{National Association of Real Estate Investment Trusts}
+}
+\seealso{
+Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
+  \code{\link{get_data_nareit_capital_raises}},
+  \code{\link{get_data_nareit_constituent_years}},
+  \code{\link{get_data_nareit_entities}},
+  \code{\link{get_data_nareit_industry_tracker}},
+  \code{\link{get_data_nareit_mergers_acquisitions}},
+  \code{\link{get_data_nareit_monthly_returns}},
+  \code{\link{get_data_nareit_notable_properties}},
+  \code{\link{get_data_nareit_property_msa}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_reit_entity_dictionary}}
+
+Other property data: \code{\link{get_data_nareit_notable_properties}},
+  \code{\link{get_data_nareit_property_msa}}
 }
 

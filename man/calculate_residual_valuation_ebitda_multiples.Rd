@@ -2,27 +2,48 @@
 % Please edit documentation in R/cf_functions.R
 \name{calculate_residual_valuation_ebitda_multiples}
 \alias{calculate_residual_valuation_ebitda_multiples}
-\title{Calculate residual value for a set of given EBITDA based inputs}
+\title{Residual value, EBITDA multiple method}
 \usage{
 calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15,
   20), ebitda = "$27,500,000", cost_of_sale = "5\%",
   debt_balance = "$350,000,000", return_wide = T)
 }
 \arguments{
-\item{ebitda_multiples}{Vector of EBITDA Multiples in numeric or character}
+\item{ebitda_multiples}{vector of EBITDA multiples in numeric or character}
 
-\item{ebitda}{Vector of EBITDA in numeric or character numeric/currency form}
+\item{ebitda}{vector of EBITDA in numeric or character numeric/currency form}
 
-\item{cost_of_sale}{Vector of Cost of Sale in percent or character percent form}
+\item{cost_of_sale}{vector of cost of sale in percent or character percent form}
 
-\item{debt_balance}{Vector of anticipated Debt Balance at sale in numeric or character numeric/currency form}
+\item{debt_balance}{vector of anticipated debt balance at sale in numeric or character numeric/currency form}
 
-\item{return_wide}{Return data in wide or long form}
+\item{return_wide}{return data in wide or long form}
+}
+\value{
+a \code{data_frame}
 }
 \description{
-Calculate residual value for a set of given EBITDA based inputs
+This function calculates \href{https://en.wikipedia.org/wiki/Residual_value}{residual values}
+based upon the specified inputs.  See \code{\link{calculate_residual_valuation_cap_rates}} for
+capitalization rate method.
 }
 \examples{
 calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20), ebitda = "$27,500,000", cost_of_sale = "5\%", debt_balance = "$350,000,000", return_wide = T)
+}
+\seealso{
+Other calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flow_waterfall}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_days_accrued_pref}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{calculate_leverage_metrics}},
+  \code{\link{calculate_loan_payment}},
+  \code{\link{calculate_residual_valuation_cap_rates}},
+  \code{\link{calculate_share_proceeds}},
+  \code{\link{calculate_valuation_post_money}},
+  \code{\link{tidy_promote_structure}}
+
+Other residual value calculation: \code{\link{calculate_residual_valuation_cap_rates}}
 }
 

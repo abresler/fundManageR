@@ -1,3 +1,4 @@
+# parsing -----------------------------------------------------------------
 get_html_page <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=160080') {
     httr::set_config(config(ssl_verifypeer = 0L))
@@ -327,7 +328,7 @@ get_finra_name_df <-
       "fields.bc_lastname", "fields.bc_middlename",
       "category", "regulator", "messages", "capacity", 'individualId',
       'firstName', 'middleName', 'lastName', 'daysInIndustry',
-      "street1", "street2", "city", "state", "country", "zipCode",
+      "street1", "street2", "city", "state", "country", "zipcode",
        "registrationBeginDate", "registrationEndDate", "firmBCScope",
        "firmIAScope", "eventDate", "disclosureResolution",
       "docketNumber", "Initiated By", "Allegations", "Resolution",
@@ -800,6 +801,7 @@ parse_finra_pdf_brochure <-
 
 parse_finra_json_url <-
   function(url = "https://doppler.finra.org/doppler-lookup/api/v1/search/firms?hl=true&nrows=99000&query=Blackstone&r=2500&wt=json",
+           name_match_threshold = .25,
            ocr_pdfs = TRUE) {
     json_data <-
       url %>%
@@ -917,6 +919,12 @@ parse_finra_json_url <-
       as_data_frame() %>%
       mutate(idCRD = idCRD %>% as.numeric(),
              idRow = 1:n())
+
+    if (!name_match_threshold %>% is_null()) {
+      df_fields <-
+        df_fields %>%
+        filter(scoreWord >= name_match_threshold)
+    }
 
     if ('fields.bc_ia_scope' %in% names(df_fields) & (!'typeActiveFiler' %in% names(df_fields))) {
       df_fields <-
@@ -1101,6 +1109,10 @@ parse_finra_json_url <-
           parse_broker_json_url_safe(url = x)
         })
 
+      has_pdfs <-
+        df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
+        nrow() > 0
+
       if (broker_df %>% nrow() > 0 ){
         df_fields <-
         df_fields %>%
@@ -1113,6 +1125,7 @@ parse_finra_json_url <-
         select(-rowsDataBroker)
 
       }
+
       if (has_pdfs) {
         if(ocr_pdfs) {
           pdf_urls <-
@@ -1148,6 +1161,7 @@ get_data_finra_entity <-
   function(search_name = "Rockwood Capital",
            is_firm = TRUE,
            ocr_pdf = TRUE,
+           score_threshold = .2,
            return_message = TRUE) {
     if (search_name %>% purrr::is_null()){
       stop("Please enter a search term")
@@ -1167,7 +1181,7 @@ get_data_finra_entity <-
     all_data <-
       url_df$urlJSON %>%
       map_df(function(x){
-        parse_finra_json_url_safe(url = x, ocr_pdf = ocr_pdf)
+        parse_finra_json_url_safe(url = x, ocr_pdf = ocr_pdf,name_match_threshold = score_threshold)
       }) %>%
       mutate(nameSearch = search_name) %>%
       select(nameSearch, matches("name"), matches("^id"), everything()) %>%
@@ -1184,23 +1198,40 @@ get_data_finra_entity <-
   }
 
 
-#' Get FINRA registered firms and associated metadata
+#' FINRA registered entities
 #'
-#' @param search_names  vector of names to search
+#' This function returns information for any
+#' Financial Industry Regulatory Authority [FINRA] registered
+#' entity.
+#' @param ocr_pdf if \code{TRUE} returns OCR'd broker report PDF
+#' @param score_threshold matching score threshold for the search name
+#' if \code{NULL} there is no threshold
+#' @param entity_names vector of names to search
 #' @param return_message return a message upon parsing \code{TRUE, FALS}
-#' @import jsonlite dplyr tidyr purrr stringr pdftools stringi
-#' @return
+#' @import jsonlite dplyr tidyr purrr stringr pdftools stringi magrittr
+#' @return a \code{data frame}
+#' @note Use \code{\link{get_data_finra_people}} for registered people
+#' @references \href{http://www.finra.org/}{FINRA}
 #' @export
-#'
+#' @family FINRA
+#' @family IAPD
+#' @family entity search
 #' @examples
-#' get_data_finra_entities(search_name = c('EJF Capital', 'Goldman Sachs'), ocr_pdf = TRUE)
+#' get_data_finra_entities(entity_names = c("EJF", "Blackstone", "Next Play", "Simple Capital"), score_threshold = .25,
+#' ocr_pdf = TRUE)
+
 get_data_finra_entities <-
-  function(search_names = c("Thrive","Rockwood Capital", "EJF", "Simple Capital"),
+  function(entity_names = NULL,
            ocr_pdf = TRUE,
+           score_threshold = .20,
            return_message = TRUE) {
+    if (entity_names %>% is_null()) {
+      stop("Please enter entities to search for")
+    }
   search_df <-
-    expand.grid(nameSearch = search_names,
-              isFirm = TRUE,stringsAsFactors = FALSE) %>%
+    expand.grid(nameSearch = entity_names,
+              isFirm = TRUE,
+              stringsAsFactors = FALSE) %>%
       as_data_frame()
   get_data_finra_entity_safe <-
     purrr::possibly(get_data_finra_entity, data_frame())
@@ -1208,11 +1239,16 @@ get_data_finra_entities <-
   all_data <-
     1:nrow(search_df) %>%
     map_df(function(x){
-      get_data_finra_entity(search_name = search_df$nameSearch[[x]],
+      get_data_finra_entity_safe(search_name = search_df$nameSearch[[x]],
                             ocr_pdf = ocr_pdf,
+                            score_threshold = score_threshold,
                             is_firm = search_df$isFirm[[x]],
                             return_message = return_message)
     })
+
+  if (all_data %>% nrow() == 0) {
+    return(data_frame())
+  }
 
   if ('typeActiveFiler' %in% names(all_data)) {
     all_data <-
@@ -1227,22 +1263,36 @@ get_data_finra_entities <-
   return(all_data)
   }
 
-#' Get FINRA registered people and associated metadata
+#' FINRA registered people
 #'
-#' @param search_names  vector of names to search
+#' This function returns information for any
+#' Financial Industry Regulatory Authority [FINRA] registered
+#' entity.
+#' @param ocr_pdf if \code{TRUE} returns OCR'd broker report PDF
+#' @param search_name vector of names to search
+#' @param score_threshold matching score threshold for the search name
+#' if \code{NULL} there is no threshold
 #' @param return_message return a message upon parsing \code{TRUE, FALS}
 #' @import jsonlite dplyr tidyr purrr stringr pdftools stringi
-#' @return
+#' @return a \code{data frame}
+#' @note Use \code{\link{get_data_finra_people()}} for registered people
+#' @references \href{http://www.finra.org/}{FINRA}
 #' @export
-#'
+#' @family FINRA
+#' @family IAPD
+#' @family person search
 #' @examples
 #' get_data_finra_people(search_name = 'Llyod Blankfein', ocr_pdf = TRUE)
 get_data_finra_people <-
-  function(search_names = NULL,
+  function(search_name = NULL,
            ocr_pdf = TRUE,
            return_message = TRUE) {
+
+    if (search_name %>% is_null()) {
+      stop("Please enter a person to search for")
+    }
     search_df <-
-      expand.grid(nameSearch = search_names,
+      expand.grid(nameSearch = search_name,
                   isFirm = FALSE,stringsAsFactors = FALSE) %>%
       as_data_frame()
     get_data_finra_entity_safe <-
@@ -1257,12 +1307,26 @@ get_data_finra_people <-
                               return_message = return_message)
       })
 
+    if (all_data %>% nrow() == 0) {
+      return(data_frame())
+    }
+
     if ('typeActiveFiler' %in% names(all_data)) {
       all_data <-
         all_data %>%
         mutate(isActiveFiler = ifelse(typeActiveFiler == "ACTIVE", TRUE, FALSE)) %>%
         select(nameSearch, matches('idCRD'), matches("nameFirm"), isActiveFiler, everything())
     }
+    all_data <-
+      all_data %>%
+      select(-matches("^fields"))
+
+    all_data <-
+      all_data %>%
+      mutate_at(all_data %>% select(matches("^count[A-Z]")) %>% select(-matches("country")) %>% names(),
+                funs(. %>% formattable::comma(digits = 0)))
+
+
     return(all_data)
   }
 
@@ -1572,30 +1636,51 @@ get_manager_sec_page <-
   }
 
 
-#' Get ADV metadata for specified ADV or search name
+#' IAPD registered meta data
 #'
-#' @param search_names Names of the entities you want to search
-#' @param crd_ids CRD ids you want to search
-#' @param return_message
+#' This function returns meta data
+#' on any Investment Adviser Public Disclosure [IAPD]
+#' filing manager.  This function can be used to discover
+#' managers to power the
+#' \code{\link{get_data_adv_managers_filing()}} function.
+#'
+#' @param entity_names vector of entities to search
+#' @param score_threshold matching score threshold for the search name
+#' if \code{NULL} there is no threshold
+#' @param crd_ids numric vector of crds to search
+#' @param return_message return a message
 #' @import dplyr purrr curl jsonlite lubridate tidyr rvest httr
-#' @return
+#' @return a data frame
 #' @export
+#' @family IAPD
+#' @family FINRA
+#' @family fund data
+#' @family entity search
 #' @examples
-#' get_data_adv_managers_metadata(search_names = c('Divco'))
+#' get_data_adv_managers_metadata(entity_names = c('Divco', 'EJF'), score_threshold = .2)
+#' get_data_adv_managers_metadata(entity_names = "Blackstone", score_threshold = NULL)
+#' get_data_adv_managers_metadata(crd_ids = 173787)
 get_data_adv_managers_metadata <-
-  function(search_names =  'Divco',
+  function(entity_names =  NULL,
            crd_ids = NULL,
+           score_threshold = .2,
            return_message = T) {
+
+    if (entity_names %>% is_null() & crd_ids %>% is_null()) {
+      stop("Please enter a name or CRD to search")
+    }
+
     if (!crd_ids %>% is_null) {
       crd_urls <-
         'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>%
         paste0(crd_ids)
     }
 
-    if (!search_names %>% is_null()) {
+    if (!entity_names %>% is_null()) {
       finra_data <-
-        search_names %>%
-        get_data_finra_entities(ocr_pdf = F,return_message = return_message) %>%
+        entity_names %>%
+        get_data_finra_entities(ocr_pdf = FALSE, score_threshold = score_threshold,
+                                return_message = return_message) %>%
         suppressMessages() %>%
         suppressWarnings()
 
@@ -1607,12 +1692,12 @@ get_data_adv_managers_metadata <-
         finra_data$urlManagerSummaryADV
     }
 
-    if ((!crd_ids %>% is_null()) & (!search_names %>% is_null())) {
+    if ((!crd_ids %>% is_null()) & (!entity_names %>% is_null())) {
       adv_urls <-
         c(adv_urls, crd_urls)
     }
 
-    if ((!crd_ids %>% is_null) & (search_names %>% is_null)) {
+    if ((!crd_ids %>% is_null) & (entity_names %>% is_null)) {
       adv_urls <-
         c(crd_urls)
     }
@@ -1623,12 +1708,10 @@ get_data_adv_managers_metadata <-
     sec_summary_data <-
       adv_urls %>%
       map_df(get_manager_sec_page_safe) %>%
-      suppressWarnings()
+      suppressWarnings() %>%
+      filter(!idCRD %>% is.na())
 
-    search_data <-
-      sec_summary_data
-
-    return(search_data)
+    return(sec_summary_data)
   }
 
 get_manager_sec_adv_actual_url <-
@@ -1698,8 +1781,8 @@ get_sec_sitemap_df <-
             "section10ControlPersons",
             "section11Disclosures",
             "section12SmallBusiness",
-            "sectionScheduleA",
-            "sectionScheduleB",
+            "sectionScheduleAOwners",
+            "sectionScheduleBIndirectOwners",
             "sectionScheduleD",
             "sectionSignaturePage"
           ),
@@ -1964,23 +2047,26 @@ parse_adv_manager_sitemap_df <-
 
 get_managers_adv_sitemap_adv <-
   function(idCRDs = c(109110),
-           search_names =  NULL) {
+           score_threshold = .2,
+           entity_names =  NULL) {
     get_data_adv_managers_metadata_safe <-
       possibly(get_data_adv_managers_metadata, NULL)
     parse_adv_manager_sitemap_df_safe <-
       possibly(parse_adv_manager_sitemap_df, NULL)
 
-    if (!idCRDs %>% is_null) {
+    if (!idCRDs %>% is_null()) {
       urls <-
         idCRDs %>%
         paste0('http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=',.)
     }
 
-    if (!search_names %>% is_null()) {
+    if (!entity_names %>% is_null()) {
       manager_data <-
-        search_names %>%
+        entity_names %>%
         map_df(function(x) {
-          get_data_adv_managers_metadata_safe(crd_ids = idCRDs, search_names = x, return_message = T)
+          get_data_adv_managers_metadata_safe(crd_ids = idCRDs,
+                                              score_threshold = score_threshold,
+                                              entity_names = x, return_message = T)
         })
 
       manager_data <-
@@ -1998,9 +2084,9 @@ get_managers_adv_sitemap_adv <-
         manager_data$urlManagerADV %>% unique()
     }
 
-    if ('urls' %>% exists & search_names %>% is_null()) {
+    if ('urls' %>% exists & entity_names %>% is_null()) {
       manager_data <-
-        get_data_adv_managers_metadata_safe(crd_ids = idCRDs, search_names = NULL)
+        get_data_adv_managers_metadata_safe(crd_ids = idCRDs, entity_names = NULL)
 
       name_entity_manager <-
         manager_data$nameEntityManager
@@ -3150,7 +3236,7 @@ get_section_1_data <-
         if (has_office_location) {
           business_data_df <-
             business_data_df %>%
-            mutate(locationOfficePrimary = addressStreet1OfficePrimary %>% paste0(' ', cityOfficePrimary, ', ', stateOfficePrimary, ' ', countryOfficePrimary, ' ', zipOfficePrimary) %>% str_to_upper())
+            mutate(addressOfficePrimary = addressStreet1OfficePrimary %>% paste0(' ', cityOfficePrimary, ', ', stateOfficePrimary, ' ', countryOfficePrimary, ' ', zipOfficePrimary) %>% str_to_upper())
         }
         if (business_data_df$idLEI == 'A legal entity identifier') {
           business_data_df <-
@@ -5988,11 +6074,11 @@ get_schedule_d_data <-
               all_locations <-
                 location_df$idTable %>% unique %>%
                 map_df(function(x) {
-                  locationOfficeSecondary <-
+                  addressOfficeSecondary <-
                     location_df %>%
                     dplyr::filter(idTable == x)
 
-                  locationOfficeSecondary %>%
+                  addressOfficeSecondary %>%
                     separate(itemvalueNode, c('itemNode', 'valueNode'), '\\:') %>%
                     left_join(get_location_name_df()) %>%
                     dplyr::select(idTable, nameNode, valueNode) %>%
@@ -7644,7 +7730,8 @@ get_section_drp <-
 
 get_crd_sections_data <-
   function(id_crd = 124529,
-           all_sections = T,
+           all_sections = TRUE,
+           score_threshold = .2,
            section_names = c(
              "Registration",
              "Identifying Information",
@@ -7659,14 +7746,14 @@ get_crd_sections_data <-
            flatten_tables = T) {
 
     sitemap_df <-
-      get_managers_adv_sitemap_adv(idCRDs = id_crd) %>%
+      get_managers_adv_sitemap_adv(idCRDs = id_crd, score_threshold = score_threshold) %>%
       distinct() %>%
       dplyr::filter(!idSection %>% str_detect('section12SmallBusiness')) %>%
       suppressWarnings() %>%
       suppressMessages()
 
     section_null <-
-      section_names %>% is_null
+      section_names %>% is_null()
 
     if (all_sections) {
       section_names <-
@@ -7674,7 +7761,7 @@ get_crd_sections_data <-
     }
 
     if (section_null &
-        all_sections == F) {
+        all_sections == FALSE) {
       stop("You must select a section, possibilties for this search are:\n" %>%
              paste0(paste0(
                sitemap_df$nameSectionActual, collapse = '\n'
@@ -7747,7 +7834,9 @@ get_crd_sections_data <-
             url <-
               sitemap_df$urlADVSection[[x]]
             df_name <-
-              sitemap_df$nameData[[x]]
+              sitemap_df$nameData[[x]] %>%
+              str_to_title() %>%
+              paste0('data',.)
             nameADVPage <-
               sitemap_df$nameSectionActual[[x]]
             paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% message
@@ -7927,23 +8016,23 @@ get_crd_sections_data <-
 
 
 get_search_crd_ids <-
-  function(search_names = c('EJF Capital', '137 Ventures'),
+  function(entity_names = c('EJF Capital', '137 Ventures'),
            crd_ids = NULL) {
-    if (search_names %>% is_null() & (crd_ids %>% is_null())) {
+    if (entity_names %>% is_null() & (crd_ids %>% is_null())) {
       stop("Please enter search names or CRD IDs")
     }
 
     crd_df <-
       data_frame(idCRD = NA)
 
-    if (!search_names %>% is_null()) {
+    if (!entity_names %>% is_null()) {
       get_data_finra_entities_safe <-
         purrr::possibly(get_data_finra_entities, data_frame())
       search_name_df <-
-        search_names %>%
+        entity_names %>%
         map_df(function(x) {
           get_data_finra_entities(
-            search_names = x,
+            entity_names = x,
             return_message = FALSE,
             ocr_pdf = FALSE
           )
@@ -8068,7 +8157,7 @@ return_selected_adv_tables <-
               arrange(idCRD, nameItem, countItemManager)
           }
 
-          assign(x = df_name, eval(data_selected), env = .GlobalEnv)
+          assign(x = df_name, eval(data_selected), envir = .GlobalEnv)
           section_df %>%
             dplyr::filter(nameSectionActual == table_name) %>%
             .$idSection %>% message
@@ -8164,7 +8253,7 @@ return_selected_adv_tables <-
 
                 df_name <-
                   table_names[x]
-                assign(x = df_name, eval(table_data), env = .GlobalEnv)
+                assign(x = df_name, eval(table_data), envir = .GlobalEnv)
               })
           }
         }
@@ -8182,17 +8271,31 @@ return_selected_adv_tables <-
     invisible()
   }
 
-#' Get detailed ADV form data for specified search name or CRD id
+#' IAPD registered managers ADV data
 #'
-#' @param search_names Names of the entities you want to search
-#' @param crd_ids CRD ids you want to search
-#' @param all_sections Do you want to search all ADV Sections
-#' @param section_names If not all sections, which sections
-#' @param flatten_tables Do you want the data the data with singular values flattened into a single data frame
-#' @param gather_data Do you want the data in gathered form
-#' @param assign_to_environment Do you want to save the invidual data frames to your global environment
+#' This function parses the specified sections of the
+#' \href{https://www.sec.gov/answers/formadv.htm}{Form ADV} for specified managers.
 #'
-#' @return
+#' @param entity_names vector entities you want to search
+#' @param crd_ids vector of CRDs to search
+#' @param all_sections include all sections \code{TRUE}(default)
+#' searches all sections
+#' @param section_names sections to search \itemize{
+#' \item \code{Registration}: registration information
+#' \item \code{Identifying Information}: indentifying information
+#' \item \code{Organization}: organizational structure information
+#' \item \code{Successions}: succession information
+#' \item \code{Private Fund Reporting}: private funds controlled by the manager
+#' \item \code{Direct Manager Owners}: direct owners of the fund manager
+#' \item \code{Indirect Manager Owners}: indirect owners of the fund manager
+#' \item \code{Other Manager Information}: other information
+#' \item \code{Manager Signatories}: manager signatories
+#' #' }
+#' @param flatten_tables \code{TRUE} flattens data with multiple values into wide form
+#' @param gather_data \{code} gather wide data
+#' @param assign_to_environment \code{TRUE} assign individual data frames to your environment
+#'
+#' @return a \code{data_frame}
 #' @export
 #' @import dplyr formattable httr purrr readr rvest stringi stringr tibble tidyr curlconverter lubridate
 #' @importFrom lazyeval as_name
@@ -8200,12 +8303,19 @@ return_selected_adv_tables <-
 #' @importFrom magrittr %>%
 #' @importFrom lubridate mdy
 #' @importFrom lubridate ymd
+#' @family IAPD
+#' @family ADV
+#' @family entity search
+#' @family fund data
 #' @examples
-#' get_data_adv_managers_filings(search_names = c('Blackstone Real Estate'), crd_ids = NULL, all_sections = T,  section_names = NULL, flatten_tables = T, gather_data = F, assign_to_environment = T)
+#' get_data_adv_managers_filings(entity_names = c('Blackstone Real Estate'), crd_ids = NULL,
+#'  all_sections = TRUE,  section_names = NULL,
+#'  flatten_tables = TRUE, gather_data = FALSE,
+#'  assign_to_environment = TRUE)
 get_data_adv_managers_filings <-
-  function(search_names = NULL,
+  function(entity_names = NULL,
            crd_ids = NULL,
-           all_sections = T,
+           all_sections = TRUE,
            section_names = c(
              "Registration",
              "Identifying Information",
@@ -8217,9 +8327,9 @@ get_data_adv_managers_filings <-
              "Other Manager Information",
              "Manager Signatories"
            ),
-           flatten_tables = T,
-           gather_data = F,
-           assign_to_environment = T) {
+           flatten_tables = TRUE,
+           gather_data = FALSE,
+           assign_to_environment = TRIE) {
     packages <-
       c(
         'tidyverse',
@@ -8242,7 +8352,7 @@ get_data_adv_managers_filings <-
     suppressMessages(lapply(packages, library, character.only = T))
 
     nothing_entered <-
-      (crd_ids %>% is_null()) & (search_names %>% is_null())
+      (crd_ids %>% is_null()) & (entity_names %>% is_null())
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
@@ -8251,7 +8361,7 @@ get_data_adv_managers_filings <-
       possibly(get_search_crd_ids, NULL)
 
     crds <-
-      get_search_crd_ids_safe(search_names = search_names, crd_ids = crd_ids)
+      get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
 
     get_crd_sections_data_safe <-
       possibly(get_crd_sections_data, NULL)
@@ -8531,7 +8641,7 @@ parse_manager_brochure_data <-
 
 get_manager_brochure_data <-
   function(id_crd = 156663,
-           split_pages = T) {
+           split_pages = TRUE) {
     url <-
       get_managers_adv_sitemap_adv(idCRDs = id_crd) %>%
       distinct() %>%
@@ -8557,43 +8667,29 @@ get_manager_brochure_data <-
 
   }
 
-#' OCR registerd managers ADV brochures
+#' OCR IAPD Managers Brochures
 #'
-#' @param search_names names of the companies you want to search
-#' @param crd_ids CRDs you want to search
-#' @param split_pages do you want to split the brochure into multiple pages
+#' This function OCRs a firm's brochure
+#' required for Part 2A of the Form-ADV
+#'
+#' @param entity_names vector names of the companies you want to search
+#' @param crd_ids numeric vector CRDs you want to search
+#' @param nest_data \code{TRUE} return nested data frame
+#' @param split_pages \code{TRUE} split brochure into individual pages
 #'
 #' @return
 #' @export
-#' @import pdftools stringr stringi dplyr purrr tidyr
+#' @import curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble pdftools tidyr curlconverter
 #' @examples
-#' get_data_adv_managers_brochures(search_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE)
+#' get_data_adv_managers_brochures(entity_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE, nest_data = TRUE)
 get_data_adv_managers_brochures <-
-  function(search_names = NULL,
+  function(entity_names = NULL,
            crd_ids = NULL,
-           split_pages = TRUE) {
-    packages <-
-      c(
-        "curl",
-        "dplyr",
-        "formattable",
-        "httr",
-        "lubridate",
-        "magrittr",
-        "purrr",
-        "readr",
-        'lazyeval',
-        "rvest",
-        "stringi",
-        "stringr",
-        "tibble",
-        'pdftools',
-        "tidyr",
-        'curlconverter'
-      )
-    suppressMessages(lapply(packages, library, character.only = T))
+           split_pages = TRUE,
+           nest_data = FALSE) {
+
     nothing_entered <-
-      (crd_ids %>% is_null()) & (search_names %>% is_null())
+      (crd_ids %>% is_null()) & (entity_names %>% is_null())
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
@@ -8601,7 +8697,7 @@ get_data_adv_managers_brochures <-
       possibly(get_search_crd_ids, NULL)
 
     crds <-
-      get_search_crd_ids_safe(search_names = search_names, crd_ids = crd_ids)
+      get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
 
     get_manager_brochure_data_safe <-
       possibly(get_manager_brochure_data, NULL)
@@ -8615,6 +8711,12 @@ get_data_adv_managers_brochures <-
         paste0('idCRD: ', x, ' - ', 'Manager Brochure') %>% message
         return(manager_pdf)
       })
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest(-c(idCRD, nameEntityManager, titleDocument, datetimeCreated, countPages), .key = 'dataBrochure')
+    }
     return(all_data)
   }
 
@@ -8631,7 +8733,7 @@ get_data_adv_managers_brochures <-
 #' @importFrom lubridate mdy
 #' @examples
 get_data_adv_period_urls <-
-  function(return_wide = T) {
+  function(return_wide = TRUE) {
     httr::set_config(config(ssl_verifypeer = 0L))
     page <-
       'https://www.sec.gov/foia/iareports/inva-archive.htm' %>%
@@ -9234,7 +9336,8 @@ parse_adv_excel_data <-
     excel_data <-
       file_path %>%
       readxl::read_excel() %>%
-      suppressWarnings()
+      suppressWarnings() %>%
+      suppressMessages()
 
     return(excel_data)
   }
@@ -9243,7 +9346,8 @@ parse_adv_csv <-
   function(file_path = "/Users/alexbresler/Desktop/adv_data/IA FOIA Download 7-30-10.CSV") {
     data <-
       file_path %>%
-      read_csv %>%
+      read_csv() %>%
+      suppressMessages() %>%
       suppressWarnings()
     return(data)
   }
@@ -9253,17 +9357,14 @@ parse_adv_txt_data <-
       file_path %>%
       read_delim(delim = '|', col_names = T) %>%
       dplyr::select(-matches("X26")) %>%
-      suppressWarnings()
+      suppressWarnings() %>%
+      suppressMessages()
     return(data)
   }
 
 parse_sec_adv_data_url <-
   function(url = 'https://www.sec.gov/foia/iareports/ia090116.zip',
-           file_directory = NULL,
-           folder_name = 'adv_data',
-           remove_existing_folder = F,
-           remove_files = F,
-           empty_trash = F) {
+           return_message = TRUE) {
     options(scipen = 999999)
 
     date_data <-
@@ -9272,121 +9373,33 @@ parse_sec_adv_data_url <-
     is_exempt <-
       url %>% str_detect("exempt")
 
-    use_tmp_file <-
-      file_directory %>% is_null
+    tmp <-
+      tempfile()
 
-    if (use_tmp_file) {
-      tmp <-
-        tempfile()
+    url %>%
+      curl_download(url = ., tmp)
 
-      url %>%
-        curl_download(url = ., tmp)
+    con <-
+      unzip(tmp)
 
-      con <-
-        unzip(tmp)
-
-      if (con %>% str_detect("XLS|xls|xlsx|XLSX")) {
-        adv_data <-
-          con %>% parse_adv_excel_data()
-      }
-
-      if (con %>% str_detect("csv|CSV")) {
-        adv_data <-
-          con %>% parse_adv_csv() %>%
-          suppressWarnings()
-      }
-
-      if (con %>% str_detect("txt|TXT")) {
-        adv_data <-
-          con %>% parse_adv_txt_data()
-      }
-
-      con %>%
-        unlink
-    } else {
-      only_folder <-
-        !folder_name %>% is_null & file_directory %>% is_null
-      if (only_folder) {
-        file_directory <-
-          getwd()
-      }
-
-      file_directory <-
-        file_directory %>%
-        paste0('/', folder_name)
-
-
-      file <-
-        url %>% basename()
-
-      temp.dir <-
-        file_directory
-
-      file_path <-
-        temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
-      if (remove_existing_folder) {
-        if (dir.exists(paths = file_path)) {
-          "rm -R " %>%
-            paste0(temp.dir) %>%
-            system()
-          if (empty_trash == T) {
-            system('rm -rf ~/.Trash/*')
-          }
-        }
-      }
-
-      if (!dir.exists(paths = file_path)) {
-        dir.create(temp.dir)
-      }
-
-      file <-
-        temp.dir %>%
-        paste0('/', file)
-      httr::set_config(config(ssl_verifypeer = 0L))
-
-      url %>%
-        curl_download(url = ., destfile = file)
-
-      file %>%
-        unzip(exdir = paste0(temp.dir, '/'))
-
-      dir_files <-
-        temp.dir %>%
-        list.files()
-
-      file_name <-
-        dir_files %>%
-        str_detect('CSV|csv|TXT|txt|XLS|XLSX|xlsx|xls') %>%
-        dir_files[.]
-
-      file_name <-
-        file_directory %>%
-        paste0('/', file_name)
-
-      if (file_name %>% str_detect("XLS|xls|xlsx|XLSX")) {
-        adv_data <-
-          file_name %>% parse_adv_excel_data()
-      }
-
-      if (file_name %>% str_detect("csv|CSV")) {
-        adv_data <-
-          file_name %>% parse_adv_csv() %>%
-          suppressWarnings()
-      }
-
-      if (file_name %>% str_detect("txt|TXT")) {
-        adv_data <-
-          file_name %>% parse_adv_txt_data()
-      }
-      if (remove_files) {
-        "rm -R " %>%
-          paste0(temp.dir) %>%
-          system()
-        if (empty_trash) {
-          system('rm -rf ~/.Trash/*')
-        }
-      }
+    if (con %>% str_detect("XLS|xls|xlsx|XLSX")) {
+      adv_data <-
+        con %>% parse_adv_excel_data()
     }
+
+    if (con %>% str_detect("csv|CSV")) {
+      adv_data <-
+        con %>% parse_adv_csv() %>%
+        suppressWarnings()
+    }
+
+    if (con %>% str_detect("txt|TXT")) {
+      adv_data <-
+        con %>% parse_adv_txt_data()
+    }
+
+    con %>%
+      unlink()
 
     sec_names_df <-
       get_sec_adv_name_df()
@@ -9396,7 +9409,7 @@ parse_sec_adv_data_url <-
       mutate(idRow = 1:n()) %>%
       group_by(nameSEC) %>%
       dplyr::filter(idRow == min(idRow)) %>%
-      ungroup %>%
+      ungroup() %>%
       .$idRow
 
     adv_data <-
@@ -9404,28 +9417,27 @@ parse_sec_adv_data_url <-
 
     df_names <-
       names(adv_data) %>%
-      map(function(x) {
+      map_df(function(x) {
         data_frame(nameActual = sec_names_df %>%
                      dplyr::filter(nameSEC == x) %>%
                      .$nameActual)
       }) %>%
-      bind_rows %>%
       .$nameActual
 
     adv_data <-
       adv_data %>%
-      set_names(df_names)
+      purrr::set_names(df_names)
 
     has_columns <-
       (adv_data %>%
          dplyr::select(-matches("country")) %>%
-         dplyr::select(matches("^count[A-Z]")) %>% ncol > 0) &
+         dplyr::select(matches("^count[A-Z]")) %>% ncol() > 0) &
       (adv_data %>%
          dplyr::select(-matches("country")) %>%
          dplyr::select(matches("^count[A-Z]")) %>%
          map_df(class) %>%
          gather(column, class) %>%
-         dplyr::filter(class == 'character') %>% nrow > 0)
+         dplyr::filter(class == 'character') %>% nrow() > 0)
 
     if (has_columns) {
       change_to_range_cols <-
@@ -9444,44 +9456,47 @@ parse_sec_adv_data_url <-
           names(adv_data)[name_loc] %>% str_replace("count", 'range')
       }
     }
-    if (adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names %>% length > 0) {
+
+    if (adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names() %>% length() > 0) {
       adv_data <-
         adv_data %>%
         mutate_at(.cols =
-                    adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names,
+                    adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names(),
                   .funs = str_trim) %>%
         mutate_at(.cols =
-                    adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names,
+                    adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names(),
                   funs(if_else(. == "Y", TRUE, FALSE))) %>%
         suppressWarnings()
     }
 
-    if (adv_data %>% dplyr::select(matches("^url[M]")) %>% names %>% length > 0) {
+    if (adv_data %>% dplyr::select(matches("^url[M]")) %>% names() %>% length() > 0) {
       adv_data <-
         adv_data %>%
         mutate_at(.cols =
-                    adv_data %>% dplyr::select(matches("^url[M]")) %>% names,
+                    adv_data %>% dplyr::select(matches("^url[M]")) %>% names(),
                   .funs = str_to_lower) %>%
         suppressWarnings()
     }
 
-    if (adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names %>% length > 0) {
+    if (adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names() %>% length() > 0) {
       adv_data <-
         adv_data %>%
         mutate_at(
           .cols =
             adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names,
-          .funs = str_to_lower
+          funs(. %>% stringr::str_to_upper())
         ) %>%
         suppressWarnings()
 
     }
+
     whack_date <-
       adv_data %>%
       dplyr::select(matches("^date")) %>%
       keep(is.character) %>%
-      names %>% length > 0
-    if (whack_date) {
+      names() %>% length() > 0
+
+     if (whack_date) {
       char_col <-
         adv_data %>%
         dplyr::select(matches("^date")) %>%
@@ -9508,7 +9523,7 @@ parse_sec_adv_data_url <-
       mutate(idCRD = idCRD %>% as.integer)
 
     if ('idLEI' %in% names(adv_data)) {
-      if (adv_data$idLEI %>% class == 'numeric') {
+      if (adv_data$idLEI %>% class() == 'numeric') {
         adv_data <-
           adv_data %>%
           mutate(idLEI = idLEI %>% as.character() %>% str_replace_all("N/A", NA))
@@ -9516,11 +9531,17 @@ parse_sec_adv_data_url <-
     }
 
     if ('rangeClientsFinancialPlanning' %in% names(adv_data)) {
-      if (adv_data$rangeClientsFinancialPlanning %>% class == 'numeric') {
+      if (adv_data$rangeClientsFinancialPlanning %>% class() == 'numeric') {
         adv_data <-
           adv_data %>%
           mutate(rangeClientsFinancialPlanning = rangeClientsFinancialPlanning %>% as.character)
       }
+    }
+
+    if (return_message) {
+      list("Parsed: ", url) %>%
+        purrr::invoke(paste0, .) %>%
+        message()
     }
 
     adv_data <-
@@ -9529,87 +9550,94 @@ parse_sec_adv_data_url <-
              isExempt = is_exempt) %>%
       dplyr::select(dateDataADV, isExempt, everything())
 
+    adv_data <-
+      adv_data %>%
+      mutate_at(adv_data %>% select(matches("^country|^name|^city|^state|^range[A-Z]|^type[A-Z]")) %>% names(),
+                funs(. %>% stringr::str_to_upper()))
+
     return(adv_data)
   }
 
 get_period_type_adv_data <-
   function(period = "2016-08",
-           is_exempt = F,
-           only_most_recent = F,
-           file_directory = NULL,
-           folder_name = 'adv_data',
-           remove_existing_folder = F,
-           remove_files = F,
-           empty_trash = F) {
-    if (!'url_df' %>% exists){
-      url_df <-
-        get_data_adv_period_urls(return_wide = F)
+           is_exempt = FALSE,
+           only_most_recent = FALSE,
+           return_message = TRUE) {
+    if (!'sec_adv_url_df' %>% exists()){
+      sec_adv_url_df <-
+        get_data_adv_period_urls(return_wide = FALSE)
+
+      assign(x = 'sec_url_df', eval(sec_adv_url_df),  envir = .GlobalEnv)
     }
 
     if (only_most_recent) {
       period <-
-        url_df %>% dplyr::filter(dateData == max(dateData)) %>% .$periodData %>% unique
+        sec_adv_url_df %>% dplyr::filter(dateData == max(dateData)) %>% .$periodData %>% unique
     }
 
-    if (!period %in% url_df$periodData) {
+    if (!period %in% sec_adv_url_df$periodData) {
       available_periods <-
-        url_df$periodData %>% unique
+        sec_adv_url_df$periodData %>% unique
 
       "\nSorry periods can only be:\n" %>%
         paste0(paste0(available_periods, collapse = '\n')) %>%
         stop()
     }
+
     url_data <-
-      url_df %>% dplyr::filter(periodData == period, isExempt == is_exempt) %>% .$urlZip
+      sec_adv_url_df %>% dplyr::filter(periodData == period, isExempt == is_exempt) %>% .$urlZip
 
     parse_sec_adv_data_url_safe <-
       possibly(parse_sec_adv_data_url, otherwise = NULL)
 
     adv_data <-
-      url_data %>%
-      parse_sec_adv_data_url_safe(
-        file_directory = file_directory,
-        folder_name = folder_name,
-        remove_existing_folder = remove_existing_folder,
-        remove_files = remove_files,
-        empty_trash = empty_trash
-      )
+      parse_sec_adv_data_url(url = url_data)
+
     return(adv_data)
   }
 
 
-#' Get ADV summary data for specified periods and filing types
+#' ADV managers periods data
 #'
-#' @param periods Selected periods in Year-Month form
-#' @param all_periods Do you want all periods
-#' @param is_exempt Do you want to exempt, non-exempt or both types of filers
-#' @param only_most_recent Select only the most recent period
-#' @param file_directory Location of the directory you want to save your data into, if none specified a temporary file will be created
-#' @param folder_name Name of the folder you want the data to be downloaded into
-#' @param remove_files Remove the files from the folders
-#' @param empty_trash Do you wish to empty the trash after being read into R
-#' @import dplyr stringr lubridate readr readxl rvest purrr
+#' This function returns monthly summary
+#' information for every ADV filing manager
+#' from 2006 onwards.
+#'
+#' @param periods dates in year-month form
+#' @param all_periods include all periods
+#' @param is_exempt exempt, non-exempt filers
+#' @param nest_data return a nested data frame
+#' @param return_message return a message after parsing data
+#' @import dplyr stringr lubridate readr readxl rvest purrr httr tidyr
 #' @importFrom curl curl_download
 #' @importFrom magrittr extract2
-#' @return
+#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by period and type of filer,
+#' where \code{nest_data} is \code{FALSE} a data_frame
 #' @export
-#'
+#' @family IAPD
+#' @family ADV
+#' @family entity search
+#' @family fund data
 #' @examples
-#' get_data_adv_managers_periods_summaries(periods = c("2006-06"), all_periods = F, is_exempt = c(F,T), only_most_recent = F,
-#' file_directory = NULL, folder_name = 'adv_data', remove_existing_folder = F, remove_files = T, empty_trash = T)
+#' #' \dontrun{
+#' get_data_adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"), all_periods = FALSE, is_exempt = c(FALSE,TRUE), only_most_recent = FALSE, nest_data = FALSE)
+#'
+#' get_data_adv_managers_periods_summaries(only_most_recent = TRUE)
+#' }
 get_data_adv_managers_periods_summaries <-
   function(periods = c("2006-06"),
-           all_periods = F,
-           is_exempt = c(F,T),
-           only_most_recent = F,
-           file_directory = NULL,
-           folder_name = 'adv_data',
-           remove_existing_folder = F,
-           remove_files = F,
-           empty_trash = F) {
+           all_periods = FALSE,
+           only_most_recent = FALSE,
+           is_exempt = c(TRUE, FALSE),
+           nest_data = FALSE,
+           return_message= TRUE) {
     if (all_periods) {
       periods <-
-        get_data_adv_period_urls() %>% .$periodData %>% unique
+        get_data_adv_period_urls() %>% .$periodData %>% unique()
+    }
+
+    if (only_most_recent) {
+      periods <- get_data_adv_period_urls() %>% slice(1) %>% .$periodData %>% unique()
     }
 
     input_df <-
@@ -9629,16 +9657,12 @@ get_data_adv_managers_periods_summaries <-
           period = input_df$period[x],
           is_exempt = input_df$exempt[x],
           only_most_recent = input_df$only_most_recent[x],
-          file_directory = file_directory,
-          folder_name = folder_name,
-          remove_existing_folder = remove_existing_folder,
-          remove_files = remove_files,
-          empty_trash = empty_trash
+          return_message = return_message
         )
       }) %>%
       suppressWarnings()
     has_data <-
-      all_adv_data %>% nrow > 0
+      all_adv_data %>% nrow() > 0
     if (has_data) {
       all_adv_data <-
         all_adv_data %>%
@@ -9660,7 +9684,7 @@ get_data_adv_managers_periods_summaries <-
           .cols =
             all_adv_data %>% dplyr::select(matches("^count[A-Z]"), -matches("country")) %>% names,
           .funs =
-            funs(. %>% formattable::comma())
+            funs(. %>% formattable::comma(digits = 0))
         )
 
       has_amounts <-
@@ -9692,126 +9716,61 @@ get_data_adv_managers_periods_summaries <-
                     all_adv_data %>% dplyr::select(matches("^address|^country[A-Z]|^city^state")) %>% names,
                   funs(. %>% stringr::str_to_upper()))
 
-      if (names(all_adv_data) %>% str_count('^addressStreet2OfficePrimary') %>% sum > 0) {
-        locationOfficePrimary <-
+      if (names(all_adv_data) %>% str_count('^addressStreet2OfficePrimary') %>% sum() > 0) {
+        addressOfficePrimary <-
           all_adv_data %>%
           replace_na(list(addressStreet2OfficePrimary = '', stateOfficePrimary = '')) %>%
-          mutate(locationOfficePrimary =
+          mutate(addressOfficePrimary =
                    addressStreet1OfficePrimary %>% paste0(' ', addressStreet2OfficePrimary, ' ', cityOfficePrimary, ', ', stateOfficePrimary, ', ', countryOfficePrimary) %>% str_trim) %>%
-          .$locationOfficePrimary
+          .$addressOfficePrimary
 
         all_adv_data <-
           all_adv_data %>%
-          mutate(locationOfficePrimary) %>%
-          dplyr::select(dateDataADV:typeRegulationSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, locationOfficePrimary, everything())
+          mutate(addressOfficePrimary) %>%
+          dplyr::select(dateDataADV:typeRegulationSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, addressOfficePrimary, everything())
       }
+    }
+
+    if (nest_data) {
+      all_adv_data <-
+        all_adv_data %>%
+        nest(-c(dateDataADV, isExempt), .key = 'dataADV')
     }
 
     return(all_adv_data)
   }
 
-#' Get ADV filing data for the most recent filing period
+#' ADV managers most recent summary data
 #'
-#' @param file_directory Location of the directory you want to save your data into, if none specified a temporary file will be created
-#' @param folder_name Name of the folder you want the data to be downloaded into
-#' @param remove_files Remove the files from the folders
-#' @param empty_trash Do you wish to empty the trash after being read into R
-#' @return
+#' This function returns abbreviated ADV data for
+#' all filing managers for the most recent period.
+#'
+#' For multiple periods and all information see \code{\link{get_data_adv_managers_periods_summariess}}
+#'
+#' @param file_directory directory you want to save your data into, if none specified a temporary file will be created
+#' @param folder_name older you want the data to be downloaded into
+#' @param remove_files remove the files from the folders
+#' @param empty_trash empty the trash after being read into R
+#' @param return_message return a message after parsing data
+#' @return a data frame
 #' @export
-#'
+#' @family IAPD
+#' @family ADV
+#' @family entity search
+#' @family fund data
 #' @examples
-#' get_data_adv_managers_current_period_summary(ile_directory = NULL, folder_name = 'adv_data', remove_files = T, empty_trash = T)
+#' #' \dontrun{
+#' get_data_adv_managers_current_period_summary(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasManagerFelonyPleaConviction", "hasManagerFelonyCharge", "hasManagerMisdemeanorPleaConviction"))
+#' }
 
 get_data_adv_managers_current_period_summary <-
-  function(file_directory = NULL,
-           folder_name = 'adv_data',
-           remove_files = F,
-           empty_trash = F
-  ) {
+  function(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasManagerFelonyPleaConviction", "hasManagerFelonyCharge", "hasManagerMisdemeanorPleaConviction"),
+           return_message = TRUE) {
     get_data_adv_managers_periods_summaries_safe <-
       purrr::possibly(get_data_adv_managers_periods_summaries, NULL)
 
     all_data <-
-      get_data_adv_managers_periods_summaries_safe(
-        only_most_recent = T,
-        all_periods = F,
-        remove_files = remove_files,
-        empty_trash = empty_trash,
-        is_exempt = c(F, T),
-        file_directory = file_directory,
-        folder_name = folder_name
-      )
-    select_names <-
-      c(
-        "dateDataADV",
-        "isExempt",
-        "idRegionSEC",
-        "idCRD",
-        "idSEC",
-        "typeRegulationSEC",
-        "nameEntityManager",
-        "nameEntityManagerLegal",
-        'locationOfficePrimary',
-        "addressStreet1OfficePrimary",
-        "addressStreet2OfficePrimary",
-        "cityOfficePrimary",
-        "stateOfficePrimary",
-        "countryOfficePrimary",
-        "zipOfficePrimary",
-        "phoneOfficePrimary",
-        "statusSEC",
-        "dateStatusSEC",
-        "dateADVLatest",
-        "urlManager",
-        "isForeignRegisteredEntity",
-        "stateDateJurisdictionNotice",
-        "idCIK",
-        "hasAUMGreater1B",
-        "idLEI",
-        "hasAUMGreater100M",
-        "typeEntity",
-        "countryEntityOrganized",
-        "countEmployeesTotal",
-        "countEmployeesInvestmentAdvisory",
-        "amountAUMTotal",
-        "amountAUMDiscretionary",
-        "amountAUMNonDiscretionary",
-        "countAccountsDiscretionary",
-        "countAccountsNonDiscretionary",
-        "countAccountsTotal",
-        "isManagerSecuritiesPortfolio",
-        "hasFeeAUM",
-        "hasFeeHourlyCharge",
-        "hasFeeSubscription",
-        "hasFeeFixed",
-        "hasFeeCommission",
-        "hasFeePerformance",
-        "hasFeeOther",
-        "typeFeeOther",
-        "isBrokerDealer",
-        "isBrokerDealerRepresentative",
-        "isCommodityPoolOperator",
-        "isFuturesMerchant",
-        "isRealEstateBrokerDealerAgent",
-        "isInsuranceBrokerAgent",
-        "isBank",
-        "isTrustCompany",
-        "isRegisteredMunicipalAdviser",
-        "isRegisteredSecuritySwapDealer",
-        "isRegistredSecuritySwapParticipant",
-        "isAccountingFirm",
-        "isLawFirm",
-        "isOtherFinancialProductSalesperson",
-        "typeOtherFinancialProductSalesperson",
-        "countEmployeesBrokerDealer",
-        "countEmployeesStateRegisteredInvestmentAdviser",
-        "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities",
-        "countEmployeesLicensedInsuranceAgents",
-        "countEmployeesSolicitAdvisoryClients",
-        "hasManagerFelonyPleaConviction",
-        "hasManagerFelonyCharge",
-        "hasManagerMisdemeanorPleaConviction"
-      )
+      get_data_adv_managers_periods_summaries(only_most_recent = TRUE, is_exempt = c(TRUE, FALSE))
 
     all_data <-
       all_data %>%
