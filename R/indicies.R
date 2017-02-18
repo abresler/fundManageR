@@ -64,7 +64,7 @@ get_data_sp500_constituents <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-
+    closeAllConnections()
     return(df)
   }
 
@@ -111,16 +111,18 @@ get_data_msci_indicies <-
       group_by(nameIndex) %>%
       filter(idIndex == min(idIndex)) %>%
       ungroup()
-
+    closeAllConnections()
     return(index_name_df)
 
   }
 
-parse_msci_json_constituent_url <-
-  function(url = "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=701268",
-           return_message = TRUE) {
+parse_msci_json_constituent_url <- function(url = "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=701268",
+                                            return_message = TRUE) {
+  df <-
+    data_frame()
+  success <- function(res) {
     data <-
-      url %>%
+      res$url %>%
       fromJSON(simplifyDataFrame = TRUE) %>%
       .$constituents %>%
       as_data_frame() %>%
@@ -128,11 +130,11 @@ parse_msci_json_constituent_url <-
       mutate_all(str_to_upper) %>%
       select(nameCompany, pctWeight) %>%
       mutate(pctWeight = (pctWeight %>% as.numeric() / 100) %>% formattable::percent(digits = 5)) %>%
-      mutate(urlIndexConstituents = url)
+      mutate(urlIndexConstituents = res$url)
 
     if (return_message) {
       index_id <-
-        url %>% str_split('p_p_resource_id=') %>%
+        res$url %>% str_split('p_p_resource_id=') %>%
         flatten_chr() %>%
         .[[2]] %>%
         as.numeric()
@@ -141,8 +143,22 @@ parse_msci_json_constituent_url <-
         message()
     }
 
-    return(data)
+    closeAllConnections()
+
+    df <<-
+      df %>%
+      bind_rows(data)
   }
+  failure <- function(msg) {
+    data_frame()
+  }
+  url %>%
+    walk(function(x) {
+      curl_fetch_multi(url = x, success, failure)
+    })
+  multi_run()
+  df
+}
 
 #' MSCI Indicies Constituents
 #'
@@ -159,7 +175,7 @@ parse_msci_json_constituent_url <-
 #' @family MSCI
 #' @family index constituents
 #' @export
-#' @import dplyr purrr formattable tidyr stringr jsonlite
+#' @import dplyr purrr formattable tidyr stringr jsonlite curl
 #' @examples
 #' library(stringr)
 #' df_msci_indicies <-
@@ -198,7 +214,7 @@ get_data_msci_indicies_constituents <-
     }
 
     parse_msci_json_constituent_url_safe <-
-      purrr::possibly(parse_msci_json_constituent_url, data_frame())
+      purrr::possibly(parse_msci_json_constituent_url2, data_frame())
 
     const_df <-
       index_df$urlIndexConstituents %>%
@@ -244,7 +260,7 @@ get_data_msci_indicies_constituents <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-
+    closeAllConnections()
     return(const_df)
   }
 
@@ -333,5 +349,6 @@ get_data_msci_realtime_index_values <-
                  typeCurrency
                ))
     }
+    closeAllConnections()
     return(index_data)
   }

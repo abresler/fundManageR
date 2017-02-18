@@ -4,7 +4,7 @@
 \alias{get_data_nareit_constituent_years}
 \title{NAREIT index constituency data by year}
 \usage{
-get_data_nareit_constituent_years(years = 1991:2016, resolve_names = TRUE,
+get_data_nareit_constituent_years(years = 2010:2016, resolve_names = TRUE,
   nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
@@ -46,4 +46,3 @@ Other index constituents: \code{\link{get_data_crsp_indicies_constituents}},
   \code{\link{get_data_msci_indicies_constituents}},
   \code{\link{get_data_sp500_constituents}}
 }
-

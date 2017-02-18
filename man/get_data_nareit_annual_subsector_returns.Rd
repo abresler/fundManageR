@@ -20,7 +20,9 @@ This function returns annual subsector returns
 for NAREIT sub sectors from 1994 to prior year-end.
 }
 \examples{
+\dontrun{
 get_data_nareit_annual_subsector_returns(return_wide = TRUE, return_message = TRUE)
+}
 }
 \references{
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
@@ -43,4 +45,3 @@ Other index values: \code{\link{get_data_crsp_indicies_returns}},
   \code{\link{get_data_msci_realtime_index_values}},
   \code{\link{get_data_nareit_monthly_returns}}
 }
-

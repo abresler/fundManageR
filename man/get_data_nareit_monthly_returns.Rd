@@ -19,7 +19,9 @@ This function acquires FTSE NAREIT monthly return data
 by sector from 1971 to the prior month's end.
 }
 \examples{
+\dontrun{
 get_data_nareit_monthly_returns(return_wide = FALSE)
+}
 }
 \references{
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
@@ -42,4 +44,3 @@ Other index values: \code{\link{get_data_crsp_indicies_returns}},
   \code{\link{get_data_msci_realtime_index_values}},
   \code{\link{get_data_nareit_annual_subsector_returns}}
 }
-

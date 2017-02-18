@@ -532,6 +532,7 @@ parse_for_underlying_asset <-
           select(-idRow) %>%
           suppressMessages()
       }
+      closeAllConnections()
       return(data)
     }
   }
@@ -727,12 +728,13 @@ download_dtcc_url <-
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>% message()
     }
+    closeAllConnections()
     return(data)
   }
 
 get_data_dtcc_assets_days <-
   function(assets = NULL,
-           start_date = "2016-12-01",
+           start_date = "2017-01-21",
            end_date = Sys.Date(),
            nest_data = TRUE,
            return_message = TRUE) {
@@ -864,11 +866,11 @@ parse_most_recent_url <-
       select(datetimeData, nameAsset, everything()) %>%
       suppressMessages()
 
-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>% message()
     }
+    closeAllConnections()
     return(df)
   }
 
@@ -899,15 +901,17 @@ parse_most_recent_url <-
 #' @family transaction data
 #' @import rvest httr dplyr stringr tidyr purrr
 #' @examples
+#' \dontrun{
 #' get_data_dtcc_most_recent_trades(assets = NULL, nest_data = FALSE)
-#' get_data_dtcc_most_recent_trades(assets = c('credits', 'equities', 'rates))
+#' get_data_dtcc_most_recent_trades(assets = c('credits', 'equities', 'rates'))
+#' }
 
 get_data_dtcc_most_recent_trades <-
   function(assets = NULL,
            nest_data = TRUE,
            return_message = TRUE) {
     assets <-
-      assets %>% str_to_upper()
+      assets %>% str_to_lower()
     css_df <-
       get_dtcc_recent_schema_df()
 
@@ -927,6 +931,7 @@ get_data_dtcc_most_recent_trades <-
         css_df %>%
         filter(nameAsset %in% assets)
     }
+
     parse_most_recent_url_safe <-
       purrr::possibly(parse_most_recent_url, data_frame())
     all_data <-
@@ -967,6 +972,7 @@ get_data_dtcc_most_recent_trades <-
         all_data %>%
         nest(-c(nameAsset, typeAction), .key = 'dataDTCC')
     }
+    closeAllConnections()
     return(all_data)
   }
 
@@ -1022,6 +1028,7 @@ get_data_today <-
     data <-
       dtcc_url %>%
       get_c_url_data_safe()
+    closeAllConnections()
     return(data)
   }
 
@@ -1286,5 +1293,6 @@ get_data_dtcc_trades <-
         all_data %>%
         nest(-c(dateData, nameAsset), .key = dataDTCC)
     }
+    closeAllConnections()
     return(all_data)
   }

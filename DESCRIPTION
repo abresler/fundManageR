@@ -1,16 +1,14 @@
 Package: fundManageR
 Type: Package
 Title: Investment management toolkit for R
-Version: 0.5.0113
+Version: 0.5.0115
 Authors@R: person("Alex", "Bresler", email = "abresler@asbcllc.com", role = c("aut", "cre"))
 Maintainer: Alex Bresler <abresler@asbcllc.com>
-Encoding: UTF-8
 Description: A comprehensive investment management industry toolkit for R that provides access to common industry calculation functions and a variety of data feeds.  Data feeds include a full wrapper of The Securities and Exchange Commission, FINRA, NAREIT, DTCC, YCombinator, MSCI, Center for Research in Securities Prices (CRSP) and more.  More data feeds and calculation functions will be added over time.
 URL: https://github.com/abresler/fundManageR
-BugReports:  https://github.com/abresler/fundManageR/issues
+BugReports: https://github.com/abresler/fundManageR/issues
 License: MIT + file LICENSE
-Encoding: UTF-8
-Suggests:
+Suggests: 
     testthat
 LazyData: true
 Requires: tidyverse
@@ -20,6 +18,7 @@ Imports:
   curlconverter,
   dplyr, 
   formattable, 
+  ggplot2,
   httr,
   jsonlite,
   lazyeval,
@@ -28,7 +27,7 @@ Imports:
   magrittr,
   pdftools,
   purrr,
-  quantmod,
+  plotly,
   readr,
   readxl,
   rio,
@@ -44,6 +43,4 @@ Imports:
   xlsx,
   XBRL,
   xml2
-Suggests:
-    testthat
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

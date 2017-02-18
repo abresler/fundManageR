@@ -24,4 +24,3 @@ Other utility function: \code{\link{get_class_df}},
   \code{\link{tidy_column_formats}},
   \code{\link{tidy_column_relations}}
 }
-

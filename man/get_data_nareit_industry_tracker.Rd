@@ -23,7 +23,9 @@ performance metrics including Funds From Operation [FFO],
 Dividends, and Net Operating Income from 2000.
 }
 \examples{
+\dontrun{
 get_data_nareit_industry_tracker(return_message = TRUE, return_wide = TRUE)
+}
 }
 \seealso{
 Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
@@ -38,4 +40,3 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_reit_funds}},
   \code{\link{get_reit_entity_dictionary}}
 }
-

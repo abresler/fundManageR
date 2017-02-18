@@ -21,4 +21,3 @@ be viewed and edited via the \code{listviewer} package.
 \examples{
 visualize_data_frame(mtcars)
 }
-

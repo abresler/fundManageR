@@ -27,6 +27,9 @@ get_data_ycombinator_alumni(nest_data = FALSE)
 \href{https://www.ycombinator.com/}{YCombinator}
 }
 \seealso{
+Other venture capital: \code{\link{calculate_valuation_post_money}},
+  \code{\link{get_data_cb_unicorns}}
+
 Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_adv_managers_filings}},
   \code{\link{get_data_adv_managers_metadata}},
@@ -35,7 +38,7 @@ Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_nareit_entities}},
   \code{\link{get_data_reit_funds}},
   \code{\link{get_data_rf_leis}},
-  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_rf_sec_13F_companies}},
   \code{\link{get_data_sec_bankruptcies}},
   \code{\link{get_data_sec_broker_dealers}},
   \code{\link{get_data_sec_ciks}},
@@ -49,8 +52,4 @@ Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_sec_xbrl_periods}},
   \code{\link{get_data_securities_offerings}},
   \code{\link{get_data_us_public_companies}}
-
-Other venture capital: \code{\link{calculate_valuation_post_money}},
-  \code{\link{get_data_cb_unicorns}}
 }
-

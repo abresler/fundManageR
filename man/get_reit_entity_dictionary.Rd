@@ -20,6 +20,14 @@ get_reit_entity_dictionary()
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
 }
 \seealso{
+Other dictionary: \code{\link{get_data_location_codes}},
+  \code{\link{get_data_sec_rules}},
+  \code{\link{get_data_sic_naics_codes}},
+  \code{\link{get_dictionary_all_fred_series_ids}},
+  \code{\link{get_dictionary_sec_filing_codes}},
+  \code{\link{get_dictionary_sec_form_codes}},
+  \code{\link{get_dictionary_sic_codes}}
+
 Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_nareit_capital_raises}},
   \code{\link{get_data_nareit_constituent_years}},
@@ -31,11 +39,4 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_nareit_property_msa}},
   \code{\link{get_data_nareit_state_info}},
   \code{\link{get_data_reit_funds}}
-
-Other dictionary: \code{\link{get_data_location_codes}},
-  \code{\link{get_data_sec_rules}},
-  \code{\link{get_data_sic_codes}},
-  \code{\link{get_dictionary_sec_filing_codes}},
-  \code{\link{get_dictionary_sec_form_codes}}
 }
-

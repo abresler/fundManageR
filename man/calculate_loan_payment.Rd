@@ -60,6 +60,13 @@ override_monthly_interest = FALSE, interest_reserve_period = 0, balloon_month = 
 return_annual_summary = F)
 }
 \seealso{
+Other leveraged finance calculation: \code{\link{calculate_cash_flow_dates}},
+  \code{\link{calculate_cash_flow_waterfall_partnership}},
+  \code{\link{calculate_cash_flow_waterfall}},
+  \code{\link{calculate_cash_flows_returns}},
+  \code{\link{calculate_irr_periods}},
+  \code{\link{calculate_leverage_metrics}}
+
 Other calculation: \code{\link{calculate_cash_flow_dates}},
   \code{\link{calculate_cash_flow_waterfall_partnership}},
   \code{\link{calculate_cash_flow_waterfall}},
@@ -72,12 +79,4 @@ Other calculation: \code{\link{calculate_cash_flow_dates}},
   \code{\link{calculate_share_proceeds}},
   \code{\link{calculate_valuation_post_money}},
   \code{\link{tidy_promote_structure}}
-
-Other leveraged finance calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall_partnership}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_leverage_metrics}}
 }
-

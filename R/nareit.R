@@ -26,271 +26,291 @@ get_nareit_constiutent_urls <-
     urls <-
       slugs %>% paste0('https://www.reit.com', .)
 
-    data_frame(yearData = year,
+    df <-
+      data_frame(yearData = year,
                urlData = urls)
+    closeAllConnections()
+    return(df)
   }
 
 parse_nareit_constituent_url <-
   function(url = "https://www.reit.com/sites/default/files/returns/FNUSIC2016.pdf",
            return_message = TRUE) {
-    df_metadata <-
-      url %>%
-      tabulizer::extract_metadata() %>%
-      flatten_df()
+    df <-
+      data_frame()
+    success <- function(res) {
+      url <-
+        res$url
+      df_metadata <-
+        url %>%
+        tabulizer::extract_metadata() %>%
+        flatten_df()
 
-    year_data <-
-      url %>%
-      str_replace_all(
-        'https://www.reit.com/sites/default/files/returns/|.pdf|https://www.reit.com//sites/default/files/returns/',
-        ''
-      ) %>%
-      readr::parse_number()
+      year_data <-
+        url %>%
+        str_replace_all(
+          'https://www.reit.com/sites/default/files/returns/|.pdf|https://www.reit.com//sites/default/files/returns/',
+          ''
+        ) %>%
+        readr::parse_number()
 
-    if ('modified' %in% names(df_metadata)) {
-      date_parts <-
-        df_metadata$modified %>% str_replace_all(" EDT | EST ", ' ') %>%
-        str_split('\\ ') %>%
-        flatten_chr()
+      if ('modified' %in% names(df_metadata)) {
+        date_parts <-
+          df_metadata$modified %>% str_replace_all(" EDT | EST ", ' ') %>%
+          str_split('\\ ') %>%
+          flatten_chr()
 
-      date_year <-
-        date_parts[date_parts %>% length()]
+        date_year <-
+          date_parts[date_parts %>% length()]
 
-      other_parts <-
-        date_parts[1:(date_parts %>% length() - 1)] %>%
-        .[2:length(.)]
+        other_parts <-
+          date_parts[1:(date_parts %>% length() - 1)] %>%
+          .[2:length(.)]
 
-      datetime_file <-
-        c(date_year, other_parts) %>%
-        paste0(collapse = ' ') %>%
-        lubridate::ymd_hms()
+        datetime_file <-
+          c(date_year, other_parts) %>%
+          paste0(collapse = ' ') %>%
+          lubridate::ymd_hms()
 
-      date_data <-
-        datetime_file %>%
-        as.Date()
-    } else {
-      datetime_file <- NA
-      date_data <- NA
+        date_data <-
+          datetime_file %>%
+          as.Date()
+      } else {
+        datetime_file <- NA
+        date_data <- NA
+      }
+
+      tables <-
+        url %>%
+        extract_tables(1:df_metadata$pages)
+
+      all_data <-
+        1:length(tables) %>%
+        map_df(function(x) {
+          tables[[x]] %>%
+            as_data_frame() %>%
+            mutate(idTable = x)
+
+        })
+
+      data_cols <-
+        all_data %>% ncol() %>%
+        as.numeric()
+
+      if (data_cols == 5) {
+        all_data <-
+          all_data %>%
+          select(-matches("idTable")) %>%
+          purrr::set_names(c('nameCompany',
+                             'idTicker',
+                             'typeInvestment',
+                             'nameSector')) %>%
+          mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
+          mutate(idRow = 1:n())
+
+        sector_df <-
+          all_data %>%
+          filter(nameCompany %>% str_detect(":")) %>%
+          select(nameCompany, idRow) %>%
+          separate(nameCompany, '\\:', into = c('ignore', 'nameSector')) %>%
+          mutate(idRow = idRow + 1) %>%
+          select(idRow, nameSector)
+
+        all_data <-
+          all_data %>%
+          filter(!idTicker == '') %>%
+          mutate(nameCompany = nameCompany %>% str_replace(' ', ':')) %>%
+          tidyr::separate(nameCompany,
+                          into = c('rank', 'nameCompany'),
+                          sep = '\\:') %>%
+          left_join(sector_df) %>%
+          fill(nameSector) %>%
+          select(-c(rank, idRow)) %>%
+          mutate(nameSector = ifelse(nameSector == '', NA, nameSector)) %>%
+          select(nameCompany, idTicker, nameSector, everything()) %>%
+          mutate(
+            yearData = year_data,
+            urlData = url,
+            yearData = year_data,
+            dateFile = date_data
+          ) %>%
+          select(yearData, dateFile, everything()) %>%
+          suppressMessages() %>%
+          suppressWarnings()
+
+      }
+
+      if (data_cols == 6) {
+        all_data <-
+          all_data %>%
+          select(-idTable) %>%
+          purrr::set_names(
+            c(
+              'nameCompany',
+              'idTicker',
+              'typeInvestment',
+              'idSubSector',
+              'amountEquityMarketCap'
+            )
+          ) %>%
+          mutate_all(funs(. %>% str_trim() %>% str_to_upper()))
+
+        all_data <-
+          all_data %>%
+          filter(!idTicker == '') %>%
+          filter(!idTicker %>% str_detect("TICKER|SYMBOLS")) %>%
+          mutate(
+            typeInvestment =  ifelse(typeInvestment == '', NA, typeInvestment),
+            idSubSector =  ifelse(idSubSector == '', NA, idSubSector),
+            amountEquityMarketCap = amountEquityMarketCap %>% readr::parse_number() * 1000000 %>% formattable::currency(digits = 0),
+            yearData = year_data,
+            urlData = url,
+            yearData = year_data,
+            dateFile = date_data
+          ) %>%
+          select(yearData, dateFile, everything()) %>%
+          suppressWarnings()
+      }
+
+      if ((data_cols == 7) & (year_data <= 2011)) {
+        all_data <-
+          all_data %>%
+          mutate(idRow = 1:n())
+
+        sector_df <-
+          all_data %>%
+          select(V1, idRow) %>%
+          filter(V1 %>% str_detect(":")) %>%
+          separate(V1, c('ignore', 'nameSector'), sep = '\\: ') %>%
+          select(nameSector, idRow) %>%
+          filter(!nameSector %>% is.na()) %>%
+          mutate(idRow = idRow + 1,
+                 nameSector = nameSector %>% str_trim() %>% str_to_upper()) %>%
+          suppressWarnings()
+
+        all_data <-
+          all_data %>%
+          filter(!V3 == '') %>%
+          filter(!V3 %>% str_detect('Ticker|Symbol')) %>%
+          select(-idTable)
+
+        all_data <-
+          all_data %>%
+          mutate(V1 = V1 %>% str_replace(' ', '\\:')) %>%
+          separate(V1,
+                   sep = '\\:',
+                   into = c('rank', 'nameCompany')) %>%
+          mutate(
+            idTicker = ifelse(V6 %>% is.na(), V2, V3),
+            typeInvestment = ifelse(V6 %>% is.na(), V3, V4),
+            nameSubSector = ifelse(V6 %>% is.na(), V4, V5),
+            amountEquityMarketCap = ifelse(V6 %>% is.na(), V5, V6)
+          ) %>%
+          select(
+            nameCompany,
+            idTicker,
+            typeInvestment,
+            nameSubSector,
+            amountEquityMarketCap,
+            idRow
+          ) %>%
+          left_join(sector_df) %>%
+          mutate_all(str_to_upper) %>%
+          fill(nameSector) %>%
+          select(-idRow) %>%
+          select(nameCompany, idTicker, nameSector, everything()) %>%
+          mutate(
+            amountEquityMarketCap = amountEquityMarketCap %>% readr::parse_number() * 1000000 %>% formattable::currency(digits = 0),
+            nameSubSector = ifelse(nameSubSector == '', NA, nameSubSector)
+          ) %>%
+          mutate(dateFile = date_data,
+                 yearData = year_data) %>%
+          select(yearData, dateFile, everything()) %>%
+          suppressMessages()
+
+      }
+
+      if ((data_cols == 7) & (year_data > 2011)) {
+        all_data <-
+          all_data %>%
+          mutate(idRow = 1:n(),
+                 V2 = ifelse(V2 == '' , V1 %>% substr(3, nchar(V1)), V2))
+
+        sector_df <-
+          all_data %>%
+          select(V2, idRow) %>%
+          filter(V2 %>% str_detect(":")) %>%
+          separate(V2, c('ignore', 'nameSector'), sep = '\\: ') %>%
+          select(nameSector, idRow) %>%
+          filter(!nameSector %>% is.na()) %>%
+          mutate(idRow = idRow + 1,
+                 nameSector = nameSector %>% str_trim() %>% str_to_upper()) %>%
+          suppressWarnings()
+
+        all_data <-
+          all_data %>%
+          filter(!V3 == '') %>%
+          select(-V1) %>%
+          filter(!V3 %>% str_detect("Ticker|Symbols")) %>%
+          select(-idTable) %>%
+          left_join(sector_df) %>%
+          fill(nameSector) %>%
+          select(-idRow) %>%
+          select(nameSector, everything()) %>%
+          mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
+          suppressMessages()
+
+        all_data <-
+          all_data %>%
+          purrr::set_names(
+            c(
+              'nameSector',
+              'nameCompany',
+              'idTicker',
+              'typeInvestment',
+              'nameSubSector',
+              'amountEquityMarketCap'
+            )
+          ) %>%
+          mutate(
+            nameSubSector =  ifelse(nameSubSector == '', NA, nameSubSector),
+            amountEquityMarketCap = amountEquityMarketCap %>% readr::parse_number() * 1000000 %>% formattable::currency(digits = 0)
+          )
+
+        all_data <-
+          all_data %>%
+          select(-matches("urlData")) %>%
+          mutate(urlData = url) %>%
+          mutate(dateFile = date_data,
+                 yearData = year_data) %>%
+          select(yearData, dateFile, everything())
+      }
+
+      if (return_message) {
+        list(
+          "Acquired ",
+          all_data %>% nrow() %>% formattable::comma(digits = 0),
+          ' REITs for the year ',
+          year_data
+        ) %>%
+          purrr::invoke(paste0, .) %>%
+          message()
+      }
+      closeAllConnections()
+      df <<-
+        df %>%
+        bind_rows(all_data)
     }
-
-    tables <-
-      url %>%
-      extract_tables(1:df_metadata$pages)
-
-    all_data <-
-      1:length(tables) %>%
-      map_df(function(x) {
-        tables[[x]] %>%
-          as_data_frame() %>%
-          mutate(idTable = x)
-
+    failure <- function(msg) {
+      data_frame()
+    }
+    url %>%
+      map(function(x) {
+        curl_fetch_multi(url = x, success, failure)
       })
-
-    data_cols <-
-      all_data %>% ncol() %>%
-      as.numeric()
-
-    if (data_cols == 5) {
-      all_data <-
-        all_data %>%
-        select(-matches("idTable")) %>%
-        purrr::set_names(c('nameCompany',
-                           'idTicker',
-                           'typeInvestment',
-                           'nameSector')) %>%
-        mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
-        mutate(idRow = 1:n())
-
-      sector_df <-
-        all_data %>%
-        filter(nameCompany %>% str_detect(":")) %>%
-        select(nameCompany, idRow) %>%
-        separate(nameCompany, '\\:', into = c('ignore', 'nameSector')) %>%
-        mutate(idRow = idRow + 1) %>%
-        select(idRow, nameSector)
-
-      all_data <-
-        all_data %>%
-        filter(!idTicker == '') %>%
-        mutate(nameCompany = nameCompany %>% str_replace(' ', ':')) %>%
-        tidyr::separate(nameCompany,
-                        into = c('rank', 'nameCompany'),
-                        sep = '\\:') %>%
-        left_join(sector_df) %>%
-        fill(nameSector) %>%
-        select(-c(rank, idRow)) %>%
-        mutate(nameSector = ifelse(nameSector == '', NA, nameSector)) %>%
-        select(nameCompany, idTicker, nameSector, everything()) %>%
-        mutate(
-          yearData = year_data,
-          urlData = url,
-          yearData = year_data,
-          dateFile = date_data
-        ) %>%
-        select(yearData, dateFile, everything()) %>%
-        suppressMessages() %>%
-        suppressWarnings()
-
-    }
-
-    if (data_cols == 6) {
-      all_data <-
-        all_data %>%
-        select(-idTable) %>%
-        purrr::set_names(
-          c(
-            'nameCompany',
-            'idTicker',
-            'typeInvestment',
-            'idSubSector',
-            'amountEquityMarketCap'
-          )
-        ) %>%
-        mutate_all(funs(. %>% str_trim() %>% str_to_upper()))
-
-      all_data <-
-        all_data %>%
-        filter(!idTicker == '') %>%
-        filter(!idTicker %>% str_detect("TICKER|SYMBOLS")) %>%
-        mutate(
-          typeInvestment =  ifelse(typeInvestment == '', NA, typeInvestment),
-          idSubSector =  ifelse(idSubSector == '', NA, idSubSector),
-          amountEquityMarketCap = amountEquityMarketCap %>% readr::parse_number() * 1000000 %>% formattable::currency(digits = 0),
-          yearData = year_data,
-          urlData = url,
-          yearData = year_data,
-          dateFile = date_data
-        ) %>%
-        select(yearData, dateFile, everything()) %>%
-        suppressWarnings()
-    }
-
-    if ((data_cols == 7) & (year_data <= 2011)) {
-      all_data <-
-        all_data %>%
-        mutate(idRow = 1:n())
-
-      sector_df <-
-        all_data %>%
-        select(V1, idRow) %>%
-        filter(V1 %>% str_detect(":")) %>%
-        separate(V1, c('ignore', 'nameSector'), sep = '\\: ') %>%
-        select(nameSector, idRow) %>%
-        filter(!nameSector %>% is.na()) %>%
-        mutate(idRow = idRow + 1,
-               nameSector = nameSector %>% str_trim() %>% str_to_upper()) %>%
-        suppressWarnings()
-
-      all_data <-
-        all_data %>%
-        filter(!V3 == '') %>%
-        filter(!V3 %>% str_detect('Ticker|Symbol')) %>%
-        select(-idTable)
-
-      all_data <-
-        all_data %>%
-        mutate(V1 = V1 %>% str_replace(' ', '\\:')) %>%
-        separate(V1,
-                 sep = '\\:',
-                 into = c('rank', 'nameCompany')) %>%
-        mutate(
-          idTicker = ifelse(V6 %>% is.na(), V2, V3),
-          typeInvestment = ifelse(V6 %>% is.na(), V3, V4),
-          nameSubSector = ifelse(V6 %>% is.na(), V4, V5),
-          amountEquityMarketCap = ifelse(V6 %>% is.na(), V5, V6)
-        ) %>%
-        select(
-          nameCompany,
-          idTicker,
-          typeInvestment,
-          nameSubSector,
-          amountEquityMarketCap,
-          idRow
-        ) %>%
-        left_join(sector_df) %>%
-        mutate_all(str_to_upper) %>%
-        fill(nameSector) %>%
-        select(-idRow) %>%
-        select(nameCompany, idTicker, nameSector, everything()) %>%
-        mutate(
-          amountEquityMarketCap = amountEquityMarketCap %>% readr::parse_number() * 1000000 %>% formattable::currency(digits = 0),
-          nameSubSector = ifelse(nameSubSector == '', NA, nameSubSector)
-        ) %>%
-        mutate(dateFile = date_data,
-               yearData = year_data) %>%
-        select(yearData, dateFile, everything()) %>%
-        suppressMessages()
-
-    }
-
-    if ((data_cols == 7) & (year_data > 2011)) {
-      all_data <-
-        all_data %>%
-        mutate(idRow = 1:n(),
-               V2 = ifelse(V2 == '' , V1 %>% substr(3, nchar(V1)), V2))
-
-      sector_df <-
-        all_data %>%
-        select(V2, idRow) %>%
-        filter(V2 %>% str_detect(":")) %>%
-        separate(V2, c('ignore', 'nameSector'), sep = '\\: ') %>%
-        select(nameSector, idRow) %>%
-        filter(!nameSector %>% is.na()) %>%
-        mutate(idRow = idRow + 1,
-               nameSector = nameSector %>% str_trim() %>% str_to_upper()) %>%
-        suppressWarnings()
-
-      all_data <-
-        all_data %>%
-        filter(!V3 == '') %>%
-        select(-V1) %>%
-        filter(!V3 %>% str_detect("Ticker|Symbols")) %>%
-        select(-idTable) %>%
-        left_join(sector_df) %>%
-        fill(nameSector) %>%
-        select(-idRow) %>%
-        select(nameSector, everything()) %>%
-        mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
-        suppressMessages()
-
-      all_data <-
-        all_data %>%
-        purrr::set_names(
-          c(
-            'nameSector',
-            'nameCompany',
-            'idTicker',
-            'typeInvestment',
-            'nameSubSector',
-            'amountEquityMarketCap'
-          )
-        ) %>%
-        mutate(
-          nameSubSector =  ifelse(nameSubSector == '', NA, nameSubSector),
-          amountEquityMarketCap = amountEquityMarketCap %>% readr::parse_number() * 1000000 %>% formattable::currency(digits = 0)
-        )
-
-      all_data <-
-        all_data %>%
-        select(-matches("urlData")) %>%
-        mutate(urlData = url) %>%
-        mutate(dateFile = date_data,
-               yearData = year_data) %>%
-        select(yearData, dateFile, everything())
-    }
-
-    if (return_message) {
-      list(
-        "Acquired ",
-        all_data %>% nrow() %>% formattable::comma(digits = 0),
-        ' REITs for the year ',
-        year_data
-      ) %>%
-        purrr::invoke(paste0, .) %>%
-        message()
-    }
-    return(all_data)
+    multi_run()
+    df
   }
-
 #' NAREIT index constituency data by year
 #'
 #' This function allows the user to acquire data on
@@ -305,11 +325,11 @@ parse_nareit_constituent_url <-
 #' @export
 #' @family NAREIT
 #' @family index constituents
-#' @import purrr stringr dplyr rvest tabulizer formattable lubridate tidyr readr
+#' @import purrr stringr dplyr rvest tabulizer formattable lubridate tidyr readr curl
 #' @examples
 #' get_data_nareit_constituent_years(years = 1991:2016, resolve_names = TRUE, nest_data = TRUE, return_message = TRUE)
 get_data_nareit_constituent_years <-
-  function(years = 1991:2016,
+  function(years = 2010:2016,
            resolve_names = TRUE,
            nest_data = TRUE,
            return_message = TRUE) {
@@ -331,8 +351,9 @@ get_data_nareit_constituent_years <-
       urls %>%
       map_df(function(x) {
         x %>% message()
-        parse_nareit_constituent_url(url = x, return_message = return_message)
-      })
+        parse_nareit_constituent_url_safe(url = x, return_message = return_message)
+      }) %>%
+      suppressWarnings()
 
     all_data <-
       all_data %>%
@@ -340,12 +361,19 @@ get_data_nareit_constituent_years <-
       filter(!idTicker %>% str_detect("SUMMARY|PROPERTY SECTOR")) %>%
       mutate(
         nameCompany = ifelse(nameCompanyChar < 4, idTicker, nameCompany),
-        idTicker = ifelse(nameCompany == idTicker, typeInvestment, idTicker),
-        typeInvestment = ifelse(typeInvestment == idTicker, idSubSector, typeInvestment),
-        idSubSector = ifelse(idSubSector == typeInvestment, NA, idSubSector)
+        idTicker = ifelse(nameCompany == idTicker, typeInvestment, idTicker)
       ) %>%
       filter(nameCompanyChar > 4) %>%
       select(-nameCompanyChar)
+
+    if ('idSubSector' %in% names(all_data)) {
+      all_data <-
+        all_data %>%
+        mutate(
+          typeInvestment = ifelse(typeInvestment == idTicker, idSubSector, typeInvestment),
+          idSubSector = ifelse(idSubSector == typeInvestment, NA, idSubSector)
+        )
+    }
 
     all_data <-
       all_data %>%
@@ -468,6 +496,7 @@ get_data_nareit_constituent_years <-
         all_data %>%
         nest(-c(yearData, dateFile), .key = 'dataConstituents')
     }
+    closeAllConnections()
     return(all_data)
   }
 
@@ -561,55 +590,66 @@ get_reit_entity_dictionary <-
       mutate_all(str_trim) %>%
       mutate(isPrivateNonPublicREIT = ifelse(idTicker %>% is.na(), TRUE, FALSE)) %>%
       select(nameCompany, idTicker, isPrivateNonPublicREIT, everything())
-
+    closeAllConnections()
     return(url_df)
   }
 
 parse_reit_info_page <-
-  function(url = "https://www.reit.com/company/alexandria-real-estate-equities-inc",
+  function(urls = "https://www.reit.com/company/alexandria-real-estate-equities-inc",
            return_message = TRUE) {
-    page <-
-      url %>%
-      read_html()
-
-    company <-
-      page %>%
-      html_nodes('#page-title') %>%
-      html_text() %>%
-      str_to_upper()
-
-
-    values <-
-      page %>%
-      html_nodes('.field-content') %>%
-      html_text() %>%
-      str_to_upper()
-
-    items <-
-      c(
-        'locationCompany',
-        'typeCompany',
-        'statusListing',
-        'nameSector',
-        'typeInvestment',
-        'idTicker',
-        'nameExchange'
-      )
-
     df <-
-      data_frame(value = values,
-                 item = items[1:length(values)],
-                 nameCompany = company) %>%
-      spread(item, value) %>%
-      mutate(urlNAREIT = url)
+      data_frame()
+    success <- function(res){
+      if (return_message) {
+        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% message()
+      }
+      page <-
+        res$content %>%
+        read_html()
 
-    if (return_message) {
-      list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        message()
+      company <-
+        page %>%
+        html_nodes('#page-title') %>%
+        html_text() %>%
+        str_to_upper()
+      values <-
+        page %>%
+        html_nodes('.field-content') %>%
+        html_text() %>%
+        str_to_upper()
+
+      items <-
+        c(
+          'locationCompany',
+          'typeCompany',
+          'statusListing',
+          'nameSector',
+          'typeInvestment',
+          'idTicker',
+          'nameExchange'
+        )
+
+      data <-
+        data_frame(value = values,
+                   item = items[1:length(values)],
+                   nameCompany = company) %>%
+        spread(item, value) %>%
+        mutate(urlNAREIT = res$url)
+
+      df <<-
+        df %>%
+        bind_rows(data)
     }
-
-    return(df)
+    failure <- function(msg){
+      data_frame()
+    }
+    urls %>%
+      walk(function(x){
+        curl_fetch_multi(url = x, success, failure)
+      })
+    multi_run()
+    closeAllConnections()
+    df
   }
 
 
@@ -627,7 +667,9 @@ parse_reit_info_page <-
 #' @export
 #' @import purrr stringr dplyr rvest formattable lubridate tidyr readr
 #' @examples
+#' \dontrun{
 #' get_data_nareit_entities(include_private_non_public = TRUE, return_message = TRUE)
+#' }
 get_data_nareit_entities <-
   function(include_private_non_public = TRUE,
            return_message = TRUE) {
@@ -640,13 +682,13 @@ get_data_nareit_entities <-
     if (!include_private_non_public) {
       reits_df <-
         reits_df %>%
-        filter(isPrivateNonPublicREIT == F)
+        filter(!isPrivateNonPublicREIT)
     }
 
     all_data <-
       reits_df$urlNAREIT %>%
       map_df(function(x) {
-        parse_reit_info_page(url = x, return_message = return_message)
+        parse_reit_info_page(urls = x, return_message = return_message)
       })
 
     all_data <-
@@ -670,7 +712,7 @@ get_data_nareit_entities <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-
+    closeAllConnections()
     return(all_data)
   }
 
@@ -756,7 +798,7 @@ get_data_nareit_notable_properties <-
           select(-matches("url")) %>% names(),
         funs(. %>% str_to_upper())
       )
-
+    closeAllConnections()
     return(df)
   }
 
@@ -818,6 +860,7 @@ parse_json_hq <-
         purrr::invoke(paste0, .) %>%
         message()
     }
+    closeAllConnections()
     return(df_long)
   }
 
@@ -882,6 +925,7 @@ parse_json_holdings <-
         purrr::invoke(paste0, .) %>%
         message()
     }
+    closeAllConnections()
     return(df_long)
   }
 
@@ -920,7 +964,7 @@ parse_json_state_metadata <-
       select(idState:countHeadquarters,
              countSingleFamilyHomes,
              urlImageSample)
-
+    closeAllConnections()
     return(df)
 
   }
@@ -939,7 +983,9 @@ parse_json_state_metadata <-
 #' @family NAREIT
 #' @family property data
 #' @examples
+#' \dontrun{
 #' get_data_nareit_property_msa(nest_data = TRUE, return_message = TRUE)
+#' }
 get_data_nareit_property_msa <-
   function(nest_data = TRUE,
            return_message = TRUE) {
@@ -1008,7 +1054,7 @@ get_data_nareit_property_msa <-
         nest(-c(nameMSA, coordinateLatitude, coordinateLongitude),
              .key = 'dataProperties')
     }
-
+    closeAllConnections()
     return(df_property)
 
   }
@@ -1029,7 +1075,9 @@ get_data_nareit_property_msa <-
 #' @family NAREIT
 #' @family property data
 #' @examples
+#' \dontrun{
 #' get_data_nareit_state_info(include_reit_hq = TRUE, include_reit_holdings = TRUE, nest_data = TRUE, return_message = TRUE)
+#' }
 get_data_nareit_state_info <-
   function(include_reit_hq = TRUE,
            include_reit_holdings = TRUE,
@@ -1166,7 +1214,7 @@ get_data_nareit_state_info <-
       mutate_at(df_property %>% select(matches("count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0))) %>%
       arrange(desc(codeState))
-
+    closeAllConnections()
     return(df_property)
 
   }
@@ -1190,7 +1238,9 @@ get_data_nareit_state_info <-
 #' @family NAREIT
 #' @family index values
 #' @examples
+#' \dontrun{
 #' get_data_nareit_monthly_returns(return_wide = FALSE)
+#' }
 get_data_nareit_monthly_returns <-
   function(return_wide = TRUE,
            return_message = TRUE) {
@@ -1297,6 +1347,7 @@ get_data_nareit_monthly_returns <-
         data %>%
         gather(item, value, -c(dateData, nameIndex, urlData), convert = T)
     }
+    closeAllConnections()
     return(data)
   }
 
@@ -1315,7 +1366,9 @@ get_data_nareit_monthly_returns <-
 #' @family NAREIT
 #' @family index values
 #' @examples
+#' \dontrun{
 #' get_data_nareit_annual_subsector_returns(return_wide = TRUE, return_message = TRUE)
+#' }
 get_data_nareit_annual_subsector_returns <-
   function(return_wide = TRUE,
            return_message = TRUE) {
@@ -1408,7 +1461,7 @@ get_data_nareit_annual_subsector_returns <-
                -c(dateData, nameSector, nameSubSector, urlData),
                convert = T)
     }
-
+    closeAllConnections()
     return(data)
   }
 
@@ -1502,24 +1555,27 @@ get_nareit_capital_urls <-
         indexSheet = c(1, 2, 1),
         urlData = capital_urls
       )
-
+    closeAllConnections()
     return(url_df)
   }
 
 parse_nareit_offering_url <-
   function(url = "https://www.reit.com/sites/default/files/IndustryData/IPOs.xls",
-           sheet = 2,
+           sheet = 1,
            return_message = TRUE) {
     tmp <-
       tempfile()
-    curl::curl_download(url, tmp)
+    con <-
+      curl::curl_fetch_disk(url = url, path = tmp)
 
     data <-
-      xlsx::read.xlsx(file = tmp, sheetIndex = sheet) %>%
+      con$content %>%
+      xlsx::read.xlsx(sheetIndex = sheet) %>%
       data.frame(stringsAsFactors = FALSE) %>%
       suppressWarnings() %>%
       as_data_frame()
-
+    con %>% unlink()
+    rm(con)
     data <-
       data %>%
       mutate_if(is.factor,
@@ -1565,7 +1621,11 @@ parse_nareit_offering_url <-
       mutate_at(data %>% select(matches(
         "nameUnderwriter|descriptionOffering"
       )) %>% names(),
-      funs(ifelse(. == '', NA, .)))
+      funs(ifelse(. == '', NA, .))) %>%
+      mutate_if(is.character,
+                funs(str_trim)) %>%
+      mutate_if(is.character,
+                funs(ifelse(. == '', NA, .)))
 
     has_shares <-
       names(data) %>% str_detect('countShares') %>% sum() > 0
@@ -1598,6 +1658,7 @@ parse_nareit_offering_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
+    closeAllConnections()
     return(data)
   }
 
@@ -1620,7 +1681,9 @@ parse_nareit_offering_url <-
 #' @family NAREIT
 #' @family capital raises
 #' @examples
+#' \dontrun{
 #' get_data_nareit_capital_raises(capital_type = NULL, nest_data = FALSE, return_message = TRUE)
+#' }
 get_data_nareit_capital_raises <-
   function(capital_type = NULL,
            nest_data = TRUE,
@@ -1685,34 +1748,12 @@ get_data_nareit_capital_raises <-
         all_data %>%
         nest(-typeCapital, .key = dataOfferingNAREIT)
     }
-
+    closeAllConnections()
     return(all_data)
   }
 
 
 # m&a ---------------------------------------------------------------------
-parse_most_recent_reit_watch <-
-  function(pages = 32:33) {
-    page <-
-      'https://www.reit.com/data-research/data/reitwatch' %>%
-      read_html()
-
-    url <-
-      page %>%
-      html_nodes('#block-system-main a') %>%
-      html_attr('href') %>%
-      .[[1]] %>%
-      paste0('https://www.reit.com', .)
-
-    tables <-
-      url %>%
-      extract_tables(pages = pages)
-
-    return(tables)
-  }
-
-
-
 #' NAREIT merger and acquisitions
 #'
 #' This function OCRs data on NAREIT member
@@ -1727,7 +1768,9 @@ parse_most_recent_reit_watch <-
 #' @family NAREIT
 #' @family transaction data
 #' @examples
+#' \dontrun{
 #' get_data_nareit_mergers_acquisitions(nest_data = FALSE, return_message = TRUE)
+#' }
 get_data_nareit_mergers_acquisitions <-
   function(pages = 32:33,
            nest_data = FALSE,
@@ -1775,7 +1818,7 @@ get_data_nareit_mergers_acquisitions <-
       all_data %>%
       mutate(
         typeAcquiror = ifelse(V4 == '', V6, V4),
-        amountAcquisitionPrice =  ifelse(V4 == '', V8, V6) %>% readr::parse_number() * 1000000 %>% formattable::currency(digits = 0),
+        amountAcquisitionPrice =  ifelse(V4 == '', V8, V6) %>% readr::parse_number() * 1000000,
         dateAnnounced = ifelse(V4 == '', V11, V8) %>% lubridate::dmy(),
         dateComplete =  ifelse(V4 == '', V12, V9) %>% lubridate::dmy(),
         statusTransaction = ifelse(V4 == '', V13, V10)
@@ -1852,6 +1895,14 @@ get_data_nareit_mergers_acquisitions <-
       ) %>%
       suppressWarnings()
 
+    all_data <-
+      all_data %>%
+      mutate(
+        isJV = typeAcquiror %>% str_detect("JV"),
+        typeAcquiror = typeAcquiror %>% str_replace_all("JV|JV-", '') %>% str_trim(),
+        typeAcquiror = typeAcquiror %>% str_replace_all('\\-', '') %>% str_trim()
+      )
+
     if (return_message) {
       list(
         "You acquired ",
@@ -1872,7 +1923,7 @@ get_data_nareit_mergers_acquisitions <-
         all_data %>%
         nest(-yearMerger, .key = 'dataTransactions')
     }
-
+    closeAllConnections()
     return(all_data)
   }
 
@@ -1894,7 +1945,9 @@ get_data_nareit_mergers_acquisitions <-
 #' @importFrom xlsx read.xlsx
 #' @family NAREIT
 #' @examples
+#' \dontrun{
 #' get_data_nareit_industry_tracker(return_message = TRUE, return_wide = TRUE)
+#' }
 get_data_nareit_industry_tracker <-
   function(nest_data = FALSE,
            return_wide = TRUE,
@@ -2067,7 +2120,7 @@ get_data_nareit_industry_tracker <-
         data %>%
         nest(-yearData, .key = 'dataTracker')
     }
-
+    closeAllConnections()
     return(data)
   }
 
@@ -2077,7 +2130,7 @@ get_data_nareit_industry_tracker <-
 
 
 parse_fund_reit_page <-
-  function(return_messag = TRUE) {
+  function(return_message = TRUE) {
     page <-
       "https://www.reit.com/investing/investing-reits/list-reit-funds" %>%
       xml2::read_html()
@@ -2154,97 +2207,121 @@ parse_fund_reit_page <-
       mutate(idRow = 1:n()) %>%
       left_join(df_values) %>%
       suppressMessages()
-
+    closeAllConnections()
     return(df)
 
   }
 
-parse_reit_fund_page <-
-  function(url = "https://www.reit.com/morningstar/ticker/ariix",
+parse_reit_fund_info_page <-
+  function(urls,
            return_message = TRUE) {
-    page <-
-      url %>%
-      xml2::read_html()
-
-    values <-
-      page %>%
-      html_nodes('.fund-summary .data') %>%
-      html_text()
-
-    is_billions <-
-      values %>% str_detect("bil") %>% sum() > 0
-
-
-    items <-
-      c(
-        'amountNAV',
-        'pctReturn1Day',
-        'pctYieldTTM',
-        'amountAssets',
-        'pctExpenses',
-        'pctTurnover',
-        'amountInvestmentMinimum',
-        'pctYield30Day'
-      )
-
     df <-
-      data_frame(item = items, value  = values) %>%
-      mutate(value = value %>% readr::parse_number()) %>%
-      spread(item, value) %>%
-      suppressWarnings()
+      data_frame()
+    success <- function(res) {
+      works <- res$status_code == 200
+      if (works) {
+        page <-
+          res$url %>%
+          xml2::read_html()
 
-    df_md <-
-      df %>%
-      mutate_at(df %>% select(matches("amount")) %>% names(),
-                funs(. %>% formattable::currency())) %>%
-      mutate_at(df %>% select(matches("pct")) %>% names(),
-                funs((. / 100) %>% formattable::percent(digits = 3))) %>%
-      mutate(amountAssets = ifelse(is_billions, amountAssets * 1000000000,  amountAssets * 1000000),
-             amountAssets = amountAssets %>% formattable::currency(digits = 0))
+        values <-
+          page %>%
+          html_nodes('.fund-summary .data') %>%
+          html_text()
 
-    table_values <-
-      page %>%
-      html_nodes('.number .data') %>%
-      html_text()
+        table_values <-
+          page %>%
+          html_nodes('.number .data') %>%
+          html_text()
+        is_billions <-
+          values %>% str_detect("bil") %>% sum() > 0
+        items <-
+          c(
+            'amountNAV',
+            'pctReturn1Day',
+            'pctYieldTTM',
+            'amountAssets',
+            'pctExpenses',
+            'pctTurnover',
+            'amountInvestmentMinimum',
+            'pctYield30Day'
+          )
 
-    period <-
-      c('YTD' , '1Month', '1YR', '3YR', '5YR', '10YR')
+        data <-
+          data_frame(item = items, value  = values) %>%
+          mutate(value = value %>% readr::parse_number()) %>%
+          spread(item, value) %>%
+          suppressWarnings()
 
-    periods <-
-      rep(period, 3)
+        data <-
+          data %>%
+          mutate(
+            amountAssets = ifelse(
+              is_billions,
+              amountAssets * 1000000000,
+              amountAssets * 1000000
+            ),
+            amountAssets = amountAssets %>% formattable::currency(digits = 0)
+          ) %>%
+          mutate(urlNAREIT = res$url)
 
-    items <-
-      c(
-        rep('pctFundPerformance', 6),
-        rep('pctRankFundPerformance', 6),
-        rep('rankFundPerformance', 6)
-      )
-    if (items %>% length() == table_values %>% length()) {
-      df_performance <-
-        data_frame(item = items,
-                   period = periods,
-                   value = table_values) %>%
-        mutate(value = value %>% readr::parse_number()) %>%
-        mutate(value = ifelse(item %>% str_detect("pct"), value / 100, value)) %>%
-        unite(item, item, period, sep = '') %>%
-        spread(item, value) %>%
-        suppressWarnings()
+        period <-
+          c('YTD' , '1Month', '1YR', '3YR', '5YR', '10YR')
 
-    df_md <-
-      df_md %>%
-      bind_cols(df_performance)
+        periods <-
+          rep(period, 3)
+
+        items <-
+          c(
+            rep('pctFundPerformance', 6),
+            rep('pctRankFundPerformance', 6),
+            rep('rankFundPerformance', 6)
+          )
+        is_equal_length <- length(items) == length(table_values)
+        if (is_equal_length) {
+          data_perform <-
+            data_frame(item = items,
+                       period = periods,
+                       value = table_values)
+
+          data_perform <-
+            data_perform %>%
+            mutate(value = value %>% readr::parse_number()) %>%
+            mutate(value = ifelse(item %>% str_detect("pct"), value / 100, value)) %>%
+            tidyr::unite(item, item, period, sep = '') %>%
+            spread(item, value) %>%
+            suppressWarnings() %>%
+            mutate(urlNAREIT = res$url)
+
+          data <-
+            data %>%
+            left_join(data_perform) %>%
+            suppressMessages()
+        }
+
+        if (return_message) {
+          list("Parsed: ", res$url) %>%
+            purrr::reduce(paste0) %>%
+            message()
+        }
+        rm(page)
+        closeAllConnections()
+
+        df <<-
+          df %>%
+          bind_rows(data)
+      }
     }
-
-    df_md <-
-      df_md %>%
-      mutate(urlNAREIT = url)
-
-    if (return_message) {
-      list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        message()
+    failure <- function(msg) {
+      cat(sprintf("Fail: %s (%s)\n", res$url, msg))
     }
-    return(df_md)
+    urls %>%
+      walk(function(x) {
+        curl_fetch_multi(url = x, success, failure)
+      })
+    multi_run()
+    closeAllConnections()
+    df
   }
 
 #' REIT fund manager data.
@@ -2262,6 +2339,10 @@ parse_reit_fund_page <-
 #' @family entity search
 #' @family fund data
 #' @examples
+#' \dontrun{
+#' get_data_reit_funds(parse_fund_details = TRUE, return_message = TRUE))
+#' }
+
 get_data_reit_funds <-
   function(parse_fund_details = TRUE,
            return_message = TRUE) {
@@ -2269,8 +2350,8 @@ get_data_reit_funds <-
       parse_fund_reit_page()
 
     if (parse_fund_details) {
-      parse_reit_fund_page_safe <-
-        purrr::possibly(parse_reit_fund_page, data_frame())
+      parse_reit_fund_info_page_safe <-
+        purrr::possibly(parse_reit_fund_info_page, data_frame())
 
       urls <-
         df_table$urlNAREIT
@@ -2278,8 +2359,13 @@ get_data_reit_funds <-
       detail_df <-
         urls %>%
         map_df(function(x){
-          parse_reit_fund_page_safe(url = x, return_message = return_message)
+          parse_reit_fund_info_page_safe(urls = x, return_message = return_message)
         })
+
+      detail_df <-
+        detail_df %>%
+        mutate_at(detail_df %>% select(matches("pct")) %>% names(),
+                  funs(. / 100))
 
       df_table <-
         df_table %>%
@@ -2294,6 +2380,10 @@ get_data_reit_funds <-
                   funs(. %>% formattable::percent()))
     }
 
+    df_table <-
+      df_table %>%
+      select(-matches("idRow"))
+
     if (return_message) {
       list(
         "Acquired ",
@@ -2303,6 +2393,8 @@ get_data_reit_funds <-
         purrr::invoke(paste0, .) %>%
         message()
     }
+
+    return(df_table)
   }
 
 # reitwatch ---------------------------------------------------------------

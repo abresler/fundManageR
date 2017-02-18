@@ -37,4 +37,3 @@ Other index values: \code{\link{get_data_fred_symbols}},
   \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_nareit_monthly_returns}}
 }
-

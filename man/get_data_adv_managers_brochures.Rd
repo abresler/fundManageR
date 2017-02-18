@@ -23,4 +23,3 @@ required for Part 2A of the Form-ADV
 \examples{
 get_data_adv_managers_brochures(entity_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE, nest_data = TRUE)
 }
-

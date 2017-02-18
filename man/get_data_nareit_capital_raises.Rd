@@ -20,7 +20,9 @@ This function acquires data on REIT
 capital raises by form of capital since 1989.
 }
 \examples{
+\dontrun{
 get_data_nareit_capital_raises(capital_type = NULL, nest_data = FALSE, return_message = TRUE)
+}
 }
 \seealso{
 Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
@@ -35,4 +37,3 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_reit_funds}},
   \code{\link{get_reit_entity_dictionary}}
 }
-

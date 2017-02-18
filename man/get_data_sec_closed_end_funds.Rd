@@ -32,10 +32,11 @@ get_data_sec_closed_end_funds(years = 2015:2017)
 \href{http://sec.gov}{The Securities and Exchange Commission}
 }
 \seealso{
-Other SEC: \code{\link{get_data_mmf_owned_debt_securities}},
+Other SEC: \code{\link{get_data_edgar_filing_streams}},
+  \code{\link{get_data_mmf_owned_debt_securities}},
   \code{\link{get_data_recent_insider_trades}},
   \code{\link{get_data_rf_leis}},
-  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_rf_sec_13F_companies}},
   \code{\link{get_data_sec_bankruptcies}},
   \code{\link{get_data_sec_broker_dealers}},
   \code{\link{get_data_sec_ciks}},
@@ -53,7 +54,8 @@ Other SEC: \code{\link{get_data_mmf_owned_debt_securities}},
   \code{\link{get_data_securities_offerings}},
   \code{\link{get_data_us_public_companies}},
   \code{\link{get_dictionary_sec_filing_codes}},
-  \code{\link{get_dictionary_sec_form_codes}}
+  \code{\link{get_dictionary_sec_form_codes}},
+  \code{\link{get_dictionary_sic_codes}}
 
 Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_adv_managers_filings}},
@@ -63,7 +65,7 @@ Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_nareit_entities}},
   \code{\link{get_data_reit_funds}},
   \code{\link{get_data_rf_leis}},
-  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_rf_sec_13F_companies}},
   \code{\link{get_data_sec_bankruptcies}},
   \code{\link{get_data_sec_broker_dealers}},
   \code{\link{get_data_sec_ciks}},
@@ -86,4 +88,3 @@ Other fund data: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_sec_ciks}},
   \code{\link{get_data_sec_money_market_funds}}
 }
-

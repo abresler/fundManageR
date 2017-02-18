@@ -34,4 +34,3 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
 Other property data: \code{\link{get_data_nareit_property_msa}},
   \code{\link{get_data_nareit_state_info}}
 }
-

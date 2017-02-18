@@ -24,4 +24,3 @@ Other index constituents: \code{\link{get_data_crsp_indicies_constituents}},
   \code{\link{get_data_msci_indicies_constituents}},
   \code{\link{get_data_nareit_constituent_years}}
 }
-

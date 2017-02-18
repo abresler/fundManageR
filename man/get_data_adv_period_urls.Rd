@@ -12,4 +12,3 @@ get_data_adv_period_urls(return_wide = TRUE)
 \description{
 Get ADV Summary Filing Data URLs for All Applicable Periods
 }
-

@@ -26,4 +26,3 @@ get_data_crsp_files()
 Other CRSP: \code{\link{get_data_crsp_indicies_constituents}},
   \code{\link{get_data_crsp_indicies_returns}}
 }
-

@@ -41,4 +41,3 @@ Other calculation: \code{\link{calculate_cash_flow_dates}},
 Other venture capital: \code{\link{get_data_cb_unicorns}},
   \code{\link{get_data_ycombinator_alumni}}
 }
-

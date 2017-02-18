@@ -19,7 +19,9 @@ This function returns aggregated REIT owned
 properties by Metropolitan Statistical Area [MSA].
 }
 \examples{
+\dontrun{
 get_data_nareit_property_msa(nest_data = TRUE, return_message = TRUE)
+}
 }
 \references{
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
@@ -40,4 +42,3 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
 Other property data: \code{\link{get_data_nareit_notable_properties}},
   \code{\link{get_data_nareit_state_info}}
 }
-

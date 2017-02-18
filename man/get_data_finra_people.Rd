@@ -44,4 +44,3 @@ Other IAPD: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_adv_managers_periods_summaries}},
   \code{\link{get_data_finra_entities}}
 }
-

@@ -22,7 +22,9 @@ This function OCRs data on NAREIT member
 M&A activity since 2004.
 }
 \examples{
+\dontrun{
 get_data_nareit_mergers_acquisitions(nest_data = FALSE, return_message = TRUE)
+}
 }
 \seealso{
 Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
@@ -41,4 +43,3 @@ Other transaction data: \code{\link{get_data_dtcc_most_recent_trades}},
   \code{\link{get_data_dtcc_trades}},
   \code{\link{get_data_sec_securities_metrics_by_exchange}}
 }
-

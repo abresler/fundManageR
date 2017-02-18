@@ -18,6 +18,11 @@ get_data_reit_funds(parse_fund_details = TRUE, return_message = TRUE)
 This function acquires information for
 REIT fund vehicles
 }
+\examples{
+\dontrun{
+get_data_reit_funds(parse_fund_details = TRUE, return_message = TRUE))
+}
+}
 \seealso{
 Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_nareit_capital_raises}},
@@ -38,7 +43,7 @@ Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_finra_entities}},
   \code{\link{get_data_nareit_entities}},
   \code{\link{get_data_rf_leis}},
-  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_rf_sec_13F_companies}},
   \code{\link{get_data_sec_bankruptcies}},
   \code{\link{get_data_sec_broker_dealers}},
   \code{\link{get_data_sec_ciks}},
@@ -62,4 +67,3 @@ Other fund data: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_sec_closed_end_funds}},
   \code{\link{get_data_sec_money_market_funds}}
 }
-

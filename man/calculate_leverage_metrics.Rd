@@ -97,4 +97,3 @@ Other leveraged finance calculation: \code{\link{calculate_cash_flow_dates}},
   \code{\link{calculate_irr_periods}},
   \code{\link{calculate_loan_payment}}
 }
-

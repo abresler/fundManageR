@@ -36,4 +36,3 @@ Other calculation: \code{\link{calculate_cash_flow_dates}},
   \code{\link{calculate_valuation_post_money}},
   \code{\link{tidy_promote_structure}}
 }
-

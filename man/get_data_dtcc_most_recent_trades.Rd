@@ -32,6 +32,12 @@ This function returns information about the most recent
 trades cleared by The Depository Trust & Clearing Corporation [DTCC]
 for specified product type.
 }
+\examples{
+\dontrun{
+get_data_dtcc_most_recent_trades(assets = NULL, nest_data = FALSE)
+get_data_dtcc_most_recent_trades(assets = c('credits', 'equities', 'rates'))
+}
+}
 \references{
 \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
 }
@@ -45,4 +51,3 @@ Other transaction data: \code{\link{get_data_dtcc_trades}},
   \code{\link{get_data_nareit_mergers_acquisitions}},
   \code{\link{get_data_sec_securities_metrics_by_exchange}}
 }
-

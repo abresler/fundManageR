@@ -33,14 +33,22 @@ get_data_adv_managers_metadata(entity_names = "Blackstone", score_threshold = NU
 get_data_adv_managers_metadata(crd_ids = 173787)
 }
 \seealso{
-Other FINRA: \code{\link{get_data_finra_entities}},
-  \code{\link{get_data_finra_people}}
-
 Other IAPD: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_adv_managers_filings}},
   \code{\link{get_data_adv_managers_periods_summaries}},
   \code{\link{get_data_finra_entities}},
   \code{\link{get_data_finra_people}}
+
+Other FINRA: \code{\link{get_data_finra_entities}},
+  \code{\link{get_data_finra_people}}
+
+Other fund data: \code{\link{get_data_adv_managers_current_period_summary}},
+  \code{\link{get_data_adv_managers_filings}},
+  \code{\link{get_data_adv_managers_periods_summaries}},
+  \code{\link{get_data_reit_funds}},
+  \code{\link{get_data_sec_ciks}},
+  \code{\link{get_data_sec_closed_end_funds}},
+  \code{\link{get_data_sec_money_market_funds}}
 
 Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_adv_managers_filings}},
@@ -49,7 +57,7 @@ Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_nareit_entities}},
   \code{\link{get_data_reit_funds}},
   \code{\link{get_data_rf_leis}},
-  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_rf_sec_13F_companies}},
   \code{\link{get_data_sec_bankruptcies}},
   \code{\link{get_data_sec_broker_dealers}},
   \code{\link{get_data_sec_ciks}},
@@ -64,13 +72,4 @@ Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_securities_offerings}},
   \code{\link{get_data_us_public_companies}},
   \code{\link{get_data_ycombinator_alumni}}
-
-Other fund data: \code{\link{get_data_adv_managers_current_period_summary}},
-  \code{\link{get_data_adv_managers_filings}},
-  \code{\link{get_data_adv_managers_periods_summaries}},
-  \code{\link{get_data_reit_funds}},
-  \code{\link{get_data_sec_ciks}},
-  \code{\link{get_data_sec_closed_end_funds}},
-  \code{\link{get_data_sec_money_market_funds}}
 }
-

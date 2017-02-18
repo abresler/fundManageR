@@ -24,7 +24,9 @@ This function returns information about REIT owned
 holdings by state.
 }
 \examples{
+\dontrun{
 get_data_nareit_state_info(include_reit_hq = TRUE, include_reit_holdings = TRUE, nest_data = TRUE, return_message = TRUE)
+}
 }
 \references{
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
@@ -45,4 +47,3 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
 Other property data: \code{\link{get_data_nareit_notable_properties}},
   \code{\link{get_data_nareit_property_msa}}
 }
-

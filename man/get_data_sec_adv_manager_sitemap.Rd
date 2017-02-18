@@ -9,4 +9,3 @@ get_data_sec_adv_manager_sitemap()
 \description{
 Returns data frame of SEC ADV sitemap
 }
-

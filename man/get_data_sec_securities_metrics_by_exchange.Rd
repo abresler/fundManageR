@@ -36,10 +36,11 @@ get_data_sec_securities_metrics_by_exchange(years = 2016)
 \href{http://sec.gov}{The Securities and Exchange Commission}
 }
 \seealso{
-Other SEC: \code{\link{get_data_mmf_owned_debt_securities}},
+Other SEC: \code{\link{get_data_edgar_filing_streams}},
+  \code{\link{get_data_mmf_owned_debt_securities}},
   \code{\link{get_data_recent_insider_trades}},
   \code{\link{get_data_rf_leis}},
-  \code{\link{get_data_sec_13F_companies}},
+  \code{\link{get_data_rf_sec_13F_companies}},
   \code{\link{get_data_sec_bankruptcies}},
   \code{\link{get_data_sec_broker_dealers}},
   \code{\link{get_data_sec_ciks}},
@@ -57,13 +58,13 @@ Other SEC: \code{\link{get_data_mmf_owned_debt_securities}},
   \code{\link{get_data_securities_offerings}},
   \code{\link{get_data_us_public_companies}},
   \code{\link{get_dictionary_sec_filing_codes}},
-  \code{\link{get_dictionary_sec_form_codes}}
-
-Other public company data: \code{\link{get_data_sec_failed_to_deliver_securities}},
-  \code{\link{get_data_sec_xbrl_periods}}
+  \code{\link{get_dictionary_sec_form_codes}},
+  \code{\link{get_dictionary_sic_codes}}
 
 Other transaction data: \code{\link{get_data_dtcc_most_recent_trades}},
   \code{\link{get_data_dtcc_trades}},
   \code{\link{get_data_nareit_mergers_acquisitions}}
-}
 
+Other public company data: \code{\link{get_data_sec_failed_to_deliver_securities}},
+  \code{\link{get_data_sec_xbrl_periods}}
+}

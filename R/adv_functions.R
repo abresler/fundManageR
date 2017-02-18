@@ -6,6 +6,7 @@ get_html_page <-
       url %>%
       GET() %>%
       read_html()
+    closeAllConnections()
     return(page)
   }
 
@@ -143,7 +144,7 @@ parse_finra_c_url <-
     html_page <-
       res[[1]]() %>%
       content(as = "parsed")
-
+    closeAllConnections()
     return(html_page)
   }
 
@@ -794,7 +795,7 @@ parse_finra_pdf_brochure <-
       }) %>%
       dplyr::select(textPage) %>%
       summarise(textBrochure = textPage %>% paste0(collapse = '\n'))
-
+    closeAllConnections()
     return(pdf_text_df)
 
   }
@@ -1152,7 +1153,7 @@ parse_finra_json_url <-
       df_fields %>%
       mutate(urlFINRA = url) %>%
       suppressMessages()
-
+    closeAllConnections()
     return(df_fields)
   }
 
@@ -1391,7 +1392,7 @@ parse_sec_manager_pdf_url <-
         dplyr::select(-c(item, idItem)) %>%
         spread(nameItem, value)
     }
-
+    closeAllConnections()
     return(pdf_data)
 
   }
@@ -1632,6 +1633,7 @@ get_manager_sec_page <-
         manager_df %>%
         dplyr::select(idCRD, nameEntityManager, everything())
     }
+    closeAllConnections()
     return(manager_df)
   }
 
@@ -1710,7 +1712,7 @@ get_data_adv_managers_metadata <-
       map_df(get_manager_sec_page_safe) %>%
       suppressWarnings() %>%
       filter(!idCRD %>% is.na())
-
+    closeAllConnections()
     return(sec_summary_data)
   }
 
@@ -2662,6 +2664,7 @@ parse_table_node_df <-
       ) %>%
       mutate(numberTable = table_number) %>%
       dplyr::select(numberTable, everything())
+    closeAllConnections()
     return(table_node_df)
   }
 
@@ -3070,6 +3073,7 @@ parse_funds_tables <-
           section_matrix_df = section_matrix_df
         )
       })
+    closeAllConnections()
     return(all_table_data)
   }
 
@@ -7761,7 +7765,7 @@ get_crd_sections_data <-
     }
 
     if (section_null &
-        all_sections == FALSE) {
+        !all_sections) {
       stop("You must select a section, possibilties for this search are:\n" %>%
              paste0(paste0(
                sitemap_df$nameSectionActual, collapse = '\n'
@@ -7839,7 +7843,7 @@ get_crd_sections_data <-
               paste0('data',.)
             nameADVPage <-
               sitemap_df$nameSectionActual[[x]]
-            paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% message
+            paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% message()
             g <-
               f %>%
               list(quote(url)) %>%
@@ -8329,7 +8333,7 @@ get_data_adv_managers_filings <-
            ),
            flatten_tables = TRUE,
            gather_data = FALSE,
-           assign_to_environment = TRIE) {
+           assign_to_environment = TRUE) {
     packages <-
       c(
         'tidyverse',
@@ -8385,6 +8389,7 @@ get_data_adv_managers_filings <-
                                    gather_data = gather_data)
 
     }
+    closeAllConnections()
     return(all_data)
 
   }
@@ -9592,7 +9597,7 @@ get_period_type_adv_data <-
 
     adv_data <-
       parse_sec_adv_data_url(url = url_data)
-
+    closeAllConnections()
     return(adv_data)
   }
 
@@ -9736,7 +9741,7 @@ get_data_adv_managers_periods_summaries <-
         all_adv_data %>%
         nest(-c(dateDataADV, isExempt), .key = 'dataADV')
     }
-
+    closeAllConnections()
     return(all_adv_data)
   }
 
@@ -9775,6 +9780,6 @@ get_data_adv_managers_current_period_summary <-
     all_data <-
       all_data %>%
       dplyr::select(one_of(select_names))
-
+    closeAllConnections()
     return(all_data)
   }

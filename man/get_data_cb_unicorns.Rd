@@ -26,4 +26,3 @@ get_data_cb_unicorns(return_message = TRUE)
 Other venture capital: \code{\link{calculate_valuation_post_money}},
   \code{\link{get_data_ycombinator_alumni}}
 }
-
