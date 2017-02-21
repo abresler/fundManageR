@@ -1,11 +1,11 @@
 # parsing -----------------------------------------------------------------
 get_html_page <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=160080') {
-    httr::set_config(config(ssl_verifypeer = 0L))
+    httr::set_config(httr::config(ssl_verifypeer = 0L))
     page <-
       url %>%
-      GET() %>%
-      read_html()
+      httr::GET() %>%
+      xml2::read_html()
     closeAllConnections()
     return(page)
   }
@@ -13,7 +13,7 @@ get_html_page <-
 
 check_html_node <-
   function(page, node_css = '#ctl00_cphMain_landing_p2BrochureLink') {
-    if (page %>% html_nodes(css = node_css) %>% length > 0) {
+    if (page %>% html_nodes(css = node_css) %>% length() > 0) {
       node_exists <-
         T
     } else {
@@ -31,7 +31,7 @@ get_html_node_text <-
         node_text <-
           page %>%
           html_nodes(css = node_css) %>%
-          html_text
+          html_text()
 
         return(node_text)
       }
@@ -57,11 +57,11 @@ get_entity_manager_name <-
       page %>%
       get_html_node_text(node_css = '#ctl00_ctl00_cphMainContent_ucADVHeader_lblPrimaryBusinessName')
 
-    if (manager_name %>% is.na) {
+    if (manager_name %>% is.na()) {
       manager_name <-
         page %>%
         html_nodes('.summary-displayname') %>%
-        html_text
+        html_text()
     }
 
     return(manager_name)
@@ -122,7 +122,7 @@ parse_node_table_to_text <-
       stri_trim_both() %>%
       gsub("^\\s+|\\s+$", "", .) %>%
       str_split("   +") %>%
-      flatten_chr
+      flatten_chr()
 
     node_text <-
       node_text[!node_text == '']
@@ -153,29 +153,29 @@ find_text_node <-
            hit_words = "Total Number of Clients",
            off_set = 4,
            is_numeric_node = T) {
-    if (hit_words %>% length > 1) {
+    if (hit_words %>% length() > 1) {
       hit_words <-
         hit_words %>% str_c(collapse = '|')
     }
 
     node_exists <-
-      (node_text %>% grep(hit_words, .)) %>% length > 0
+      (node_text %>% grep(hit_words, .)) %>% length() > 0
 
     if (!node_exists) {
       stop("Sorry " %>%
              paste0(hit_words, ' is not found in the text nodes'))
     }
     node_location <-
-      (node_text %>% grep(hit_words, .)) %>% + off_set
+      (node_text %>% grep(hit_words, .)) %>% +off_set
 
     text_node <-
       node_text[node_location] %>%
-      str_trim
+      str_trim()
 
     if (is_numeric_node) {
       text_node <-
         text_node %>%
-        str_replace_all('\\$', '') %>% str_trim %>%
+        str_replace_all('\\$', '') %>% str_trim() %>%
         readr::parse_number()
 
       text_node <-
@@ -187,7 +187,7 @@ find_text_node <-
 # munging -----------------------------------------------------------------
 
 select_start_vars <-
-  function(data){
+  function(data) {
     data <-
       data %>%
       dplyr::select(idCRD, nameEntityManager, everything())
@@ -198,34 +198,36 @@ select_start_vars <-
 mutate_adv_data <-
   function(data) {
     has_dates <-
-      data %>% dplyr::select(matches("^date")) %>% names %>% length > 0
+      data %>% dplyr::select(matches("^date")) %>% names() %>% length() > 0
     if (has_dates) {
       data <-
         data %>%
         mutate_at(.cols =
-                    data %>% dplyr::select(matches("^date")) %>% names,
+                    data %>% dplyr::select(matches("^date")) %>% names(),
                   funs(. %>% lubridate::ymd()))
     }
     has_counts <-
       data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>% dplyr::select(-matches("country")) %>%
-      names %>% length > 0
+      names %>% length() > 0
 
     if (has_counts) {
       data <-
         data %>%
-        mutate_at(.cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
-                    dplyr::select(-matches("country")) %>%
-                    names,
-                  funs(. %>% as.numeric()))
+        mutate_at(
+          .cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
+            dplyr::select(-matches("country")) %>%
+            names(),
+          funs(. %>% as.numeric())
+        )
     }
     has_logical <-
-      data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names %>% length > 0
+      data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names() %>% length() > 0
 
     if (has_logical) {
       data <-
         data %>%
         mutate_at(.cols =
-                    data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names,
+                    data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names(),
                   funs(. %>% as.logical()))
     }
 
@@ -239,7 +241,7 @@ widen_adv_data <-
     data <-
       data %>%
       mutate_at(.cols =
-                  data %>% dplyr::select(matches("^date[A-Z]")) %>% names,
+                  data %>% dplyr::select(matches("^date[A-Z]")) %>% names(),
                 funs(. %>% as.character())) %>%
       gather(nameItem, value, -c(countItem, nameEntityManager)) %>%
       suppressWarnings()
@@ -307,71 +309,165 @@ has_item_check_name <-
 
 get_finra_name_df <-
   function() {
-    data_frame(nameFINRA = c(
-      "fields.score",
-      "fields.bc_source_id",
-      "fields.bc_firm_name",
-      "fields.bc_scope",
-      "fields.bc_sec_number",
-      "fields.bc_branches_count",
-      "fields.bc_approved_finra_registration_count",
-      "fields.bc_disclosure_fl",
-      "highlightedFields.bc_firm_name",
-      "fields.bc_ia_address_details",
-      "firmId", "firmName", "secNumber", "otherNames", "bcScope",
-        "iaScope", "isLegacy", "finraRegistered", "districtName", "firmType",
-        "formedState", "formedDate", "fiscalMonthEndCode", "legacyReportStatus",
-      "disclosureType", "disclosureCount",
-      "approvedFinraRegistrationCount", "approvedSECRegistrationCount",
-      "approvedSRORegistrationCount", "approvedStateRegistrationCount",
-      "businessTypeCount", "legalName", "position", "crdNumber",
-      "fields.bc_firstname", "fields.bc_industry_days", "fields.bc_employments_count",
-      "fields.bc_lastname", "fields.bc_middlename",
-      "category", "regulator", "messages", "capacity", 'individualId',
-      'firstName', 'middleName', 'lastName', 'daysInIndustry',
-      "street1", "street2", "city", "state", "country", "zipcode",
-       "registrationBeginDate", "registrationEndDate", "firmBCScope",
-       "firmIAScope", "eventDate", "disclosureResolution",
-      "docketNumber", "Initiated By", "Allegations", "Resolution",
-      "SanctionDetails", "Sanction Details", "Broker Comment",
-      "stateExamCount", "principalExamCount", "productExamCount",
-      "examCategory", "examName", "examTakenDate",
-      "hasBCComments", "hasIAComments", "legacyReportStatusDescription",
-      'firmSize'
+    data_frame(
+      nameFINRA = c(
+        "fields.score",
+        "fields.bc_source_id",
+        "fields.bc_firm_name",
+        "fields.bc_scope",
+        "fields.bc_sec_number",
+        "fields.bc_branches_count",
+        "fields.bc_approved_finra_registration_count",
+        "fields.bc_disclosure_fl",
+        "highlightedFields.bc_firm_name",
+        "fields.bc_ia_address_details",
+        "firmId",
+        "firmName",
+        "secNumber",
+        "otherNames",
+        "bcScope",
+        "iaScope",
+        "isLegacy",
+        "finraRegistered",
+        "districtName",
+        "firmType",
+        "formedState",
+        "formedDate",
+        "fiscalMonthEndCode",
+        "legacyReportStatus",
+        "disclosureType",
+        "disclosureCount",
+        "approvedFinraRegistrationCount",
+        "approvedSECRegistrationCount",
+        "approvedSRORegistrationCount",
+        "approvedStateRegistrationCount",
+        "businessTypeCount",
+        "legalName",
+        "position",
+        "crdNumber",
+        "fields.bc_firstname",
+        "fields.bc_industry_days",
+        "fields.bc_employments_count",
+        "fields.bc_lastname",
+        "fields.bc_middlename",
+        "category",
+        "regulator",
+        "messages",
+        "capacity",
+        'individualId',
+        'firstName',
+        'middleName',
+        'lastName',
+        'daysInIndustry',
+        "street1",
+        "street2",
+        "city",
+        "state",
+        "country",
+        "zipcode",
+        "registrationBeginDate",
+        "registrationEndDate",
+        "firmBCScope",
+        "firmIAScope",
+        "eventDate",
+        "disclosureResolution",
+        "docketNumber",
+        "Initiated By",
+        "Allegations",
+        "Resolution",
+        "SanctionDetails",
+        "Sanction Details",
+        "Broker Comment",
+        "stateExamCount",
+        "principalExamCount",
+        "productExamCount",
+        "examCategory",
+        "examName",
+        "examTakenDate",
+        "hasBCComments",
+        "hasIAComments",
+        "legacyReportStatusDescription",
+        'firmSize'
       ),
-    nameActual = c(
-      "scoreWord",
-      "idCRD",
-      "nameFirm",
-      "typeActiveFiler",
-      "idSEC",
-      "countBranches",
-      "countFINRARegistrations",
-      "idDisclosure",
-      "htmlName",
-      'addressFiler',
-      "idCRD", "nameFirm", "idSEC", "nameOther", "scopeBC",
-      "scopeIA", "isLegacy", "finraRegistered", "namDistrict", "typeFirm",
-      "stateFormed", "dateFormed", "monthFiscalEnd", "statusLegacyReporting",
-      "typeDisclosure", "countDisclosures",
-      "countApprovedFinraRegistration", "countApprovedSECRegistration",
-      "countApprovedSRORegistration", "countApprovedStateRegistration",
-      "countBusinessType",
-      "nameLegal", "descriptionPosition", "idCRD",
-      "nameFirst", "countDaysIndustry", "countEmployments",
-      "nameLast", "nameMiddle",
-      "categoryAction", "idRegulator", "messageAction", "capacityAction",
-      'idCRD', 'nameFirst', 'nameMiddle', 'nameLast', 'countDaysIndustry',
-      "street1Firm", "street2Firm", "cityFirm", "stateFirm", "countryFirm", "zipcodeFrim",
-       "dateRegistrationBegin", "dateRegistrationEnd", "scopeBCS",
-       "scopeIAFirm", "dateEvent", "detailsDisclosureResolution",
-      "idDocket", "entityInitiatedBy", "descriptionAllegations", "typeResolution",
-      "idSanctions", "detailsSanctions", "commentBroker",
-      "countStateExam", "countPrincipalExam", "countProductExam",
-      "categoryExam", "nameExam", "dateExamTaken",
-      "hasBCComments", "hasIAComments", "descriptionLegacyReportStatus",
-      'descriptionSizeFirm'
-    )
+      nameActual = c(
+        "scoreWord",
+        "idCRD",
+        "nameFirm",
+        "typeActiveFiler",
+        "idSEC",
+        "countBranches",
+        "countFINRARegistrations",
+        "idDisclosure",
+        "htmlName",
+        'addressFiler',
+        "idCRD",
+        "nameFirm",
+        "idSEC",
+        "nameOther",
+        "scopeBC",
+        "scopeIA",
+        "isLegacy",
+        "finraRegistered",
+        "namDistrict",
+        "typeFirm",
+        "stateFormed",
+        "dateFormed",
+        "monthFiscalEnd",
+        "statusLegacyReporting",
+        "typeDisclosure",
+        "countDisclosures",
+        "countApprovedFinraRegistration",
+        "countApprovedSECRegistration",
+        "countApprovedSRORegistration",
+        "countApprovedStateRegistration",
+        "countBusinessType",
+        "nameLegal",
+        "descriptionPosition",
+        "idCRD",
+        "nameFirst",
+        "countDaysIndustry",
+        "countEmployments",
+        "nameLast",
+        "nameMiddle",
+        "categoryAction",
+        "idRegulator",
+        "messageAction",
+        "capacityAction",
+        'idCRD',
+        'nameFirst',
+        'nameMiddle',
+        'nameLast',
+        'countDaysIndustry',
+        "street1Firm",
+        "street2Firm",
+        "cityFirm",
+        "stateFirm",
+        "countryFirm",
+        "zipcodeFrim",
+        "dateRegistrationBegin",
+        "dateRegistrationEnd",
+        "scopeBCS",
+        "scopeIAFirm",
+        "dateEvent",
+        "detailsDisclosureResolution",
+        "idDocket",
+        "entityInitiatedBy",
+        "descriptionAllegations",
+        "typeResolution",
+        "idSanctions",
+        "detailsSanctions",
+        "commentBroker",
+        "countStateExam",
+        "countPrincipalExam",
+        "countProductExam",
+        "categoryExam",
+        "nameExam",
+        "dateExamTaken",
+        "hasBCComments",
+        "hasIAComments",
+        "descriptionLegacyReportStatus",
+        'descriptionSizeFirm'
+      )
     )
   }
 
@@ -390,12 +486,14 @@ generate_finra_url <-
       URLencode()
 
     url <-
-      list('https://doppler.finra.org/doppler-lookup/api/v1/search/',
-         slug,
-         '&nrows=99000&query=',
-         search_slug,
-         '&r=2500&wt=json') %>%
-      purrr::invoke(paste0,.)
+      list(
+        'https://doppler.finra.org/doppler-lookup/api/v1/search/',
+        slug,
+        '&nrows=99000&query=',
+        search_slug,
+        '&r=2500&wt=json'
+      ) %>%
+      purrr::invoke(paste0, .)
     return(url)
   }
 
@@ -403,17 +501,17 @@ parse_broker_json_url <-
   function(url = "https://doppler.finra.org/doppler-lookup/api/v1/search/firms/18718/?&wt=json") {
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
     if (json_data$results$BROKER_CHECK_FIRM$results$fields$content_json %>% length() > 0) {
-    json_dfs <-
-      json_data$results$BROKER_CHECK_FIRM$results$fields$content_json %>%
-      flatten_chr() %>%
-      fromJSON()
+      json_dfs <-
+        json_data$results$BROKER_CHECK_FIRM$results$fields$content_json %>%
+        flatten_chr() %>%
+        jsonite::fromJSON()
     } else {
       json_dfs <-
         json_data$results$BROKER_CHECK_REP$results$fields$content_json %>%
         flatten_chr() %>%
-        fromJSON()
+        jsonlite::fromJSON()
     }
 
     class_df <-
@@ -428,7 +526,14 @@ parse_broker_json_url <-
 
     class_df <-
       class_df %>%
-      filter(!nameTable %in% c('bdDisclosureFlag', 'iaFirmAddressDetails', 'disclosureFlag' ,'iaDisclosureFlag'))
+      filter(
+        !nameTable %in% c(
+          'bdDisclosureFlag',
+          'iaFirmAddressDetails',
+          'disclosureFlag' ,
+          'iaDisclosureFlag'
+        )
+      )
 
     active_tables <-
       count_df %>%
@@ -445,7 +550,7 @@ parse_broker_json_url <-
       mutate(idRow = 1:n())
 
     all_df <-
-      map_df(function(x){
+      map_df(function(x) {
         x %>% message()
         table_no <-
           class_df$idTable[[x]]
@@ -490,11 +595,11 @@ parse_broker_json_url <-
           if (has_missing_names) {
             df_has <-
               df_items %>%
-              select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
+              dplyr::select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
 
             has_names <-
               names(df_has) %>%
-              map_chr(function(x){
+              map_chr(function(x) {
                 name_df %>%
                   filter(nameFINRA == x) %>%
                   filter(idRow == min(idRow)) %>%
@@ -509,11 +614,11 @@ parse_broker_json_url <-
             df_fields <-
               df_has %>%
               bind_cols(df_items %>%
-                          select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
+                          dplyr::select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
           } else {
             actual_names <-
               names(df_items) %>%
-              map_chr(function(x){
+              map_chr(function(x) {
                 name_df %>%
                   filter(nameFINRA == x) %>%
                   filter(idRow == min(idRow)) %>%
@@ -533,11 +638,13 @@ parse_broker_json_url <-
 
           df_items <-
             df_items %>%
-            mutate_at(df_items %>% select(matches("date")) %>% names(),
+            mutate_at(df_items %>% dplyr::select(matches("date")) %>% names(),
                       funs(. %>% lubridate::mdy())) %>%
-            mutate_at(df_items %>% select(matches("^name|^description|^type")) %>% names(),
-                      funs(. %>% stringr::str_to_upper())) %>%
-            mutate_at(df_items %>% select(matches("^is|^has")) %>% names(),
+            mutate_at(
+              df_items %>% dplyr::select(matches("^name|^description|^type")) %>% names(),
+              funs(. %>% stringr::str_to_upper())
+            ) %>%
+            mutate_at(df_items %>% dplyr::select(matches("^is|^has")) %>% names(),
                       funs(ifelse(. == "Y", TRUE, FALSE)))
 
           has_lists <-
@@ -549,8 +656,8 @@ parse_broker_json_url <-
               .$column
             list_dfs <-
               list_cols %>%
-              map_df(function(x){
-                if(df[[x]] %>% length() == 0) {
+              map_df(function(x) {
+                if (df[[x]] %>% length() == 0) {
                   return(data_frame())
                 }
                 if (x == "disclosureDetail") {
@@ -559,7 +666,7 @@ parse_broker_json_url <-
                 df_list <-
                   df[[x]] %>%
                   flatten_df() %>%
-                  select(-matches("detail")) %>%
+                  dplyr::select(-matches("detail")) %>%
                   unnest()
                 finra_names <-
                   names(df_list)
@@ -570,11 +677,11 @@ parse_broker_json_url <-
                 if (has_missing_names) {
                   df_has <-
                     df_list %>%
-                    select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
+                    dplyr::select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
 
                   has_names <-
                     names(df_has) %>%
-                    map_chr(function(x){
+                    map_chr(function(x) {
                       name_df %>%
                         filter(nameFINRA == x) %>%
                         filter(idRow == min(idRow)) %>%
@@ -589,11 +696,11 @@ parse_broker_json_url <-
                   df_fields <-
                     df_has %>%
                     bind_cols(df_list %>%
-                                select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
+                                dplyr::select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
                 } else {
                   actual_names <-
                     names(df_list) %>%
-                    map_chr(function(x){
+                    map_chr(function(x) {
                       name_df %>%
                         filter(nameFINRA == x) %>%
                         filter(idRow == min(idRow)) %>%
@@ -619,7 +726,7 @@ parse_broker_json_url <-
               as_data_frame()
             actual_names <-
               names(df_list) %>%
-              map_chr(function(x){
+              map_chr(function(x) {
                 finra_name_df %>%
                   filter(nameFINRA == x) %>%
                   filter(idRow == min(idRow)) %>%
@@ -645,18 +752,22 @@ parse_broker_json_url <-
 
 
             df <-
-              data_frame(idTable = x,
-                         nameTable = name_table,
-                         dataTable = list(df_items),
-                         dataSanctions = list(df_list))
+              data_frame(
+                idTable = x,
+                nameTable = name_table,
+                dataTable = list(df_items),
+                dataSanctions = list(df_list)
+              )
 
             return(df)
           }
 
           df <-
-            data_frame(idTable = x,
-                     nameTable = name_table,
-                     dataTable = list(df_items))
+            data_frame(
+              idTable = x,
+              nameTable = name_table,
+              dataTable = list(df_items)
+            )
           return(df)
         }
 
@@ -728,7 +839,7 @@ parse_finra_pdf_brochure <-
 
     actual_name_df <-
       1:length(sec_names) %>%
-      map_df(function(x){
+      map_df(function(x) {
         name_exists <-
           sec_name_df %>%
           dplyr::filter(nameSEC == sec_names[x]) %>% nrow > 0
@@ -746,7 +857,7 @@ parse_finra_pdf_brochure <-
 
     columns_selected <-
       actual_name_df %>%
-      dplyr::filter(!nameActual %>% is.na) %>%
+      dplyr::filter(!nameActual %>% is.na()) %>%
       .$idColumn
 
     info <-
@@ -755,7 +866,7 @@ parse_finra_pdf_brochure <-
 
     actual_names <-
       actual_name_df %>%
-      dplyr::filter(!nameActual %>% is.na) %>%
+      dplyr::filter(!nameActual %>% is.na()) %>%
       .$nameActual
 
     names(df_info) <-
@@ -774,7 +885,10 @@ parse_finra_pdf_brochure <-
           str_trim()
 
         page_text <-
-          page_text %>% str_replace_all('www.finra.org/brokercheck|©2016 FINRA. All rights reserved.|User Guidance|End of Report|This page is intentionally left blank.', '') %>%
+          page_text %>% str_replace_all(
+            'www.finra.org/brokercheck|©2016 FINRA. All rights reserved.|User Guidance|End of Report|This page is intentionally left blank.',
+            ''
+          ) %>%
           str_replace_all('Firm Brochure', '') %>%
           str_trim() %>%
           gsub("^ *|(?<= ) | *$", "", ., perl = TRUE)
@@ -806,7 +920,7 @@ parse_finra_json_url <-
            ocr_pdfs = TRUE) {
     json_data <-
       url %>%
-      fromJSON(simplifyDataFrame = TRUE, flatten = TRUE)
+      jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = TRUE)
 
     df <-
       json_data$results$BROKER_CHECK_FIRM$results
@@ -823,25 +937,38 @@ parse_finra_json_url <-
 
     df_fields <-
       df %>%
-      select(-one_of(list_cols)) %>%
+      dplyr::select(-one_of(list_cols)) %>%
       as_data_frame()
     if ('fields.bc_firm_address_details' %in% names(df_fields)) {
       df_fields <-
         df_fields %>%
-        mutate(fields.bc_ia_address_details = ifelse(fields.bc_ia_address_details %>% is.na(),fields.bc_firm_address_details ,fields.bc_ia_address_details)) %>%
-        select(-fields.bc_firm_address_details)
+        mutate(
+          fields.bc_ia_address_details = ifelse(
+            fields.bc_ia_address_details %>% is.na(),
+            fields.bc_firm_address_details ,
+            fields.bc_ia_address_details
+          )
+        ) %>%
+        dplyr::select(-fields.bc_firm_address_details)
     }
 
-    if ('fields.bc_ia_scope' %in% names(df_fields) & 'fields.bc_scope' %in% names(df_fields)) {
+    if ('fields.bc_ia_scope' %in% names(df_fields) &
+        'fields.bc_scope' %in% names(df_fields)) {
       df_fields <-
         df_fields %>%
-        mutate(fields.bc_scope = ifelse(fields.bc_scope %>% is.na(),fields.bc_ia_scope , fields.bc_scope)) %>%
-        select(-fields.bc_ia_scope)
+        mutate(
+          fields.bc_scope = ifelse(
+            fields.bc_scope %>% is.na(),
+            fields.bc_ia_scope ,
+            fields.bc_scope
+          )
+        ) %>%
+        dplyr::select(-fields.bc_ia_scope)
     }
 
     df_fields <-
-       df_fields %>%
-       select(which(colMeans(is.na(.)) < 1))
+      df_fields %>%
+      dplyr::select(which(colMeans(is.na(.)) < 1))
 
     name_df <-
       get_finra_name_df() %>%
@@ -856,11 +983,11 @@ parse_finra_json_url <-
     if (has_missing_names) {
       df_has <-
         df_fields %>%
-        select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
+        dplyr::select(one_of(finra_names[finra_names %in% name_df$nameFINRA]))
 
       has_names <-
         names(df_has) %>%
-        map_chr(function(x){
+        map_chr(function(x) {
           name_df %>%
             filter(nameFINRA == x) %>%
             filter(idRow == min(idRow)) %>%
@@ -874,20 +1001,20 @@ parse_finra_json_url <-
       df_fields <-
         df_has %>%
         bind_cols(df_fields %>%
-                    select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
+                    dplyr::select(one_of(finra_names[!finra_names %in% name_df$nameFINRA])))
     } else {
       actual_names <-
-      names(df_fields) %>%
-      map_chr(function(x){
-        name_df %>%
-          filter(nameFINRA == x) %>%
-          filter(idRow == min(idRow)) %>%
-          .$nameActual
-      })
+        names(df_fields) %>%
+        map_chr(function(x) {
+          name_df %>%
+            filter(nameFINRA == x) %>%
+            filter(idRow == min(idRow)) %>%
+            .$nameActual
+        })
 
-    df_fields <-
-      df_fields %>%
-      purrr::set_names(actual_names)
+      df_fields <-
+        df_fields %>%
+        purrr::set_names(actual_names)
     }
     is_person <-
       'nameFirst' %in% names(df_fields)
@@ -897,13 +1024,13 @@ parse_finra_json_url <-
       if (has_middle) {
         df_fields <-
           df_fields %>%
-          mutate(nameFiler = list(nameFirst, nameMiddle, nameLast) %>% purrr::invoke(paste,.)) %>%
-          select(nameFiler, everything())
+          mutate(nameFiler = list(nameFirst, nameMiddle, nameLast) %>% purrr::invoke(paste, .)) %>%
+          dplyr::select(nameFiler, everything())
       } else {
         df_fields <-
           df_fields %>%
-          mutate(nameFiler = list(nameFirst, nameLast) %>% purrr::invoke(paste,.)) %>%
-          select(nameFiler, everything())
+          mutate(nameFiler = list(nameFirst, nameLast) %>% purrr::invoke(paste, .)) %>%
+          dplyr::select(nameFiler, everything())
       }
       df_fields <-
         df_fields %>%
@@ -916,7 +1043,7 @@ parse_finra_json_url <-
 
     df_fields <-
       df_fields %>%
-      select(-matches("htmlName|^highlight")) %>%
+      dplyr::select(-matches("htmlName|^highlight")) %>%
       as_data_frame() %>%
       mutate(idCRD = idCRD %>% as.numeric(),
              idRow = 1:n())
@@ -927,7 +1054,8 @@ parse_finra_json_url <-
         filter(scoreWord >= name_match_threshold)
     }
 
-    if ('fields.bc_ia_scope' %in% names(df_fields) & (!'typeActiveFiler' %in% names(df_fields))) {
+    if ('fields.bc_ia_scope' %in% names(df_fields) &
+        (!'typeActiveFiler' %in% names(df_fields))) {
       df_fields <-
         df_fields %>%
         dplyr::rename(typeActiveFiler = fields.bc_ia_scope)
@@ -936,14 +1064,14 @@ parse_finra_json_url <-
     if ('addressFiler' %in% names(df_fields)) {
       address_df <-
         1:nrow(df_fields) %>%
-        map_df(function(x){
+        map_df(function(x) {
           js_data <-
             df_fields$addressFiler[[x]]
           if (js_data %>% is.na()) {
             return(data_frame(idRow = x))
           }
           js_df <-
-            js_data %>% fromJSON() %>% flatten_df()
+            js_data %>% jsonlite::fromJSON() %>% flatten_df()
           names(js_df) <-
             names(js_df) %>% str_replace_all('postalCode', 'zipecode') %>%
             paste0('Firm')
@@ -952,7 +1080,7 @@ parse_finra_json_url <-
             js_df %>%
             mutate_all(str_to_upper) %>%
             mutate(idRow = x) %>%
-            select(idRow, everything())
+            dplyr::select(idRow, everything())
           return(js_df)
         })
 
@@ -960,14 +1088,13 @@ parse_finra_json_url <-
         df_fields %>%
         left_join(address_df) %>%
         suppressMessages() %>%
-        select(-matches("addressFiler"))
+        dplyr::select(-matches("addressFiler"))
     }
 
     if ('fields.bc_other_names' %in% names(df)) {
       df_related_entities <-
         1:nrow(df) %>%
-        map_df(function(x){
-
+        map_df(function(x) {
           entities <-
             df$fields.bc_other_names[[x]]
 
@@ -977,7 +1104,7 @@ parse_finra_json_url <-
           data <-
             data_frame(nameEntityRelated = entities) %>%
             mutate(idRow = x, countEntity = 1:n()) %>%
-            select(idRow, countEntity, nameEntityRelated)
+            dplyr::select(idRow, countEntity, nameEntityRelated)
           return(data)
         })
 
@@ -1028,36 +1155,40 @@ parse_finra_json_url <-
       broker_df <-
         urls_json %>%
         map_df(function(x) {
-        parse_broker_json_url_safe(url = x)
+          parse_broker_json_url_safe(url = x)
         })
       has_broker <-
         broker_df %>% nrow() > 0
       if (has_broker) {
-      df_fields <-
-        df_fields %>%
-        left_join(broker_df) %>%
-        suppressMessages()
-      df_fields <-
-        df_fields %>%
-        mutate(rowsDataBroker = dataFINRABroker %>% map_dbl(function(x){x %>% length()}),
-               hasDataBroker = ifelse(rowsDataBroker > 0 ,TRUE, FALSE)) %>%
-        select(-rowsDataBroker)
+        df_fields <-
+          df_fields %>%
+          left_join(broker_df) %>%
+          suppressMessages()
+        df_fields <-
+          df_fields %>%
+          mutate(
+            rowsDataBroker = dataFINRABroker %>% map_dbl(function(x) {
+              x %>% length()
+            }),
+            hasDataBroker = ifelse(rowsDataBroker > 0 , TRUE, FALSE)
+          ) %>%
+          dplyr::select(-rowsDataBroker)
       }
 
       has_pdfs <-
         df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
         nrow() > 0
       if (has_pdfs) {
-        if(ocr_pdfs) {
+        if (ocr_pdfs) {
           pdf_urls <-
             df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
-          .$urlFINRABrokerPDF
+            .$urlFINRABrokerPDF
           parse_finra_pdf_brochure_safe <-
             purrr::possibly(parse_finra_pdf_brochure, data_frame())
           pdf_df <-
             pdf_urls %>%
-            map_df(function(x){
-              list("PARSING: ", x) %>% purrr::invoke(paste0,. ) %>% message()
+            map_df(function(x) {
+              list("PARSING: ", x) %>% purrr::invoke(paste0, .) %>% message()
               parse_finra_pdf_brochure_safe(url = x) %>%
                 mutate(urlFINRABrokerPDF = x)
             })
@@ -1114,21 +1245,25 @@ parse_finra_json_url <-
         df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
         nrow() > 0
 
-      if (broker_df %>% nrow() > 0 ){
+      if (broker_df %>% nrow() > 0) {
         df_fields <-
-        df_fields %>%
-        left_join(broker_df) %>%
-        suppressMessages()
-      df_fields <-
-        df_fields %>%
-        mutate(rowsDataBroker = dataFINRABroker %>% map_dbl(function(x){x %>% length()}),
-               hasDataBroker = ifelse(rowsDataBroker > 0 ,TRUE, FALSE)) %>%
-        select(-rowsDataBroker)
+          df_fields %>%
+          left_join(broker_df) %>%
+          suppressMessages()
+        df_fields <-
+          df_fields %>%
+          mutate(
+            rowsDataBroker = dataFINRABroker %>% map_dbl(function(x) {
+              x %>% length()
+            }),
+            hasDataBroker = ifelse(rowsDataBroker > 0 , TRUE, FALSE)
+          ) %>%
+          dplyr::select(-rowsDataBroker)
 
       }
 
       if (has_pdfs) {
-        if(ocr_pdfs) {
+        if (ocr_pdfs) {
           pdf_urls <-
             df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
             .$urlFINRABrokerPDF
@@ -1136,8 +1271,8 @@ parse_finra_json_url <-
             purrr::possibly(parse_finra_pdf_brochure, data_frame())
           pdf_df <-
             pdf_urls %>%
-            map_df(function(x){
-              list("PARSING: ", x) %>% purrr::invoke(paste0,. ) %>% message()
+            map_df(function(x) {
+              list("PARSING: ", x) %>% purrr::invoke(paste0, .) %>% message()
               parse_finra_pdf_brochure_safe(url = x) %>%
                 mutate(urlFINRABrokerPDF = x)
             })
@@ -1164,12 +1299,12 @@ get_data_finra_entity <-
            ocr_pdf = TRUE,
            score_threshold = .2,
            return_message = TRUE) {
-    if (search_name %>% purrr::is_null()){
+    if (search_name %>% purrr::is_null()) {
       stop("Please enter a search term")
     }
     url_df <-
       search_name %>%
-      map_df(function(x){
+      map_df(function(x) {
         url <-
           generate_finra_url(is_firm = is_firm, search_name = x)
 
@@ -1181,15 +1316,24 @@ get_data_finra_entity <-
 
     all_data <-
       url_df$urlJSON %>%
-      map_df(function(x){
-        parse_finra_json_url_safe(url = x, ocr_pdf = ocr_pdf,name_match_threshold = score_threshold)
+      map_df(function(x) {
+        parse_finra_json_url_safe(
+          url = x,
+          ocr_pdf = ocr_pdf,
+          name_match_threshold = score_threshold
+        )
       }) %>%
       mutate(nameSearch = search_name) %>%
-      select(nameSearch, matches("name"), matches("^id"), everything()) %>%
-      select(-matches("idRow"))
+      dplyr::select(nameSearch, matches("name"), matches("^id"), everything()) %>%
+      dplyr::select(-matches("idRow"))
 
     if (return_message) {
-      list("Returned ", all_data %>% nrow() %>% formattable::comma(digits = 0), ' FINRA registered entities for ', search_name) %>%
+      list(
+        "Returned ",
+        all_data %>% nrow() %>% formattable::comma(digits = 0),
+        ' FINRA registered entities for ',
+        search_name
+      ) %>%
         purrr::invoke(paste0, .) %>%
         message()
     }
@@ -1229,39 +1373,47 @@ get_data_finra_entities <-
     if (entity_names %>% is_null()) {
       stop("Please enter entities to search for")
     }
-  search_df <-
-    expand.grid(nameSearch = entity_names,
-              isFirm = TRUE,
-              stringsAsFactors = FALSE) %>%
+    search_df <-
+      expand.grid(
+        nameSearch = entity_names,
+        isFirm = TRUE,
+        stringsAsFactors = FALSE
+      ) %>%
       as_data_frame()
-  get_data_finra_entity_safe <-
-    purrr::possibly(get_data_finra_entity, data_frame())
+    get_data_finra_entity_safe <-
+      purrr::possibly(get_data_finra_entity, data_frame())
 
-  all_data <-
-    1:nrow(search_df) %>%
-    map_df(function(x){
-      get_data_finra_entity_safe(search_name = search_df$nameSearch[[x]],
-                            ocr_pdf = ocr_pdf,
-                            score_threshold = score_threshold,
-                            is_firm = search_df$isFirm[[x]],
-                            return_message = return_message)
-    })
+    all_data <-
+      1:nrow(search_df) %>%
+      map_df(function(x) {
+        get_data_finra_entity(
+          search_name = search_df$nameSearch[[x]],
+          ocr_pdf = ocr_pdf,
+          score_threshold = score_threshold,
+          is_firm = search_df$isFirm[[x]],
+          return_message = return_message
+        )
+      })
 
-  if (all_data %>% nrow() == 0) {
-    return(data_frame())
-  }
+    if (all_data %>% nrow() == 0) {
+      return(data_frame())
+    }
 
-  if ('typeActiveFiler' %in% names(all_data)) {
+    if ('typeActiveFiler' %in% names(all_data)) {
+      all_data <-
+        all_data %>%
+        mutate(isActiveFiler = ifelse(typeActiveFiler == "ACTIVE", TRUE, FALSE)) %>%
+        dplyr::select(nameSearch,
+                      matches('idCRD'),
+                      matches("nameFirm"),
+                      isActiveFiler,
+                      everything())
+    }
+
     all_data <-
       all_data %>%
-      mutate(isActiveFiler = ifelse(typeActiveFiler == "ACTIVE", TRUE, FALSE)) %>%
-      select(nameSearch, matches('idCRD'), matches("nameFirm"), isActiveFiler, everything())
-  }
-
-  all_data <-
-    all_data %>%
-    mutate(urlManagerSummaryADV = 'https://adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>% paste0(idCRD))
-  return(all_data)
+      mutate(urlManagerSummaryADV = 'https://adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>% paste0(idCRD))
+    return(all_data)
   }
 
 #' FINRA registered people
@@ -1288,24 +1440,28 @@ get_data_finra_people <-
   function(search_name = NULL,
            ocr_pdf = TRUE,
            return_message = TRUE) {
-
     if (search_name %>% is_null()) {
       stop("Please enter a person to search for")
     }
     search_df <-
-      expand.grid(nameSearch = search_name,
-                  isFirm = FALSE,stringsAsFactors = FALSE) %>%
+      expand.grid(
+        nameSearch = search_name,
+        isFirm = FALSE,
+        stringsAsFactors = FALSE
+      ) %>%
       as_data_frame()
     get_data_finra_entity_safe <-
       purrr::possibly(get_data_finra_entity, data_frame())
 
     all_data <-
       1:nrow(search_df) %>%
-      map_df(function(x){
-        get_data_finra_entity(search_name = search_df$nameSearch[[x]],
-                              is_firm = search_df$isFirm[[x]],
-                              ocr_pdf = ocr_pdf,
-                              return_message = return_message)
+      map_df(function(x) {
+        get_data_finra_entity(
+          search_name = search_df$nameSearch[[x]],
+          is_firm = search_df$isFirm[[x]],
+          ocr_pdf = ocr_pdf,
+          return_message = return_message
+        )
       })
 
     if (all_data %>% nrow() == 0) {
@@ -1316,16 +1472,22 @@ get_data_finra_people <-
       all_data <-
         all_data %>%
         mutate(isActiveFiler = ifelse(typeActiveFiler == "ACTIVE", TRUE, FALSE)) %>%
-        select(nameSearch, matches('idCRD'), matches("nameFirm"), isActiveFiler, everything())
+        dplyr::select(nameSearch,
+                      matches('idCRD'),
+                      matches("nameFirm"),
+                      isActiveFiler,
+                      everything())
     }
     all_data <-
       all_data %>%
-      select(-matches("^fields"))
+      dplyr::select(-matches("^fields"))
 
     all_data <-
       all_data %>%
-      mutate_at(all_data %>% select(matches("^count[A-Z]")) %>% select(-matches("country")) %>% names(),
-                funs(. %>% formattable::comma(digits = 0)))
+      mutate_at(
+        all_data %>% dplyr::select(matches("^count[A-Z]")) %>% dplyr::select(-matches("country")) %>% names(),
+        funs(. %>% formattable::comma(digits = 0))
+      )
 
 
     return(all_data)
@@ -1388,7 +1550,7 @@ parse_sec_manager_pdf_url <-
         group_by(item) %>%
         mutate(idItem = (1:n() - 1),
                nameItem = if_else(idItem > 0, item %>% paste0(idItem), item)) %>%
-        ungroup %>%
+        ungroup() %>%
         dplyr::select(-c(item, idItem)) %>%
         spread(nameItem, value)
     }
@@ -1403,7 +1565,7 @@ get_url_crd <-
     idCRD <-
       url %>%
       str_split('\\?ORG_PK=') %>%
-      flatten_chr %>%
+      flatten_chr() %>%
       .[2] %>%
       as.numeric()
     return(idCRD)
@@ -1446,7 +1608,7 @@ get_manager_sec_page <-
             function(page) {
               nodes_exist <-
                 page %>%
-                html_nodes('#tbERAStatus td') %>% length > 0
+                html_nodes('#tbERAStatus td') %>% length() > 0
 
               if (nodes_exist) {
                 statusJurisdictionERA <-
@@ -1488,7 +1650,7 @@ get_manager_sec_page <-
             function(page) {
               nodes_exist <-
                 page %>%
-                html_nodes('#tbNtcStatus td') %>% length > 0
+                html_nodes('#tbNtcStatus td') %>% length() > 0
 
               if (nodes_exist) {
                 stateRegistration <-
@@ -1523,7 +1685,7 @@ get_manager_sec_page <-
             function(page) {
               nodes_exist <-
                 page %>%
-                html_nodes('#tbRegStatus td') %>% length > 0
+                html_nodes('#tbRegStatus td') %>% length() > 0
 
               if (nodes_exist) {
                 statusJurisdiction <-
@@ -1596,8 +1758,10 @@ get_manager_sec_page <-
           urlManagerSummaryADV = url,
           urlManagerADV
         ) %>%
-        separate(idCRDSEC, sep = ' / ', into = c('idCRD', 'idSEC')) %>%
-        mutate(idCRD = idCRD %>% as.numeric) %>%
+        separate(idCRDSEC,
+                 sep = ' / ',
+                 into = c('idCRD', 'idSEC')) %>%
+        mutate(idCRD = idCRD %>% as.numeric()) %>%
         dplyr::select(nameEntityManager, idCRD, idSEC, everything())
 
       brochure_exists <-
@@ -1667,7 +1831,6 @@ get_data_adv_managers_metadata <-
            crd_ids = NULL,
            score_threshold = .2,
            return_message = T) {
-
     if (entity_names %>% is_null() & crd_ids %>% is_null()) {
       stop("Please enter a name or CRD to search")
     }
@@ -1681,8 +1844,11 @@ get_data_adv_managers_metadata <-
     if (!entity_names %>% is_null()) {
       finra_data <-
         entity_names %>%
-        get_data_finra_entities(ocr_pdf = FALSE, score_threshold = score_threshold,
-                                return_message = return_message) %>%
+        get_data_finra_entities(
+          ocr_pdf = FALSE,
+          score_threshold = score_threshold,
+          return_message = return_message
+        ) %>%
         suppressMessages() %>%
         suppressWarnings()
 
@@ -1789,20 +1955,49 @@ get_sec_sitemap_df <-
             "sectionSignaturePage"
           ),
         nameData =
-          c("data_registration", "data_disclosures", "data_drp", "data_1identifyinginfo",
-            "data_2secregistration", "data_3organizationform", "data_4successions",
-            "data_5advisorybusinessinformation", "data_6otherbusinessinformation",
-            "data_7afinanceaffiliations", "data_7bprivatefundreporting",
-            "data_8clientconflicts", "data_9custody", "data_10controlpersons",
-            "data_11disclosures", "data_12smallbusiness", "data_schedulea",
-            "data_scheduleb", "data_scheduled", "data_signaturepage"),
-        nameFunction = c("get_manager_sec_page_safe", NA, "get_section_drp_safe",
-                         "get_section_1_data_safe", "get_section_2_data_safe", "get_section_3_data_safe",
-                         "get_section_4_data_safe", "get_section_5_data_safe", "get_section_6_data_safe",
-                         "get_section_7a_data_safe", "get_section_7b_data_safe", "get_section_8_data_safe",
-                         "get_section_9_data_safe", "get_section_10_data_safe", "get_section_11_data_safe",
-                         "get_section_12_data_safe", "get_schedule_a_data_safe", "get_schedule_b_data_safe",
-                         "get_schedule_d_data_safe", "get_manager_signatory_data_safe"
+          c(
+            "data_registration",
+            "data_disclosures",
+            "data_drp",
+            "data_1identifyinginfo",
+            "data_2secregistration",
+            "data_3organizationform",
+            "data_4successions",
+            "data_5advisorybusinessinformation",
+            "data_6otherbusinessinformation",
+            "data_7afinanceaffiliations",
+            "data_7bprivatefundreporting",
+            "data_8clientconflicts",
+            "data_9custody",
+            "data_10controlpersons",
+            "data_11disclosures",
+            "data_12smallbusiness",
+            "data_schedulea",
+            "data_scheduleb",
+            "data_scheduled",
+            "data_signaturepage"
+          ),
+        nameFunction = c(
+          "get_manager_sec_page_safe",
+          NA,
+          "get_section_drp_safe",
+          "get_section_1_data_safe",
+          "get_section_2_data_safe",
+          "get_section_3_data_safe",
+          "get_section_4_data_safe",
+          "get_section_5_data_safe",
+          "get_section_6_data_safe",
+          "get_section_7a_data_safe",
+          "get_section_7b_data_safe",
+          "get_section_8_data_safe",
+          "get_section_9_data_safe",
+          "get_section_10_data_safe",
+          "get_section_11_data_safe",
+          "get_section_12_data_safe",
+          "get_schedule_a_data_safe",
+          "get_schedule_b_data_safe",
+          "get_schedule_d_data_safe",
+          "get_manager_signatory_data_safe"
         ),
         nameSectionActual = c(
           "Registration",
@@ -1944,7 +2139,7 @@ get_sitemap_urls <-
     urls_exist <-
       site_map_df %>%
       dplyr::filter(idSection %in% section_name) %>%
-      .$urlADVSection %>% length > 0
+      .$urlADVSection %>% length() > 0
     if (urls_exist) {
       urls <-
         site_map_df %>%
@@ -1958,19 +2153,18 @@ get_sitemap_urls <-
 parse_adv_manager_sitemap_df <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=135952',
            return_wide = F) {
-
     idCRD <-
       url %>%
       get_url_crd()
 
-    if (idCRD %>% is.na) {
+    if (idCRD %>% is.na()) {
       idCRD <-
         url %>%
         str_split('\\?ORG_PK=') %>%
-        flatten_chr %>%
+        flatten_chr() %>%
         .[2] %>%
         str_split('\\&') %>%
-        flatten_chr %>%
+        flatten_chr() %>%
         .[[1]] %>%
         as.numeric() %>%
         suppressWarnings()
@@ -1998,11 +2192,11 @@ parse_adv_manager_sitemap_df <-
       page %>%
       get_entity_manager_name()
 
-    if (name_entity_manager %>% is.na) {
+    if (name_entity_manager %>% is.na()) {
       name_entity_manager <-
         page %>%
         html_nodes('.summary-displayname') %>%
-        html_text
+        html_text()
     }
 
     items <-
@@ -2018,22 +2212,29 @@ parse_adv_manager_sitemap_df <-
       str_replace('../', '') %>%
       paste0(base_url,
              .) %>%
-      unique
+      unique()
 
     adv_sitemap_df <-
-      data_frame(idCRD, nameSection = 'Registration', urlADVSection = idCRD %>% paste0('http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=',.)) %>%
+      data_frame(
+        idCRD,
+        nameSection = 'Registration',
+        urlADVSection = idCRD %>% paste0(
+          'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=',
+          .
+        )
+      ) %>%
       bind_rows(data_frame(idCRD,
                            nameSection = items,
                            urlADVSection = values)) %>%
       left_join(get_sec_sitemap_df()) %>%
       distinct() %>%
-      dplyr::filter(!nameFunction %>% is.na) %>%
+      dplyr::filter(!nameFunction %>% is.na()) %>%
       dplyr::select(-nameSection) %>%
       mutate(nameEntityManager = name_entity_manager,
              idRow = 1:n()) %>%
       group_by(idSection) %>%
       dplyr::filter(idRow == min(idRow)) %>%
-      ungroup %>%
+      ungroup() %>%
       dplyr::select(-idRow) %>%
       dplyr::select(idCRD, nameEntityManager, everything()) %>%
       suppressMessages()
@@ -2056,29 +2257,35 @@ get_managers_adv_sitemap_adv <-
     parse_adv_manager_sitemap_df_safe <-
       possibly(parse_adv_manager_sitemap_df, NULL)
 
-    if (!idCRDs %>% is_null()) {
+    if (!purrr::is_null(idCRDs)) {
       urls <-
-        idCRDs %>%
-        paste0('http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=',.)
+        list(
+          'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=',
+          idCRDs
+        ) %>%
+        purrr::reduce(paste0)
     }
 
-    if (!entity_names %>% is_null()) {
+    if (!purrr::is_null(entity_names)) {
       manager_data <-
         entity_names %>%
         map_df(function(x) {
-          get_data_adv_managers_metadata_safe(crd_ids = idCRDs,
-                                              score_threshold = score_threshold,
-                                              entity_names = x, return_message = T)
+          get_data_adv_managers_metadata_safe(
+            crd_ids = idCRDs,
+            score_threshold = score_threshold,
+            entity_names = x,
+            return_message = T
+          )
         })
 
       manager_data <-
         manager_data %>%
-        dplyr::filter(!urlManagerADV %>% is.na)
+        dplyr::filter(!urlManagerADV %>% is.na())
     }
 
     if ('urls' %>% exists() & 'manager_data' %>% exists()) {
       urls <-
-        c(urls, manager_data$urlManagerADV %>% unique) %>% unique
+        c(urls, manager_data$urlManagerADV %>% unique()) %>% unique()
     }
 
     if (idCRDs %>% is_null() & 'manager_data' %>% exists()) {
@@ -2095,22 +2302,24 @@ get_managers_adv_sitemap_adv <-
     }
     sitemap_dfs <-
       urls %>%
-      unique %>%
+      unique() %>%
       map_df(function(x) {
-        parse_adv_manager_sitemap_df_safe(url = x, return_wide = F)
+        parse_adv_manager_sitemap_df(url = x, return_wide = F)
       })
 
     sitemap_dfs <-
       sitemap_dfs %>%
-      dplyr::filter(!nameEntityManager %>% is.na) %>%
+      dplyr::filter(!nameEntityManager %>% is.na()) %>%
       left_join(manager_data %>% dplyr::select(idCRD, nameEntityManager)) %>%
-      dplyr::select(idCRD,
-                    nameSectionActual,
-                    nameEntityManager,
-                    idSection,
-                    nameData,
-                    nameFunction,
-                    urlADVSection) %>%
+      dplyr::select(
+        idCRD,
+        nameSectionActual,
+        nameEntityManager,
+        idSection,
+        nameData,
+        nameFunction,
+        urlADVSection
+      ) %>%
       suppressMessages()
 
     return(sitemap_dfs)
@@ -2152,7 +2361,7 @@ parse_manager_owner_name <-
       x %>% str_count('\\, ')
 
     full_name <-
-      x %>% str_split('\\, ') %>% flatten_chr
+      x %>% str_split('\\, ') %>% flatten_chr()
 
     if (count_commas == 1) {
       name_first <-
@@ -2225,7 +2434,7 @@ get_pk_url_crd <-
       str_split('=') %>%
       flatten_chr() %>%
       .[2] %>% str_replace_all('&FLNG_PK', '') %>%
-      as.numeric
+      as.numeric()
     return(idCRD)
   }
 
@@ -2547,7 +2756,7 @@ parse_table_node_df <-
         data_nodes <-
           table_data_nodes[[x]] %>%
           str_split('  ') %>%
-          flatten_chr
+          flatten_chr()
 
         if (data_nodes[!data_nodes == ''] %>% length() > 0) {
           data_nodes <-
@@ -2565,16 +2774,16 @@ parse_table_node_df <-
 
           isLetter <-
             (nodeText %>% str_detect("^\\([a-z]")) &
-            (nodeText %>% nchar < 10)
+            (nodeText %>% nchar() < 10)
 
           isNumberSection <-
             (nodeText %>% str_detect("^[1-9].")) &
-            (nodeText %>% nchar < 4) &
+            (nodeText %>% nchar() < 4) &
             (nodeText %>% str_detect('\\.'))
 
           if (isNumberSection) {
             numberSection <-
-              nodeText %>% str_extract_all("^[1-9].") %>% flatten_chr %>% as.numeric
+              nodeText %>% str_extract_all("^[1-9].") %>% flatten_chr() %>% as.numeric()
           } else {
             numberSection <-
               NA
@@ -2582,7 +2791,7 @@ parse_table_node_df <-
 
           if (isLetter) {
             letterSection <-
-              nodeText %>% str_extract_all("^\\([a-z]") %>% flatten_chr %>%
+              nodeText %>% str_extract_all("^\\([a-z]") %>% flatten_chr() %>%
               str_replace_all('\\(', '')
           } else {
             letterSection <-
@@ -2652,8 +2861,8 @@ parse_table_node_df <-
         }
       }) %>%
       fill(numberSection, letterSection) %>%
-      dplyr::filter(!nodeText %>% is.na) %>%
-      dplyr::filter(!numberSection %>% is.na) %>%
+      dplyr::filter(!nodeText %>% is.na()) %>%
+      dplyr::filter(!numberSection %>% is.na()) %>%
       dplyr::filter(!nodeText %>% str_detect("^NOTE:|Ownership")) %>%
       unite(
         numberLetterSection,
@@ -2724,12 +2933,13 @@ extract_node_data <-
           dplyr::filter(idNode == max(idNode)) %>%
           .$nodeText
 
-        if (variable_name %in% c('nameFundGPManagerTrusteeDirector') & node_df %>% nrow > 2)  {
+        if (variable_name %in% c('nameFundGPManagerTrusteeDirector') &
+            node_df %>% nrow > 2)  {
           node_value <-
             node_df %>% slice(-c(1:2)) %>%
             .$nodeText
 
-          if (node_value %>% length > 1) {
+          if (node_value %>% length() > 1) {
             node_value <-
               node_value %>% paste0(collapse = ' - ')
           }
@@ -2741,22 +2951,22 @@ extract_node_data <-
             dplyr::filter(!nodeText %>% str_detect('If')) %>%
             .$nodeText
 
-          if (node_value %>% length > 1) {
+          if (node_value %>% length() > 1) {
             node_value <-
               node_value %>% paste0(collapse = ' & ')
           }
         }
         has_currency <-
-          node_value %>% str_detect('\\$') %>% unique
+          node_value %>% str_detect('\\$') %>% unique()
         if (has_currency) {
           node_value <-
             node_value %>% str_replace('\\$', '') %>%
-            str_trim %>%
+            str_trim() %>%
             readr::parse_number()
         }
         if (variable_name %>% str_detect("pct")) {
           node_value <-
-            node_value %>% str_replace('\\%', '') %>% str_trim %>% as.numeric
+            node_value %>% str_replace('\\%', '') %>% str_trim() %>% as.numeric()
         }
         if (node_value %>% str_detect('\\$')) {
           node_value <-
@@ -2777,15 +2987,15 @@ extract_node_data <-
           str_replace_all('City:|State:|Country:', '')
 
         node_value <-
-          node_value[!node_value == ''] %>% str_trim
-        if (node_value %>% length > 1) {
+          node_value[!node_value == ''] %>% str_trim()
+        if (node_value %>% length() > 1) {
           node_value <-
             node_value %>%
             paste0(collapse = ', ') %>%
-            str_trim %>% str_to_upper
+            str_trim() %>% str_to_upper()
         } else {
           node_value <-
-            node_value %>% str_trim %>% str_to_upper
+            node_value %>% str_trim() %>% str_to_upper()
         }
       }
       if (section_letter %in% letter_section_other) {
@@ -2794,14 +3004,14 @@ extract_node_data <-
         has_node_length <-
           node_df %>%
           dplyr::filter(!nodeText %>% str_detect(hitwords)) %>%
-          .$nodeText %>% length > 0
+          .$nodeText %>% length() > 0
         if (has_node_length) {
           node_value <-
             node_df %>%
             dplyr::filter(!nodeText %>% str_detect(hitwords)) %>%
             .$nodeText
 
-          if ((node_value %>% length) > 1) {
+          if ((node_value %>% length()) > 1) {
             vars_names <-
               c(variable_name,
                 1:(length(node_value) - 1) %>% paste0(variable_name, .))
@@ -2840,7 +3050,7 @@ extract_node_data <-
           suppressMessages()
 
         count_locations <-
-          locations_df$countLocation %>% unique
+          locations_df$countLocation %>% unique()
 
         node_value <-
           count_locations %>%
@@ -2852,20 +3062,20 @@ extract_node_data <-
               .$nodeText %>%
               str_replace_all('City:|State:|Country:', '')
             node_vals <-
-              node_vals[!node_vals == ''] %>% str_trim
-            if (node_vals %>% length > 1) {
+              node_vals[!node_vals == ''] %>% str_trim()
+            if (node_vals %>% length() > 1) {
               node_vals <-
                 node_vals %>%
                 paste0(collapse = ', ') %>%
-                str_trim
+                str_trim()
             } else {
               node_vals <-
-                node_vals %>% str_trim
+                node_vals %>% str_trim()
             }
             return(node_vals %>% str_to_upper)
           })
 
-        if ((node_value %>% length) > 1) {
+        if ((node_value %>% length() > 1)) {
           vars_names <-
             c(variable_name,
               1:(length(node_value) - 1) %>% paste0(variable_name, .))
@@ -3005,15 +3215,15 @@ parse_funds_tables <-
           map_df(function(x) {
             table_node_df %>%
               extract_node_data(
-              variable_name = section_matrix_df$variableName[x],
-              section_letter = section_matrix_df$sectionLetter[x],
-              method = 'max'
-            ) %>%
-              mutate(valueNode = valueNode %>% as.character)
+                variable_name = section_matrix_df$variableName[x],
+                section_letter = section_matrix_df$sectionLetter[x],
+                method = 'max'
+              ) %>%
+              mutate(valueNode = valueNode %>% as.character())
           }) %>%
           suppressWarnings() %>%
           mutate(valueNode = ifelse(valueNode %in% c('', '-'), NA, valueNode)) %>%
-          dplyr::filter(!valueNode %>% is.na)
+          dplyr::filter(!valueNode %>% is.na())
 
         col_order <-
           fund_table_data$nameVariable
@@ -3027,24 +3237,24 @@ parse_funds_tables <-
           dplyr::select(numberFund, everything())
 
         has_amount <-
-          fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names %>% length > 0
+          fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names() %>% length() > 0
 
         if (has_amount) {
           fund_table_data <-
             fund_table_data %>%
             mutate_at(.cols =
-                        fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names,
+                        fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names(),
                       .funs = as.numeric)
 
         }
         has_percent <-
-          fund_table_data %>% dplyr::select(matches("^pct")) %>% names %>% length > 0
+          fund_table_data %>% dplyr::select(matches("^pct")) %>% names() %>% length() > 0
         if (has_percent) {
           fund_table_data <-
             fund_table_data %>%
             mutate_at(
               .cols =
-                fund_table_data %>% dplyr::select(matches("^pct")) %>% names,
+                fund_table_data %>% dplyr::select(matches("^pct")) %>% names(),
               .funs = funs(. %>% as.numeric() / 100)
             )
         }
@@ -3081,7 +3291,6 @@ parse_funds_tables <-
 # form_sections -----------------------------------------------------------
 get_section_1_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/sections/iapd_AdvIdentifyingInfoSection.aspx?ORG_PK=165609&FLNG_PK=011CBE92000801870387C7310019743D056C8CC0') {
-
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -3119,7 +3328,7 @@ get_section_1_data <-
       get_entity_manager_name()
 
     find_text_node_safe <-
-      possibly(find_text_node, NULL )
+      possibly(find_text_node, NULL)
 
     parse_node_df <-
       function(page) {
@@ -3210,13 +3419,13 @@ get_section_1_data <-
         business_data_df <-
           business_data_df %>%
           mutate(value = if_else(value %>% is.na, remove, value),
-                 value = value %>% str_trim) %>%
+                 value = value %>% str_trim()) %>%
           dplyr::select(nameItem, value) %>%
           dplyr::filter(!value == '') %>%
           mutate(idRow = 1:n()) %>%
           group_by(nameItem) %>%
           dplyr::filter(idRow == min(idRow)) %>%
-          ungroup %>%
+          ungroup() %>%
           dplyr::select(-idRow) %>%
           distinct()
 
@@ -3232,15 +3441,31 @@ get_section_1_data <-
         if (has_secondary_office) {
           business_data_df <-
             business_data_df %>%
-            unite(addressStreet1OfficePrimary, addressStreet1OfficePrimary, addressStreet2OfficePrimary, sep = ' ')
+            unite(
+              addressStreet1OfficePrimary,
+              addressStreet1OfficePrimary,
+              addressStreet2OfficePrimary,
+              sep = ' '
+            )
         }
 
         has_office_location <-
-          names(business_data_df) %>% str_count('^address|^city|^country|^state') %>% sum >= 4
+          names(business_data_df) %>% str_count('^address|^city|^country|^state') %>% sum() >= 4
         if (has_office_location) {
           business_data_df <-
             business_data_df %>%
-            mutate(addressOfficePrimary = addressStreet1OfficePrimary %>% paste0(' ', cityOfficePrimary, ', ', stateOfficePrimary, ' ', countryOfficePrimary, ' ', zipOfficePrimary) %>% str_to_upper())
+            mutate(
+              addressOfficePrimary = addressStreet1OfficePrimary %>% paste0(
+                ' ',
+                cityOfficePrimary,
+                ', ',
+                stateOfficePrimary,
+                ' ',
+                countryOfficePrimary,
+                ' ',
+                zipOfficePrimary
+              ) %>% str_to_upper()
+            )
         }
         if (business_data_df$idLEI == 'A legal entity identifier') {
           business_data_df <-
@@ -3254,17 +3479,15 @@ get_section_1_data <-
       page %>%
       parse_value_nodes() %>%
       mutate(idCRD, nameEntityManager = name_entity_manager) %>%
-      left_join(
-        page %>%
-          parse_node_df() %>% mutate(idCRD, nameEntityManager = name_entity_manager)
-      ) %>%
+      left_join(page %>%
+                  parse_node_df() %>% mutate(idCRD, nameEntityManager = name_entity_manager)) %>%
       select_start_vars() %>%
       suppressMessages()
 
     section_data <-
       section_data %>%
       mutate_at(.cols =
-                  section_data %>% dplyr::select(matches("^address|^city|^state|^country")) %>% names,
+                  section_data %>% dplyr::select(matches("^address|^city|^state|^country")) %>% names(),
                 funs(. %>% str_to_upper()))
 
     return(section_data)
@@ -3402,7 +3625,7 @@ get_section_2_data <-
         check_nodes <-
           check_nodes[!check_nodes == '']
 
-        if (check_nodes %>% length == 3) {
+        if (check_nodes %>% length() == 3) {
           node_item_df <-
             data_frame(
               nameItem = c(
@@ -3423,15 +3646,15 @@ get_section_2_data <-
             suppressMessages()
         }
 
-        if (!check_nodes %>% length == 3) {
+        if (!check_nodes %>% length() == 3) {
           node_item_df <-
             get_node_item_df()
 
-          if (check_nodes %>% length == 56 ){
+          if (check_nodes %>% length() == 56) {
             node_item_df <-
               node_item_df %>%
               dplyr::filter(nameItem %>% str_detect("^state")) %>%
-              dplyr::select(nameItem,valueItem)
+              dplyr::select(nameItem, valueItem)
 
             node_item_df <-
               data_frame(
@@ -3445,11 +3668,11 @@ get_section_2_data <-
 
           }
 
-          if (check_nodes %>% length == 66 ){
+          if (check_nodes %>% length() == 66) {
             node_item_df <-
               node_item_df %>%
               dplyr::filter(nameItem %>% str_detect("^state")) %>%
-              dplyr::select(nameItem,valueItem)
+              dplyr::select(nameItem, valueItem)
 
             node_item_df <-
               data_frame(
@@ -3466,7 +3689,8 @@ get_section_2_data <-
                   "isAdviserMultiState203A",
                   "isAdviserInternet",
                   "hasSECOrderProhibitingRegistration",
-                  "isAdviserSECIneligible"),
+                  "isAdviserSECIneligible"
+                ),
                 valueItem = T %>% as.character()
               ) %>% bind_rows(node_item_df)
 
@@ -3487,11 +3711,11 @@ get_section_2_data <-
           node_df %>%
           group_by(nameItem) %>%
           mutate(countItem = 1:n()) %>%
-          ungroup %>%
+          ungroup() %>%
           mutate(nameEntityManager = name_entity_manager) %>%
           mutate(
             countItem = countItem - 1,
-            countItem = countItem %>% as.character,
+            countItem = countItem %>% as.character(),
             countItem = ifelse(countItem == "0", '', countItem)
           ) %>%
           unite(item, nameItem, countItem, sep = '') %>%
@@ -3564,12 +3788,12 @@ get_section_3_data <-
         nodes <-
           page %>%
           html_nodes('.PrintHistRed') %>%
-          html_text
+          html_text()
 
         monthFiscalYearEnd <-
           nodes[1]
 
-        if (nodes %>% length == 3) {
+        if (nodes %>% length() == 3) {
           locationEntityOrganized <-
             nodes[2:3] %>% str_to_upper() %>% paste0(collapse = ', ')
         } else {
@@ -3596,8 +3820,7 @@ get_section_3_data <-
 
 get_section_4_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSuccessionsSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
-           return_wide = T
-  ) {
+           return_wide = T) {
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -3688,8 +3911,7 @@ get_section_4_data <-
   }
 
 get_section_5_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0'
-  ) {
+  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0') {
     section_name <-
       'section5AdvisoryBusinessInformation'
     idCRD <-
@@ -4358,7 +4580,7 @@ get_section_5_data <-
             client_summary_df <-
               client_summary_df %>%
               mutate_at(.cols =
-                          client_summary_df %>% dplyr::select(matches("^is|^has")) %>% names,
+                          client_summary_df %>% dplyr::select(matches("^is|^has")) %>% names(),
                         .funs = as.logical)
 
             return(client_summary_df)
@@ -4452,7 +4674,7 @@ get_section_5_data <-
           )
 
         has_aum_df <-
-          node_text %>% str_count(aum_value_name_df$hit_words %>% paste0(collapse = "|")) %>% sum > 0
+          node_text %>% str_count(aum_value_name_df$hit_words %>% paste0(collapse = "|")) %>% sum() > 0
 
         if (has_aum_df) {
           aum_value_df <-
@@ -4464,7 +4686,7 @@ get_section_5_data <-
                   hit_words = aum_value_name_df$hit_words[[x]],
                   off_set = aum_value_name_df$off_set[[x]],
                   is_numeric_node = aum_value_name_df$is_numeric_node[[x]]
-                ) %>% length > 0
+                ) %>% length() > 0
 
               if (has_value) {
                 val <-
@@ -4479,17 +4701,15 @@ get_section_5_data <-
                   NA
               }
 
-              data_frame(
-                nameItem =
-                  aum_value_name_df$nameItem[[x]],
-                value =
-                  val
-              )
+              data_frame(nameItem =
+                           aum_value_name_df$nameItem[[x]],
+                         value =
+                           val)
             }) %>%
             distinct() %>%
             group_by(nameItem) %>%
             dplyr::filter(value == max(value)) %>%
-            ungroup %>%
+            ungroup() %>%
             spread(nameItem, value) %>%
             suppressWarnings()
           aum_value_df <-
@@ -4514,7 +4734,8 @@ get_section_5_data <-
         node_text <-
           page %>%
           parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ClientCompensation_ctl00_trIAPDHeader + tr + tr')
-        if (node_text[grepl("[[:upper:]]+$", node_text)] %>% unique() %>% length == 1) {
+        if (node_text[grepl("[[:upper:]]+$", node_text)] %>% unique() %>%
+            length() == 1) {
           other_value <-
             node_text[grepl("[[:upper:]]+$", node_text)] %>% unique()
           section_5_data <-
@@ -4526,7 +4747,8 @@ get_section_5_data <-
                           everything())
         }
 
-        if (node_text[grepl("[[:upper:]]+$", node_text)] %>% unique() %>% length > 1) {
+        if (node_text[grepl("[[:upper:]]+$", node_text)] %>% unique() %>%
+            length() > 1) {
           other_value <-
             node_text[grepl("[[:upper:]]+$", node_text)] %>% unique()
 
@@ -4569,9 +4791,7 @@ get_section_5_data <-
 
 get_section_6_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvOtherBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
-           return_wide = T
-  ) {
-
+           return_wide = T) {
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -4614,7 +4834,7 @@ get_section_6_data <-
               dplyr::select(nameItem, valueItem) %>%
               suppressMessages()
 
-            if (return_wide){
+            if (return_wide) {
               column_order <-
                 node_df$nameItem
 
@@ -4649,9 +4869,7 @@ get_section_6_data <-
 
 get_section_7a_data <-
   function(url = 'https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFinancialAffiliationsSection.aspx?ORG_PK=145652&FLNG_PK=01A04E4200080189047A8BA1003A6639056C8CC0',
-           return_wide = T
-  ) {
-
+           return_wide = T) {
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -4707,7 +4925,7 @@ get_section_7a_data <-
               dplyr::filter(isNodeChecked == T) %>% nrow > 0 %>%
               suppressMessages()
 
-            if (has_nodes){
+            if (has_nodes) {
               affiliation_df <-
                 data_frame(nodeName = check_nodes) %>%
                 left_join(get_check_box_value_df()) %>%
@@ -4755,7 +4973,6 @@ get_section_7b_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvPrivateFundReportingSection.aspx?ORG_PK=162351&FLNG_PK=052DAAB400080184043CE66005E35E29056C8CC0',
            return_wide = F,
            return_message = T) {
-
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -4778,7 +4995,7 @@ get_section_7b_data <-
           ) %>%
           html_text() %>%
           str_replace_all("Total Funds: ", '') %>%
-          as.numeric %>% length > 0
+          as.numeric() %>% length() > 0
         if (has_fund_data) {
           fund_count <-
             page %>%
@@ -4787,11 +5004,11 @@ get_section_7b_data <-
             ) %>%
             html_text() %>%
             str_replace_all("Total Funds: ", '') %>%
-            as.numeric
+            as.numeric()
           page_sequences <-
-            seq(3, length.out = fund_count) %>% as.character %>%
+            seq(3, length.out = fund_count) %>% as.character() %>%
             map_chr(function(x) {
-              if (x %>% nchar == 1) {
+              if (x %>% nchar() == 1) {
                 paste0('0', x)
               } else {
                 x
@@ -4872,8 +5089,7 @@ get_section_7b_data <-
 
 get_section_8_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvClientTransSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
-           return_wide = T
-  ) {
+           return_wide = T) {
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -4932,7 +5148,6 @@ get_section_8_data <-
               suppressMessages()
 
             if (return_wide) {
-
               column_order <-
                 c('nameEntityManager', section_data$nameItem)
 
@@ -5089,7 +5304,7 @@ get_section_9_data <-
       parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_CustodyPH_ctl00_trIAPDHeader + tr + tr')
 
     has_nodes <-
-      node_text %>% str_count('\\$') %>% sum > 0
+      node_text %>% str_count('\\$') %>% sum() > 0
 
     if (has_nodes) {
       custody_name_df <-
@@ -5125,7 +5340,7 @@ get_section_9_data <-
               hit_words = custody_name_df$hit_words[[x]],
               off_set = custody_name_df$off_set[[x]],
               is_numeric_node = custody_name_df$is_numeric_node[[x]]
-            ) %>% length > 0
+            ) %>% length() > 0
 
           if (value_exists) {
             value <-
@@ -5148,7 +5363,7 @@ get_section_9_data <-
           return(val_df)
         }) %>%
         distinct() %>%
-        dplyr::filter(!value %>% is.na) %>%
+        dplyr::filter(!value %>% is.na()) %>%
         spread(nameItem, value) %>%
         mutate(nameEntityManager = name_entity_manager) %>%
         mutate_adv_data() %>%
@@ -5167,8 +5382,7 @@ get_section_9_data <-
   }
 
 get_section_10_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvControlPersonsSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0'
-  ) {
+  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvControlPersonsSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0') {
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -5340,8 +5554,7 @@ get_section_11_data <-
   }
 
 get_section_12_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSmallBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0'
-  ) {
+  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSmallBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0') {
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -5398,11 +5611,11 @@ get_section_12_data <-
                 dplyr::rename(value = valueItem) %>%
                 group_by(nameItem) %>%
                 mutate(countItem = 1:n()) %>%
-                ungroup %>%
+                ungroup() %>%
                 suppressMessages() %>%
                 mutate(
                   countItem = countItem - 1,
-                  countItem = countItem %>% as.character,
+                  countItem = countItem %>% as.character(),
                   countItem = ifelse(countItem == "0", '', countItem)
                 ) %>%
                 unite(item, nameItem, countItem, sep = '') %>%
@@ -5462,7 +5675,8 @@ get_schedule_a_data <-
           get_entity_manager_name()
 
         table_exists <-
-          page %>% html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleAPHSection_ctl00_ownersGrid') %>% length > 0
+          page %>% html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleAPHSection_ctl00_ownersGrid') %>%
+          length() > 0
 
         if (table_exists) {
           table_data <-
@@ -5492,7 +5706,7 @@ get_schedule_a_data <-
               idCRD,
               isControlPerson = if_else(isControlPerson == "Y", TRUE, FALSE),
               isPublicReportingEntity = if_else(isPublicReportingEntity == "Y", TRUE, FALSE),
-              dateEntityManagerOwnerPurchased = '01/' %>% paste0(monthYearEntityManagerOwnerPurchased) %>% lubridate::dmy %>% as.Date
+              dateEntityManagerOwnerPurchased = '01/' %>% paste0(monthYearEntityManagerOwnerPurchased) %>% lubridate::dmy() %>% as.Date
             ) %>%
             left_join(get_type_manager_entity_owner_df()) %>%
             left_join(get_range_entity_owner_df()) %>%
@@ -5549,8 +5763,10 @@ get_schedule_a_data <-
             } else {
               table_data <-
                 entity_df %>%
-                mutate(nameFullEntityOwnerManager = nameEntityManagerOwner,
-                       nameCommonEntityOwnerManager = nameEntityManagerOwner)
+                mutate(
+                  nameFullEntityOwnerManager = nameEntityManagerOwner,
+                  nameCommonEntityOwnerManager = nameEntityManagerOwner
+                )
             }
           } else {
             table_data <-
@@ -5617,11 +5833,11 @@ get_schedule_a_data <-
         section_data %>%
         mutate_all(.funs = as.character) %>%
         mutate(countItem = 1:n(),
-               idCRD = idCRD %>% as.numeric) %>%
+               idCRD = idCRD %>% as.numeric()) %>%
         gather(item, value, -c(nameEntityManager, countItem, idCRD)) %>%
         mutate(
           countItem = countItem - 1,
-          countItem = countItem %>% as.character,
+          countItem = countItem %>% as.character(),
           countItem = ifelse(countItem == "0", '', countItem)
         ) %>%
         unite(item, item, countItem, sep = '') %>%
@@ -5639,13 +5855,13 @@ get_schedule_a_data <-
       section_data <-
         section_data %>%
         mutate_at(.cols =
-                    section_data %>% dplyr::select(matches("^amount|^count")) %>% names,
+                    section_data %>% dplyr::select(matches("^amount|^count")) %>% names(),
                   .funs = as.numeric) %>%
         mutate_at(.cols =
-                    section_data %>% dplyr::select(matches("^has|^is")) %>% names,
+                    section_data %>% dplyr::select(matches("^has|^is")) %>% names(),
                   .funs = as.logical) %>%
         mutate_at(.cols =
-                    section_data %>% dplyr::select(matches("^date")) %>% names,
+                    section_data %>% dplyr::select(matches("^date")) %>% names(),
                   funs(. %>% lubridate::ymd()))
     }
 
@@ -5669,7 +5885,8 @@ get_schedule_b_data <-
           get_entity_manager_name()
 
         table_exists <-
-          page %>% html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleBPHSection_ctl00_ownersGrid') %>% length > 0
+          page %>% html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleBPHSection_ctl00_ownersGrid') %>%
+          length() > 0
 
         if (table_exists) {
           table_data <-
@@ -5700,15 +5917,21 @@ get_schedule_b_data <-
               idCRD,
               isOwnerOwnerControlPerson = if_else(isOwnerOwnerControlPerson == "Y", TRUE, FALSE),
               isOwnerOwnerPublicReportingEntity = if_else(isOwnerOwnerPublicReportingEntity == "Y", TRUE, FALSE),
-              dateEntityManagerOwnerOwnerPurchased = '01/' %>% paste0(monthYearEntityManagerOwnerOwnerPurchased) %>% lubridate::dmy %>% as.Date
+              dateEntityManagerOwnerOwnerPurchased = '01/' %>% paste0(monthYearEntityManagerOwnerOwnerPurchased) %>% lubridate::dmy() %>% as.Date
             ) %>%
             left_join(
               get_type_manager_entity_owner_df() %>%
-                dplyr::rename(idTypeEntityManagerOwnerOwner = idTypeEntityManagerOwner, typeEntityManagerOwnerOwner = typeEntityManagerOwner,
-                              isEntityOwnerOwnerManagerEntity = isEntityOwnerManagerEntity)
+                dplyr::rename(
+                  idTypeEntityManagerOwnerOwner = idTypeEntityManagerOwner,
+                  typeEntityManagerOwnerOwner = typeEntityManagerOwner,
+                  isEntityOwnerOwnerManagerEntity = isEntityOwnerManagerEntity
+                )
             ) %>%
             left_join(
-              get_range_entity_owner_df() %>% dplyr::rename(idRangeManagerEntityOwnerOwnership = idRangeManagerEntityOwnership, rangeManagerEntityOwnerOwnership = rangeManagerEntityOwnership)
+              get_range_entity_owner_df() %>% dplyr::rename(
+                idRangeManagerEntityOwnerOwnership = idRangeManagerEntityOwnership,
+                rangeManagerEntityOwnerOwnership = rangeManagerEntityOwnership
+              )
             ) %>%
             dplyr::select(-monthYearEntityManagerOwnerOwnerPurchased) %>%
             suppressMessages()
@@ -5739,10 +5962,14 @@ get_schedule_b_data <-
               individual_data <-
                 individual_data$nameEntityManagerOwnerOwner %>%
                 map_df(parse_manager_owner_name) %>%
-                dplyr::rename(nameEntityManagerOwnerOwner = nameEntityManagerOwner, nameCommonEntityOwnerOwnerManager = nameCommonEntityOwnerManager,
-                              nameFullEntityManagerOwnerOwner = nameFullEntityOwnerManager, nameFirstEntityManagerOwnerOwner = nameFirstEntityManagerOwner,
-                              nameMiddleEntityManagerOwnerOwner = nameMiddleEntityManagerOwner,
-                              nameLastEntityManagerOwnerOwner = nameLastEntityManagerOwner) %>%
+                dplyr::rename(
+                  nameEntityManagerOwnerOwner = nameEntityManagerOwner,
+                  nameCommonEntityOwnerOwnerManager = nameCommonEntityOwnerManager,
+                  nameFullEntityManagerOwnerOwner = nameFullEntityOwnerManager,
+                  nameFirstEntityManagerOwnerOwner = nameFirstEntityManagerOwner,
+                  nameMiddleEntityManagerOwnerOwner = nameMiddleEntityManagerOwner,
+                  nameLastEntityManagerOwnerOwner = nameLastEntityManagerOwner
+                ) %>%
                 right_join(individual_data) %>%
                 suppressMessages() %>%
                 mutate(
@@ -5781,10 +6008,14 @@ get_schedule_b_data <-
               individual_data <-
                 individual_data$nameEntityManagerOwnerOwner %>%
                 map_df(parse_manager_owner_name) %>%
-                dplyr::rename(nameEntityManagerOwnerOwner = nameEntityManagerOwner, nameCommonEntityOwnerOwnerManager = nameCommonEntityOwnerManager,
-                              nameFullEntityManagerOwnerOwner = nameFullEntityOwnerManager, nameFirstEntityManagerOwnerOwner = nameFirstEntityManagerOwner,
-                              nameMiddleEntityManagerOwnerOwner = nameMiddleEntityManagerOwner,
-                              nameLastEntityManagerOwnerOwner = nameLastEntityManagerOwner) %>%
+                dplyr::rename(
+                  nameEntityManagerOwnerOwner = nameEntityManagerOwner,
+                  nameCommonEntityOwnerOwnerManager = nameCommonEntityOwnerManager,
+                  nameFullEntityManagerOwnerOwner = nameFullEntityOwnerManager,
+                  nameFirstEntityManagerOwnerOwner = nameFirstEntityManagerOwner,
+                  nameMiddleEntityManagerOwnerOwner = nameMiddleEntityManagerOwner,
+                  nameLastEntityManagerOwnerOwner = nameLastEntityManagerOwner
+                ) %>%
                 right_join(individual_data) %>%
                 suppressMessages() %>%
                 mutate(
@@ -5896,11 +6127,11 @@ get_schedule_b_data <-
         section_data %>%
         mutate_all(.funs = as.character) %>%
         mutate(countItem = 1:n(),
-               idCRD = idCRD %>% as.numeric) %>%
+               idCRD = idCRD %>% as.numeric()) %>%
         gather(item, value, -c(nameEntityManager, countItem, idCRD)) %>%
         mutate(
           countItem = countItem - 1,
-          countItem = countItem %>% as.character,
+          countItem = countItem %>% as.character(),
           countItem = ifelse(countItem == "0", '', countItem)
         ) %>%
         unite(item, item, countItem, sep = '') %>%
@@ -5918,13 +6149,13 @@ get_schedule_b_data <-
       section_data <-
         section_data %>%
         mutate_at(.cols =
-                    section_data %>% dplyr::select(matches("^amount|^count")) %>% names,
+                    section_data %>% dplyr::select(matches("^amount|^count")) %>% names(),
                   .funs = as.numeric) %>%
         mutate_at(.cols =
-                    section_data %>% dplyr::select(matches("^has|^is")) %>% names,
+                    section_data %>% dplyr::select(matches("^has|^is")) %>% names(),
                   .funs = as.logical) %>%
         mutate_at(.cols =
-                    section_data %>% dplyr::select(matches("^date")) %>% names,
+                    section_data %>% dplyr::select(matches("^date")) %>% names(),
                   funs(. %>% lubridate::ymd()))
     }
 
@@ -5978,13 +6209,13 @@ get_schedule_d_data <-
               stri_trim_both() %>%
               gsub("^\\s+|\\s+$", "", .) %>%
               str_split('\\  ') %>%
-              flatten_chr %>%
-              str_trim
+              flatten_chr() %>%
+              str_trim()
 
             raw_nodes <-
               raw_nodes[!raw_nodes == '']
 
-            if (raw_nodes %>% length > 0) {
+            if (raw_nodes %>% length() > 0) {
               data_frame(idTable = x, nodeText = raw_nodes)
             }
           }) %>%
@@ -6007,14 +6238,19 @@ get_schedule_d_data <-
                   stri_trim_both() %>%
                   gsub("^\\s+|\\s+$", "", .) %>%
                   str_split('\\  ') %>%
-                  flatten_chr
+                  flatten_chr()
 
                 raw_nodes <-
                   raw_nodes[!raw_nodes == '']
 
                 is_end_table <-
-                  raw_nodes %>% grep("A. PRIVATE FUND|SECTION 6", .) %>% length > 0
-                data_frame(idTable = x, isEndTable = is_end_table, nodesText = raw_nodes)
+                  raw_nodes %>% grep("A. PRIVATE FUND|SECTION 6", .) %>%
+                  length() > 0
+                data_frame(
+                  idTable = x,
+                  isEndTable = is_end_table,
+                  nodesText = raw_nodes
+                )
               })
 
             has_end_table <-
@@ -6041,15 +6277,15 @@ get_schedule_d_data <-
                   stri_trim_both() %>%
                   gsub("^\\s+|\\s+$", "", .) %>%
                   str_split('\\  ') %>%
-                  flatten_chr
+                  flatten_chr()
 
                 raw_nodes <-
                   raw_nodes[!raw_nodes == '']
 
                 raw_nodes <-
-                  raw_nodes[raw_nodes %>% str_detect(":[A-Z a-z 1-9]")] %>% str_trim
+                  raw_nodes[raw_nodes %>% str_detect(":[A-Z a-z 1-9]")] %>% str_trim()
                 has_nodes <-
-                  raw_nodes %>% length > 0
+                  raw_nodes %>% length() > 0
                 if (has_nodes) {
                   data_frame(idTable = x, itemvalueNode = raw_nodes)
                 }
@@ -6067,16 +6303,16 @@ get_schedule_d_data <-
             has_other_locations <-
               location_df %>% nrow > 0
             if (has_other_locations) {
-              if (location_df$idTable %>% unique %>% min > 1) {
+              if (location_df$idTable %>% unique() %>% min() > 1) {
                 offset_value <-
-                  location_df$idTable %>% unique %>% min - 1
+                  location_df$idTable %>% unique() %>% min() - 1
 
                 location_df <-
                   location_df %>%
                   mutate(idTable = idTable - offset_value)
               }
               all_locations <-
-                location_df$idTable %>% unique %>%
+                location_df$idTable %>% unique() %>%
                 map_df(function(x) {
                   addressOfficeSecondary <-
                     location_df %>%
@@ -6087,7 +6323,7 @@ get_schedule_d_data <-
                     left_join(get_location_name_df()) %>%
                     dplyr::select(idTable, nameNode, valueNode) %>%
                     mutate(
-                      valueNode = valueNode %>% str_trim %>% str_to_upper(),
+                      valueNode = valueNode %>% str_trim() %>% str_to_upper(),
                       nameNode = nameNode %>% paste0('ManagerOfficeSecondary')
                     ) %>%
                     suppressMessages()
@@ -6095,17 +6331,30 @@ get_schedule_d_data <-
                 dplyr::rename(countItem = idTable,
                               item = nameNode,
                               value = valueNode) %>%
-                dplyr::filter(!value %>% is.na) %>%
+                dplyr::filter(!value %>% is.na()) %>%
                 mutate(nameEntityManager = name_entity_manager) %>%
                 dplyr::select(nameEntityManager, everything()) %>%
                 arrange(countItem) %>%
                 spread(item, value)
 
-              if (names(all_locations) %>% str_count('^address|^city|^country|^state') %>% sum >= 4) {
-                if(names(all_locations) %>% str_count('stateManagerOfficeSecondary|zipManagerOfficeSecondary|addressStreet1ManagerOfficeSecondary|cityManagerOfficeSecondary') %>% sum == 4) {
+              if (names(all_locations) %>% str_count('^address|^city|^country|^state') %>% sum() >= 4) {
+                if (names(all_locations) %>% str_count(
+                  'stateManagerOfficeSecondary|zipManagerOfficeSecondary|addressStreet1ManagerOfficeSecondary|cityManagerOfficeSecondary'
+                ) %>% sum() == 4) {
                   all_locations <-
                     all_locations %>%
-                    mutate(locationSecondary = addressStreet1ManagerOfficeSecondary %>% paste0(' ', cityManagerOfficeSecondary, ', ', stateManagerOfficeSecondary, ' ', countryManagerOfficeSecondary, ' ', zipManagerOfficeSecondary))
+                    mutate(
+                      locationSecondary = addressStreet1ManagerOfficeSecondary %>% paste0(
+                        ' ',
+                        cityManagerOfficeSecondary,
+                        ', ',
+                        stateManagerOfficeSecondary,
+                        ' ',
+                        countryManagerOfficeSecondary,
+                        ' ',
+                        zipManagerOfficeSecondary
+                      )
+                    )
                 }
               }
 
@@ -6131,7 +6380,7 @@ get_schedule_d_data <-
             name_entity_manager <-
               page %>% get_entity_manager_name()
 
-            if (nodes %>% grep('http', .) %>% length > 0) {
+            if (nodes %>% grep('http', .) %>% length() > 0) {
               urlManager <-
                 nodes[nodes %>% grep('http', .)]
 
@@ -6139,7 +6388,7 @@ get_schedule_d_data <-
                 data_frame(urlManager) %>%
                 mutate(countItem = 1:n()) %>%
                 gather(item, value, -countItem) %>%
-                dplyr::filter(!value %>% is.na) %>%
+                dplyr::filter(!value %>% is.na()) %>%
                 spread(item, value) %>%
                 mutate(nameEntityManager = name_entity_manager) %>%
                 dplyr::select(nameEntityManager, everything())
@@ -6167,7 +6416,9 @@ get_schedule_d_data <-
               html_nodes('input') %>%
               html_attr('id')
             has_adviser_nodes <-
-              page_input_ids %>% str_count('ctl00_ctl00_cphMainContent_cphAdvFormContent_AffiliatedAdvisersList_rptrAfflAdvisers_') %>% sum > 0
+              page_input_ids %>% str_count(
+                'ctl00_ctl00_cphMainContent_cphAdvFormContent_AffiliatedAdvisersList_rptrAfflAdvisers_'
+              ) %>% sum() > 0
             if (has_adviser_nodes) {
               node_id_value <-
                 page_input_ids[page_input_ids %>% str_detect(
@@ -6192,7 +6443,7 @@ get_schedule_d_data <-
                     stri_trim_both() %>%
                     gsub("^\\s+|\\s+$", "", .) %>%
                     str_split("   +") %>%
-                    flatten_chr
+                    flatten_chr()
 
                   nameLegalRelatedEntity <-
                     table_nodes[table_nodes %>% grep('Legal Name of', .) + 1] %>% str_replace_all('Related Person: ', '')
@@ -6200,7 +6451,7 @@ get_schedule_d_data <-
                   nameBusinessRelatedEntity <-
                     table_nodes[table_nodes %>% grep('Primary Business Name of', .) + 2]
 
-                  if (table_nodes %>% grep('CRD Number', .) %>% length > 0) {
+                  if (table_nodes %>% grep('CRD Number', .) %>% length() > 0) {
                     idCRDRelatedEntity <-
                       table_nodes[table_nodes %>% grep('CRD Number', .)] %>% gsub('\\CRD Number', '', .) %>%
                       gsub('\\(|\\)', '', .) %>% gsub(' if any:', '', .)
@@ -6210,7 +6461,7 @@ get_schedule_d_data <-
                         NA
                     } else {
                       idCRDRelatedEntity <-
-                        idCRDRelatedEntity %>% str_trim %>% as.numeric
+                        idCRDRelatedEntity %>% str_trim() %>% as.numeric()
                     }
 
                   }
@@ -6222,12 +6473,18 @@ get_schedule_d_data <-
                       nameLegalRelatedEntity,
                       idCRDRelatedEntity
                     ) %>%
-                    mutate(nameBusinessRelatedEntity = if_else(nameBusinessRelatedEntity == "SAME", nameLegalRelatedEntity, nameBusinessRelatedEntity),
-                           idCRDRelatedEntity = idCRDRelatedEntity %>% as.numeric)
+                    mutate(
+                      nameBusinessRelatedEntity = if_else(
+                        nameBusinessRelatedEntity == "SAME",
+                        nameLegalRelatedEntity,
+                        nameBusinessRelatedEntity
+                      ),
+                      idCRDRelatedEntity = idCRDRelatedEntity %>% as.numeric()
+                    )
                   has_image_check_box <-
                     page %>%
                     html_nodes(related_adviser_node_df$cssNode[x]) %>%
-                    html_nodes('img') %>% length == 33
+                    html_nodes('img') %>% length() == 33
                   if (has_image_check_box) {
                     check_nodes <-
                       page %>%
@@ -6300,12 +6557,20 @@ get_schedule_d_data <-
                 }) %>%
                 dplyr::rename(countItem = idTable) %>%
                 gather(item, value, -countItem) %>%
-                dplyr::filter(!value %>% is.na) %>%
+                dplyr::filter(!value %>% is.na()) %>%
                 mutate(nameEntityManager = name_entity_manager) %>%
                 dplyr::select(nameEntityManager, everything()) %>%
                 arrange(countItem, item) %>%
                 spread(item, value) %>%
-                dplyr::select(c(nameEntityManager, countItem, nameBusinessRelatedEntity, nameLegalRelatedEntity, everything() ))
+                dplyr::select(
+                  c(
+                    nameEntityManager,
+                    countItem,
+                    nameBusinessRelatedEntity,
+                    nameLegalRelatedEntity,
+                    everything()
+                  )
+                )
 
               if (return_wide) {
                 related_advisor_df <-
@@ -6334,7 +6599,8 @@ get_schedule_d_data <-
                 c(-1, 5, 7, 10, 12, 14, 16, 18, 19, 20, 21) %>%
                 map_df(function(x) {
                   has_value <-
-                    all_table_node_df$nodeText[node_locations - x] %>% length >0
+                    all_table_node_df$nodeText[node_locations - x] %>% length() >
+                    0
 
                   if (has_value) {
                     val <- all_table_node_df$nodeText[node_locations - x]
@@ -6347,7 +6613,9 @@ get_schedule_d_data <-
                 }) %>%
                 dplyr::filter(!value %>% is.na()) %>%
                 dplyr::filter(
-                  !value %>% str_detect('CANCELLED CHECKS ARE HELD BY THE BANK AND KEPT OFFSITE|Number and Street 2:|City:|Country|Number and Street 1')
+                  !value %>% str_detect(
+                    'CANCELLED CHECKS ARE HELD BY THE BANK AND KEPT OFFSITE|Number and Street 2:|City:|Country|Number and Street 1'
+                  )
                 )
               record_df <-
                 record_df %>%
@@ -6372,7 +6640,7 @@ get_schedule_d_data <-
                 )) %>%
                 group_by(nameItem) %>%
                 mutate(countItem = 1:n()) %>%
-                ungroup %>%
+                ungroup() %>%
                 suppressMessages() %>%
                 dplyr::select(-idNode) %>%
                 dplyr::select(countItem, nameItem, everything()) %>%
@@ -6386,13 +6654,29 @@ get_schedule_d_data <-
                 record_df <-
                   record_df %>%
                   replace_na(list(addressStreet2RecordKeeper = '')) %>%
-                  unite(addressStreet1RecordKeeper, addressStreet1RecordKeeper, addressStreet2RecordKeeper, sep = ' ')
+                  unite(
+                    addressStreet1RecordKeeper,
+                    addressStreet1RecordKeeper,
+                    addressStreet2RecordKeeper,
+                    sep = ' '
+                  )
               }
 
-              if (names(record_df) %>% str_count('^addressStreet1|^city|^state|^country') %>% sum >= 4) {
+              if (names(record_df) %>% str_count('^addressStreet1|^city|^state|^country') %>% sum() >= 4) {
                 record_df <-
                   record_df %>%
-                  mutate(locationRecordKeeper = addressStreet1RecordKeeper %>% paste0(' ', cityRecordKeeper, ', ', stateRecordKeeper, ' ', countryRecordKeeper, ' ', zipRecordKeeper))
+                  mutate(
+                    locationRecordKeeper = addressStreet1RecordKeeper %>% paste0(
+                      ' ',
+                      cityRecordKeeper,
+                      ', ',
+                      stateRecordKeeper,
+                      ' ',
+                      countryRecordKeeper,
+                      ' ',
+                      zipRecordKeeper
+                    )
+                  )
               }
 
               if (return_wide) {
@@ -6402,7 +6686,8 @@ get_schedule_d_data <-
 
               }
 
-              if (record_df %>% ncol > 100 | record_df %>% nrow > 8) {
+              if (record_df %>% ncol > 100 |
+                  record_df %>% nrow > 8) {
                 record_df <-
                   data_frame(nameEntityManager = name_entity_manager)
               }
@@ -6425,7 +6710,7 @@ get_schedule_d_data <-
             name_entity_manager <-
               page %>% get_entity_manager_name()
 
-            if (nodes[nodes %>% str_detect('INDIRECTLY CONTROLS')] %>% length > 0) {
+            if (nodes[nodes %>% str_detect('INDIRECTLY CONTROLS')] %>% length() > 0) {
               node_locations <-
                 nodes %>% grep('INDIRECTLY CONTROLS', .)
 
@@ -6451,7 +6736,7 @@ get_schedule_d_data <-
                 )) %>%
                 group_by(nameItem) %>%
                 mutate(countItem = 1:n()) %>%
-                ungroup %>%
+                ungroup() %>%
                 suppressMessages() %>%
                 dplyr::select(-idNode)
 
@@ -6464,18 +6749,38 @@ get_schedule_d_data <-
               control_person_df <-
                 control_person_df %>%
                 mutate_at(.cols =
-                            control_person_df %>% dplyr::select(matches("^date")) %>% names,
+                            control_person_df %>% dplyr::select(matches("^date")) %>% names(),
                           funs(. %>% lubridate::mdy())) %>%
                 mutate_at(.cols =
-                            control_person_df %>% dplyr::select(matches("^country[A-Z]|^name|^state|^city")) %>% names,
+                            control_person_df %>% dplyr::select(matches(
+                              "^country[A-Z]|^name|^state|^city"
+                            )) %>% names(),
                           .funs = str_to_upper) %>%
-                dplyr::select(nameEntityManager, nameControlPerson, descriptionControlPerson, everything())
+                dplyr::select(
+                  nameEntityManager,
+                  nameControlPerson,
+                  descriptionControlPerson,
+                  everything()
+                )
 
-              if (names(control_person_df) %>% str_count('^address|^city|^country|^state') %>% sum >= 4) {
+              if (names(control_person_df) %>% str_count('^address|^city|^country|^state') %>% sum() >= 4) {
                 control_person_df <-
                   control_person_df %>%
-                  mutate(locationControlPerson = addressStreet1ControlPerson %>% paste0(' ', cityControlPerson, ', ', stateControlPerson, ' ', countryControlPerson, ' ', zipControlPerson)) %>%
-                  dplyr::select(nameEntityManager:countItem, locationControlPerson, everything())
+                  mutate(
+                    locationControlPerson = addressStreet1ControlPerson %>% paste0(
+                      ' ',
+                      cityControlPerson,
+                      ', ',
+                      stateControlPerson,
+                      ' ',
+                      countryControlPerson,
+                      ' ',
+                      zipControlPerson
+                    )
+                  ) %>%
+                  dplyr::select(nameEntityManager:countItem,
+                                locationControlPerson,
+                                everything())
               }
 
               if ('nameControlPerson' %in% names(control_person_df)) {
@@ -6485,13 +6790,19 @@ get_schedule_d_data <-
 
                 names(name_df) <-
                   names(name_df) %>%
-                  str_replace_all('EntityManagerOwner|EntityOwnerManager','ControlPerson')
+                  str_replace_all('EntityManagerOwner|EntityOwnerManager',
+                                  'ControlPerson')
 
                 control_person_df <-
                   control_person_df %>%
                   left_join(name_df) %>%
                   suppressMessages() %>%
-                  dplyr::select(nameEntityManager, nameCommonControlPerson, descriptionControlPerson, everything())
+                  dplyr::select(
+                    nameEntityManager,
+                    nameCommonControlPerson,
+                    descriptionControlPerson,
+                    everything()
+                  )
 
               }
               if (return_wide) {
@@ -6499,7 +6810,7 @@ get_schedule_d_data <-
                   control_person_df %>%
                   mutate(
                     countItem = countItem - 1,
-                    countItem = countItem %>% as.character,
+                    countItem = countItem %>% as.character(),
                     countItem = ifelse(countItem == "0", '', countItem)
                   ) %>%
                   unite(item, nameItem, countItem, sep = '') %>%
@@ -6516,14 +6827,14 @@ get_schedule_d_data <-
 
                 control_person_df <-
                   control_person_df %>%
-                  mutate_at(.cols =
-                              control_person_df %>% dplyr::select(matches("^idCRD")) %>% names,
-                            .funs = as.numeric) %>%
                   mutate_at(
                     .cols =
-                      control_person_df %>% dplyr::select(matches("^date")) %>% names,
-                    funs(. %>% lubridate::mdy())
-                  )
+                      control_person_df %>% dplyr::select(matches("^idCRD")) %>% names(),
+                    .funs = as.numeric
+                  ) %>%
+                  mutate_at(.cols =
+                              control_person_df %>% dplyr::select(matches("^date")) %>% names(),
+                            funs(. %>% lubridate::mdy()))
               }
             } else {
               control_person_df <-
@@ -6574,7 +6885,7 @@ get_schedule_d_data <-
               html_nodes(
                 '#ctl00_ctl00_cphMainContent_cphAdvFormContent_SchedDMisc_ctl00_trIAPDHeader + tr span'
               ) %>%
-              html_text %>% str_trim() == ''
+              html_text() %>% str_trim() == ''
 
             if (has_other_text_node) {
               node_text <-
@@ -6582,14 +6893,14 @@ get_schedule_d_data <-
                 html_nodes(
                   '#ctl00_ctl00_cphMainContent_cphAdvFormContent_SchedDMisc_ctl00_trIAPDHeader + tr span'
                 ) %>%
-                html_text
+                html_text()
 
               node_text <-
                 node_text %>%
                 str_split('\n|\r') %>%
-                flatten_chr %>%
+                flatten_chr() %>%
                 str_to_upper() %>%
-                str_trim
+                str_trim()
 
               node_text <-
                 node_text[!node_text == '']
@@ -6743,9 +7054,7 @@ get_schedule_d_data <-
   }
 
 get_manager_signatory_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSignatureSection.aspx?ORG_PK=160489&FLNG_PK=02FF0ECC00080185033F257005F016CD056C8CC0'
-  ) {
-
+  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSignatureSection.aspx?ORG_PK=160489&FLNG_PK=02FF0ECC00080185033F257005F016CD056C8CC0') {
     idCRD <-
       url %>%
       get_pk_url_crd()
@@ -6762,21 +7071,21 @@ get_manager_signatory_data <-
       function(page) {
         is_old <-
           (page %>%
-             get_html_node_text('.PrintHistRed') %>% is.na == T) %>% as.numeric %>% sum >= 1
-        if(is_old){
+             get_html_node_text('.PrintHistRed') %>% is.na == T) %>% as.numeric() %>% sum() >= 1
+        if (is_old) {
           nodes <-
             page %>%
             get_html_node_text('font') %>%
-            unique %>%
+            unique() %>%
             .[1:3]
         } else {
           nodes <-
             page %>%
             get_html_node_text('.PrintHistRed') %>%
             str_replace_all('&', 'AND') %>%
-            unique
+            unique()
         }
-        if (nodes %>% length == 3) {
+        if (nodes %>% length() == 3) {
           item_names <-
             c('nameEntityManagerSignatory',
               'dateADVFiling',
@@ -6789,7 +7098,7 @@ get_manager_signatory_data <-
             mutate(dateADVFiling = dateADVFiling %>% lubridate::mdy())
         }
 
-        if (nodes %>% length == 2) {
+        if (nodes %>% length() == 2) {
           item_names <-
             c('nameEntityManagerSignatory',
               'dateADVFiling')
@@ -6836,15 +7145,15 @@ get_section_drp <-
             data %>%
             dplyr::select(-countItem) %>%
             mutate_at(.cols =
-                        data %>% dplyr::select(matches("^date")) %>% names,
+                        data %>% dplyr::select(matches("^date")) %>% names(),
                       .funs = as.character) %>%
             gather(itemName, value, -c(nameEntityManager, typeCharges)) %>%
             unite(item, itemName, typeCharges, sep = '') %>%
-            dplyr::filter(!value %>% is.na) %>%
+            dplyr::filter(!value %>% is.na()) %>%
             distinct() %>%
             group_by(item) %>%
             mutate(countItem = 1:n()) %>%
-            ungroup %>%
+            ungroup() %>%
             spread(item, value) %>%
             mutate_adv_data()
 
@@ -6890,7 +7199,6 @@ get_section_drp <-
                is_employment_firm = F,
                replace_words = NA,
                filter_words = '^7.') {
-
         row_locs <-
           all_table_node_df %>%
           dplyr::filter(nodeText %>% str_detect(hit_word)) %>%
@@ -6898,16 +7206,16 @@ get_section_drp <-
 
         values <-
           all_table_node_df %>% slice(row_locs) %>% .$nodeText
-        if (!filter_words %>% is.na) {
+        if (!filter_words %>% is.na()) {
           has_values <-
-            values[!values %>% str_detect(filter_words)] %>% length > 0
+            values[!values %>% str_detect(filter_words)] %>% length() > 0
         } else {
           has_values <-
-            values %>% length > 0
+            values %>% length() > 0
         }
 
         if (has_values) {
-          if (!filter_words %>% is.na) {
+          if (!filter_words %>% is.na()) {
             values <-
               values[!values %>% str_detect(filter_words)]
           }
@@ -6925,7 +7233,7 @@ get_section_drp <-
                 str_split('\\: ') %>%
                 flatten_chr()
               val_length <-
-                date_values %>% length
+                date_values %>% length()
               if (val_length == 1) {
                 date_value <-
                   date_values[[1]]
@@ -6941,7 +7249,7 @@ get_section_drp <-
               }
               return(date_value)
             }) %>%
-            flatten_chr %>%
+            flatten_chr() %>%
             lubridate::mdy() %>%
             as.character() %>%
             suppressWarnings()
@@ -6955,18 +7263,18 @@ get_section_drp <-
               emp_length <-
                 values[x] %>%
                 str_split('\\:') %>%
-                flatten_chr
-              if (emp_length %>% length == 1) {
+                flatten_chr()
+              if (emp_length %>% length() == 1) {
                 emp_val <-
                   emp_length %>%
                   .[[1]]
               }
-              if (emp_length %>% length == 2) {
+              if (emp_length %>% length() == 2) {
                 emp_val <-
                   emp_length %>%
                   .[[2]]
               }
-              if (!emp_length %>% length %in% c(1, 2)) {
+              if (!emp_length %>% length() %in% c(1, 2)) {
                 emp_val <-
                   NA
               }
@@ -6975,7 +7283,7 @@ get_section_drp <-
 
         }
 
-        if (!replace_words %>% is.na) {
+        if (!replace_words %>% is.na()) {
           values <-
             values %>%
             str_replace_all(replace_words, '')
@@ -6994,16 +7302,16 @@ get_section_drp <-
         values <-
           values[!values %>% is.na]
         has_values <-
-          values %>% length > 0
+          values %>% length() > 0
         if (has_values) {
           table_df  <-
             data_frame(value = values) %>%
-            dplyr::filter(!value %>% is.na) %>%
+            dplyr::filter(!value %>% is.na()) %>%
             mutate(countItem = 1:n(),
                    nameItem = item_name) %>%
             dplyr::select(countItem, nameItem, value)
 
-          if (!filter_words %>% is.na) {
+          if (!filter_words %>% is.na()) {
             table_df <-
               table_df %>%
               dplyr::filter(!value %>% str_detect(filter_words))
@@ -7016,7 +7324,7 @@ get_section_drp <-
               lagValue = countItem - dplyr::lag(countItem),
               lagValue = ifelse(lagValue %>% is.na, 0, lagValue)
             ) %>%
-            ungroup %>%
+            ungroup() %>%
             dplyr::filter(!lagValue == 1) %>%
             mutate(countItem = 1:n()) %>%
             dplyr::select(-lagValue)
@@ -7036,13 +7344,13 @@ get_section_drp <-
         has_no_filings <-
           page %>%
           html_nodes('#aspnetForm a[name*="Criminal"] + table') %>%
-          html_text %>% str_trim %>% nchar < 130
+          html_text() %>% str_trim() %>% nchar() < 130
 
         if (!has_no_filings) {
           table_nodes <-
             page %>%
             html_nodes('#aspnetForm a[name*="Criminal"] + .flatBorderTable') %>%
-            html_text
+            html_text()
 
           all_table_node_df <-
             1:length(table_nodes) %>%
@@ -7054,13 +7362,13 @@ get_section_drp <-
                 stri_trim_both() %>%
                 gsub("^\\s+|\\s+$", "", .) %>%
                 str_split('\\  ') %>%
-                flatten_chr %>%
-                str_trim
+                flatten_chr() %>%
+                str_trim()
 
               raw_nodes <-
                 raw_nodes[!raw_nodes == '']
 
-              if (raw_nodes %>% length > 0) {
+              if (raw_nodes %>% length() > 0) {
                 data_frame(idTable = x, nodeText = raw_nodes)
               }
             }) %>%
@@ -7173,7 +7481,7 @@ get_section_drp <-
             dplyr::select(nameEntityManager, everything()) %>%
             distinct() %>%
             arrange(countItem) %>%
-            dplyr::filter(!countItem %>% is.na) %>%
+            dplyr::filter(!countItem %>% is.na()) %>%
             spread(nameItem, value) %>%
             mutate_adv_data() %>%
             dplyr::select(c(
@@ -7196,13 +7504,13 @@ get_section_drp <-
         has_no_filings <-
           page %>%
           html_nodes('#aspnetForm a[name*="Regulatory"] + table') %>%
-          html_text %>% str_trim %>% nchar < 200
+          html_text() %>% str_trim() %>% nchar() < 200
 
         if (!has_no_filings) {
           table_nodes <-
             page %>%
             html_nodes('#aspnetForm a[name*="Regulatory"] + .flatBorderTable') %>%
-            html_text
+            html_text()
 
           all_table_node_df <-
             1:length(table_nodes) %>%
@@ -7214,13 +7522,13 @@ get_section_drp <-
                 stri_trim_both() %>%
                 gsub("^\\s+|\\s+$", "", .) %>%
                 str_split('\\  ') %>%
-                flatten_chr %>%
-                str_trim
+                flatten_chr() %>%
+                str_trim()
 
               raw_nodes <-
                 raw_nodes[!raw_nodes == '']
 
-              if (raw_nodes %>% length > 0) {
+              if (raw_nodes %>% length() > 0) {
                 data_frame(idTable = x, nodeText = raw_nodes)
               }
             }) %>%
@@ -7412,15 +7720,13 @@ get_section_drp <-
             mutate(nameEntityManager = name_entity_manager) %>%
             dplyr::select(nameEntityManager, everything()) %>%
             distinct() %>%
-            dplyr::filter(!countItem %>% is.na) %>%
+            dplyr::filter(!countItem %>% is.na()) %>%
             arrange(countItem) %>%
             spread(nameItem, value) %>%
             mutate_adv_data() %>%
-            dplyr::select(c(
-              nameEntityManager,
-              countItem,
-              everything()
-            )) %>%
+            dplyr::select(c(nameEntityManager,
+                            countItem,
+                            everything())) %>%
             mutate(typeCharges = 'Regulatory') %>%
             suppressWarnings()
         } else{
@@ -7435,13 +7741,13 @@ get_section_drp <-
         has_no_filings <-
           page %>%
           html_nodes('#aspnetForm a[name*="Civil"] + table') %>%
-          html_text %>% str_trim %>% nchar < 200
+          html_text() %>% str_trim() %>% nchar() < 200
 
         if (!has_no_filings) {
           table_nodes <-
             page %>%
             html_nodes('#aspnetForm a[name*="Civil"] + .flatBorderTable') %>%
-            html_text
+            html_text()
 
 
           all_table_node_df <-
@@ -7454,13 +7760,13 @@ get_section_drp <-
                 stri_trim_both() %>%
                 gsub("^\\s+|\\s+$", "", .) %>%
                 str_split('\\  ') %>%
-                flatten_chr %>%
-                str_trim
+                flatten_chr() %>%
+                str_trim()
 
               raw_nodes <-
                 raw_nodes[!raw_nodes == '']
 
-              if (raw_nodes %>% length > 0) {
+              if (raw_nodes %>% length() > 0) {
                 data_frame(idTable = x, nodeText = raw_nodes)
               }
             }) %>%
@@ -7655,15 +7961,13 @@ get_section_drp <-
 
           all_drp_data <-
             all_drp_data %>%
-            dplyr::filter(!countItem %>% is.na) %>%
+            dplyr::filter(!countItem %>% is.na()) %>%
             arrange(countItem) %>%
             spread(nameItem, value) %>%
             mutate_adv_data() %>%
-            dplyr::select(c(
-              nameEntityManager,
-              countItem,
-              everything()
-            )) %>%
+            dplyr::select(c(nameEntityManager,
+                            countItem,
+                            everything())) %>%
             mutate(typeCharges = 'Civil') %>%
             suppressWarnings()
         } else{
@@ -7696,7 +8000,7 @@ get_section_drp <-
         left_join(civil_df %>%
                     dplyr::select(-matches("^countItem"))) %>%
         suppressMessages()
-      if ('nameEntityManager' %in% names(all_drp_data )) {
+      if ('nameEntityManager' %in% names(all_drp_data)) {
         all_drp_data <-
           all_drp_data %>%
           mutate(nameEntityManager = name_entity_manager)
@@ -7714,7 +8018,7 @@ get_section_drp <-
         ) %>%
         mutate(idCRD)
 
-      if (!'nameEntityManager' %in% names(all_drp_data )) {
+      if (!'nameEntityManager' %in% names(all_drp_data)) {
         all_drp_data <-
           all_drp_data %>%
           mutate(nameEntityManager = name_entity_manager)
@@ -7733,7 +8037,7 @@ get_section_drp <-
   }
 
 get_crd_sections_data <-
-  function(id_crd = 124529,
+  function(id_crd = 156663,
            all_sections = TRUE,
            score_threshold = .2,
            section_names = c(
@@ -7748,7 +8052,6 @@ get_crd_sections_data <-
              "Manager Signatories"
            ),
            flatten_tables = T) {
-
     sitemap_df <-
       get_managers_adv_sitemap_adv(idCRDs = id_crd, score_threshold = score_threshold) %>%
       distinct() %>%
@@ -7757,7 +8060,7 @@ get_crd_sections_data <-
       suppressMessages()
 
     section_null <-
-      section_names %>% is_null()
+      section_names %>% purrr::is_null()
 
     if (all_sections) {
       section_names <-
@@ -7797,7 +8100,7 @@ get_crd_sections_data <-
         get_section_8_data_safe <-
           possibly(get_section_8_data, NULL)
         get_section_9_data_safe <-
-          possibly(get_section_9_data, NULL )
+          possibly(get_section_9_data, NULL)
         get_section_10_data_safe <-
           possibly(get_section_10_data, NULL)
         get_section_11_data_safe <-
@@ -7811,7 +8114,7 @@ get_crd_sections_data <-
         get_schedule_d_data_safe <-
           possibly(get_schedule_d_data, NULL)
         get_manager_signatory_data_safe <-
-          possibly(get_manager_signatory_data, NULL )
+          possibly(get_manager_signatory_data, NULL)
 
         if (!all_sections) {
           no_rows <-
@@ -7840,7 +8143,7 @@ get_crd_sections_data <-
             df_name <-
               sitemap_df$nameData[[x]] %>%
               str_to_title() %>%
-              paste0('data',.)
+              paste0('data', .)
             nameADVPage <-
               sitemap_df$nameSectionActual[[x]]
             paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% message()
@@ -7860,26 +8163,27 @@ get_crd_sections_data <-
       }
 
     get_adv_sections_safe <-
-      possibly(get_adv_sections, NULL)
+      possibly(get_adv_sections, data_frame())
 
     all_data <-
       get_adv_sections_safe(sitemap_df = sitemap_df, all_sections = all_sections) %>%
       suppressWarnings()
 
     all_data <-
-      all_data %>% mutate(isNULL = dataTable %>% map_lgl(is_null)) %>%
+      all_data %>%
+      mutate(isNULL = dataTable %>% map_lgl(is_null)) %>%
       dplyr::filter(isNULL == F) %>%
       dplyr::select(-isNULL) %>%
       mutate(countColumns = dataTable %>% map_dbl(ncol),
              countRows = dataTable %>% map_dbl(nrow)) %>%
-      suppressWarnings %>%
+      suppressWarnings() %>%
       suppressMessages()
 
     name_entity_manager <-
       all_data %>%
-      unnest %>%
+      unnest() %>%
       .$nameEntityManager %>%
-      unique %>%
+      unique() %>%
       .[[1]] %>%
       suppressWarnings()
 
@@ -7891,22 +8195,20 @@ get_crd_sections_data <-
 
     all_data <-
       all_data %>%
-      mutate(
-        idCRD = id_crd,
-        nameEntityManager = name_entity_manager
-      ) %>%
+      mutate(idCRD = id_crd,
+             nameEntityManager = name_entity_manager) %>%
       dplyr::select(idCRD, nameEntityManager, nameADVPage, everything()) %>%
       dplyr::filter(countColumns > 2) %>%
       dplyr::filter(countRows > 0) %>%
       mutate(isDataWide = if_else(countRows == 1, T, F)) %>%
       mutate(isDataWide = if_else(nameADVPage %in% not_wide_tables, F, isDataWide))
 
-    if ('Advisory Business Information' %in% all_data$nameADVPage){
+    if ('Advisory Business Information' %in% all_data$nameADVPage) {
       has_aum_total <-
         all_data %>%
         dplyr::filter(nameADVPage == 'Advisory Business Information') %>%
         dplyr::select(dataTable) %>%
-        unnest %>%
+        unnest() %>%
         dplyr::select(matches("amountAUMTotal")) %>% ncol == 1
 
       if (has_aum_total) {
@@ -7914,11 +8216,16 @@ get_crd_sections_data <-
           all_data %>%
           dplyr::filter(nameADVPage == 'Advisory Business Information') %>%
           dplyr::select(dataTable) %>%
-          unnest %>%
+          unnest() %>%
           .$amountAUMTotal %>%
           formattable::currency(digits = 0)
         "Parsed " %>%
-          paste0(name_entity_manager, '\nThey have ',total_aum, ' in Total Assets Under Management') %>% message
+          paste0(
+            name_entity_manager,
+            '\nThey have ',
+            total_aum,
+            ' in Total Assets Under Management'
+          ) %>% message
       }
     }  else {
       "Parsed " %>%
@@ -7931,7 +8238,7 @@ get_crd_sections_data <-
       all_data$dataTable[[x]]$nameEntityManager <-
         name_entity_manager
 
-      if (all_data$nameADVPage[x] %in% c('Other Manager Information','DRPs')) {
+      if (all_data$nameADVPage[x] %in% c('Other Manager Information', 'DRPs')) {
         count_rows <-
           all_data$dataTable[[x]]$dataTable %>% length
 
@@ -7963,7 +8270,7 @@ get_crd_sections_data <-
                 select_nesting_vars() %>%
                 dplyr::select(-nameADVPage) %>%
                 slice(x) %>%
-                unnest %>%
+                unnest() %>%
                 mutate_all(as.character) %>%
                 gather(nameItem, value, -c(idCRD, nameEntityManager))
               return(data)
@@ -7971,13 +8278,13 @@ get_crd_sections_data <-
             distinct %>%
             group_by(nameItem) %>%
             mutate(countItem = 1:n()) %>%
-            ungroup %>%
+            ungroup() %>%
             suppressWarnings() %>%
-            dplyr::filter(!value %>% is.na) %>%
-            mutate(idCRD = idCRD %>% as.numeric) %>%
+            dplyr::filter(!value %>% is.na()) %>%
+            mutate(idCRD = idCRD %>% as.numeric()) %>%
             mutate(
               countItem = countItem - 1,
-              countItem = countItem %>% as.character,
+              countItem = countItem %>% as.character(),
               countItem = ifelse(countItem == "0", '', countItem)
             ) %>%
             unite(item, nameItem, countItem, sep = '') %>%
@@ -8050,7 +8357,7 @@ get_search_crd_ids <-
       crd_df <-
         crd_df %>%
         bind_rows(data_frame(idCRD = id_crds))
-      }
+    }
 
     if (!crd_ids %>% is_null()) {
       crd_df <-
@@ -8059,7 +8366,7 @@ get_search_crd_ids <-
     }
     crds <-
       crd_df %>%
-      dplyr::filter(!idCRD %>% is.na) %>%
+      dplyr::filter(!idCRD %>% is.na()) %>%
       distinct() %>%
       .$idCRD
 
@@ -8072,15 +8379,15 @@ return_selected_adv_tables <-
            table_names,
            gather_data) {
     table_names <-
-      data$nameTable %>% unique
+      data$nameTable %>% unique()
     return_selected_adv_table <-
       function(data,
                table_name,
                gather_data) {
         table_names <-
-          c('Manager Description', data$nameTable %>% unique)
+          c('Manager Description', data$nameTable %>% unique())
 
-        if (table_name %>% str_count(table_names) %>% sum == 0) {
+        if (table_name %>% str_count(table_names) %>% sum() == 0) {
           stop("Names can only be\n" %>% paste0(paste0(table_names, collapse = '\n')))
         }
 
@@ -8097,7 +8404,7 @@ return_selected_adv_tables <-
         has_nested_list <-
           data_selected %>%
           dplyr::select(dataTable) %>%
-          unnest %>%
+          unnest() %>%
           map_df(class) %>%
           gather(column, valueCol) %>%
           .$valueCol %>% str_count('list') %>% sum() >= 1
@@ -8110,23 +8417,14 @@ return_selected_adv_tables <-
             dplyr::select(-countColumns) %>%
             dplyr::filter(nameTable == table_name) %>%
             dplyr::select(dataTable) %>%
-            unnest
-
-          data_selected <-
-            data_selected %>%
-            mutate_at(.cols = data_selected %>% dplyr::select(matches("^amount[A-Z]")) %>% names,
-                      funs(. %>% currency(digits = 0))) %>%
-            mutate_at(.cols = data_selected %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
-                      funs(. %>% percent(digits = 2)))
+            unnest()
 
           section_df <-
             get_sec_sitemap_df() %>%
             dplyr::select(nameSectionActual, idSection) %>%
             bind_rows(
-              data_frame(
-                nameSectionActual = 'Manager Description',
-                idSection = 'managerDescription'
-              )
+              data_frame(nameSectionActual = 'Manager Description',
+                         idSection = 'managerDescription')
             )
           df_name <-
             data_frame(nameSectionActual = table_name) %>%
@@ -8140,7 +8438,7 @@ return_selected_adv_tables <-
               dplyr::select(-matches('^count[I]|^numberFund')) %>%
               mutate_at(
                 .cols =
-                  data_selected %>% dplyr::select(-idCRD) %>% dplyr::select(-matches('^count[I]|^numberFund')) %>% names,
+                  data_selected %>% dplyr::select(-idCRD) %>% dplyr::select(-matches('^count[I]|^numberFund')) %>% names(),
                 .funs = as.character
               ) %>%
               gather(nameItem, valueItem, -c(idCRD, nameEntityManager)) %>%
@@ -8152,24 +8450,24 @@ return_selected_adv_tables <-
               ) %>%
               group_by(idCRD, nameEntityManager, nameItem) %>%
               mutate(countItemManager = 1:n()) %>%
-              ungroup %>%
+              ungroup() %>%
               dplyr::select(nameTable,
                             idCRD:nameItem,
                             countItemManager,
                             valueItem) %>%
-              suppressWarnings %>%
+              suppressWarnings() %>%
               arrange(idCRD, nameItem, countItemManager)
           }
 
           assign(x = df_name, eval(data_selected), envir = .GlobalEnv)
           section_df %>%
             dplyr::filter(nameSectionActual == table_name) %>%
-            .$idSection %>% message
+            .$idSection %>% message()
         }
         if (has_nested_list) {
           has_no_count_col <-
             data_selected %>%
-            unnest %>% names %>% str_count('countColumns') %>% sum == 0
+            unnest() %>% names() %>% str_count('countColumns') %>% sum() == 0
           if (has_no_count_col) {
             count_values <-
               data_selected %>%
@@ -8182,7 +8480,7 @@ return_selected_adv_tables <-
           data_selected <-
             data_selected %>%
             dplyr::select(idRow, dataTable) %>%
-            unnest %>%
+            unnest() %>%
             dplyr::select(idRow, nameTable, dataTable) %>%
             mutate(countColumn = map_dbl(dataTable, ncol)) %>%
             dplyr::filter(countColumn > 1) %>%
@@ -8194,11 +8492,11 @@ return_selected_adv_tables <-
               data_selected$nameTable %>%
               str_replace_all(' ', '') %>%
               paste0('manager', .) %>%
-              unique
+              unique()
 
             table_name_df <-
               data_frame(idTable = table_names,
-                         nameTable = data_selected$nameTable %>% unique)
+                         nameTable = data_selected$nameTable %>% unique())
 
             data_selected <-
               data_selected %>%
@@ -8219,9 +8517,9 @@ return_selected_adv_tables <-
 
                 table_data <-
                   table_data %>%
-                  mutate_at(.cols = table_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names,
+                  mutate_at(.cols = table_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names(),
                             funs(. %>% currency(digits = 0))) %>%
-                  mutate_at(.cols = table_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
+                  mutate_at(.cols = table_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names(),
                             funs(. %>% percent(digits = 0)))
 
                 if (gather_data) {
@@ -8230,28 +8528,26 @@ return_selected_adv_tables <-
                     dplyr::select(-matches('^count[I]|^numberFund')) %>%
                     mutate_at(
                       .cols =
-                        table_data %>% dplyr::select(-idCRD) %>% dplyr::select(-matches(
-                          '^count[I]|^numberFund'
-                        )) %>% names,
+                        table_data %>% dplyr::select(-idCRD) %>% dplyr::select(-matches('^count[I]|^numberFund')) %>% names(),
                       .funs = as.character
                     ) %>%
                     gather(nameItem,
                            valueItem,
                            -c(idCRD, nameEntityManager)) %>%
                     arrange(idCRD) %>%
-                    dplyr::filter(!valueItem %>% is.na) %>%
+                    dplyr::filter(!valueItem %>% is.na()) %>%
                     mutate(
                       nameTable = table_names[x],
                       nameItem = nameItem %>% str_replace_all('[0-9]', '')
                     ) %>%
                     group_by(idCRD, nameEntityManager, nameItem) %>%
                     mutate(countItemManager = 1:n()) %>%
-                    ungroup %>%
+                    ungroup() %>%
                     dplyr::select(nameTable,
                                   idCRD:nameItem,
                                   countItemManager,
                                   valueItem) %>%
-                    suppressWarnings %>%
+                    suppressWarnings() %>%
                     arrange(idCRD, nameItem, countItemManager)
                 }
 
@@ -8301,7 +8597,7 @@ return_selected_adv_tables <-
 #'
 #' @return a \code{data_frame}
 #' @export
-#' @import dplyr formattable httr purrr readr rvest stringi stringr tibble tidyr curlconverter lubridate
+#' @import tidyverse curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble tidyr curlconverter xml2
 #' @importFrom lazyeval as_name
 #' @importFrom curl curl_download
 #' @importFrom magrittr %>%
@@ -8318,7 +8614,7 @@ return_selected_adv_tables <-
 #'  assign_to_environment = TRUE)
 get_data_adv_managers_filings <-
   function(entity_names = NULL,
-           crd_ids = NULL,
+           crd_ids = 161791,
            all_sections = TRUE,
            section_names = c(
              "Registration",
@@ -8334,59 +8630,39 @@ get_data_adv_managers_filings <-
            flatten_tables = TRUE,
            gather_data = FALSE,
            assign_to_environment = TRUE) {
-    packages <-
-      c(
-        'tidyverse',
-        "curl",
-        "dplyr",
-        "formattable",
-        "httr",
-        "lubridate",
-        "magrittr",
-        "purrr",
-        "readr",
-        'lazyeval',
-        "rvest",
-        "stringi",
-        "stringr",
-        "tibble",
-        "tidyr",
-        'curlconverter'
-      )
-    suppressMessages(lapply(packages, library, character.only = T))
-
     nothing_entered <-
       (crd_ids %>% is_null()) & (entity_names %>% is_null())
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
-
     get_search_crd_ids_safe <-
-      possibly(get_search_crd_ids, NULL)
+      possibly(get_search_crd_ids, data_frame())
 
     crds <-
-      get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
+      get_search_crd_ids_safe(entity_names = entity_names,
+                              crd_ids = crd_ids)
 
     get_crd_sections_data_safe <-
-      possibly(get_crd_sections_data, NULL)
+      possibly(get_crd_sections_data, data_frame())
 
     all_data <-
-      crds %>%
+      1:length(crds) %>%
       map_df(function(x) {
         get_crd_sections_data_safe(
-          id_crd = x,
+          id_crd = crds[x],
           all_sections = all_sections,
           section_names = section_names,
           flatten_tables = flatten_tables
         )
       })
+
     return_selected_adv_tables_safe <-
-      possibly(return_selected_adv_tables, NULL)
+      possibly(return_selected_adv_tables, data_frame())
 
     if (assign_to_environment) {
       all_data %>%
-        return_selected_adv_tables(all_sections = all_sections,
-                                   gather_data = gather_data)
+        return_selected_adv_tables_safe(all_sections = all_sections,
+                                        gather_data = gather_data)
 
     }
     closeAllConnections()
@@ -8422,7 +8698,7 @@ parse_manager_brochure_data <-
           html_nodes('a[href*="Part2Brochures.aspx"]') %>%
           html_attr('href') %>%
           unique() %>%
-          paste0('https://www.adviserinfo.sec.gov',.)
+          paste0('https://www.adviserinfo.sec.gov', .)
 
         brochure_page <-
           brochure_url %>%
@@ -8431,13 +8707,13 @@ parse_manager_brochure_data <-
         has_brochure <-
           brochure_page %>%
           html_nodes('.main td a') %>%
-          html_attr('href') %>% length > 0
+          html_attr('href') %>% length() > 0
         if (has_brochure) {
           url_brochure_pdf <-
             brochure_page %>%
             html_nodes('.main td a') %>%
             html_attr('href') %>%
-            paste0('https://www.adviserinfo.sec.gov',.)
+            paste0('https://www.adviserinfo.sec.gov', .)
         } else {
           url_brochure_pdf <-
             NA
@@ -8447,7 +8723,7 @@ parse_manager_brochure_data <-
     pdf_urls <-
       page %>% parse_sec_manager_pdf_url()
     no_brochure <-
-      pdf_urls %>% is.na() %>% as.numeric %>% sum >= 1
+      pdf_urls %>% is.na() %>% as.numeric %>% sum() >= 1
 
     if (no_brochure) {
       brochure_exists <-
@@ -8460,14 +8736,14 @@ parse_manager_brochure_data <-
           pdf_info()
 
         info$created <-
-          info$created %>% as.character
+          info$created %>% as.character()
 
         info$modified <-
-          info$modified %>% as.character
+          info$modified %>% as.character()
 
         info <-
           info %>%
-          flatten_df
+          flatten_df()
 
         sec_name_df <-
           data_frame(
@@ -8510,7 +8786,7 @@ parse_manager_brochure_data <-
 
         actual_name_df <-
           1:length(sec_names) %>%
-          map_df(function(x){
+          map_df(function(x) {
             name_exists <-
               sec_name_df %>%
               dplyr::filter(nameSEC == sec_names[x]) %>% nrow > 0
@@ -8528,7 +8804,7 @@ parse_manager_brochure_data <-
 
         columns_selected <-
           actual_name_df %>%
-          dplyr::filter(!nameActual %>% is.na) %>%
+          dplyr::filter(!nameActual %>% is.na()) %>%
           .$idColumn
 
         info <-
@@ -8537,7 +8813,7 @@ parse_manager_brochure_data <-
 
         actual_names <-
           actual_name_df %>%
-          dplyr::filter(!nameActual %>% is.na) %>%
+          dplyr::filter(!nameActual %>% is.na()) %>%
           .$nameActual
 
         names(info) <-
@@ -8545,7 +8821,11 @@ parse_manager_brochure_data <-
 
         info <-
           info %>%
-          dplyr::select(matches("countPages|idVersion|dateTime|titleDocument|nameAuthor|nameProducer")) %>%
+          dplyr::select(
+            matches(
+              "countPages|idVersion|dateTime|titleDocument|nameAuthor|nameProducer"
+            )
+          ) %>%
           mutate(urlPDFManagerADVBrochure = url)
 
         pdf_pages <-
@@ -8561,25 +8841,28 @@ parse_manager_brochure_data <-
               str_trim()
 
             page_text <-
-              page_text %>% str_replace_all('Form ADV Part 2A: |Form ADV Part 2A Brochure|Part 2A of ADV: ', '') %>%
+              page_text %>% str_replace_all('Form ADV Part 2A: |Form ADV Part 2A Brochure|Part 2A of ADV: ',
+                                            '') %>%
               str_replace_all('Firm Brochure', '') %>%
-              str_trim
+              str_trim()
 
             page_text <-
               page_text[!page_text == '']
 
             remove_last_line <-
-              !page_text[page_text %>% length %>% max] %>% readr::parse_number() %>% is.na %>% suppressWarnings()
+              !page_text[page_text %>% length() %>% max] %>% readr::parse_number() %>% is.na %>% suppressWarnings()
 
             if (remove_last_line) {
               page_text <-
-                page_text[1:(page_text %>% length - 1)]
+                page_text[1:(page_text %>% length() - 1)]
             }
 
             clean_text <-
               function (text.var) {
                 text.var <-
-                  gsub("\\s+", " ", gsub("\\\\r|\\\\n|\\n|\\\\t", " ", text.var))
+                  gsub("\\s+",
+                       " ",
+                       gsub("\\\\r|\\\\n|\\n|\\\\t", " ", text.var))
                 return(text.var)
               }
 
@@ -8628,7 +8911,7 @@ parse_manager_brochure_data <-
 
       brochure_data <-
         brochure_data %>%
-        mutate_at(.cols = brochure_data %>% dplyr::select(matches("datetime")) %>% names,
+        mutate_at(.cols = brochure_data %>% dplyr::select(matches("datetime")) %>% names(),
                   .funs = ymd_hms) %>%
         arrange(desc(datetimeCreated))
     } else {
@@ -8684,7 +8967,7 @@ get_manager_brochure_data <-
 #'
 #' @return
 #' @export
-#' @import curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble pdftools tidyr curlconverter
+#' @import curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble pdftools tidyr curlconverter jsonlite
 #' @examples
 #' get_data_adv_managers_brochures(entity_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE, nest_data = TRUE)
 get_data_adv_managers_brochures <-
@@ -8692,7 +8975,6 @@ get_data_adv_managers_brochures <-
            crd_ids = NULL,
            split_pages = TRUE,
            nest_data = FALSE) {
-
     nothing_entered <-
       (crd_ids %>% is_null()) & (entity_names %>% is_null())
     if (nothing_entered) {
@@ -8702,25 +8984,33 @@ get_data_adv_managers_brochures <-
       possibly(get_search_crd_ids, NULL)
 
     crds <-
-      get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
+      get_search_crd_ids(entity_names = entity_names, crd_ids = crd_ids)
 
     get_manager_brochure_data_safe <-
       possibly(get_manager_brochure_data, NULL)
 
     all_data <-
-      crds %>%
+      1:length(crds) %>%
       map_df(function(x) {
         manager_pdf <-
-          get_manager_brochure_data_safe(id_crd = x,
-                                         split_pages = split_pages)
-        paste0('idCRD: ', x, ' - ', 'Manager Brochure') %>% message
+          get_manager_brochure_data(id_crd = crds[[x]] %>% as.numeric(),
+                                    split_pages = split_pages)
+        paste0('idCRD: ', x, ' - ', 'Manager Brochure') %>%
+          message()
         return(manager_pdf)
       })
 
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(idCRD, nameEntityManager, titleDocument, datetimeCreated, countPages), .key = 'dataBrochure')
+        nest(-c(
+          idCRD,
+          nameEntityManager,
+          titleDocument,
+          datetimeCreated,
+          countPages
+        ),
+        .key = 'dataBrochure')
     }
     return(all_data)
   }
@@ -8739,11 +9029,11 @@ get_data_adv_managers_brochures <-
 #' @examples
 get_data_adv_period_urls <-
   function(return_wide = TRUE) {
-    httr::set_config(config(ssl_verifypeer = 0L))
+    httr::set_config(httr::config(ssl_verifypeer = 0L))
     page <-
       'https://www.sec.gov/foia/iareports/inva-archive.htm' %>%
-      GET %>%
-      content() %>%
+      httr::GET() %>%
+      httr::content() %>%
       suppressMessages()
 
     url_zip <-
@@ -9060,7 +9350,9 @@ get_sec_adv_name_df <-
           "10",
           'Current Status',
           'FINRA BD Status',
-          "2B(1)", "2B(2)", "2B(3)"
+          "2B(1)",
+          "2B(2)",
+          "2B(3)"
         ),
         nameActual = c(
           "idRegionSEC",
@@ -9437,12 +9729,14 @@ parse_sec_adv_data_url <-
       (adv_data %>%
          dplyr::select(-matches("country")) %>%
          dplyr::select(matches("^count[A-Z]")) %>% ncol() > 0) &
-      (adv_data %>%
-         dplyr::select(-matches("country")) %>%
-         dplyr::select(matches("^count[A-Z]")) %>%
-         map_df(class) %>%
-         gather(column, class) %>%
-         dplyr::filter(class == 'character') %>% nrow() > 0)
+      (
+        adv_data %>%
+          dplyr::select(-matches("country")) %>%
+          dplyr::select(matches("^count[A-Z]")) %>%
+          map_df(class) %>%
+          gather(column, class) %>%
+          dplyr::filter(class == 'character') %>% nrow() > 0
+      )
 
     if (has_columns) {
       change_to_range_cols <-
@@ -9488,7 +9782,7 @@ parse_sec_adv_data_url <-
         adv_data %>%
         mutate_at(
           .cols =
-            adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names,
+            adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names(),
           funs(. %>% stringr::str_to_upper())
         ) %>%
         suppressWarnings()
@@ -9501,15 +9795,15 @@ parse_sec_adv_data_url <-
       keep(is.character) %>%
       names() %>% length() > 0
 
-     if (whack_date) {
+    if (whack_date) {
       char_col <-
         adv_data %>%
         dplyr::select(matches("^date")) %>%
         keep(is.character) %>%
         names
 
-      adv_data[,char_col] <-
-        adv_data[,char_col] %>%
+      adv_data[, char_col] <-
+        adv_data[, char_col] %>%
         magrittr::extract2(1) %>%
         lubridate::mdy()
 
@@ -9523,9 +9817,9 @@ parse_sec_adv_data_url <-
                     matches(
                       "^type[A-Z]|^range[A-Z]|^address[A-Z]|^city[A-Z]|^zip[A-Z]|^fax[A-Z]|^name[A-Z]|^state[A-Z]|^status[A-Z]|monthYearLastSurpriseAudit|^date[A-Z]"
                     )
-                  ) %>% names,
+                  ) %>% names(),
                 .funs = as.character) %>%
-      mutate(idCRD = idCRD %>% as.integer)
+      mutate(idCRD = idCRD %>% as.integer())
 
     if ('idLEI' %in% names(adv_data)) {
       if (adv_data$idLEI %>% class() == 'numeric') {
@@ -9539,7 +9833,7 @@ parse_sec_adv_data_url <-
       if (adv_data$rangeClientsFinancialPlanning %>% class() == 'numeric') {
         adv_data <-
           adv_data %>%
-          mutate(rangeClientsFinancialPlanning = rangeClientsFinancialPlanning %>% as.character)
+          mutate(rangeClientsFinancialPlanning = rangeClientsFinancialPlanning %>% as.character())
       }
     }
 
@@ -9557,8 +9851,12 @@ parse_sec_adv_data_url <-
 
     adv_data <-
       adv_data %>%
-      mutate_at(adv_data %>% select(matches("^country|^name|^city|^state|^range[A-Z]|^type[A-Z]")) %>% names(),
-                funs(. %>% stringr::str_to_upper()))
+      mutate_at(
+        adv_data %>% dplyr::select(
+          matches("^country|^name|^city|^state|^range[A-Z]|^type[A-Z]")
+        ) %>% names(),
+        funs(. %>% stringr::str_to_upper())
+      )
 
     return(adv_data)
   }
@@ -9568,7 +9866,7 @@ get_period_type_adv_data <-
            is_exempt = FALSE,
            only_most_recent = FALSE,
            return_message = TRUE) {
-    if (!'sec_adv_url_df' %>% exists()){
+    if (!'sec_adv_url_df' %>% exists()) {
       sec_adv_url_df <-
         get_data_adv_period_urls(return_wide = FALSE)
 
@@ -9577,12 +9875,12 @@ get_period_type_adv_data <-
 
     if (only_most_recent) {
       period <-
-        sec_adv_url_df %>% dplyr::filter(dateData == max(dateData)) %>% .$periodData %>% unique
+        sec_adv_url_df %>% dplyr::filter(dateData == max(dateData)) %>% .$periodData %>% unique()
     }
 
     if (!period %in% sec_adv_url_df$periodData) {
       available_periods <-
-        sec_adv_url_df$periodData %>% unique
+        sec_adv_url_df$periodData %>% unique()
 
       "\nSorry periods can only be:\n" %>%
         paste0(paste0(available_periods, collapse = '\n')) %>%
@@ -9598,6 +9896,7 @@ get_period_type_adv_data <-
     adv_data <-
       parse_sec_adv_data_url(url = url_data)
     closeAllConnections()
+    gc()
     return(adv_data)
   }
 
@@ -9635,21 +9934,24 @@ get_data_adv_managers_periods_summaries <-
            only_most_recent = FALSE,
            is_exempt = c(TRUE, FALSE),
            nest_data = FALSE,
-           return_message= TRUE) {
+           return_message = TRUE) {
     if (all_periods) {
       periods <-
         get_data_adv_period_urls() %>% .$periodData %>% unique()
     }
 
     if (only_most_recent) {
-      periods <- get_data_adv_period_urls() %>% slice(1) %>% .$periodData %>% unique()
+      periods <-
+        get_data_adv_period_urls() %>% slice(1) %>% .$periodData %>% unique()
     }
 
     input_df <-
-      expand.grid(period = periods,
-                  only_most_recent = only_most_recent,
-                  exempt = is_exempt,
-                  stringsAsFactors = F) %>%
+      expand.grid(
+        period = periods,
+        only_most_recent = only_most_recent,
+        exempt = is_exempt,
+        stringsAsFactors = F
+      ) %>%
       as_data_frame()
 
     get_period_type_adv_data_safe <-
@@ -9672,13 +9974,15 @@ get_data_adv_managers_periods_summaries <-
       all_adv_data <-
         all_adv_data %>%
         mutate_at(.cols =
-                    all_adv_data %>% dplyr::select(matches("^date[A-Z]")) %>% names,
+                    all_adv_data %>% dplyr::select(matches("^date[A-Z]")) %>% names(),
                   funs(. %>% lubridate::ymd())) %>%
         mutate_at(
           .cols =
-            all_adv_data %>% dplyr::select(matches(
-              "^name[E]|^address|^city|^status|^state|^type|^country[A-Z]"
-            )) %>% dplyr::select(-matches("stateEntityOrganized")) %>% names,
+            all_adv_data %>% dplyr::select(
+              matches(
+                "^name[E]|^address|^city|^status|^state|^type|^country[A-Z]"
+              )
+            ) %>% dplyr::select(-matches("stateEntityOrganized")) %>% names(),
           .funs =
             str_to_upper
         )
@@ -9687,20 +9991,20 @@ get_data_adv_managers_periods_summaries <-
         all_adv_data %>%
         mutate_at(
           .cols =
-            all_adv_data %>% dplyr::select(matches("^count[A-Z]"), -matches("country")) %>% names,
+            all_adv_data %>% dplyr::select(matches("^count[A-Z]"), -matches("country")) %>% names(),
           .funs =
             funs(. %>% formattable::comma(digits = 0))
         )
 
       has_amounts <-
-        names(all_adv_data) %>% str_count('^amount') %>% sum > 0
+        names(all_adv_data) %>% str_count('^amount') %>% sum() > 0
 
       if (has_amounts) {
         all_adv_data <-
           all_adv_data %>%
           mutate_at(
             .cols =
-              all_adv_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names,
+              all_adv_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names(),
             .funs =
               funs(. %>% as.numeric %>% formattable::currency())
           ) %>%
@@ -9712,27 +10016,59 @@ get_data_adv_managers_periods_summaries <-
         all_adv_data %>%
         dplyr::rename(nameEntityManagerBusiness = nameEntityManager) %>%
         mutate(nameEntityManager = nameEntityManagerLegal) %>%
-        dplyr::select(dateDataADV:idSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, everything()) %>%
+        dplyr::select(
+          dateDataADV:idSEC,
+          nameEntityManager,
+          nameEntityManagerLegal,
+          nameEntityManagerBusiness,
+          everything()
+        ) %>%
         suppressMessages()
 
       all_adv_data <-
         all_adv_data %>%
-        mutate_at(.cols =
-                    all_adv_data %>% dplyr::select(matches("^address|^country[A-Z]|^city^state")) %>% names,
-                  funs(. %>% stringr::str_to_upper()))
-
-      if (names(all_adv_data) %>% str_count('^addressStreet2OfficePrimary') %>% sum() > 0) {
+        mutate_at(
+          .cols =
+            all_adv_data %>% dplyr::select(matches(
+              "^address|^country[A-Z]|^city^state"
+            )) %>% names(),
+          funs(. %>% stringr::str_to_upper())
+        )
+      has_office_sum <-
+        names(all_adv_data) %>% str_count('^addressStreet2OfficePrimary') %>% sum() > 0
+      if (has_office_sum) {
         addressOfficePrimary <-
           all_adv_data %>%
-          replace_na(list(addressStreet2OfficePrimary = '', stateOfficePrimary = '')) %>%
-          mutate(addressOfficePrimary =
-                   addressStreet1OfficePrimary %>% paste0(' ', addressStreet2OfficePrimary, ' ', cityOfficePrimary, ', ', stateOfficePrimary, ', ', countryOfficePrimary) %>% str_trim) %>%
+          tidyr::replace_na(list(
+            addressStreet2OfficePrimary = '',
+            stateOfficePrimary = ''
+          )) %>%
+          mutate(
+            addressOfficePrimary =
+              addressStreet1OfficePrimary %>% paste0(
+                ' ',
+                addressStreet2OfficePrimary,
+                ' ',
+                cityOfficePrimary,
+                ', ',
+                stateOfficePrimary,
+                ', ',
+                countryOfficePrimary
+              ) %>% str_trim()
+          ) %>%
           .$addressOfficePrimary
 
         all_adv_data <-
           all_adv_data %>%
           mutate(addressOfficePrimary) %>%
-          dplyr::select(dateDataADV:typeRegulationSEC, nameEntityManager, nameEntityManagerLegal, nameEntityManagerBusiness, addressOfficePrimary, everything())
+          dplyr::select(
+            dateDataADV:typeRegulationSEC,
+            nameEntityManager,
+            nameEntityManagerLegal,
+            nameEntityManagerBusiness,
+            addressOfficePrimary,
+            everything()
+          )
       }
     }
 
@@ -9769,13 +10105,83 @@ get_data_adv_managers_periods_summaries <-
 #' }
 
 get_data_adv_managers_current_period_summary <-
-  function(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasManagerFelonyPleaConviction", "hasManagerFelonyCharge", "hasManagerMisdemeanorPleaConviction"),
-           return_message = TRUE) {
+  function(select_names = c(
+    "dateDataADV",
+    "isExempt",
+    "idRegionSEC",
+    "idCRD",
+    "idSEC",
+    "typeRegulationSEC",
+    "nameEntityManager",
+    "nameEntityManagerLegal",
+    'addressOfficePrimary',
+    "addressStreet1OfficePrimary",
+    "addressStreet2OfficePrimary",
+    "cityOfficePrimary",
+    "stateOfficePrimary",
+    "countryOfficePrimary",
+    "zipOfficePrimary",
+    "phoneOfficePrimary",
+    "statusSEC",
+    "dateStatusSEC",
+    "dateADVLatest",
+    "urlManager",
+    "isForeignRegisteredEntity",
+    "stateDateJurisdictionNotice",
+    "idCIK",
+    "hasAUMGreater1B",
+    "idLEI",
+    "hasAUMGreater100M",
+    "typeEntity",
+    "countryEntityOrganized",
+    "countEmployeesTotal",
+    "countEmployeesInvestmentAdvisory",
+    "amountAUMTotal",
+    "amountAUMDiscretionary",
+    "amountAUMNonDiscretionary",
+    "countAccountsDiscretionary",
+    "countAccountsNonDiscretionary",
+    "countAccountsTotal",
+    "isManagerSecuritiesPortfolio",
+    "hasFeeAUM",
+    "hasFeeHourlyCharge",
+    "hasFeeSubscription",
+    "hasFeeFixed",
+    "hasFeeCommission",
+    "hasFeePerformance",
+    "hasFeeOther",
+    "typeFeeOther",
+    "isBrokerDealer",
+    "isBrokerDealerRepresentative",
+    "isCommodityPoolOperator",
+    "isFuturesMerchant",
+    "isRealEstateBrokerDealerAgent",
+    "isInsuranceBrokerAgent",
+    "isBank",
+    "isTrustCompany",
+    "isRegisteredMunicipalAdviser",
+    "isRegisteredSecuritySwapDealer",
+    "isRegistredSecuritySwapParticipant",
+    "isAccountingFirm",
+    "isLawFirm",
+    "isOtherFinancialProductSalesperson",
+    "typeOtherFinancialProductSalesperson",
+    "countEmployeesBrokerDealer",
+    "countEmployeesStateRegisteredInvestmentAdviser",
+    "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities",
+    "countEmployeesLicensedInsuranceAgents",
+    "countEmployeesSolicitAdvisoryClients",
+    "hasManagerFelonyPleaConviction",
+    "hasManagerFelonyCharge",
+    "hasManagerMisdemeanorPleaConviction"
+  ),
+  return_message = TRUE) {
     get_data_adv_managers_periods_summaries_safe <-
       purrr::possibly(get_data_adv_managers_periods_summaries, NULL)
 
     all_data <-
-      get_data_adv_managers_periods_summaries(only_most_recent = TRUE, is_exempt = c(TRUE, FALSE))
+      get_data_adv_managers_periods_summaries(only_most_recent = TRUE,
+                                              is_exempt = c(TRUE, FALSE))
 
     all_data <-
       all_data %>%

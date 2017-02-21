@@ -42,14 +42,11 @@ visualize_fred_time_series(series_id = "DGS2", use_random = FALSE,
 }}
 }
 \value{
-if \code {interactive} a plotly htmlwidget or else a static ggplot2 visualization
+if \code{interactive} a plotly htmlwidget or else a static ggplot2 visualization
 }
 \description{
 Plot any FRED time series
 }
 \examples{
-\dontrun{
-#' visualize_fred_time_series(filers = 'All', filing_names = 'Annual Reports')
-}
 
 }

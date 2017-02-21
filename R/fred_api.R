@@ -963,7 +963,8 @@ plot_time_series <-
     }
 
     if (include_smooth) {
-      plot +
+      plot <-
+        plot +
         geom_smooth(
           colour = "#000000",
           method = 'auto',
@@ -1035,14 +1036,12 @@ plot_time_series <-
 #' }
 #' @param plot_labels if \code{TRUE} text of any plot transformations are plotted
 #' @param interactive if \code{TRUE} visualization turned into an interactive plotly widget
-#' @import purrr jsonlite dplyr stringr scales ggplot2 plotly tidyr hrbrthemes plotly
-#' @return if \code {interactive} a plotly htmlwidget or else a static ggplot2 visualization
+#' @import purrr jsonlite dplyr stringr ggplot2 tidyr hrbrthemes
+#' @importFrom plotly ggplotly
+#' @return if \code{interactive} a plotly htmlwidget or else a static ggplot2 visualization
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' #' visualize_fred_time_series(filers = 'All', filing_names = 'Annual Reports')
-#' }
 #'
 
 visualize_fred_time_series <-

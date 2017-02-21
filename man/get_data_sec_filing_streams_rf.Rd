@@ -25,7 +25,7 @@ get_data_sec_filing_streams_rf(filers = c("All", "Corporate Insider",
 \item \code{Withdrawals}: securities withdrawls
 \item \code{Correspondence}: SEC correspondence
 \item \code{Proxy Statements}:  proxy issuances
-\item \code{\item \code{Confidential}: confidential information}
+\item \code{Confidential}: confidential information
 }}
 
 \item{return_message}{return a message}

@@ -4,13 +4,13 @@
 \alias{get_data_sec_filer}
 \title{SEC filer}
 \usage{
-get_data_sec_filer(entity_names = c("Keen Home", "EJF Capital"),
-  tickers = NULL, ciks = NULL, tables = NULL, nest_data = TRUE,
-  parse_all_filing_url_data = TRUE, parse_xbrl = TRUE,
-  parse_subsidiaries = TRUE, parse_13F = TRUE, parse_asset_files = TRUE,
-  parse_small_offerings = TRUE, parse_complete_text_filings = TRUE,
-  parse_form_d = TRUE, parse_form_3_4s = TRUE,
-  assign_to_environment = TRUE, return_message = TRUE)
+get_data_sec_filer(entity_names = NULL, tickers = NULL, ciks = NULL,
+  tables = NULL, nest_data = FALSE, parse_all_filing_url_data = FALSE,
+  parse_xbrl = FALSE, parse_subsidiaries = FALSE, parse_13F = FALSE,
+  parse_asset_files = FALSE, parse_small_offerings = FALSE,
+  parse_complete_text_filings = FALSE, parse_form_d = FALSE,
+  parse_form_3_4s = FALSE, assign_to_environment = TRUE,
+  return_message = TRUE)
 }
 \arguments{
 \item{entity_names}{vector names to search}

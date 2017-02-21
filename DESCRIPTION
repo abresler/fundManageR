@@ -35,8 +35,6 @@ Imports:
   stringi,
   stringr,
   timeDate,
-  RcppBDT,
-  tis,
   tabulizer,
   tibble,
   tidyr,
