@@ -558,7 +558,7 @@ generate_fred_symbol_url <-
   }
 
 parse_json_fred <-
-  function(url,
+  function(url = "https://fred.stlouisfed.org/graph/graph-data.php?id=DGS10&transformation=",
            convert_date_time = TRUE,
            return_message = TRUE) {
     json_data <-
@@ -741,6 +741,7 @@ get_data_fred_symbols <-
       as_data_frame()
     get_data_fred_symbol_safe <-
       purrr::possibly(get_data_fred_symbol, data_frame)
+
     all_data <-
       1:nrow(df_options) %>%
       map_df(function(x) {
@@ -872,11 +873,11 @@ plot_time_series <-
 
     if ('nameSource' %in% names(data)) {
       caption_text <-
-        list("Date from ",data$nameSource %>% unique, '\n', 'via FRED from fundManageR') %>%
+        list("Source data from ",data$nameSource %>% unique, '\n', 'via FRED from fundManageR') %>%
         purrr::reduce(paste0)
     } else {
       caption_text <-
-        "Data from FRED via fundManageR"
+        "Sourced from FRED via fundManageR"
     }
 
     plot <-

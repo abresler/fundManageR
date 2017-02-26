@@ -4415,7 +4415,7 @@ parse_cik_data <-
 #' @param nest_data return a nested data frame \code{TRUE, FALSE}
 #' @param assign_to_environment \code{true} assigns individual data frames to your environment
 #' @param return_message \code{TRUE} return a message after data import
-#' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl
+#' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
 #' @export
 #' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
