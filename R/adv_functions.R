@@ -8248,6 +8248,7 @@ get_crd_sections_data <-
         }
       }
     }
+
     if (flatten_tables) {
       get_all_manager_description_data <-
         function(all_data) {
@@ -8614,8 +8615,8 @@ return_selected_adv_tables <-
 #'  assign_to_environment = TRUE)
 get_data_adv_managers_filings <-
   function(entity_names = NULL,
-           crd_ids = 161791,
-           all_sections = TRUE,
+           crd_ids = NULL,
+           all_sections = FALSE,
            section_names = c(
              "Registration",
              "Identifying Information",
@@ -8630,6 +8631,12 @@ get_data_adv_managers_filings <-
            flatten_tables = TRUE,
            gather_data = FALSE,
            assign_to_environment = TRUE) {
+
+    if (section_names %>% length() == 1) {
+      flatten_tables <-
+        FALSE
+
+    }
     nothing_entered <-
       (crd_ids %>% is_null()) & (entity_names %>% is_null())
     if (nothing_entered) {
@@ -8659,11 +8666,85 @@ get_data_adv_managers_filings <-
     return_selected_adv_tables_safe <-
       possibly(return_selected_adv_tables, data_frame())
 
-    if (assign_to_environment) {
+    only_1 <-
+      section_names %>% length() == 1 & assign_to_environment
+
+    assign_all <-
+      section_names %>% length() > 1 & assign_to_environment
+
+    if (assign_all) {
       all_data %>%
-        return_selected_adv_tables_safe(all_sections = all_sections,
+        return_selected_adv_tables_safe(all_sections = TRUE,
                                         gather_data = gather_data)
 
+    }
+
+    if (only_1) {
+      table_name <-
+        list('data', all_data$nameADVPage %>% str_replace_all('\\ ', '')) %>%
+        purrr::reduce(paste0)
+
+      data <-
+        all_data %>%
+        select(dataTable) %>%
+        unnest()
+
+      data <-
+        data %>%
+        mutate_if(is_character,
+                  funs(ifelse(. == "N/A", NA, .))) %>%
+        mutate_if(is_character,
+                  funs(ifelse(. == "", NA, .)))
+
+      data <-
+        data %>%
+        mutate_at(data %>% select(dplyr::matches("^idCRD|idCIK")) %>% names(),
+                  funs(. %>% as.numeric())) %>%
+        mutate_at(data %>% select(
+          dplyr::matches(
+            "^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]"
+          )
+        ) %>% select(-matches("nameElement")) %>% names(),
+        funs(. %>% str_to_upper())) %>%
+        mutate_at(
+          data %>% select(dplyr::matches("^amount")) %>% names(),
+          funs(. %>% as.numeric() %>% formattable::currency(digits = 0))
+        ) %>%
+        mutate_at(data %>% select(dplyr::matches("^is|^has")) %>% names(),
+                  funs(. %>% as.logical())) %>%
+        mutate_at(
+          data %>% select(dplyr::matches("latitude|longitude")) %>% names(),
+          funs(. %>% as.numeric() %>% formattable::digits(digits = 5))
+        ) %>%
+        mutate_at(
+          data %>% select(dplyr::matches("^price[A-Z]|pershare")) %>% select(-dplyr::matches("priceNotation")) %>% names(),
+          funs(. %>% formattable::currency(digits = 3))
+        ) %>%
+        mutate_at(
+          data %>% select(dplyr::matches(
+            "^count[A-Z]|^number[A-Z]|^year[A-Z]"
+          )) %>% select(-dplyr::matches("country|county")) %>% names(),
+          funs(. %>% formattable::comma(digits = 0))
+        ) %>%
+        mutate_at(
+          data %>% select(dplyr::matches(
+            "codeInterestAccrualMethod|codeOriginalInterestRateType|codeLienPositionSecuritization|codePaymentType|codePaymentFrequency|codeServicingAdvanceMethod|codePropertyStatus"
+          )) %>% names(),
+          funs(. %>% as.integer())
+        ) %>%
+        mutate_at(data %>% select(dplyr::matches("^ratio|^multiple|^priceNotation|^value")) %>% names(),
+                  funs(. %>% formattable::comma(digits = 3))) %>%
+        mutate_at(data %>% select(dplyr::matches("^pct|^percent")) %>% names(),
+                  funs(. %>% formattable::percent(digits = 3))) %>%
+        mutate_at(
+          data %>% select(dplyr::matches("^amountFact")) %>% names(),
+          funs(. %>% as.numeric() %>% formattable::currency(digits = 3))
+        ) %>%
+        suppressWarnings()
+      has_dates <-
+        data %>% select(dplyr::matches("^date")) %>% ncol() >
+
+      assign(x = table_name, eval(data),  envir = .GlobalEnv)
     }
     closeAllConnections()
     return(all_data)
