@@ -8,9 +8,6 @@ get_data_edgar_ft_terms(search_terms = c("\\"Jared Kushner\\"",
   "\\"EJF Capital\\"", "\\"Blackstone Real Estate\\""), include_counts = TRUE,
   nest_data = FALSE, return_message = TRUE)
 }
-\arguments{
-\item{return_message}{}
-}
 \description{
 Title
 }

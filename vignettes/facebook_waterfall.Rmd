@@ -7,6 +7,8 @@ output:
     fig_width: 8
     highlight: tango
     theme: cosmo
+editor_options: 
+  chunk_output_type: inline
 ---
 
 In the investment management industry a company's product is the financial return it produces.  Generally, investment managers charge an annual management fee and then after certain pre-determined thresholds are met they earn a special fee known as a promote, incentive fee or a carried interest.  
@@ -78,7 +80,7 @@ waterfall <-
 
 promote_df <- 
   waterfall %>% 
-  get_data_promote_structure()
+  tidy_promote_structure()
 
 ```
 

@@ -214,12 +214,12 @@ get_data_msci_indicies_constituents <-
     }
 
     parse_msci_json_constituent_url_safe <-
-      purrr::possibly(parse_msci_json_constituent_url2, data_frame())
+      purrr::possibly(parse_msci_json_constituent_url, data_frame())
 
     const_df <-
       index_df$urlIndexConstituents %>%
       map_df(function(x) {
-        parse_msci_json_constituent_url(url = x, return_message = return_message)
+        parse_msci_json_constituent_url_safe(url = x, return_message = return_message)
       })
 
     const_df <-

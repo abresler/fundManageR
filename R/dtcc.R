@@ -1189,7 +1189,7 @@ get_data_dtcc_today <-
 
 get_data_dtcc_trades <-
   function(assets = NULL,
-           include_today = TRUE,
+           include_today = FALSE,
            start_date = NULL,
            end_date = NULL,
            nest_data = TRUE,
@@ -1280,9 +1280,20 @@ get_data_dtcc_trades <-
       ) %>%
       mutate_at(all_data %>% select(matches("^idDissemination")) %>% names(),
                 funs(. %>% as.character() %>% as.integer())) %>%
-      select(-c(urlData, idAssetType)) %>%
       suppressMessages() %>%
       suppressWarnings()
+
+    if ('urlData' %in% names(all_data)) {
+      all_data <-
+        all_data %>%
+        select(-urlData)
+    }
+
+    if ('idAssetType' %in% names(all_data)) {
+      all_data <-
+        all_data %>%
+        select(-idAssetType)
+    }
 
     all_data <-
       all_data %>%

@@ -576,7 +576,7 @@ tidy_promote_structure <-
   function(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"),
            return_wide = F) {
     parse_promote_structure_safe <-
-      failwith(NULL, parse_promote_structure)
+      purrr::possibly(parse_promote_structure, data_frame())
 
     promote_data <-
       1:length(promote_structures) %>%

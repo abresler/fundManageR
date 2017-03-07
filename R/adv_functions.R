@@ -1049,9 +1049,11 @@ parse_finra_json_url <-
              idRow = 1:n())
 
     if (!name_match_threshold %>% is_null()) {
+      if ('scoreWord' %in% names(df_fields)) {
       df_fields <-
         df_fields %>%
         filter(scoreWord >= name_match_threshold)
+      }
     }
 
     if ('fields.bc_ia_scope' %in% names(df_fields) &
@@ -1317,7 +1319,7 @@ get_data_finra_entity <-
     all_data <-
       url_df$urlJSON %>%
       map_df(function(x) {
-        parse_finra_json_url_safe(
+        parse_finra_json_url(
           url = x,
           ocr_pdf = ocr_pdf,
           name_match_threshold = score_threshold

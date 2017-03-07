@@ -1565,7 +1565,7 @@ get_data_recent_insider_trades <-
     options(scipen = 9999)
     json_data <-
       "http://rankandfiled.com/data/buy_sell" %>%
-      fromJSON()
+      jsonlite::fromJSON()
     insider_name_df <-
       data_frame(
         idInsiderTable = 1:5,
@@ -2489,7 +2489,7 @@ parse_json_general_filing <-
 
     data <-
       url %>%
-      fromJSON(simplifyDataFrame = TRUE) %>%
+      jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
       data.frame(stringsAsFactors = FALSE) %>%
       as_data_frame()
 
@@ -2765,7 +2765,7 @@ parse_json_private <-
 
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
 
     options(scipen = 9999)
 
@@ -3202,7 +3202,7 @@ parse_json_traders <-
 
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
 
     options(scipen = 9999)
     cik <-
@@ -3241,7 +3241,7 @@ parse_json_clevel <-
 
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
 
     options(scipen = 9999)
     cik <-
@@ -3295,7 +3295,7 @@ parse_json_mda <-
 
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
 
     options(scipen = 9999)
 
@@ -3340,7 +3340,7 @@ parse_json_owners <-
 
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
 
     cik <-
       url %>% str_replace_all('http://rankandfiled.com/data/filer/|/owners', '') %>%
@@ -3808,7 +3808,7 @@ parse_cik_filings <-
       purrr::invoke(paste0, .)
 
     data_js <-
-      general_url %>% fromJSON() %>% data.frame(stringsAsFactors = FALSE)
+      general_url %>% jsonlite::fromJSON() %>% data.frame(stringsAsFactors = FALSE)
 
     is_public_company <-
       'company' %in% (data_js %>% names())
@@ -3817,7 +3817,7 @@ parse_cik_filings <-
       'insider' %in% (data_js %>% names())
     if (is_public_company) {
       company_df <-
-        general_url %>% fromJSON() %>% data.frame(stringsAsFactors = FALSE) %>%
+        general_url %>% jsonlite::fromJSON() %>% data.frame(stringsAsFactors = FALSE) %>%
         as_data_frame()
 
       general_df <-
@@ -4543,7 +4543,7 @@ get_data_sec_filer <-
         all_ticker_data <-
           tickers %>%
           map_df(function(x) {
-            parse_ticker_data_safe(
+            parse_ticker_data(
               ticker = x,
               nest_data = nest_data,
               tables = tables,
@@ -4808,9 +4808,10 @@ get_data_sec_filer <-
               }
             }
           }
-
+        parse_for_tables_rf_safe <-
+          purrr::possibly(parse_for_tables_rf, data_frame())
         tables_edgar <-
-          parse_for_tables_rf(
+          parse_for_tables_rf_safe(
             filing_df = filing_df,
             parse_complete_text_filings = parse_complete_text_filings,
             parse_form_d = parse_form_d,
@@ -5277,7 +5278,7 @@ parse_insider_trade_json_url <-
 
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
 
     options(scipen = 9999)
 
@@ -5552,7 +5553,7 @@ parse_json_fund_general <-
 
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
 
     general_cols <-
       json_data %>% map_df(class) %>%
@@ -5672,6 +5673,9 @@ parse_for_tables_rf <-
       ) %>%
       sum() > 0
 
+    parse_form_data_safe <-
+      purrr::possibly(parse_form_data, data_frame())
+
     if (parse_all_filings) {
       if (!'typeFile' %in% names(filing_df)) {
         filing_df <-
@@ -5735,7 +5739,7 @@ parse_for_tables_rf <-
       if (parse_form_d) {
         df_form_ds <-
           df_all_filing_urls %>%
-          parse_form_data(filter_parameter = 'isFormD')
+          parse_form_data_safe(filter_parameter = 'isFormD')
 
         all_tables <-
           all_tables %>%
@@ -5748,7 +5752,7 @@ parse_for_tables_rf <-
       if (parse_13F) {
         df_13F <-
           df_all_filing_urls %>%
-          parse_form_data(filter_parameter = 'is13FFiling')
+          parse_form_data_safe(filter_parameter = 'is13FFiling')
 
         all_tables <-
           all_tables %>%
@@ -5758,7 +5762,7 @@ parse_for_tables_rf <-
       if (parse_small_offerings) {
         df_small_offerings <-
           df_all_filing_urls %>%
-          parse_form_data(filter_parameter = 'hasSmallOfferingData')
+          parse_form_data_safe(filter_parameter = 'hasSmallOfferingData')
         all_tables <-
           all_tables %>%
           bind_rows(data_frame(
@@ -5770,7 +5774,7 @@ parse_for_tables_rf <-
       if (parse_form_3_4s) {
         df_form3_4 <-
           df_all_filing_urls %>%
-          parse_form_data(filter_parameter = 'isForm3_4')
+          parse_form_data_safe(filter_parameter = 'isForm3_4')
 
         all_tables <-
           all_tables %>%
@@ -5783,7 +5787,7 @@ parse_for_tables_rf <-
       if (parse_asset_files) {
         df_assets <-
           df_all_filing_urls %>%
-          parse_form_data(filter_parameter = 'hasAssetFile')
+          parse_form_data_safe(filter_parameter = 'hasAssetFile')
 
         all_tables <-
           all_tables %>%
@@ -5793,7 +5797,7 @@ parse_for_tables_rf <-
       if (parse_xbrl) {
         df_xbrl <-
           df_all_filing_urls %>%
-          parse_form_data(filter_parameter = 'isXBRLInstanceFile')
+          parse_form_data_safe(filter_parameter = 'isXBRLInstanceFile')
 
         all_tables <-
           all_tables %>%
@@ -6881,7 +6885,7 @@ parse_json_trades <-
 
     json_data <-
       url %>%
-      fromJSON()
+      jsonlite::fromJSON()
 
     options(scipen = 9999)
 
@@ -11929,7 +11933,7 @@ parse_form_data <-
       df_13fs <-
         df_13fs %>%
         left_join(urls_df) %>%
-        left_join(df_search %>% select(dateFiling, datePeriodReport, datetimeAccepted, urlSECFilingDirectory, urlTextFilingFull)) %>%
+        left_join(df_search %>% select(dateFiling, datePeriodReport, datetimeAccepted, urlSECFilingDirectory, matches("urlTextFilingFull"))) %>%
         select(-matches("slugAcession")) %>%
         select(matches("idCIKFiler"), matches("nameFilingManager"), everything()) %>%
         select(dateFiling, everything()) %>%
@@ -14572,7 +14576,7 @@ get_cik_filing_count <-
 #'
 #' @return
 #' @export
-#'
+#' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
 #' @examples
 get_sic_filing_count <-
   function(sic = 800,
@@ -14737,7 +14741,7 @@ get_dictionary_sic_codes <-
 #'
 #' @return
 #' @export
-#'
+#' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
 #' @examples
 get_dictionary_sec_forms <-
   function() {
@@ -14844,6 +14848,9 @@ parse_for_tables <-
            return_message = TRUE) {
     all_tables <-
       data_frame()
+
+    parse_form_data_safe <-
+      purrr::possibly(parse_form_data, data_frame())
     parse_all_filings <-
       c(
         parse_complete_text_filings,
@@ -14970,7 +14977,7 @@ parse_for_tables <-
       if (parse_form_d) {
         df_form_ds <-
           all_filings %>%
-          parse_form_data(filter_parameter = 'isFormD')
+          parse_form_data_safe(filter_parameter = 'isFormD')
         all_tables <-
           all_tables %>%
           bind_rows(data_frame(nameTable = 'FormDs', dataTable = list(df_form_ds)))
@@ -14979,7 +14986,7 @@ parse_for_tables <-
       if (parse_13F) {
         df_13F <-
           all_filings %>%
-          parse_form_data(filter_parameter = 'is13FFiling')
+          parse_form_data_safe(filter_parameter = 'is13FFiling')
         all_tables <-
           all_tables %>%
           bind_rows(data_frame(nameTable = '13Fs', dataTable = list(df_13F)))
@@ -14988,7 +14995,7 @@ parse_for_tables <-
       if (parse_small_offerings) {
         df_small_offerings <-
           all_filings %>%
-          parse_form_data(filter_parameter = 'hasSmallOfferingData')
+          parse_form_data_safe(filter_parameter = 'hasSmallOfferingData')
         all_tables <-
           all_tables %>%
           bind_rows(data_frame(
@@ -15000,7 +15007,7 @@ parse_for_tables <-
       if (parse_form_3_4s) {
         df_form3_4 <-
           all_filings %>%
-          parse_form_data(filter_parameter = 'isForm3_4')
+          parse_form_data_safe(filter_parameter = 'isForm3_4')
 
         all_tables <-
           all_tables %>%
@@ -15020,7 +15027,7 @@ parse_for_tables <-
       if (parse_xbrl) {
         df_xbrl <-
           all_filings %>%
-          parse_form_data(filter_parameter = 'isXBRLInstanceFile')
+          parse_form_data_safe(filter_parameter = 'isXBRLInstanceFile')
 
         all_tables <-
           all_tables %>%
@@ -15225,11 +15232,11 @@ parse_ft_filing_page <-
 #' @param search_terms
 #' @param nest_data
 #' @param return_message
-#'
+#' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
 #' @return
 #' @export
 #' @examples
-#' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2
+
 get_data_edgar_ft_terms <-
   function(search_terms = c('"Jared Kushner"', '"EJF Capital"', '"Blackstone Real Estate"'),
            include_counts = TRUE,
@@ -15724,7 +15731,8 @@ get_data_sec_search_term <-
 #'
 #' @return
 #' @export
-#'
+#' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi XBRL jsonlite
+#' @importFrom jsonlite fromJSON
 #' @examples
 get_data_edgar_search_terms <-
   function(search_terms = NULL,
@@ -16320,7 +16328,7 @@ get_data_sec_filing_most_recent <-
     return(all_data)
   }
 
-#' Most recent EDGAR filings by typ
+#' Most recent EDGAR filings by type
 #'
 #' @param forms
 #' @param nest_data
@@ -16328,7 +16336,8 @@ get_data_sec_filing_most_recent <-
 #'
 #' @return
 #' @export
-#'
+#' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
+#' @importFrom jsonlite fromJSON
 #' @examples
 get_data_edgar_filings_most_recent <-
   function(forms = c("All", "10-D", "10-K"),
@@ -16780,7 +16789,8 @@ get_years_page_urls <-
 #' @param nest_data \code{TRUE} return nested data frame
 #' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
-#'
+#' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
+#' @importFrom jsonlite fromJSON
 #' @export
 #' @family SEC
 #' @family filing search
@@ -17151,7 +17161,8 @@ get_entity_ciks <-
 #'
 #' @return
 #' @export
-#'
+#' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
+#' @importFrom jsonlite fromJSON
 #' @examples
 get_data_edgar_entities_cik <-
   function(search_names = c("Rockwood", "BREA", 'EJF'),
@@ -17809,7 +17820,8 @@ get_data_sic_code_filer <-
 #'
 #' @return
 #' @export
-#'
+#' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
+#' @importFrom jsonlite fromJSON
 #' @examples
 get_data_edgar_sic_filers <-
   function(sic_codes = c(3949, 3690, 3711),
@@ -17827,7 +17839,7 @@ get_data_edgar_sic_filers <-
     all_data <-
       sic_codes %>%
       map_df(function(x){
-        get_data_sic_code_filer(sic = x, return_message = return_message)
+        get_data_sic_code_filer_safe(sic = x, return_message = return_message)
       })
 
     if (merge_names) {

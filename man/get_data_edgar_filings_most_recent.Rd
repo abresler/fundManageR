@@ -2,7 +2,7 @@
 % Please edit documentation in R/edgar_rf.R
 \name{get_data_edgar_filings_most_recent}
 \alias{get_data_edgar_filings_most_recent}
-\title{Most recent EDGAR filings by typ}
+\title{Most recent EDGAR filings by type}
 \usage{
 get_data_edgar_filings_most_recent(forms = c("All", "10-D", "10-K"),
   table_name_initial = "Recent Filings", parse_all_filings = TRUE,
@@ -15,5 +15,5 @@ get_data_edgar_filings_most_recent(forms = c("All", "10-D", "10-K"),
 \item{return_message}{}
 }
 \description{
-Most recent EDGAR filings by typ
+Most recent EDGAR filings by type
 }

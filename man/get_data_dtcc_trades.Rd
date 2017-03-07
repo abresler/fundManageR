@@ -4,7 +4,7 @@
 \alias{get_data_dtcc_trades}
 \title{DTCC trades by date and product}
 \usage{
-get_data_dtcc_trades(assets = NULL, include_today = TRUE,
+get_data_dtcc_trades(assets = NULL, include_today = FALSE,
   start_date = NULL, end_date = NULL, nest_data = TRUE,
   return_message = TRUE)
 }
