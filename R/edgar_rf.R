@@ -18,54 +18,54 @@ tidy_column_formats <-
 
     data <-
       data %>%
-      mutate_at(data %>% select(dplyr::matches("^idCRD|idCIK")) %>% names(),
+      mutate_at(data %>% dplyr::select(dplyr::matches("^idCRD|idCIK")) %>% names(),
                 funs(. %>% as.numeric())) %>%
-      mutate_at(data %>% select(
+      mutate_at(data %>% dplyr::select(
         dplyr::matches(
           "^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]"
         )
-      ) %>% select(-matches("nameElement")) %>% names(),
+      ) %>% dplyr::select(-matches("nameElement")) %>% names(),
       funs(. %>% str_to_upper())) %>%
       mutate_at(
-        data %>% select(dplyr::matches("^amount")) %>% names(),
+        data %>% dplyr::select(dplyr::matches("^amount")) %>% names(),
         funs(. %>% as.numeric() %>% formattable::currency(digits = 0))
       ) %>%
-      mutate_at(data %>% select(dplyr::matches("^is|^has")) %>% names(),
+      mutate_at(data %>% dplyr::select(dplyr::matches("^is|^has")) %>% names(),
                 funs(. %>% as.logical())) %>%
       mutate_at(
-        data %>% select(dplyr::matches("latitude|longitude")) %>% names(),
+        data %>% dplyr::select(dplyr::matches("latitude|longitude")) %>% names(),
         funs(. %>% as.numeric() %>% formattable::digits(digits = 5))
       ) %>%
       mutate_at(
-        data %>% select(dplyr::matches("^price[A-Z]|pershare")) %>% select(-dplyr::matches("priceNotation")) %>% names(),
+        data %>% dplyr::select(dplyr::matches("^price[A-Z]|pershare")) %>% select(-dplyr::matches("priceNotation")) %>% names(),
         funs(. %>% formattable::currency(digits = 3))
       ) %>%
       mutate_at(
-        data %>% select(dplyr::matches(
+        data %>% dplyr::select(dplyr::matches(
           "^count[A-Z]|^number[A-Z]|^year[A-Z]"
-        )) %>% select(-dplyr::matches("country|county")) %>% names(),
+        )) %>% dplyr::select(-dplyr::matches("country|county")) %>% names(),
         funs(. %>% formattable::comma(digits = 0))
       ) %>%
       mutate_at(
-        data %>% select(dplyr::matches(
+        data %>% dplyr::select(dplyr::matches(
           "codeInterestAccrualMethod|codeOriginalInterestRateType|codeLienPositionSecuritization|codePaymentType|codePaymentFrequency|codeServicingAdvanceMethod|codePropertyStatus"
         )) %>% names(),
         funs(. %>% as.integer())
       ) %>%
-      mutate_at(data %>% select(dplyr::matches("^ratio|^multiple|^priceNotation|^value")) %>% names(),
+      mutate_at(data %>% dplyr::select(dplyr::matches("^ratio|^multiple|^priceNotation|^value")) %>% names(),
                 funs(. %>% formattable::comma(digits = 3))) %>%
-      mutate_at(data %>% select(dplyr::matches("^pct|^percent")) %>% names(),
+      mutate_at(data %>% dplyr::select(dplyr::matches("^pct|^percent")) %>% names(),
                 funs(. %>% formattable::percent(digits = 3))) %>%
       mutate_at(
-        data %>% select(dplyr::matches("^amountFact")) %>% names(),
+        data %>% dplyr::select(dplyr::matches("^amountFact")) %>% names(),
         funs(. %>% as.numeric() %>% formattable::currency(digits = 3))
       ) %>%
       suppressWarnings()
     has_dates <-
-      data %>% select(dplyr::matches("^date")) %>% ncol() > 0
+      data %>% dplyr::select(dplyr::matches("^date")) %>% ncol() > 0
 
     if (has_dates) {
-      data %>% select(dplyr::matches("^date")) %>% map(class)
+      data %>% dplyr::select(dplyr::matches("^date")) %>% map(class)
     }
     if (drop_na_columns ) {
       data <-
@@ -4883,7 +4883,7 @@ get_data_sec_filer <-
                 unnest() %>%
                 remove_duplicate_columns() %>%
                 select(which(colMeans(is.na(.)) < 1)) %>%
-                tidy_column_formats() %>%
+                # tidy_column_formats() %>%
                 select(-matches('is_null_col')) %>%
                 distinct()
 
@@ -4903,7 +4903,7 @@ get_data_sec_filer <-
                   df_data %>%
                   remove_duplicate_columns() %>%
                   select(-matches("data")) %>%
-                  tidy_column_formats() %>%
+                  # tidy_column_formats() %>%
                   select(which(colMeans(is.na(.)) < 1)) %>%
                   distinct()
                 assign(x = df_name,
@@ -4927,7 +4927,7 @@ get_data_sec_filer <-
                   select(-matches('data')) %>%
                   filter(!idCIK %>% is.na()) %>%
                   select(which(colMeans(is.na(.)) < 1)) %>%
-                  tidy_column_formats() %>%
+                  # tidy_column_formats() %>%
                   distinct()
                 assign(x = df_name,
                        eval(table),
@@ -4959,7 +4959,7 @@ get_data_sec_filer <-
                 table <-
                   df_data %>%
                   select(which(colMeans(is.na(.)) < 1)) %>%
-                  tidy_column_formats() %>%
+                  # tidy_column_formats() %>%
                   distinct()
                 assign(x = df_name,
                        eval(table),
@@ -4969,7 +4969,7 @@ get_data_sec_filer <-
               table <-
                 df_data %>%
                 select(which(colMeans(is.na(.)) < 1)) %>%
-                tidy_column_formats() %>%
+                # tidy_column_formats() %>%
                 distinct()
               assign(x = df_name,
                      eval(table),
@@ -15768,6 +15768,11 @@ get_data_edgar_search_terms <-
       select(-matches("urlSECSearch")) %>%
       distinct()
 
+
+    if (all_data %>% nrow() == 0) {
+      return(data_frame())
+    }
+
     all_tables <-
       parse_for_tables(all_data = all_data,
                        table_name_initial = table_name_initial,
@@ -15826,8 +15831,7 @@ get_data_edgar_search_terms <-
                 unnest() %>%
                 select(which(
                   colMeans(is.na(.)) < 1
-                )) %>%
-                tidy_column_formats()
+                ))
 
               df_table_name <-
                 list(df_name, df_data_name %>% str_replace_all('data', '')) %>% purrr::reduce(paste0)
@@ -15859,8 +15863,7 @@ get_data_edgar_search_terms <-
                 df_data %>%
                 select(which(
                   colMeans(is.na(.)) < 1
-                )) %>%
-                tidy_column_formats()
+                ))
               assign(x = df_name,
                      eval(table),
                      envir = .GlobalEnv)
@@ -15869,8 +15872,7 @@ get_data_edgar_search_terms <-
                 df_data %>%
                 select(which(
                   colMeans(is.na(.)) < 1
-                )) %>%
-                tidy_column_formats()
+                ))
               assign(x = df_name,
                      eval(table),
                      envir = .GlobalEnv)

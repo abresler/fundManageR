@@ -1319,11 +1319,9 @@ get_data_finra_entity <-
     all_data <-
       url_df$urlJSON %>%
       map_df(function(x) {
-        parse_finra_json_url(
-          url = x,
-          ocr_pdf = ocr_pdf,
-          name_match_threshold = score_threshold
-        )
+        parse_finra_json_url(url = x,
+                                  ocr_pdf = ocr_pdf,
+                                  name_match_threshold = score_threshold)
       }) %>%
       mutate(nameSearch = search_name) %>%
       dplyr::select(nameSearch, matches("name"), matches("^id"), everything()) %>%
@@ -1388,7 +1386,7 @@ get_data_finra_entities <-
     all_data <-
       1:nrow(search_df) %>%
       map_df(function(x) {
-        get_data_finra_entity(
+        get_data_finra_entity_safe(
           search_name = search_df$nameSearch[[x]],
           ocr_pdf = ocr_pdf,
           score_threshold = score_threshold,
