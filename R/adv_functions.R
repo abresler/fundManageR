@@ -8196,7 +8196,7 @@ get_crd_sections_data <-
               suppressWarnings()
             data <-
               data_frame(nameADVPage = nameADVPage,
-                         dataTable = list(df_name %>% as_name() %>% eval))
+                         dataTable = list(df_name %>% as_name() %>% eval()))
             return(data)
           })
         return(all_data)
@@ -8500,7 +8500,7 @@ return_selected_adv_tables <-
               arrange(idCRD, nameItem, countItemManager)
           }
 
-          assign(x = df_name, eval(data_selected), envir = .GlobalEnv)
+          assign(x = df_name, eval(data_selected %>% mutate_adv_data()), envir = .GlobalEnv)
           section_df %>%
             dplyr::filter(nameSectionActual == table_name) %>%
             .$idSection %>% message()
@@ -8594,7 +8594,7 @@ return_selected_adv_tables <-
 
                 df_name <-
                   table_names[x]
-                assign(x = df_name, eval(table_data), envir = .GlobalEnv)
+                assign(x = df_name, eval(table_data %>% mutate_adv_data()), envir = .GlobalEnv)
               })
           }
         }
@@ -8789,7 +8789,7 @@ get_data_adv_managers_filings <-
         ) %>%
         suppressWarnings()
 
-      assign(x = table_name, eval(data),  envir = .GlobalEnv)
+      assign(x = table_name, eval(data %>% mutate_adv_data()),  envir = .GlobalEnv)
     }
 closeAllConnections()
 # gc()
