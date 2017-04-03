@@ -1096,7 +1096,7 @@ get_data_dtcc_today <-
           mutate(urlData = x)
       }) %>%
       mutate(dateData = Sys.Date()) %>%
-      mutate_at(.cols = c('ORIGINAL_DISSEMINATION_ID'),
+      mutate_at(.vars = c('ORIGINAL_DISSEMINATION_ID'),
                 funs(. %>% as.numeric()))
 
     if (all_data %>% nrow() == 0) {

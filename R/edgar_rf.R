@@ -1014,7 +1014,7 @@ clean_names <-
         data <-
           data %>%
           mutate_at(
-            .cols =
+            .vars =
               data %>% dplyr::select(matches("^name")) %>% names(),
             funs(. %>% stringr::str_to_upper())
           )
@@ -1022,7 +1022,7 @@ clean_names <-
         data <-
           data %>%
           mutate_at(
-            .cols =
+            .vars =
               data %>% dplyr::select(matches("^name")) %>% names(),
             funs(. %>% stringr::str_to_lower())
           )
@@ -1105,7 +1105,7 @@ resolve_name_df <-
 
       data <-
         data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     data %>% select(
                       matches(
                         "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
@@ -1131,7 +1131,7 @@ resolve_name_df <-
 
     data <-
       data %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   data %>% select(
                     matches(
                       "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
@@ -1176,7 +1176,7 @@ get_data_sic_naics_codes <-
 
     sic <-
       sic %>%
-      mutate_at(.cols = c('idSIC', 'idNAICS'),
+      mutate_at(.vars = c('idSIC', 'idNAICS'),
                 funs(. %>% as.numeric())) %>%
       mutate(
         classificationSIC = ifelse(classificationSIC == '', NA, classificationSIC),
@@ -1323,7 +1323,7 @@ get_data_rf_us_tickers <-
 
     data <-
       data %>%
-      mutate_at(.cols = c('idCIK', 'idSIC', 'idSIC', 'idIRS'),
+      mutate_at(.vars = c('idCIK', 'idSIC', 'idSIC', 'idIRS'),
                 funs(. %>% as.numeric()))
 
     data <-
@@ -1659,9 +1659,9 @@ get_data_recent_insider_trades <-
                    sep = 'c|f') %>%
           select(-replace) %>%
           mutate(idTicker = ifelse(idTicker == '', NA, idTicker)) %>%
-          mutate_at(.cols = df %>% select(matches("^count|^amount|idCIK")) %>% names,
+          mutate_at(.vars = df %>% select(matches("^count|^amount|idCIK")) %>% names,
                     funs(. %>% as.numeric())) %>%
-          mutate_at(.cols = df %>% select(matches("^name")) %>% names,
+          mutate_at(.vars = df %>% select(matches("^name")) %>% names,
                     funs(. %>% str_to_upper())) %>%
           mutate(idInsiderTable = x) %>%
           suppressWarnings()
@@ -1688,15 +1688,15 @@ get_data_recent_insider_trades <-
     all_data <-
       all_data %>%
       mutate_at(
-        .cols = all_data %>% select(matches("amount")) %>% names(),
+        .vars = all_data %>% select(matches("amount")) %>% names(),
         funs(. %>% as.numeric %>% formattable::currency(digits = 0))
       ) %>%
       mutate_at(
-        .cols = all_data %>% select(matches("count")) %>% names(),
+        .vars = all_data %>% select(matches("count")) %>% names(),
         funs(. %>% as.numeric %>% formattable::comma(digits = 0))
       ) %>%
       mutate_at(
-        .cols = all_data %>% select(matches("name|type")) %>% names(),
+        .vars = all_data %>% select(matches("name|type")) %>% names(),
         funs(. %>% stringr::str_to_upper())
       ) %>%
       arrange(nameCompany, nameTable)
@@ -1846,7 +1846,7 @@ parse_securities_url <-
 
       data <-
         data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     data %>% select(matches("^amount|^count|idIndustry")) %>% names(),
                   funs(. %>% as.numeric()))
 
@@ -2396,9 +2396,9 @@ get_data_sec_form_ds <-
 
     all_data <-
       all_data %>%
-      mutate_at(.cols = all_data %>% select(matches("^amount")) %>% names,
+      mutate_at(.vars = all_data %>% select(matches("^amount")) %>% names,
                 funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(.cols = all_data %>% select(matches("^count")) %>% names,
+      mutate_at(.vars = all_data %>% select(matches("^count")) %>% names,
                 funs(. %>% formattable::comma(digits = 0))) %>%
       arrange(desc(dateFiling)) %>%
       left_join(category_df) %>%
@@ -2556,7 +2556,7 @@ parse_json_general_filing <-
     data <-
       data %>%
       select(-matches("object")) %>%
-      mutate_at(.cols = data %>% select(matches("idCIK|idIRS")) %>% names(),
+      mutate_at(.vars = data %>% select(matches("idCIK|idIRS")) %>% names(),
                 as.numeric) %>%
       mutate(urlJSONGeneral = url,
              nameEntity = nameEntity %>% stringr::str_to_upper())
@@ -2646,7 +2646,7 @@ parse_json_general_filing <-
 
       detail_df <-
         detail_df %>%
-        mutate_at(.cols = detail_df %>% select(matches("date")) %>% names(),
+        mutate_at(.vars = detail_df %>% select(matches("date")) %>% names(),
                   funs(. %>% ymd())) %>%
         suppressWarnings()
 
@@ -2809,23 +2809,23 @@ parse_json_private <-
 
       offering_data <-
         offering_data %>%
-        mutate_at(.cols = offering_data %>% select(matches("^is")) %>% names,
+        mutate_at(.vars = offering_data %>% select(matches("^is")) %>% names,
                   funs(. %>% as.logical())) %>%
-        mutate_at(.cols = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
+        mutate_at(.vars = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
                   funs(. %>% as.numeric())) %>%
-        mutate_at(.cols = offering_data %>% select(matches("^date")) %>% names,
+        mutate_at(.vars = offering_data %>% select(matches("^date")) %>% names,
                   funs(. %>% lubridate::ymd())) %>%
-        mutate_at(.cols = offering_data %>% select(matches("^amount")) %>% names,
+        mutate_at(.vars = offering_data %>% select(matches("^amount")) %>% names,
                   funs(. %>% formattable::currency(digits = 0))) %>%
-        mutate_at(.cols = offering_data %>% select(matches("^count")) %>% names,
+        mutate_at(.vars = offering_data %>% select(matches("^count")) %>% names,
                   funs(. %>% formattable::comma(digits = 0))) %>%
         suppressWarnings()
     } else {
       offering_data <-
         offering_data %>%
-        mutate_at(.cols = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
+        mutate_at(.vars = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
                   funs(. %>% as.numeric())) %>%
-        mutate_at(.cols = offering_data %>% select(matches("^date")) %>% names,
+        mutate_at(.vars = offering_data %>% select(matches("^date")) %>% names,
                   funs(. %>% lubridate::ymd()))
     }
 
@@ -3364,7 +3364,7 @@ parse_json_owners <-
 
       filing_df <-
         filing_df %>%
-        mutate_at(.cols = filing_df %>% select(matches("nameEntity")) %>% names(),
+        mutate_at(.vars = filing_df %>% select(matches("nameEntity")) %>% names(),
                   funs(. %>% str_to_upper())) %>%
         resolve_names_to_upper()
 
@@ -3450,7 +3450,7 @@ parse_json_owners <-
 
         detail_df <-
           detail_df %>%
-          mutate_at(.cols = detail_df %>% select(matches("date")) %>% names(),
+          mutate_at(.vars = detail_df %>% select(matches("date")) %>% names(),
                     funs(. %>% ymd())) %>%
           suppressWarnings()
 
@@ -3532,14 +3532,14 @@ parse_json_owners <-
 
       company_df <-
         company_df %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     company_df %>% select(matches("date")) %>% names(),
                   funs(. %>% lubridate::ymd())) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     company_df %>% select(matches("idCIK")) %>% names(),
                   .funs = as.numeric) %>%
         mutate_at(
-          .cols =
+          .vars =
             company_df %>% select(matches("nameCompany")) %>% names(),
           .funs = stringr::str_to_upper
         )
@@ -3741,7 +3741,7 @@ parse_json_subsidiaries <-
 
       data <-
         data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     data %>% select(
                       matches(
                         "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
@@ -3785,7 +3785,7 @@ parse_json_subsidiaries <-
 
     data <-
       data %>%
-      mutate_at(.cols = data %>% select(matches("date")) %>% names(),
+      mutate_at(.vars = data %>% select(matches("date")) %>% names(),
                 funs(. %>% lubridate::ymd()))
 
     data <-
@@ -5100,7 +5100,7 @@ parse_json_general_insider <-
 
         detail_df <-
           detail_df %>%
-          mutate_at(.cols = detail_df %>% select(matches("date")) %>% names(),
+          mutate_at(.vars = detail_df %>% select(matches("date")) %>% names(),
                     funs(. %>% ymd())) %>%
           suppressWarnings()
 
@@ -5341,10 +5341,10 @@ parse_insider_trade_json_url <-
 
     trade_df <-
       trade_df %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   trade_df %>% select(matches("date")) %>% names(),
                 .funs = lubridate::ymd) %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   trade_df %>% select(matches("idCIK|count|amount|price")) %>% names(),
                 .funs = readr::parse_number) %>%
       left_join(data_frame(
@@ -5464,9 +5464,9 @@ parse_insider_trades <-
 
     all_data <-
       all_data %>%
-      mutate_at(.cols = all_data %>% select(matches("amount|price")) %>% names(),
+      mutate_at(.vars = all_data %>% select(matches("amount|price")) %>% names(),
                 funs(. %>% formattable::currency(digits = 2))) %>%
-      mutate_at(.cols = all_data %>% select(matches("count")) %>% names(),
+      mutate_at(.vars = all_data %>% select(matches("count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0)))
 
     if (return_message) {
@@ -6116,7 +6116,7 @@ parse_filing_stream <-
 
           trades <-
             trades %>%
-            mutate_at(.cols = trades %>% select(matches("amount|count")) %>% names,
+            mutate_at(.vars = trades %>% select(matches("amount|count")) %>% names,
                       funs(. %>% as.numeric())) %>%
             left_join(get_insider_code_df()) %>%
             suppressWarnings() %>%
@@ -6189,7 +6189,7 @@ parse_filing_stream <-
 
     general_df <-
       general_df %>%
-      mutate_at(.cols = general_df %>% select(matches("nameEntity")) %>% names(),
+      mutate_at(.vars = general_df %>% select(matches("nameEntity")) %>% names(),
                 funs(. %>% str_to_upper())) %>%
       suppressWarnings() %>%
       ungroup() %>%
@@ -6609,9 +6609,9 @@ parse_json_public_general <-
 
       snap_shot_df <-
         snap_shot_df %>%
-        mutate_at(.cols = snap_shot_df %>% select(matches("price|amount")) %>% names,
+        mutate_at(.vars = snap_shot_df %>% select(matches("price|amount")) %>% names,
                   funs(. %>% currency(digits = 2))) %>%
-        mutate_at(.cols = snap_shot_df %>% select(matches("amountEBITDA")) %>% names,
+        mutate_at(.vars = snap_shot_df %>% select(matches("amountEBITDA")) %>% names,
                   funs(. %>% currency(digits = 0)))
 
       general_df <-
@@ -6809,7 +6809,7 @@ parse_json_public_general <-
 
       detail_df <-
         detail_df %>%
-        mutate_at(.cols = detail_df %>% select(matches("date")) %>% names(),
+        mutate_at(.vars = detail_df %>% select(matches("date")) %>% names(),
                   funs(. %>% ymd())) %>%
         suppressWarnings()
 
@@ -6932,10 +6932,10 @@ parse_json_trades <-
 
     trade_df <-
       trade_df %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   trade_df %>% select(matches("date")) %>% names(),
                 .funs = lubridate::ymd) %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   trade_df %>% select(matches("idCIK|count|amount|price")) %>% names(),
                 .funs = readr::parse_number) %>%
       left_join(data_frame(
@@ -7056,9 +7056,9 @@ parse_trades <-
 
     all_trades <-
       all_trades %>%
-      mutate_at(.cols = all_trades %>% select(matches("count")) %>% names,
+      mutate_at(.vars = all_trades %>% select(matches("count")) %>% names,
                 funs(. %>% formattable::comma(digits = 0))) %>%
-      mutate_at(.cols = all_trades %>% select(matches("amount|price")) %>% names,
+      mutate_at(.vars = all_trades %>% select(matches("amount|price")) %>% names,
                 funs(. %>% formattable::currency(digits = 2))) %>%
       select(idCIK:countShares, amountTransaction, everything()) %>%
       resolve_names_to_upper()
@@ -7266,7 +7266,7 @@ get_data_us_public_companies <-
         sep = '\\*',
         into = c("X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9")
       ) %>%
-      mutate_at(.cols = c("X5", "X6", "X7", "X8", "X9"),
+      mutate_at(.vars = c("X5", "X6", "X7", "X8", "X9"),
                 .funs = readr::parse_number) %>%
       purrr::set_names(
         c(
@@ -15070,16 +15070,16 @@ parse_for_tables <-
 
           df_data <-
             df_data %>%
-            mutate_at(.cols =
+            mutate_at(.vars =
                         df_data %>% select(matches("^amount|^price|^value")) %>% names(),
                       funs(. %>% formattable::currency(digits = 2))) %>%
             mutate_at(
-              .cols =
+              .vars =
                 df_data %>% select(matches("^count[A-Z]|^number")) %>% select(-matches("country")) %>% names(),
               funs(. %>% as.numeric() %>%  formattable::comma(digits = 0))
             ) %>%
             mutate_at(
-              .cols = df_data %>% select(matches("^percent|^pct")) %>% select(-matches("country")) %>% names(),
+              .vars = df_data %>% select(matches("^percent|^pct")) %>% select(-matches("country")) %>% names(),
               funs(. %>% as.numeric() %>% formattable::percent(digits = 0))
             ) %>%
             select(which(colMeans(is.na(.)) < 1)) %>%
@@ -15765,7 +15765,7 @@ get_data_edgar_search_terms <-
           year_end = year_end
         )
       }) %>%
-      select(-matches("urlSECSearch")) %>%
+      dplyr::select(-matches("urlSECSearch")) %>%
       distinct()
 
 
@@ -15773,20 +15773,28 @@ get_data_edgar_search_terms <-
       return(data_frame())
     }
 
+    parse_for_tables_safe <-
+      purrr::possibly(parse_for_tables, data_frame())
+
     all_tables <-
-      parse_for_tables(all_data = all_data,
-                       table_name_initial = table_name_initial,
-                       parse_all_filings = parse_all_filings,
-                       parse_complete_text_filings = parse_complete_text_filings,
-                       parse_form_d = parse_form_d,
-                       parse_13F = parse_13F,
-                       parse_small_offerings = parse_small_offerings,
-                       parse_form_3_4s = parse_form_3_4s,
-                       parse_asset_files = parse_asset_files,
-                       parse_xbrl = parse_xbrl,
-                       nest_data = nest_data,
-                       return_message = return_message
+      parse_for_tables_safe(
+        all_data = all_data,
+        table_name_initial = table_name_initial,
+        parse_all_filings = parse_all_filings,
+        parse_complete_text_filings = parse_complete_text_filings,
+        parse_form_d = parse_form_d,
+        parse_13F = parse_13F,
+        parse_small_offerings = parse_small_offerings,
+        parse_form_3_4s = parse_form_3_4s,
+        parse_asset_files = parse_asset_files,
+        parse_xbrl = parse_xbrl,
+        nest_data = nest_data,
+        return_message = return_message
       )
+
+    if (all_tables %>% nrow() == 0) {
+      return(all_data)
+    }
 
     all_tables <-
       all_tables %>%

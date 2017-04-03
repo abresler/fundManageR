@@ -202,8 +202,7 @@ mutate_adv_data <-
     if (has_dates) {
       data <-
         data %>%
-        mutate_at(.cols =
-                    data %>% dplyr::select(matches("^date")) %>% names(),
+        mutate_at(.vars = data %>% dplyr::select(matches("^date")) %>% names() ,
                   funs(. %>% lubridate::ymd()))
     }
     has_counts <-
@@ -211,13 +210,22 @@ mutate_adv_data <-
       names %>% length() > 0
 
     if (has_counts) {
+
       data <-
         data %>%
         mutate_at(
-          .cols = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
+          .vars = data %>% dplyr::select(matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
             dplyr::select(-matches("country")) %>%
             names(),
           funs(. %>% as.numeric())
+        )
+      data <-
+        data %>%
+        mutate_at(
+          .vars = data %>% dplyr::select(matches("^count[A-Z]")) %>%
+            dplyr::select(-matches("country")) %>%
+            names(),
+          funs(. %>% formattable::comma(digits = 0))
         )
     }
     has_logical <-
@@ -226,11 +234,39 @@ mutate_adv_data <-
     if (has_logical) {
       data <-
         data %>%
-        mutate_at(.cols =
-                    data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names(),
+        mutate_at(.vars = data %>% dplyr::select(matches("^is[A-Z]|^has[A-Z]")) %>% names(),
                   funs(. %>% as.logical()))
     }
 
+    has_amounts <-
+      data %>% dplyr::select(matches("^amount[A-Z]")) %>%
+      names %>% length() > 0
+
+    if (has_amounts) {
+
+      data <-
+        data %>%
+        mutate_at(
+          .vars = data %>% dplyr::select(matches("^amount")) %>%
+            names(),
+          funs(. %>% as.numeric() %>% formattable::currency(digits = 0))
+        )
+    }
+
+    has_pct <-
+      data %>% dplyr::select(matches("^pct[A-Z]")) %>%
+      names %>% length() > 0
+
+    if (has_pct) {
+
+      data <-
+        data %>%
+        mutate_at(
+          .vars = data %>% dplyr::select(matches("^pct")) %>%
+            names(),
+          funs(. %>% as.numeric() %>% formattable::percent(digits = 3))
+        )
+    }
     return(data)
 
   }
@@ -240,8 +276,7 @@ widen_adv_data <-
   function(data) {
     data <-
       data %>%
-      mutate_at(.cols =
-                  data %>% dplyr::select(matches("^date[A-Z]")) %>% names(),
+      mutate_at(.vars = data %>% dplyr::select(matches("^date")) %>% names(),
                 funs(. %>% as.character())) %>%
       gather(nameItem, value, -c(countItem, nameEntityManager)) %>%
       suppressWarnings()
@@ -506,7 +541,7 @@ parse_broker_json_url <-
       json_dfs <-
         json_data$results$BROKER_CHECK_FIRM$results$fields$content_json %>%
         flatten_chr() %>%
-        jsonite::fromJSON()
+        jsonlite::fromJSON()
     } else {
       json_dfs <-
         json_data$results$BROKER_CHECK_REP$results$fields$content_json %>%
@@ -522,7 +557,8 @@ parse_broker_json_url <-
 
     count_df <-
       json_dfs %>% map_dbl(length) %>%
-      data.frame(count = ., stringsAsFactors = F)
+      data.frame(count = ., stringsAsFactors = F) %>%
+      dplyr::as_data_frame()
 
     class_df <-
       class_df %>%
@@ -550,8 +586,8 @@ parse_broker_json_url <-
       mutate(idRow = 1:n())
 
     all_df <-
+      1:nrow(class_df) %>%
       map_df(function(x) {
-        x %>% message()
         table_no <-
           class_df$idTable[[x]]
 
@@ -561,7 +597,9 @@ parse_broker_json_url <-
         if (df %>% length() == 0) {
           return(data_frame())
         }
-
+        name_df <-
+          get_finra_name_df() %>%
+          mutate(idRow = 1:n())
         name_table <-
           names(json_dfs)[[table_no]]
         df_class <-
@@ -1151,6 +1189,9 @@ parse_finra_json_url <-
         filter(!urlFINRABrokerJSON %>% is.na()) %>%
         .$urlFINRABrokerJSON
 
+      has_broker <-
+        urls_json %>% length() > 0
+      if (has_broker) {
       parse_broker_json_url_safe <-
         purrr::possibly(parse_broker_json_url, data_frame())
 
@@ -1159,9 +1200,7 @@ parse_finra_json_url <-
         map_df(function(x) {
           parse_broker_json_url_safe(url = x)
         })
-      has_broker <-
-        broker_df %>% nrow() > 0
-      if (has_broker) {
+
         df_fields <-
           df_fields %>%
           left_join(broker_df) %>%
@@ -1289,7 +1328,8 @@ parse_finra_json_url <-
     df_fields <-
       df_fields %>%
       mutate(urlFINRA = url) %>%
-      suppressMessages()
+      suppressMessages() %>%
+      dplyr::select(which(colMeans(is.na(.)) < 1))
     closeAllConnections()
     return(df_fields)
   }
@@ -1306,11 +1346,12 @@ get_data_finra_entity <-
     }
     url_df <-
       search_name %>%
-      map_df(function(x) {
-        url <-
-          generate_finra_url(is_firm = is_firm, search_name = x)
+      map_df(
+        function(x) {
+          url <-
+            generate_finra_url(is_firm = is_firm, search_name = x)
 
-        data_frame(nameSearch = x, urlJSON = url)
+          data_frame(nameSearch = x, urlJSON = url)
       })
 
     parse_finra_json_url_safe <-
@@ -1320,8 +1361,8 @@ get_data_finra_entity <-
       url_df$urlJSON %>%
       map_df(function(x) {
         parse_finra_json_url(url = x,
-                                  ocr_pdf = ocr_pdf,
-                                  name_match_threshold = score_threshold)
+                             ocr_pdf = ocr_pdf,
+                             name_match_threshold = score_threshold)
       }) %>%
       mutate(nameSearch = search_name) %>%
       dplyr::select(nameSearch, matches("name"), matches("^id"), everything()) %>%
@@ -2249,7 +2290,7 @@ parse_adv_manager_sitemap_df <-
   }
 
 get_managers_adv_sitemap_adv <-
-  function(idCRDs = c(109110),
+  function(idCRDs = c(162351),
            score_threshold = .2,
            entity_names =  NULL) {
     get_data_adv_managers_metadata_safe <-
@@ -2306,7 +2347,7 @@ get_managers_adv_sitemap_adv <-
       map_df(function(x) {
         parse_adv_manager_sitemap_df(url = x, return_wide = F)
       })
-
+    if (manager_data %>% nrow() > 0) {
     sitemap_dfs <-
       sitemap_dfs %>%
       dplyr::filter(!nameEntityManager %>% is.na()) %>%
@@ -2321,6 +2362,7 @@ get_managers_adv_sitemap_adv <-
         urlADVSection
       ) %>%
       suppressMessages()
+    }
 
     return(sitemap_dfs)
   }
@@ -3242,8 +3284,7 @@ parse_funds_tables <-
         if (has_amount) {
           fund_table_data <-
             fund_table_data %>%
-            mutate_at(.cols =
-                        fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names(),
+            mutate_at(.vars = fund_table_data %>% dplyr::select(matches("^count|amount")) %>% names(),
                       .funs = as.numeric)
 
         }
@@ -3253,8 +3294,7 @@ parse_funds_tables <-
           fund_table_data <-
             fund_table_data %>%
             mutate_at(
-              .cols =
-                fund_table_data %>% dplyr::select(matches("^pct")) %>% names(),
+              .vars = fund_table_data %>%  dplyr::select(matches("^pct")) %>% names(),
               .funs = funs(. %>% as.numeric() / 100)
             )
         }
@@ -3486,8 +3526,9 @@ get_section_1_data <-
 
     section_data <-
       section_data %>%
-      mutate_at(.cols =
-                  section_data %>% dplyr::select(matches("^address|^city|^state|^country")) %>% names(),
+      mutate_at(.vars = section_data %>%
+                  dplyr::select(matches("^address|^city|^state|^country")) %>%
+                  names(),
                 funs(. %>% str_to_upper()))
 
     return(section_data)
@@ -3911,7 +3952,7 @@ get_section_4_data <-
   }
 
 get_section_5_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0') {
+  function(url = 'https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=162351&FLNG_PK=03EEBAB20008018D044A53E10076F3C9056C8CC0') {
     section_name <-
       'section5AdvisoryBusinessInformation'
     idCRD <-
@@ -4579,8 +4620,7 @@ get_section_5_data <-
 
             client_summary_df <-
               client_summary_df %>%
-              mutate_at(.cols =
-                          client_summary_df %>% dplyr::select(matches("^is|^has")) %>% names(),
+              mutate_at(.vars = client_summary_df %>% dplyr::select(matches("^is|^has")) %>% names(),
                         .funs = as.logical)
 
             return(client_summary_df)
@@ -4639,10 +4679,10 @@ get_section_5_data <-
           }) %>%
           spread(nameItem, value) %>%
           dplyr::select(one_of(employee_node_df$nameItem)) %>%
-          mutate_at(.cols = 'pctClientsNonUS',
+          mutate_at(.vars = 'pctClientsNonUS',
                     .funs = funs(. / 100)) %>%
           suppressWarnings()
-
+x
         node_text <-
           page %>%
           parse_node_table_to_text(
@@ -5854,13 +5894,13 @@ get_schedule_a_data <-
 
       section_data <-
         section_data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     section_data %>% dplyr::select(matches("^amount|^count")) %>% names(),
                   .funs = as.numeric) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     section_data %>% dplyr::select(matches("^has|^is")) %>% names(),
                   .funs = as.logical) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     section_data %>% dplyr::select(matches("^date")) %>% names(),
                   funs(. %>% lubridate::ymd()))
     }
@@ -6148,13 +6188,13 @@ get_schedule_b_data <-
 
       section_data <-
         section_data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     section_data %>% dplyr::select(matches("^amount|^count")) %>% names(),
                   .funs = as.numeric) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     section_data %>% dplyr::select(matches("^has|^is")) %>% names(),
                   .funs = as.logical) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     section_data %>% dplyr::select(matches("^date")) %>% names(),
                   funs(. %>% lubridate::ymd()))
     }
@@ -6748,10 +6788,10 @@ get_schedule_d_data <-
 
               control_person_df <-
                 control_person_df %>%
-                mutate_at(.cols =
+                mutate_at(.vars =
                             control_person_df %>% dplyr::select(matches("^date")) %>% names(),
                           funs(. %>% lubridate::mdy())) %>%
-                mutate_at(.cols =
+                mutate_at(.vars =
                             control_person_df %>% dplyr::select(matches(
                               "^country[A-Z]|^name|^state|^city"
                             )) %>% names(),
@@ -6828,11 +6868,11 @@ get_schedule_d_data <-
                 control_person_df <-
                   control_person_df %>%
                   mutate_at(
-                    .cols =
+                    .vars =
                       control_person_df %>% dplyr::select(matches("^idCRD")) %>% names(),
                     .funs = as.numeric
                   ) %>%
-                  mutate_at(.cols =
+                  mutate_at(.vars =
                               control_person_df %>% dplyr::select(matches("^date")) %>% names(),
                             funs(. %>% lubridate::mdy()))
               }
@@ -7144,7 +7184,7 @@ get_section_drp <-
           data <-
             data %>%
             dplyr::select(-countItem) %>%
-            mutate_at(.cols =
+            mutate_at(.vars =
                         data %>% dplyr::select(matches("^date")) %>% names(),
                       .funs = as.character) %>%
             gather(itemName, value, -c(nameEntityManager, typeCharges)) %>%
@@ -8037,7 +8077,7 @@ get_section_drp <-
   }
 
 get_crd_sections_data <-
-  function(id_crd = 156663,
+  function(id_crd = 162351,
            all_sections = TRUE,
            score_threshold = .2,
            section_names = c(
@@ -8078,43 +8118,43 @@ get_crd_sections_data <-
     get_adv_sections <-
       function(sitemap_df, all_sections) {
         get_manager_sec_page_safe <-
-          possibly(get_manager_sec_page, NULL)
+          possibly(get_manager_sec_page, data_frame())
         get_section_drp_safe <-
-          possibly(get_section_drp, NULL)
+          possibly(get_section_drp, data_frame())
         get_section_1_data_safe <-
-          possibly(get_section_1_data, NULL)
+          possibly(get_section_1_data, data_frame())
         get_section_2_data_safe <-
-          possibly(get_section_2_data, NULL)
+          possibly(get_section_2_data, data_frame())
         get_section_3_data_safe <-
-          possibly(get_section_3_data, NULL)
+          possibly(get_section_3_data, data_frame())
         get_section_4_data_safe <-
-          possibly(get_section_4_data, NULL)
+          possibly(get_section_4_data, data_frame())
         get_section_5_data_safe <-
-          possibly(get_section_5_data, NULL)
+          possibly(get_section_5_data, data_frame())
         get_section_6_data_safe <-
-          possibly(get_section_6_data, NULL)
+          possibly(get_section_6_data, data_frame())
         get_section_7a_data_safe <-
-          possibly(get_section_7a_data, NULL)
+          possibly(get_section_7a_data, data_frame())
         get_section_7b_data_safe <-
-          possibly(get_section_7b_data, NULL)
+          possibly(get_section_7b_data, data_frame())
         get_section_8_data_safe <-
-          possibly(get_section_8_data, NULL)
+          possibly(get_section_8_data, data_frame())
         get_section_9_data_safe <-
-          possibly(get_section_9_data, NULL)
+          possibly(get_section_9_data, data_frame())
         get_section_10_data_safe <-
-          possibly(get_section_10_data, NULL)
+          possibly(get_section_10_data, data_frame())
         get_section_11_data_safe <-
-          possibly(get_section_11_data, NULL)
+          possibly(get_section_11_data, data_frame())
         get_section_12_data_safe <-
-          possibly(get_section_12_data, NULL)
+          possibly(get_section_12_data, data_frame())
         get_schedule_a_data_safe <-
-          possibly(get_schedule_a_data, NULL)
+          possibly(get_schedule_a_data, data_frame())
         get_schedule_b_data_safe <-
-          possibly(get_schedule_b_data, NULL)
+          possibly(get_schedule_b_data, data_frame())
         get_schedule_d_data_safe <-
-          possibly(get_schedule_d_data, NULL)
+          possibly(get_schedule_d_data, data_frame())
         get_manager_signatory_data_safe <-
-          possibly(get_manager_signatory_data, NULL)
+          possibly(get_manager_signatory_data, data_frame())
 
         if (!all_sections) {
           no_rows <-
@@ -8225,7 +8265,7 @@ get_crd_sections_data <-
             '\nThey have ',
             total_aum,
             ' in Total Assets Under Management'
-          ) %>% message
+          ) %>% message()
       }
     }  else {
       "Parsed " %>%
@@ -8276,7 +8316,7 @@ get_crd_sections_data <-
                 gather(nameItem, value, -c(idCRD, nameEntityManager))
               return(data)
             }) %>%
-            distinct %>%
+            distinct() %>%
             group_by(nameItem) %>%
             mutate(countItem = 1:n()) %>%
             ungroup() %>%
@@ -8438,7 +8478,7 @@ return_selected_adv_tables <-
               data_selected %>%
               dplyr::select(-matches('^count[I]|^numberFund')) %>%
               mutate_at(
-                .cols =
+                .vars =
                   data_selected %>% dplyr::select(-idCRD) %>% dplyr::select(-matches('^count[I]|^numberFund')) %>% names(),
                 .funs = as.character
               ) %>%
@@ -8518,9 +8558,9 @@ return_selected_adv_tables <-
 
                 table_data <-
                   table_data %>%
-                  mutate_at(.cols = table_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names(),
+                  mutate_at(.vars = table_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names(),
                             funs(. %>% currency(digits = 0))) %>%
-                  mutate_at(.cols = table_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names(),
+                  mutate_at(.vars = table_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names(),
                             funs(. %>% percent(digits = 0)))
 
                 if (gather_data) {
@@ -8528,7 +8568,7 @@ return_selected_adv_tables <-
                     table_data %>%
                     dplyr::select(-matches('^count[I]|^numberFund')) %>%
                     mutate_at(
-                      .cols =
+                      .vars =
                         table_data %>% dplyr::select(-idCRD) %>% dplyr::select(-matches('^count[I]|^numberFund')) %>% names(),
                       .funs = as.character
                     ) %>%
@@ -8653,11 +8693,10 @@ get_data_adv_managers_filings <-
 
     get_crd_sections_data_safe <-
       possibly(get_crd_sections_data, data_frame())
-
     all_data <-
       1:length(crds) %>%
       map_df(function(x) {
-        get_crd_sections_data_safe(
+        get_crd_sections_data(
           id_crd = crds[x],
           all_sections = all_sections,
           section_names = section_names,
@@ -8999,7 +9038,7 @@ parse_manager_brochure_data <-
 
       brochure_data <-
         brochure_data %>%
-        mutate_at(.cols = brochure_data %>% dplyr::select(matches("datetime")) %>% names(),
+        mutate_at(.vars = brochure_data %>% dplyr::select(matches("datetime")) %>% names(),
                   .funs = ymd_hms) %>%
         arrange(desc(datetimeCreated))
     } else {
@@ -9847,10 +9886,10 @@ parse_sec_adv_data_url <-
     if (adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names() %>% length() > 0) {
       adv_data <-
         adv_data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names(),
                   .funs = str_trim) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     adv_data %>% dplyr::select(matches("^has[A-Z]|^is[A-Z]")) %>% names(),
                   funs(if_else(. == "Y", TRUE, FALSE))) %>%
         suppressWarnings()
@@ -9859,7 +9898,7 @@ parse_sec_adv_data_url <-
     if (adv_data %>% dplyr::select(matches("^url[M]")) %>% names() %>% length() > 0) {
       adv_data <-
         adv_data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     adv_data %>% dplyr::select(matches("^url[M]")) %>% names(),
                   .funs = str_to_lower) %>%
         suppressWarnings()
@@ -9869,7 +9908,7 @@ parse_sec_adv_data_url <-
       adv_data <-
         adv_data %>%
         mutate_at(
-          .cols =
+          .vars =
             adv_data %>% dplyr::select(matches("^status[SEC]")) %>% dplyr::select(-matches("date")) %>% names(),
           funs(. %>% stringr::str_to_upper())
         ) %>%
@@ -9900,7 +9939,7 @@ parse_sec_adv_data_url <-
 
     adv_data <-
       adv_data %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   adv_data %>% dplyr::select(
                     matches(
                       "^type[A-Z]|^range[A-Z]|^address[A-Z]|^city[A-Z]|^zip[A-Z]|^fax[A-Z]|^name[A-Z]|^state[A-Z]|^status[A-Z]|monthYearLastSurpriseAudit|^date[A-Z]"
@@ -10061,11 +10100,11 @@ get_data_adv_managers_periods_summaries <-
     if (has_data) {
       all_adv_data <-
         all_adv_data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     all_adv_data %>% dplyr::select(matches("^date[A-Z]")) %>% names(),
                   funs(. %>% lubridate::ymd())) %>%
         mutate_at(
-          .cols =
+          .vars =
             all_adv_data %>% dplyr::select(
               matches(
                 "^name[E]|^address|^city|^status|^state|^type|^country[A-Z]"
@@ -10078,7 +10117,7 @@ get_data_adv_managers_periods_summaries <-
       all_adv_data <-
         all_adv_data %>%
         mutate_at(
-          .cols =
+          .vars =
             all_adv_data %>% dplyr::select(matches("^count[A-Z]"), -matches("country")) %>% names(),
           .funs =
             funs(. %>% formattable::comma(digits = 0))
@@ -10091,7 +10130,7 @@ get_data_adv_managers_periods_summaries <-
         all_adv_data <-
           all_adv_data %>%
           mutate_at(
-            .cols =
+            .vars =
               all_adv_data %>% dplyr::select(matches("^amount[A-Z]")) %>% names(),
             .funs =
               funs(. %>% as.numeric %>% formattable::currency())
@@ -10116,7 +10155,7 @@ get_data_adv_managers_periods_summaries <-
       all_adv_data <-
         all_adv_data %>%
         mutate_at(
-          .cols =
+          .vars =
             all_adv_data %>% dplyr::select(matches(
               "^address|^country[A-Z]|^city^state"
             )) %>% names(),

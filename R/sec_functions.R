@@ -161,10 +161,10 @@ parse_foia_url_df <-
 
     data <-
       data %>%
-      mutate_at(.cols = data %>% select(matches("date")) %>% names,
+      mutate_at(.vars = data %>% select(matches("date")) %>% names,
                 funs(. %>% lubridate::mdy())) %>%
       mutate_at(
-        .cols = data %>% select(matches("^name|^description|^category")) %>% names,
+        .vars = data %>% select(matches("^name|^description|^category")) %>% names,
         funs(. %>% str_replace('\\-', '') %>% stringr::str_to_upper())
       ) %>%
       mutate(
@@ -924,7 +924,7 @@ get_data_sec_investment_companies <-
         )
       ) %>%
       mutate_all(funs(. %>% str_to_upper() %>% str_trim())) %>%
-      mutate_at(.cols = c('idCIK', 'idOrganizationType'),
+      mutate_at(.vars = c('idCIK', 'idOrganizationType'),
                 funs(. %>% as.numeric())) %>%
       suppressMessages()
     df <-
@@ -1350,7 +1350,7 @@ get_data_sec_bankruptcies <-
       left_join(url_df) %>%
       select(yearData, everything()) %>%
       mutate_at(
-        .cols = c('amountAssets', 'amountLiabilities', 'amountEquity'),
+        .vars = c('amountAssets', 'amountLiabilities', 'amountEquity'),
         funs(. %>% formattable::currency(digits = 0))
       ) %>%
       suppressWarnings() %>%
@@ -1449,7 +1449,7 @@ parse_brokers_url <-
         ) %>% purrr::invoke(paste0, .),
         urlData = url
       ) %>%
-      mutate_at(.cols = c('idCIK', 'idReportingFilingNumber'),
+      mutate_at(.vars = c('idCIK', 'idReportingFilingNumber'),
                 funs(. %>% as.numeric())) %>%
       suppressWarnings() %>%
       suppressMessages() %>%
@@ -2062,10 +2062,10 @@ parse_market_structure_url <-
           "volumeTradeVolForOddLots"
         )
       ) %>%
-      mutate_at(.cols = c(8, 9, 12, 13, 18, 19),
+      mutate_at(.vars = c(8, 9, 12, 13, 18, 19),
                 funs(. %>% as.numeric() * 1000)) %>%
       mutate_at(
-        .cols = c('typeSecurity', 'idTicker'),
+        .vars = c('typeSecurity', 'idTicker'),
         .funs = funs(. %>% str_to_upper())
       ) %>%
       mutate(urlData = url,
@@ -2191,7 +2191,7 @@ get_data_sec_securities_metrics_by_exchange <-
 
     all_data <-
       all_data %>%
-      mutate_at(.cols = all_data %>% select(matches("^count|^volume")) %>% names(),
+      mutate_at(.vars = all_data %>% select(matches("^count|^volume")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0)))
 
     if (return_message) {
@@ -2380,7 +2380,7 @@ get_xbrl_url_df <-
         sep = '\\q',
         remove = FALSE
       ) %>%
-      mutate_at(.cols = c('yearData', 'quarterData'),
+      mutate_at(.vars = c('yearData', 'quarterData'),
                 funs(. %>% as.numeric()))
     closeAllConnections()
     return(url_df)
@@ -2833,11 +2833,11 @@ get_data_sec_xbrl_periods <-
 
           df_data <-
             df_data %>%
-            mutate_at(.cols =
+            mutate_at(.vars =
                         df_data %>% select(matches("^amount|^price|^value")) %>% names(),
                       funs(. %>% formattable::currency(digits = 2))) %>%
             mutate_at(
-              .cols =
+              .vars =
                 df_data %>% select(matches("^count[A-Z]")) %>% select(-matches("country")) %>% names(),
               funs(. %>% formattable::comma(digits = 0))
             )

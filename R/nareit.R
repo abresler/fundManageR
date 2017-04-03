@@ -785,7 +785,7 @@ get_data_nareit_notable_properties <-
           'descriptionProperty'
         )
       ) %>%
-      mutate_at(.cols = c('coordinateLongitude', 'coordinateLongitude'),
+      mutate_at(.vars = c('coordinateLongitude', 'coordinateLongitude'),
                 funs(. %>% as.numeric())) %>%
       mutate(idProperty = idProperty %>% as.integer())
 
@@ -1324,9 +1324,9 @@ get_data_nareit_monthly_returns <-
 
     data <-
       data %>%
-      mutate_at(.cols = data %>% select(matches("^index")) %>% names(),
+      mutate_at(.vars = data %>% select(matches("^index")) %>% names(),
                 funs(. %>% formattable::comma(digits = 5))) %>%
-      mutate_at(.cols = data %>% select(matches("^pct")) %>% names(),
+      mutate_at(.vars = data %>% select(matches("^pct")) %>% names(),
                 funs((. / 100) %>% formattable::percent(digits = 4))) %>%
       mutate(urlData = url) %>%
       suppressWarnings()
@@ -1438,7 +1438,7 @@ get_data_nareit_annual_subsector_returns <-
 
     data <-
       data %>%
-      mutate_at(.cols = data %>% select(matches("^pct")) %>% names(),
+      mutate_at(.vars = data %>% select(matches("^pct")) %>% names(),
                 funs((. / 100) %>% formattable::percent(digits = 4))) %>%
       mutate(urlData = url)
 

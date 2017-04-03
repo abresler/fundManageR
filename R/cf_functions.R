@@ -398,10 +398,10 @@ calculate_residual_valuation_cap_rates <-
 
     scenario_df <-
       scenario_df %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   scenario_df %>% dplyr::select(matches("^pct")) %>% names,
                 funs(. %>% percent(digits = 2))) %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   scenario_df %>% dplyr::select(matches("^amount")) %>% names,
                 funs(. %>% currency(digits = 2)))
     if (!return_wide) {
@@ -477,10 +477,10 @@ calculate_residual_valuation_ebitda_multiples <-
 
     scenario_df <-
       scenario_df %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   scenario_df %>% dplyr::select(matches("^pct")) %>% names,
                 funs(. %>% percent(digits = 2))) %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   scenario_df %>% dplyr::select(matches("^amount")) %>% names,
                 funs(. %>% currency(digits = 2)))
     if (!return_wide) {
@@ -573,10 +573,10 @@ calculate_valuation_post_money <-
 
     scenario_df <-
       scenario_df %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   scenario_df %>% dplyr::select(matches("^pct")) %>% names,
                 funs(. %>% percent(digits = 2))) %>%
-      mutate_at(.cols =
+      mutate_at(.vars =
                   scenario_df %>% dplyr::select(matches("^amount|valuation")) %>% names,
                 funs(. %>% currency(digits = 2)))
     if (!return_wide) {
@@ -1361,14 +1361,14 @@ calculate_leverage_metrics <-
       all_data <-
         all_data %>%
         mutate_at(
-          .cols =
+          .vars =
             all_data %>% dplyr::select(matches("^amount[A-Z]|^mean[A-Z]")) %>% names(),
           funs(. %>% formattable::currency(digits = 0))
         ) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     all_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names(),
                   funs(. %>% formattable::percent(digits = 2))) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     all_data %>% dplyr::select(matches("^ratio[A-Z]|^rule")) %>% names(),
                   funs(. %>% formattable::comma(digits = 4)))
     }

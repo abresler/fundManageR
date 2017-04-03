@@ -334,7 +334,7 @@ owner_graph <-
 
 owner_graph <-
   owner_graph %>%
-  mutate_at(.cols = owner_graph %>% dplyr::select(matches('^name[A-Z]')) %>% names,
+  mutate_at(.vars = owner_graph %>% dplyr::select(matches('^name[A-Z]')) %>% names,
             funs(. %>% str_replace_all('\\ ', '\n')))
 
 managers <-

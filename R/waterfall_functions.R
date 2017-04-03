@@ -357,7 +357,7 @@ calculate_cash_flow_dates <-
         beginCash = ifelse(idPeriod == 0, 0, dplyr::lag(endCash))
       ) %>%
       mutate_at(
-        .cols = c(
+        .vars = c(
           "cashFlow",
           "workingCapital",
           'capitalCF',
@@ -598,10 +598,10 @@ tidy_promote_structure <-
 
       promote_data <-
         promote_data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     promote_data %>% dplyr::select(matches("^pct[A-Z]|ratio[A-Z]")) %>% names,
                   funs(. %>% as.numeric)) %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     promote_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
                   funs(. %>% percent))
 
@@ -613,7 +613,7 @@ tidy_promote_structure <-
 
       promote_data <-
         promote_data %>%
-        mutate_at(.cols =
+        mutate_at(.vars =
                     promote_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
                   funs(. %>% percent)) %>%
         dplyr::select(
@@ -734,7 +734,7 @@ get_waterfall_tier_df <-
     waterfall_df <-
       waterfall_df %>%
       mutate_at(
-        .cols = c(
+        .vars = c(
           "bbAccruedPref",
           "accruedPref",
           "distributionPriorPref",
@@ -795,7 +795,7 @@ get_initial_equity_df <-
                  toEquity,
                  equityEB) %>%
       mutate_at(
-        .cols = c('equityBB', 'equityDraw',
+        .vars = c('equityBB', 'equityDraw',
                   'toEquity', 'equityEB'),
         .funs = currency
       )
@@ -1469,11 +1469,11 @@ calculate_cash_flow_waterfall <-
       waterfall_df <-
         waterfall_df %>%
         mutate_at(
-          .cols = numeric_cols,
+          .vars = numeric_cols,
           .funs = function(x)
             if_else(x %>% is.na, 0, x)
         ) %>%
-        mutate_at(.cols = numeric_cols,
+        mutate_at(.vars = numeric_cols,
                   .funs = currency)
     }
 
@@ -1592,7 +1592,7 @@ calculate_cash_flow_waterfall_partnership <-
           toCF * pct_lp
         )
       ) %>%
-      mutate_at(.cols = c('toCF', 'toGP', 'toLP'),
+      mutate_at(.vars = c('toCF', 'toGP', 'toLP'),
                 .funs = currency) %>%
       arrange(idPeriod, tierWaterfall) %>%
       left_join(promote_name_df) %>%
@@ -1659,10 +1659,10 @@ calculate_cash_flow_waterfall_partnership <-
     partnership_return_summary <-
       gp_return_df %>%
       bind_rows(list(lp_return_df, total_return_df)) %>%
-      mutate_at(.cols = c('pctIRR'),
+      mutate_at(.vars = c('pctIRR'),
                 .funs = percent) %>%
       mutate_at(
-        .cols = c(
+        .vars = c(
           "equityContributions",
           "equityDistributions",
           "valueProfit"
