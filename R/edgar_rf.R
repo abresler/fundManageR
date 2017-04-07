@@ -7314,22 +7314,23 @@ get_data_us_public_companies <-
           codeLocationIncorporation,
           codeLocationBusiness
         ),
-        codeLocationIncorporation = ifelse(
-          codeLocationIncorporation == '',
-          NA,
-          codeLocationIncorporation
-        ),
+        codeLocationIncorporation = ifelse(codeLocationIncorporation == '',
+                                           NA,
+                                           codeLocationIncorporation),
         countSharesOutstanding = ifelse(priceOpen > 0,
-                                        ((amountEquityMarketCap / priceOpen)
-                                        ),
+                                        ((
+                                          amountEquityMarketCap / priceOpen
+                                        )),
                                         NA),
         pct52WeekHigh = ifelse(priceOpen > 0,
-                               ((priceOpen / price52WeekHigh)
-                               ),
+                               ((
+                                 priceOpen / price52WeekHigh
+                               )),
                                NA),
         pct52WeekLow = ifelse(priceOpen > 0,
-                              ((priceOpen / price52WeekLow)
-                              ),
+                              ((
+                                priceOpen / price52WeekLow
+                              )),
                               NA),
         amountEquityMarketCap = (amountEquityMarketCap),
         urlTickerRankandFiled = list('http://rankandfiled.com/#/public/', idTicker, '/filings') %>% purrr::invoke(paste0, .)
@@ -7406,7 +7407,7 @@ get_data_us_public_companies <-
       bind_rows(dup_df) %>%
       arrange(idTicker)
 
-  is_merge_all <-
+    is_merge_all <-
       merge_type %>% str_to_upper() == 'ALL'
 
     is_match <-
@@ -14751,13 +14752,15 @@ get_dictionary_sec_forms <-
 
     forms <-
       page %>%
-      html_nodes('.listCol1') %>%
+      html_nodes('.release-number-content') %>%
       html_text() %>%
-      str_to_upper()
+      str_trim() %>%
+      str_to_upper() %>%
+      str_replace_all('NUMBER:', '')
 
     form_names <-
       page %>%
-      html_nodes('.listCol2 a') %>%
+      html_nodes('.views-field-field-display-title a') %>%
       html_text() %>%
       str_to_upper() %>%
       str_trim() %>%
@@ -14769,13 +14772,13 @@ get_dictionary_sec_forms <-
 
     url_description_form <-
       page %>%
-      html_nodes('.listCol2 a') %>%
+      html_nodes('.views-field-field-display-title a') %>%
       html_attr('href') %>%
       paste0('https://www.sec.gov', .)
 
     date_updated <-
       page %>%
-      html_nodes('.listCol3') %>%
+      html_nodes('.datetime') %>%
       html_text() %>%
       list("01-", .) %>%
       purrr::reduce(paste0) %>%
@@ -14783,19 +14786,28 @@ get_dictionary_sec_forms <-
 
     sec_ids <-
       page %>%
-      html_nodes('.listCol4') %>%
+      html_nodes('.list-page-detail-content') %>%
       html_text() %>%
+      str_trim() %>%
+      str_replace_all('SEC Number:', '') %>%
       str_trim()
 
     sec_ids[sec_ids == ''] <-
       NA
 
+
     reference <-
       page %>%
-      html_nodes('.listCol5') %>%
+      html_nodes('td.views-field-term-node-tid') %>%
       html_text() %>%
       str_trim() %>%
-      str_to_upper()
+      str_to_upper() %>%
+      str_replace_all('\\TOPIC(S):','') %>%
+      str_split('\\:') %>%
+      purrr::map(function(x){
+        x %>% str_split('\\:') %>% purrr::flatten_chr() %>% .[[2]]
+      }) %>%
+      purrr::flatten_chr()
 
     data <-
       data_frame(
@@ -14807,6 +14819,7 @@ get_dictionary_sec_forms <-
         referenceForm = reference
       )
     return(data)
+
   }
 
 
