@@ -14529,7 +14529,7 @@ get_cik_filing_count <-
       pad_cik()
 
     url <-
-      list("https://www.sec.gov/cgi-bin/srch-edgar?text=CIK%3D",
+        list("https://www.sec.gov/cgi-bin/srch-edgar?text=CIK%3D",
            code_cik,'&first=1994&last=',
            Sys.Date() %>% lubridate::year() %>% as.numeric()
       ) %>%
