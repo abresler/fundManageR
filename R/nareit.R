@@ -612,15 +612,64 @@ parse_reit_info_page <-
         html_nodes('#page-title') %>%
         html_text() %>%
         str_to_upper()
+
+      has_price <-
+        page %>%
+        html_nodes('.price') %>% length() > 0
+
+      if (has_price) {
+        price <-
+          page %>%
+          html_nodes('.price') %>%
+          html_text() %>%
+          readr::parse_number()
+      } else {
+        price <- NA
+      }
+
+      has_return <-
+        page %>%
+        html_nodes('.return') %>% length() > 0
+
+
+      if (has_return) {
+        return_1mo <-
+          page %>%
+          html_nodes('.return') %>%
+          html_text() %>%
+          str_trim() %>%
+          str_replace_all('1 Mo. Total Return: ','') %>%
+          str_split('\\ ') %>%
+          flatten_chr() %>%
+          .[[1]] %>% readr::parse_number() / 100
+
+      } else {
+        return_1mo <- NA
+      }
+
+      has_description <-
+        page %>%
+        html_nodes('.body') %>% length() > 0
+
+      if (has_description) {
+        description <-
+          page %>%
+          html_nodes('.body') %>%
+          html_text() %>%
+          str_trim()
+      } else {
+        description <- NA
+      }
+
       values <-
         page %>%
-        html_nodes('.field-content') %>%
+        html_nodes('.overview .reit-values__value') %>%
         html_text() %>%
-        str_to_upper()
+        str_to_upper() %>%
+        str_trim()
 
       items <-
         c(
-          'locationCompany',
           'typeCompany',
           'statusListing',
           'nameSector',
@@ -632,10 +681,63 @@ parse_reit_info_page <-
       data <-
         data_frame(value = values,
                    item = items[1:length(values)],
-                   nameCompany = company) %>%
+        ) %>%
         spread(item, value) %>%
-        mutate(urlNAREIT = res$url)
+        mutate(nameCompany = company,
+               descriptionCompany = description,
+               pctReturn1Month = return_1mo,
+               priceLast = price,
+               urlNAREIT = res$url)
 
+      has_performance <-
+        page %>% html_nodes('.performance .reit-values__value') %>% length() > 0
+
+      if (has_performance) {
+        values <-
+          page %>%
+          html_nodes('.performance .reit-values__value') %>%
+          html_text() %>%
+          str_trim()
+        items <-
+          c('priceClose', 'rangeDay', 'volumeDay',
+            'volume30DayAvg',
+            'amountMarketCapitalization',
+            'dividendLastQuarter',
+            'pctYield', 'amountFFOPriorQuarter')
+
+        df_performance <-
+          data_frame(items, values) %>%
+          spread(items, values) %>%
+          separate(rangeDay, into = c('priceDayHigh', 'priceDayLow'), sep = '\\ - ')
+
+        df_performance <-
+          df_performance %>%
+          mutate_at(
+            c('volume30DayAvg' , 'volumeDay'),
+            funs(. %>% readr::parse_number() %>% formattable::comma(digits = 0))
+          ) %>%
+          mutate_at(
+            c('amountFFOPriorQuarter' , 'amountMarketCapitalization'),
+            funs(
+              ifelse(
+                . %>% str_detect('mil'),
+                . %>% readr::parse_number() * 1000000,
+                . %>% readr::parse_number() * 1000000000
+              ) %>% formattable::currency(digits = 0)
+            )) %>%
+          mutate_at(
+            c('dividendLastQuarter' , 'priceClose', 'priceDayLow', 'priceDayHigh'),
+            funs(. %>% readr::parse_number() %>% formattable::currency(digits = 2))
+          ) %>%
+          mutate(pctYield = (pctYield %>% readr::parse_number() / 100) %>% formattable::percent(digits = 2),
+                 nameCompany = company)
+
+        data <-
+          data %>%
+          left_join(df_performance) %>%
+          suppressWarnings() %>%
+          suppressMessages()
+      }
       df <<-
         df %>%
         bind_rows(data)
@@ -688,7 +790,7 @@ get_data_nareit_entities <-
     all_data <-
       reits_df$urlNAREIT %>%
       map_df(function(x) {
-        parse_reit_info_page(urls = x, return_message = return_message)
+        parse_reit_info_page_safe(urls = x, return_message = return_message)
       })
 
     all_data <-
@@ -696,16 +798,21 @@ get_data_nareit_entities <-
       mutate_all(funs(ifelse(. == '', NA, .))) %>%
       mutate(
         idTicker = ifelse(idTicker %in% c('', 'N/A'), NA, idTicker),
-        locationCompany = ifelse(locationCompany %in% c('', 'N/A'), NA, locationCompany),
         nameExchange = ifelse(idTicker %>% is.na(), NA, nameExchange)
       ) %>%
-      filter(!nameCompany == "NAREIT") %>%
-      tidyr::separate(
-        locationCompany,
-        sep = '\\, ',
-        remove = FALSE,
-        into = c('cityCompany', 'stateCompany')
-      )
+      filter(!nameCompany == "NAREIT")
+
+    all_data <-
+      all_data %>%
+      mutate_at(.vars = all_data %>% dplyr::select(matches("^price|^dividend")) %>% names(),
+                funs(. %>% formattable::currency(digits = 2))) %>%
+      mutate_at(.vars = all_data %>% dplyr::select(matches("^amount")) %>% names(),
+                funs(. %>% formattable::currency(digits = 0))) %>%
+      mutate_at(.vars = all_data %>% dplyr::select(matches("^volume")) %>% names(),
+                funs(. %>% formattable::comma(digits = 0))) %>%
+      mutate_at(.vars = all_data %>% dplyr::select(matches("^pct")) %>% names(),
+                funs(. %>% formattable::percent(digits = 2))) %>%
+      select(typeCompany, statusListing, nameSector, nameCompany, idTicker, everything())
 
     if (return_message) {
       list("Returned information for ", all_data %>% nrow(), ' REITs') %>%

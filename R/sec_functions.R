@@ -2360,13 +2360,14 @@ get_xbrl_url_df <-
 
     slugs <-
       page %>%
-      html_nodes('.data_downloads a') %>%
+      html_nodes('.views-field-field-display-title a') %>%
       html_attr('href') %>%
       str_replace_all('http://www.sec.gov', '')
 
+
     periods <-
       slugs %>%
-      str_replace_all('/data/financial-statements/|.zip', '')
+      str_replace_all('/files/dera/data/financial-statement-data-sets/|.zip', '')
 
     urls <-
       'http://www.sec.gov' %>%
@@ -2401,7 +2402,7 @@ parse_xbrl_url <-
     options(scipen = 999999)
 
     period_data <-
-      url %>% str_replace_all("http://www.sec.gov/data/financial-statements/|.zip", '')
+      url %>% str_replace_all("http://www.sec.gov/data/financial-statements/|.zip|/files/dera/data/financial-statement-data-sets/", '')
 
     year_data <-
       period_data %>%
