@@ -9806,18 +9806,18 @@ parse_sec_adv_data_url <-
     con <-
       unzip(tmp)
 
-    if (con %>% str_detect("XLS|xls|xlsx|XLSX")) {
+    if (con %>% str_detect("XLS|xls|xlsx|XLSX") %>% sum(na.rm = T) > 0) {
       adv_data <-
-        con %>% parse_adv_excel_data()
+        con[[1]] %>% parse_adv_excel_data()
     }
 
-    if (con %>% str_detect("csv|CSV")) {
+    if (con %>% str_detect("csv|CSV")%>% sum(na.rm = T) > 0) {
       adv_data <-
         con %>% parse_adv_csv() %>%
         suppressWarnings()
     }
 
-    if (con %>% str_detect("txt|TXT")) {
+    if (con %>% str_detect("txt|TXT")%>% sum(na.rm = T) > 0) {
       adv_data <-
         con %>% parse_adv_txt_data()
     }

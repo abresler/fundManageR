@@ -12043,6 +12043,10 @@ parse_sec_filing_index <-
           html_nodes('.info') %>%
           html_text()
 
+        if (length(values) == 0) {
+          return(data_frame())
+        }
+
         items <-
           page %>%
           html_nodes('.infoHead') %>%
