@@ -1,4 +1,4 @@
-# cunctions ---------------------------------------------------------------
+# functions ---------------------------------------------------------------
 drop_na_columns <-
   function(data) {
     data %>%
@@ -730,7 +730,7 @@ get_dictionary_sec_filing_codes <-
         "Entry into a Material Definitive Agreement",
         "Termination of a Material Definitive Agreement",
         "Bankruptcy or Receivership",
-        "Mine Safety Ð Reporting of Shutdowns and Patterns of Violations",
+        "Mine Safety Reporting of Shutdowns and Patterns of Violations",
         "Completion of Acquisition or Disposition of Assets",
         "Results of Operations and Financial Condition",
         "Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant",
@@ -746,7 +746,7 @@ get_dictionary_sec_filing_codes <-
         "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
         "Amendments to Articles of Incorporation or Bylaws; Change in Fiscal Year",
         "Temporary Suspension of Trading Under Registrant's Employee Benefit Plans",
-        "Amendments to the RegistrantÕs Code of Ethics, or Waiver of a Provision of the Code of Ethics",
+        "Amendments to the Registrantion Code of Ethics, or Waiver of a Provision of the Code of Ethics",
         "Change in Shell Company Status",
         "Submission of Matters to a Vote of Security Holders",
         "Shareholder Director Nominations",
@@ -8061,8 +8061,12 @@ parse_page_subsidiary_table_html <-
         html_nodes('b font') %>%
         html_text() %>%
         str_to_upper() %>%
-        str_replace_all('\n', ' ') %>%
-        str_split('\\–') %>%
+        str_replace_all('\n', ' ')
+      items_bold <-
+        stringi::stri_trans_general(items_bold, "Latin-ASCII")
+      items_bold <-
+        items_bold %>%
+        str_split('\\-') %>%
         flatten_chr() %>%
         str_trim()
     } else {
@@ -8072,7 +8076,10 @@ parse_page_subsidiary_table_html <-
         html_text() %>%
         str_to_upper() %>%
         str_replace_all('\n', ' ') %>%
-        str_split('\\–') %>%
+        stringi::stri_trans_general("Latin-ASCII")
+      items_bold <-
+        items_bold %>%
+        str_split('\\-') %>%
         flatten_chr() %>%
         str_trim() %>%
         unique()
@@ -11090,7 +11097,7 @@ get_dictionary_sec_filing_codes <-
         "Entry into a Material Definitive Agreement",
         "Termination of a Material Definitive Agreement",
         "Bankruptcy or Receivership",
-        "Mine Safety Ð Reporting of Shutdowns and Patterns of Violations",
+        "Mine Safety Reporting of Shutdowns and Patterns of Violations",
         "Completion of Acquisition or Disposition of Assets",
         "Results of Operations and Financial Condition",
         "Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant",
@@ -14286,7 +14293,7 @@ get_dictionary_sec_filing_codes <-
         "Entry into a Material Definitive Agreement",
         "Termination of a Material Definitive Agreement",
         "Bankruptcy or Receivership",
-        "Mine Safety Ð Reporting of Shutdowns and Patterns of Violations",
+        "Mine Safety Reporting of Shutdowns and Patterns of Violations",
         "Completion of Acquisition or Disposition of Assets",
         "Results of Operations and Financial Condition",
         "Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant",
@@ -17236,6 +17243,208 @@ get_data_edgar_entities_cik <-
   }
 
 
+# sec_metadata  -----------------------------------------------------------
+
+
+
+gdeltr2::load_needed_packages(
+  c(
+    'curl',
+    'glue',
+    'dplyr',
+    'purrr',
+    'stringr',
+    'rvest',
+    'xml2',
+    'curl',
+    'stringr',
+    'tidyr'
+  )
+)
+
+extract_info <- function(page, css_node) {
+  info <-
+    page %>%
+    rvest::html_nodes(css = css_node) %>%
+    rvest::html_text()
+  info
+}
+
+parse_city_state <-
+  function(x = "MENLO PARK CA 94025") {
+    parts <- x %>% str_split('\\ ') %>% flatten_chr()
+    over_2 <- parts %>% length() > 2
+    if (over_2) {
+      zipcode <- parts[parts %>% length()]
+      state_city <- parts[!parts %in% c(zipcode)]
+      state <- state_city[length(state_city)]
+      city <-
+        state_city[!state_city %in% state] %>% str_c(collapse = ' ')
+      data <-
+        data_frame(
+          cityCompany = city,
+          stateCompany = state,
+          zipcodeCompany = zipcode
+        )
+      return(data)
+    }
+    data_frame()
+  }
+
+generate_url <- function(ticker = "FB") {
+  glue::glue("https://www.sec.gov/cgi-bin/browse-edgar?CIK={ticker}&owner=exclude&action=getcompany&Find=Search")
+}
+parse_company_info <-
+  function(url = "https://www.sec.gov/cgi-bin/browse-edgar?CIK=FB&owner=exclude&action=getcompany&Find=Search") {
+    page <-
+      url %>%
+      read_html()
+
+    name_parts <-
+      page %>%
+      extract_info(css_node = '.companyName') %>%
+      str_split('\\ CIK') %>%
+      flatten_chr()
+
+    if (length(name_parts) == 0) {
+      stop("Invalid company symbol")
+    }
+    company_name <- name_parts[[1]]
+
+    cik <-
+      page %>% extract_info(".companyName a") %>% str_split("\\(") %>%
+      flatten_chr() %>%
+      str_trim() %>%
+      .[[1]]
+
+    SIC <-
+      page %>%
+      extract_info(".identInfo acronym+ a") %>%
+      readr::parse_number()
+
+    street.address <-
+      page %>%
+      extract_info(".mailer:nth-child(1) .mailerAddress:nth-child(1)")
+
+    city.state.raw <-
+      page %>%
+      extract_info(".mailer:nth-child(1) .mailerAddress+ .mailerAddress") %>%
+      str_trim()
+    city.state <- sub("\\s+$", "", city.state.raw)
+    city.state <- gsub("\n", "", city.state)
+
+    if (length(city.state) == 2) {
+      street.address <- paste(street.address, city.state[1])
+      city.state <- city.state[2]
+    }
+    df_city_state <-
+      city.state %>% parse_city_state() %>%
+      mutate(addressStreetCompany = street.address) %>%
+      dplyr::select(addressStreetCompany, everything())
+
+    company.details <-
+      page %>%
+      extract_info(".identInfo")
+    fiscal.year.end <-
+      gsub("^.*Fiscal Year End: ", "", company.details) %>%
+      substr(1, 4)
+    if (fiscal.year.end == "SIC:") {
+      fiscal.year.end <- NA
+    }
+    state <- gsub("^.*State location: ", "", company.details) %>%
+      substr(1, 2)
+    state.inc <- gsub("^.*State of Inc.: ", "", company.details) %>%
+      substr(1, 2)
+    if (state.inc == "SI") {
+      state.inc <- NA
+    }
+    data <-
+      data_frame(
+        nameCompany = company_name,
+        slugCIK = cik,
+        idCIK = readr::parse_number(cik),
+        idSIC = SIC,
+        stateIncorporatd = state.inc,
+        monthDayFiscalYearEnd = fiscal.year.end
+      ) %>%
+      bind_cols(df_city_state)
+    data
+  }
+
+
+parse_company_pages <-
+  function(urls,
+           return_message = TRUE) {
+    df <-
+      data_frame()
+    success <- function(res) {
+      parse_company_info_safe <-
+        purrr::possibly(parse_company_info, data_frame())
+
+      data <-
+        parse_company_info(url = res$url)
+
+      closeAllConnections()
+      df <<-
+        df %>%
+        bind_rows(data)
+    }
+    failure <- function(msg) {
+      cat(sprintf("Fail: %s (%s)\n", res$url, msg))
+    }
+    urls %>%
+      walk(function(x) {
+        curl_fetch_multi(url = x, success, failure)
+      })
+    multi_run()
+    closeAllConnections()
+    df
+  }
+
+get_data_sec_ticker_info <-
+  function(ticker = "VNO",
+           return_message = TRUE) {
+    if (return_message) {
+      glue::glue("Acquiring company information for {ticker}") %>% message()
+    }
+    parse_company_pages_safe <-
+      purrr::possibly(parse_company_pages, data_frame())
+    url <- ticker %>%
+      generate_url()
+
+    data <-
+      url %>%
+      parse_company_pages_safe() %>%
+      mutate(idTicker = ticker) %>%
+      dplyr::select(idTicker, everything()) %>%
+      mutate_if(is.character,
+                str_to_upper)
+
+    data
+  }
+
+#' Get Ticker SEC company information
+#'
+#' @param tickers character vector of ticker symbols
+#' @param return_message if \code{true} return a message
+#'
+#' @return a \code{data_frame}
+#' @export
+#' @import curl glue dplyr purrr stringr rvest xml2
+#'
+#' @examples
+#' get_data_sec_tickers_info(tickers = c("BXP", "AVB", "AAPL"))
+get_data_sec_tickers_info <-
+  function(tickers = c("VNO", "NVDA", "FB"),
+           return_message = TRUE) {
+    all_data <-
+      tickers %>%
+      map_df(function(x) {
+        get_data_sec_ticker_info(ticker = x, return_message = return_message)
+      })
+
+    all_data
+  }
 
 # page_guess --------------------------------------------------------------
 get_sec_filer_name_page_df <-
@@ -18330,7 +18539,8 @@ parse_page_subsidiary_table_html <-
         html_text() %>%
         str_to_upper() %>%
         str_replace_all('\n', ' ') %>%
-        str_split('\\–') %>%
+        stringi::stri_trans_general("Latin-ASCII")
+        str_split('\\-') %>%
         flatten_chr() %>%
         str_trim()
     } else {
@@ -18340,7 +18550,8 @@ parse_page_subsidiary_table_html <-
         html_text() %>%
         str_to_upper() %>%
         str_replace_all('\n', ' ') %>%
-        str_split('\\–') %>%
+        stringi::stri_trans_general("Latin-ASCII") %>%
+        str_split('\\-') %>%
         flatten_chr() %>%
         str_trim() %>%
         unique()

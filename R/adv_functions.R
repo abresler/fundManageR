@@ -923,8 +923,11 @@ parse_finra_pdf_brochure <-
           str_trim()
 
         page_text <-
+          stringi::stri_trans_general(page_text, "Latin-ASCII")
+
+        page_text <-
           page_text %>% str_replace_all(
-            'www.finra.org/brokercheck|©2016 FINRA. All rights reserved.|User Guidance|End of Report|This page is intentionally left blank.',
+            'www.finra.org/brokercheck|2016 FINRA. All rights reserved.|User Guidance|End of Report|This page is intentionally left blank.',
             ''
           ) %>%
           str_replace_all('Firm Brochure', '') %>%
