@@ -2344,11 +2344,13 @@ get_managers_adv_sitemap_adv <-
       name_entity_manager <-
         manager_data$nameEntityManager
     }
+    parse_adv_manager_sitemap_df_safe <-
+      purrr::possibly(parse_adv_manager_sitemap_df, data_frame())
     sitemap_dfs <-
       urls %>%
       unique() %>%
       map_df(function(x) {
-        parse_adv_manager_sitemap_df(url = x, return_wide = F)
+        parse_adv_manager_sitemap_df_safe(url = x, return_wide = F)
       })
     if (manager_data %>% nrow() > 0) {
     sitemap_dfs <-
@@ -4685,7 +4687,7 @@ get_section_5_data <-
           mutate_at(.vars = 'pctClientsNonUS',
                     .funs = funs(. / 100)) %>%
           suppressWarnings()
-x
+
         node_text <-
           page %>%
           parse_node_table_to_text(
@@ -10319,3 +10321,66 @@ get_data_adv_managers_current_period_summary <-
     closeAllConnections()
     return(all_data)
   }
+
+
+
+# mung --------------------------------------------------------------------
+
+#' Extract fee references
+#'
+#' @param data A \code{data_frame} with the OCR'd brochur data
+#' @param word_threshhold
+#' @param print_sentences if \code{TRUE} prints fee reference data
+#'
+#' @return
+#' @export
+#' @importFrom tidytext unnest_tokens
+#' @import dplyr stringr purrr
+#'
+#' @examples
+extract_fee_references <- function(data, word_threshhold = 5,
+                                   print_sentences = TRUE) {
+  data <-
+    data %>%
+    filter(!nameAuthor %>% is.na())
+
+  data <-
+    data %>%
+    dplyr::select(idCRD, nameEntityManager, textBrochure) %>%
+    tidytext::unnest_tokens(sentence, textBrochure, token = "sentences") %>% # tokenize to sentences
+    mutate(idSentence = 1:n()) %>% # create sentence IDs to check accuracy later
+    mutate(
+      hasMGMTFeeReference = sentence %>% str_detect('[0-99]%')  # add column for possible fee reference
+    )
+  possible_fees <-
+    data %>%
+    dplyr::filter(hasMGMTFeeReference == T) %>%  # filter down to possible sentences
+    dplyr::select(idCRD, nameEntityManager, sentence, idSentence) %>%
+    tidytext::unnest_tokens(word, sentence, token = 'words') %>%  # tokenize to words
+    dplyr::filter(word %>% str_detect("^[0-9]")) %>%  # look for numbers 1-9
+    mutate(word = word %>% as.numeric()) %>%  # convert number to numeric
+    dplyr::filter(word <= word_threshhold) # look for numbers <=
+
+
+  if (print_sentences) {
+    possible_fees$idSentence %>%
+      unique() %>%
+      map_chr(function(x) {
+        setence_df <-
+          data %>%
+          dplyr::filter(idSentence == x)
+        fee_text <-
+          setence_df %>%
+          .$sentence %>% paste0('\n', ., '\n')
+        setence_df$nameEntityManager %>% paste0('Manager: ',., '\n', fee_text)
+      }) %>%
+      paste0(collapse = '\n') %>%
+      message()
+  }
+
+  possible_fees %>%
+    left_join(
+      data
+    ) %>%
+    suppressMessages()
+}
