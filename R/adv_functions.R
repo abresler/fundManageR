@@ -4829,6 +4829,12 @@ get_section_5_data <-
       parse_company_structure_page() %>%
       mutate(nameEntityManager = name_entity_manager) %>%
       select_start_vars()
+    
+    if ('countAccountsNonDiscretionary' %in% names(section_5_data)) {
+      section_5_data <- 
+        section_5_data %>% 
+        mutate(countAccountsNonDiscretionary = countAccountsTotal - countAccountsDiscretionary)
+    }
 
     return(section_5_data)
   }
