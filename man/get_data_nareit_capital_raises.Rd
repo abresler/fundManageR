@@ -8,6 +8,13 @@ get_data_nareit_capital_raises(capital_type = NULL, nest_data = TRUE,
   return_message = TRUE)
 }
 \arguments{
+\item{capital_type}{form of capital raised \itemize{
+\item \code{NULL}: returns all types (default)
+\item \code{IPO}: Initial Public Offering
+\item \code{SECONDARY} :Secondary Equity Offering
+\item \code{DEBT}: Debt Issuance
+}}
+
 \item{nest_data}{\code{TRUE} return nested data frame}
 
 \item{return_message}{\code{TRUE} return a message after data import}
@@ -23,6 +30,7 @@ capital raises by form of capital since 1989.
 \dontrun{
 get_data_nareit_capital_raises(capital_type = NULL, nest_data = FALSE, return_message = TRUE)
 }
+
 }
 \seealso{
 Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},

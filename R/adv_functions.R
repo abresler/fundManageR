@@ -4829,10 +4829,10 @@ get_section_5_data <-
       parse_company_structure_page() %>%
       mutate(nameEntityManager = name_entity_manager) %>%
       select_start_vars()
-    
+
     if ('countAccountsNonDiscretionary' %in% names(section_5_data)) {
-      section_5_data <- 
-        section_5_data %>% 
+      section_5_data <-
+        section_5_data %>%
         mutate(countAccountsNonDiscretionary = countAccountsTotal - countAccountsDiscretionary)
     }
 
@@ -8644,7 +8644,7 @@ return_selected_adv_tables <-
 #' \item \code{Manager Signatories}: manager signatories
 #' #' }
 #' @param flatten_tables \code{TRUE} flattens data with multiple values into wide form
-#' @param gather_data \{code} gather wide data
+#' @param gather_data \code{TRUE} returns a long data frame
 #' @param assign_to_environment \code{TRUE} assign individual data frames to your environment
 #'
 #' @return a \code{data_frame}

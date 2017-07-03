@@ -19,14 +19,18 @@
 #' \item Tax-exempt Funds
 #' \item Trade Associations & Organizations
 #' }
-#' @param return_message if \code
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return a \code{data_fram}
+#' @return a \code{data_frame}
 #' @source IREI
 #' @export
 #' @import dplyr rvest glue tidyr stringr tibble
 #'
 #' @examples
+#' #' \dontrun{
+#' get_data_irei_entitites(filter_type = NULL)
+#' get_data_irei_entities(filter_type = c("Investment Managers", "Tax-exempt Funds"))
+#' }
 get_data_irei_entitites <- function(filter_type = NULL, return_message = TRUE) {
   page <-
     "https://irei.com/industry-links/" %>%

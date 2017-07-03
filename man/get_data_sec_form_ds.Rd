@@ -8,9 +8,25 @@ get_data_sec_form_ds(industries = NULL, form_years = NULL, months = NULL,
   nest_data = FALSE, return_message = TRUE)
 }
 \arguments{
+\item{industries}{industries to search options: \itemize{
+\item \code{NULL}: returns all industries(default)
+\item \code{ENERGY}: energy sector
+\item \code{FINANCIAL}: financial sector
+\item \code{HEALTHCARE}: health-care sector
+\item \code{OTHER}: all other sectors
+\item \code{REAL ESTATE}: real estate sector
+\item \code{TECHNOLOGY}: technology sector
+\item \code{TRAVEL AND LEISURE}: travel and leisure sector
+}}
+
 \item{form_years}{years to search options are \itemize{
 \item \code{NULL}: all years (default)
 \item \code{2009-present}: search years
+}}
+
+\item{months}{months to search \itemize{
+\item \code{NULL}: all months (default)
+\code{1:12}: numeric month
 }}
 
 \item{nest_data}{\code{TRUE} return nested data frame}

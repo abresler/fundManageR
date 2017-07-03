@@ -1777,8 +1777,9 @@ parse_nareit_offering_url <-
 #' @param capital_type form of capital raised \itemize{
 #' \item \code{NULL}: returns all types (default)
 #' \item \code{IPO}: Initial Public Offering
-#' \item \code SECONDARY:Secondary Equity Offering
+#' \item \code{SECONDARY} :Secondary Equity Offering
 #' \item \code{DEBT}: Debt Issuance
+#' }
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
 #'
@@ -1791,6 +1792,7 @@ parse_nareit_offering_url <-
 #' \dontrun{
 #' get_data_nareit_capital_raises(capital_type = NULL, nest_data = FALSE, return_message = TRUE)
 #' }
+#'
 get_data_nareit_capital_raises <-
   function(capital_type = NULL,
            nest_data = TRUE,

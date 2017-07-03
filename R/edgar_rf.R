@@ -2218,7 +2218,7 @@ get_data_sec_filing_entities <-
 #' can change by modifying the parameters
 #'
 #' @param industries industries to search options: \itemize{
-#' \item \code{NULL: returns all industries(default)
+#' \item \code{NULL}: returns all industries(default)
 #' \item \code{ENERGY}: energy sector
 #' \item \code{FINANCIAL}: financial sector
 #' \item \code{HEALTHCARE}: health-care sector
@@ -2234,6 +2234,7 @@ get_data_sec_filing_entities <-
 #' @param months months to search \itemize{
 #' \item \code{NULL}: all months (default)
 #' \code{1:12}: numeric month
+#' }
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
 #' @import purrr dplyr stringr tidyr formattable lubridate
@@ -6408,7 +6409,7 @@ get_data_sec_filing_stream <-
 #' \item \code{All}: all filer types (default)
 #' \item \code{Corporate Insider}: corporate insiders
 #' \item \code{Companies}:
-#' \itm \code{Investment Company} acquires investment compan
+#' \item \code{Investment Company} acquires investment company data
 #' @param filing_names type of filing \itemize{
 #' \item \code{Annual Reports}: annual report
 #' \item \code{Quarterly Reports}: quarterly report

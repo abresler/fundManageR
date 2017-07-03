@@ -27,12 +27,18 @@ get_data_irei_entitites(filter_type = NULL, return_message = TRUE)
 \item Trade Associations & Organizations
 }}
 
-\item{return_message}{if \code}
+\item{return_message}{if \code{TRUE} returns a message}
 }
 \value{
-a \code{data_fram}
+a \code{data_frame}
 }
 \description{
 Acquires a list of IREI tracked entities
 from 14 different parts of the "Commercial Real Estate Jungle"
+}
+\examples{
+#' \dontrun{
+get_data_irei_entitites(filter_type = NULL)
+get_data_irei_entities(filter_type = c("Investment Managers", "Tax-exempt Funds"))
+}
 }

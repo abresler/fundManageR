@@ -2723,7 +2723,7 @@ parse_xbrl_url <-
 #'
 #' @param years years to include starting in 2009
 #' @param quarters quarters to search \itemize{
-#' \item\code{NULL}(default): all quarters,
+#' \item \code{NULL}(default): all quarters,
 #' \item \code{1}: Q1
 #' \item \code{2}: Q2
 #' \item \code{3}: Q3
@@ -2732,7 +2732,7 @@ parse_xbrl_url <-
 #' @param only_most_recent \code{TRUE} search only the most recent period
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @param tables underlying XBRL tables you want to include\itemize{
+#' @param tables underlying XBRL tables you want to include \itemize{
 #' \item \code{NULL}: all tables (default)
 #' \item \code{Presentation}: presentation data
 #' \item \code{Values}: XBRL value data

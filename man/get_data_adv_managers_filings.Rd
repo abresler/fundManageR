@@ -33,6 +33,8 @@ searches all sections}
 
 \item{flatten_tables}{\code{TRUE} flattens data with multiple values into wide form}
 
+\item{gather_data}{\code{TRUE} returns a long data frame}
+
 \item{assign_to_environment}{\code{TRUE} assign individual data frames to your environment}
 }
 \value{
