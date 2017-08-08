@@ -70,7 +70,9 @@ get_data_ycombinator_alumni <-
     json_data <-
       json_data %>%
       mutate_at(json_data %>% dplyr::select(matches("name")) %>% names(),
-                funs(. %>% str_to_upper()))
+                funs(. %>% str_to_upper())) %>%
+      mutate_at(.vars = "urlCompany",
+                funs(ifelse(. == '', NA, .)))
 
     if (return_message)  {
       random_company <-
@@ -110,7 +112,8 @@ get_data_ycombinator_alumni <-
         nest(-batchYC, .key = 'dataClass')
     }
     closeAllConnections()
-    return(json_data)
+    gc()
+    json_data
   }
 
 
