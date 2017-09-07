@@ -22,16 +22,10 @@ get_data_ycombinator_alumni <-
   function(nest_data = FALSE,
            return_message = TRUE) {
     url <-
-      'https://api.ycombinator.com/companies/export.json?callback=setupCompanies'
-
-    json_nodes <-
-      url %>%
-      read_lines() %>%
-      str_replace_all('^setupCompanies', '')
+      'https://api.ycombinator.com/companies/export.json'
 
     json_data <-
-      json_nodes %>% substr(start = 2,
-                            stop = json_nodes %>% nchar - 2) %>%
+      url %>%
       fromJSON(simplifyDataFrame = T, flatten = T) %>%
       as_data_frame() %>%
       set_names(
@@ -57,9 +51,13 @@ get_data_ycombinator_alumni <-
         idSeasonYC = c('w', 's'),
         nameSeasonYC = c('Winter', 'Summer')
       )) %>%
+      mutate(description = descriptionCompany %>% str_to_upper(),
+             isCompanyAcquired = description %>% str_detect("ACQUIRED|WE SOLD|SOLD TO")) %>%
+      dplyr::select(-description) %>%
       dplyr::select(-idSeasonYC) %>%
       dplyr::select(nameCompany,
                     isCompanyDead,
+                    isCompanyAcquired,
                     batchYC,
                     yearYC,
                     nameSeasonYC,
@@ -73,6 +71,7 @@ get_data_ycombinator_alumni <-
                 funs(. %>% str_to_upper())) %>%
       mutate_at(.vars = "urlCompany",
                 funs(ifelse(. == '', NA, .)))
+
 
     if (return_message)  {
       random_company <-
@@ -103,7 +102,7 @@ get_data_ycombinator_alumni <-
           json_data$yearYC %>% max(),
           random_company_message
         ) %>%
-        message
+        message()
     }
 
     if (nest_data) {

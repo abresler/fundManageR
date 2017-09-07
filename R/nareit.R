@@ -589,7 +589,10 @@ get_reit_entity_dictionary <-
       ) %>%
       mutate_all(str_trim) %>%
       mutate(isPrivateNonPublicREIT = ifelse(idTicker %>% is.na(), TRUE, FALSE)) %>%
-      select(nameCompany, idTicker, isPrivateNonPublicREIT, everything())
+      select(nameCompany, idTicker, isPrivateNonPublicREIT, everything()) %>%
+      tidyr::separate(idTicker, into = c('idTicker', 'idExchange'), sep = '\\.|\\ ') %>%
+      mutate_if(is.character, str_trim)
+
     closeAllConnections()
     return(url_df)
   }
@@ -791,7 +794,8 @@ get_data_nareit_entities <-
       reits_df$urlNAREIT %>%
       map_df(function(x) {
         parse_reit_info_page_safe(urls = x, return_message = return_message)
-      })
+      }) %>%
+      suppressWarnings()
 
     all_data <-
       all_data %>%
@@ -813,6 +817,12 @@ get_data_nareit_entities <-
       mutate_at(.vars = all_data %>% dplyr::select(matches("^pct")) %>% names(),
                 funs(. %>% formattable::percent(digits = 2))) %>%
       select(typeCompany, statusListing, nameSector, nameCompany, idTicker, everything())
+
+    all_data <-
+      all_data %>%
+      left_join(reits_df %>% dplyr::select(idTicker, nameCompany, urlCompany)) %>%
+      dplyr::select(typeCompany:idTicker, urlCompany, everything()) %>%
+      suppressMessages()
 
     if (return_message) {
       list("Returned information for ", all_data %>% nrow(), ' REITs') %>%
