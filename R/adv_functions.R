@@ -971,7 +971,8 @@ parse_finra_json_url <-
     }
 
     list_cols <-
-      df %>% map_df(class) %>%
+      df %>% map(class) %>%
+      as_data_frame() %>%
       gather(column, type) %>%
       filter(type %in% 'list') %>%
       .$column
@@ -1457,6 +1458,8 @@ get_data_finra_entities <-
     all_data <-
       all_data %>%
       mutate(urlManagerSummaryADV = 'https://adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>% paste0(idCRD))
+    gc()
+    closeAllConnections()
     return(all_data)
   }
 
@@ -1532,8 +1535,8 @@ get_data_finra_people <-
         all_data %>% dplyr::select(matches("^count[A-Z]")) %>% dplyr::select(-matches("country")) %>% names(),
         funs(. %>% formattable::comma(digits = 0))
       )
-
-
+    gc()
+    closeAllConnections()
     return(all_data)
   }
 
@@ -8373,7 +8376,8 @@ get_crd_sections_data <-
         ) %>%
         dplyr::select(idCRD, nameEntityManager, nameTable, dataTable)
     }
-
+    gc()
+    closeAllConnections()
     return(all_data)
   }
 
@@ -8457,7 +8461,8 @@ return_selected_adv_tables <-
           data_selected %>%
           dplyr::select(dataTable) %>%
           unnest() %>%
-          map_df(class) %>%
+          map(class) %>%
+          as_data_frame() %>%
           gather(column, valueCol) %>%
           .$valueCol %>% str_count('list') %>% sum() >= 1
 
@@ -8605,7 +8610,7 @@ return_selected_adv_tables <-
 
                 df_name <-
                   table_names[x]
-                assign(x = df_name, eval(table_data %>% mutate_adv_data()), envir = .GlobalEnv)
+                assign(x = str_c('data', str_to_title(df_name), sep = ''), eval(table_data %>% mutate_adv_data()), envir = .GlobalEnv)
               })
           }
         }
@@ -8667,7 +8672,7 @@ return_selected_adv_tables <-
 get_data_adv_managers_filings <-
   function(entity_names = NULL,
            crd_ids = NULL,
-           all_sections = FALSE,
+           all_sections = TRUE,
            section_names = c(
              "Registration",
              "Identifying Information",
@@ -8704,6 +8709,7 @@ get_data_adv_managers_filings <-
 
     get_crd_sections_data_safe <-
       possibly(get_crd_sections_data, data_frame())
+
     all_data <-
       1:length(crds) %>%
       map_df(function(x) {
@@ -8800,7 +8806,7 @@ get_data_adv_managers_filings <-
         ) %>%
         suppressWarnings()
 
-      assign(x = table_name, eval(data %>% mutate_adv_data()),  envir = .GlobalEnv)
+      assign(x = str_c('data', str_to_title(table_name), sep = ''), eval(data %>% mutate_adv_data()),  envir = .GlobalEnv)
     }
 closeAllConnections()
 # gc()

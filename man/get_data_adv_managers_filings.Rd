@@ -5,7 +5,7 @@
 \title{IAPD registered managers ADV data}
 \usage{
 get_data_adv_managers_filings(entity_names = NULL, crd_ids = NULL,
-  all_sections = FALSE, section_names = c("Registration",
+  all_sections = TRUE, section_names = c("Registration",
   "Identifying Information", "Organization", "Successions",
   "Private Fund Reporting", "Direct Manager Owners", "Indirect Manager Owners",
   "Other Manager Information", "Manager Signatories"), flatten_tables = TRUE,
