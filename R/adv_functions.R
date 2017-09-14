@@ -8610,7 +8610,7 @@ return_selected_adv_tables <-
 
                 df_name <-
                   table_names[x]
-                assign(x = str_c('data', str_to_title(df_name), sep = ''), eval(table_data %>% mutate_adv_data()), envir = .GlobalEnv)
+                assign(x = df_name, eval(table_data %>% mutate_adv_data()), envir = .GlobalEnv)
               })
           }
         }
@@ -8713,7 +8713,7 @@ get_data_adv_managers_filings <-
     all_data <-
       1:length(crds) %>%
       map_df(function(x) {
-        get_crd_sections_data(
+        get_crd_sections_data_safe(
           id_crd = crds[x],
           all_sections = all_sections,
           section_names = section_names,
@@ -8806,7 +8806,7 @@ get_data_adv_managers_filings <-
         ) %>%
         suppressWarnings()
 
-      assign(x = str_c('data', str_to_title(table_name), sep = ''), eval(data %>% mutate_adv_data()),  envir = .GlobalEnv)
+      assign(x = table_name, eval(data %>% mutate_adv_data()),  envir = .GlobalEnv)
     }
 closeAllConnections()
 # gc()
