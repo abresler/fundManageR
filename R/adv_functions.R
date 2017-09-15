@@ -186,6 +186,82 @@ find_text_node <-
 
 # munging -----------------------------------------------------------------
 
+munge_fund_names <-
+  function(data) {
+    options(scipen = 9999)
+    funds <-
+      data %>%
+      select(nameFund) %>%
+      mutate_if(is.character,
+                funs(. %>% str_trim() %>% stringr::str_to_upper())) %>%
+      suppressWarnings()
+
+    funds <-
+      funds %>%
+      mutate(nameFundClean = nameFund) %>%
+      separate(nameFundClean,
+               sep = "\\(",
+               into = c("nameFundClean", "detailFund")) %>%
+      mutate(
+        detailFund = detailFund %>% str_replace_all("\\)", ""),
+        nameFundClean = nameFundClean %>% str_replace_all("\\ L.P.|\\ L.P", " LP") %>% str_replace_all("\\--", " ") %>%
+          str_replace_all("\\G.P.|G.P", "GP") %>% str_replace_all("\\L.L.C.|L.L.C", "LLC"),
+        typeFundEntity = case_when(
+          nameFundClean %>% str_detect("LLC") ~ "LLC",
+          nameFundClean %>% str_detect("GP") ~ "GP",
+          nameFundClean %>% str_detect("\\LP") ~ "LP",
+          TRUE                      ~  NA_character_
+        ),
+        isCoInvestmentVehicle = nameFundClean %>% str_detect("COINVESTMENT|CO-INVESTMENT|SIDECAR|SIDE-CAR|\\COINVEST"),
+        isParalellFund = nameFundClean %>% str_detect("PARALLEL"),
+        nameFundClean =
+          nameFundClean %>% str_replace_all(
+            "\\ LLP|\\ LLC|\\ LP|\\ GP|\\,|CO-INVESTMENT|COINVESTMENT|\\SIDECAR|\\SIDE-CAR|PARALLEL",
+            ""
+          )
+      ) %>%
+      select(
+        typeFundEntity,
+        nameFund,
+        nameFundClean,
+        detailFund,
+        isCoInvestmentVehicle,
+        isParalellFund
+      ) %>%
+      suppressWarnings()
+
+    has_dash <-
+      funds$nameFundClean %>% str_detect('\\-[A-H]') %>% sum(na.rm = TRUE) >
+      0
+
+    if (has_dash) {
+      funds$nameFundClean[funds$nameFundClean %>% str_detect('\\-[A-H]')] <-
+        funds$nameFundClean[funds$nameFundClean %>% str_detect('\\-[A-H]')] %>% str_replace_all('\\-', " SERIES ")
+    }
+
+    count_series <-
+      funds$nameFundClean %>% str_count('\\SERIES') %>% sum(na.rm = T)
+
+    if (count_series > 0) {
+      funds <-
+        funds %>%
+        separate(nameFundClean,
+                 into = c("nameFundClean", "idSeries"),
+                 sep = "\\ SERIES ") %>%
+        suppressWarnings()
+    }
+    new_names <-
+      names(funds)[!names(funds) %>% str_detect("nameFund")]
+    data %>%
+      left_join(funds) %>%
+      select(idCRD:nameFund,
+             nameFundClean,
+             one_of(new_names),
+             everything()) %>%
+      suppressMessages()
+
+  }
+
 select_start_vars <-
   function(data) {
     data <-
@@ -551,7 +627,8 @@ parse_broker_json_url <-
 
     class_df <-
       json_dfs %>%
-      map_df(class) %>%
+      map(class) %>%
+      as_data_frame() %>%
       gather(nameTable, type) %>%
       mutate(idTable = 1:n())
 
@@ -613,7 +690,10 @@ parse_broker_json_url <-
           }
 
           class_df_list <-
-            df %>% map_df(class) %>% gather(column, type)
+            df %>%
+            map(class) %>%
+            as_data_frame() %>%
+            gather(column, type)
 
           columns <-
             class_df_list %>%
@@ -1503,7 +1583,7 @@ get_data_finra_people <-
     all_data <-
       1:nrow(search_df) %>%
       map_df(function(x) {
-        get_data_finra_entity(
+        get_data_finra_entity_safe(
           search_name = search_df$nameSearch[[x]],
           is_firm = search_df$isFirm[[x]],
           ocr_pdf = ocr_pdf,
@@ -5136,7 +5216,8 @@ get_section_7b_data <-
     section_data <-
       section_data %>%
       mutate(idCRD) %>%
-      select_start_vars()
+      select_start_vars() %>%
+      munge_fund_names()
 
     return(section_data)
   }
@@ -8105,7 +8186,7 @@ get_crd_sections_data <-
              "Other Manager Information",
              "Manager Signatories"
            ),
-           flatten_tables = T) {
+           flatten_tables = TRUE) {
     sitemap_df <-
       get_managers_adv_sitemap_adv(idCRDs = id_crd, score_threshold = score_threshold) %>%
       distinct() %>%
@@ -8191,7 +8272,7 @@ get_crd_sections_data <-
           1:nrow(sitemap_df) %>%
           map_df(function(x) {
             f <-
-              sitemap_df$nameFunction[[x]] %>% lazyeval::as_name() %>% eval
+              sitemap_df$nameFunction[[x]] %>% lazyeval::as_name() %>% eval()
             url <-
               sitemap_df$urlADVSection[[x]]
             df_name <-
@@ -9128,7 +9209,7 @@ get_data_adv_managers_brochures <-
       possibly(get_search_crd_ids, NULL)
 
     crds <-
-      get_search_crd_ids(entity_names = entity_names, crd_ids = crd_ids)
+      get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
 
     get_manager_brochure_data_safe <-
       possibly(get_manager_brochure_data, NULL)
@@ -9162,65 +9243,72 @@ get_data_adv_managers_brochures <-
 
 # Registered_Advisor_Data Downloands -------------------------------------------------
 
-#' Get ADV Summary Filing Data URLs for All Applicable Periods
+#' Get ADV summary filing urls for all available periods
 #'
-#' @param return_wide
-#'
-#' @return
+#'#' @return
 #' @export
-#' @import rvest stringr dplyr tibble httr
-#' @importFrom lubridate mdy
+#' @import rvest stringr dplyr tibble httr stringr lubridate purrr
 #' @examples
 get_data_adv_period_urls <-
-  function(return_wide = TRUE) {
+  function() {
     httr::set_config(httr::config(ssl_verifypeer = 0L))
     page <-
-      'https://www.sec.gov/foia/iareports/inva-archive.htm' %>%
+      'https://www.sec.gov/help/foiadocsinvafoiahtm.html' %>%
       httr::GET() %>%
       httr::content() %>%
       suppressMessages()
 
-    url_zip <-
+    url_nodes <-
       page %>%
-      html_nodes('#main-content a:nth-child(1)') %>%
+      html_nodes('.views-field-field-display-title a')
+
+    titles <- url_nodes %>% html_text()
+
+
+    urls <- url_nodes %>%
       html_attr('href') %>%
-      paste0('https://www.sec.gov', .)
+      str_c("https://www.sec.gov", .)
 
-    date_data <-
-      url_zip %>% basename() %>% str_replace_all('ia|.zip', '') %>% lubridate::mdy()
-
-    url_exempt_zip <-
-      page %>%
-      html_nodes("#main-content a:nth-child(2)") %>%
-      html_attr("href") %>%
-      paste0('https://www.sec.gov', .)
-
-    data_data_exempt <-
-      url_exempt_zip %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% lubridate::mdy()
-
-    if (return_wide) {
-      url_df <-
-        tibble(dateData = date_data,
-               urlZip = url_zip) %>%
-        left_join(tibble(dateData = data_data_exempt,
-                         urlZipExempt = url_exempt_zip)) %>%
-        mutate(periodData = dateData %>% format('%Y-%m')) %>%
-        suppressMessages()
-    } else {
-      url_df <-
-        tibble(dateData = date_data,
-               isExempt = F,
-               urlZip = url_zip) %>%
-        bind_rows(tibble(
-          dateData = data_data_exempt,
-          isExempt = T,
-          urlZip = url_exempt_zip
-        )) %>%
-        mutate(periodData = dateData %>% format('%Y-%m'))
-    }
+    data <-
+      data_frame(nameTitle = titles, urlZip = urls) %>%
+      separate(nameTitle, into = c("typeReport", "periodReport"), sep = '\\, ') %>%
+      mutate(typeReport = typeReport %>% str_to_upper(),
+             isExempt = typeReport %>% str_detect("EXEMPT")) %>%
+      mutate(baseNameURL = urlZip %>% basename()) %>%
+      suppressWarnings()
 
 
-    return(url_df)
+
+    bases <-
+      urls %>% basename()
+
+    df_dates <-
+      bases %>%
+      map_df(function(x){
+
+        date <-
+          x %>% str_split("\\-|\\_|\\.zip") %>% flatten_chr() %>% .[[1]] %>%
+          str_replace_all("ia", "") %>% lubridate::mdy()
+
+        data_frame(baseNameURL = x, dateData = date)
+      })
+
+    periods <- df_dates$dateData %>% format("%Y-%m")
+
+    url_df <-
+      df_dates %>%
+      mutate(
+        quarterData = lubridate::quarter(dateData),
+        yearData = lubridate::year(dateData),
+        periodData = periods
+      ) %>%
+      left_join(data) %>%
+      suppressWarnings() %>%
+      suppressMessages() %>%
+      dplyr::select(-baseNameURL)
+    gc()
+    closeAllConnections()
+    url_df
 
   }
 
@@ -9809,7 +9897,9 @@ parse_sec_adv_data_url <-
     options(scipen = 999999)
 
     date_data <-
-      url %>% basename() %>% str_replace_all('ia|.zip|-exempt', '') %>% lubridate::mdy()
+      url %>% basename() %>%
+      str_split("\\-|\\_|\\.zip") %>% flatten_chr() %>% .[[1]] %>%
+      str_replace_all("ia", "") %>% lubridate::mdy()
 
     is_exempt <-
       url %>% str_detect("exempt")
@@ -9822,19 +9912,20 @@ parse_sec_adv_data_url <-
 
     con <-
       unzip(tmp)
-
-    if (con %>% str_detect("XLS|xls|xlsx|XLSX") %>% sum(na.rm = T) > 0) {
+    is_excel <- con %>% str_count("XLS|xls|xlsx|XLSX") > 0
+    if (is_excel) {
       adv_data <-
         con[[1]] %>% parse_adv_excel_data()
     }
-
-    if (con %>% str_detect("csv|CSV")%>% sum(na.rm = T) > 0) {
+    is_csv <- con %>% str_count("csv|CSV") > 0
+    if (is_csv) {
       adv_data <-
-        con %>% parse_adv_csv() %>%
+        con %>%
+        parse_adv_csv() %>%
         suppressWarnings()
     }
-
-    if (con %>% str_detect("txt|TXT")%>% sum(na.rm = T) > 0) {
+    is_txt <- con %>% str_count("txt|TXT") > 0
+    if (is_txt) {
       adv_data <-
         con %>% parse_adv_txt_data()
     }
@@ -9877,7 +9968,8 @@ parse_sec_adv_data_url <-
         adv_data %>%
           dplyr::select(-matches("country")) %>%
           dplyr::select(matches("^count[A-Z]")) %>%
-          map_df(class) %>%
+          map(class) %>%
+          as_data_frame() %>%
           gather(column, class) %>%
           dplyr::filter(class == 'character') %>% nrow() > 0
       )
@@ -9887,7 +9979,8 @@ parse_sec_adv_data_url <-
         adv_data %>%
         dplyr::select(-matches("country")) %>%
         dplyr::select(matches("^count[A-Z]")) %>%
-        map_df(class) %>%
+        map(class) %>%
+        as_data_frame() %>%
         gather(column, class) %>%
         dplyr::filter(class == 'character') %>%
         .$column
@@ -9973,6 +10066,12 @@ parse_sec_adv_data_url <-
       }
     }
 
+    if (adv_data %>% tibble::has_name("countClientsFinancialPlanningOver500Rounded")) {
+      if (adv_data$countClientsFinancialPlanningOver500Rounded %>% class() == "logical") {
+        adv_data <- adv_data %>% dplyr::select(-countClientsFinancialPlanningOver500Rounded)
+      }
+    }
+
     if ('rangeClientsFinancialPlanning' %in% names(adv_data)) {
       if (adv_data$rangeClientsFinancialPlanning %>% class() == 'numeric') {
         adv_data <-
@@ -9995,54 +10094,44 @@ parse_sec_adv_data_url <-
 
     adv_data <-
       adv_data %>%
-      mutate_at(
-        adv_data %>% dplyr::select(
-          matches("^country|^name|^city|^state|^range[A-Z]|^type[A-Z]")
-        ) %>% names(),
-        funs(. %>% stringr::str_to_upper())
-      )
+      mutate_at(adv_data %>% dplyr::select(
+        matches("^country|^name|^city|^state|^range[A-Z]|^type[A-Z]")
+      ) %>% names(),
+      funs(. %>% stringr::str_to_upper())) %>%
+      mutate(urlZip = url)
 
     return(adv_data)
   }
 
-get_period_type_adv_data <-
-  function(period = "2016-08",
-           is_exempt = FALSE,
-           only_most_recent = FALSE,
-           return_message = TRUE) {
-    if (!'sec_adv_url_df' %>% exists()) {
-      sec_adv_url_df <-
-        get_data_adv_period_urls(return_wide = FALSE)
-
-      assign(x = 'sec_url_df', eval(sec_adv_url_df),  envir = .GlobalEnv)
-    }
-
-    if (only_most_recent) {
-      period <-
-        sec_adv_url_df %>% dplyr::filter(dateData == max(dateData)) %>% .$periodData %>% unique()
-    }
-
-    if (!period %in% sec_adv_url_df$periodData) {
-      available_periods <-
-        sec_adv_url_df$periodData %>% unique()
-
-      "\nSorry periods can only be:\n" %>%
-        paste0(paste0(available_periods, collapse = '\n')) %>%
-        stop()
-    }
-
-    url_data <-
-      sec_adv_url_df %>% dplyr::filter(periodData == period, isExempt == is_exempt) %>% .$urlZip
-
+parse_adv_urls <- function(urls, return_message = TRUE) {
+  df <-
+    data_frame()
+  success <- function(res) {
     parse_sec_adv_data_url_safe <-
-      possibly(parse_sec_adv_data_url, otherwise = NULL)
+      purrr::possibly(parse_sec_adv_data_url, data_frame())
+    page_url <- res$url
+    data <-
+      page_url %>%
+      parse_sec_adv_data_url(return_message = return_message)
 
-    adv_data <-
-      parse_sec_adv_data_url(url = url_data)
-    closeAllConnections()
-    gc()
-    return(adv_data)
+    df <<-
+      df %>%
+      bind_rows(data)
   }
+
+  failure <- function(msg) {
+    data_frame()
+  }
+
+
+  urls %>%
+    map(function(x) {
+      curl_fetch_multi(url = x, success, failure)
+    })
+  multi_run()
+  df
+}
+
 
 
 #' ADV managers periods data
@@ -10056,7 +10145,7 @@ get_period_type_adv_data <-
 #' @param is_exempt exempt, non-exempt filers
 #' @param nest_data return a nested data frame
 #' @param return_message return a message after parsing data
-#' @import dplyr stringr lubridate readr readxl rvest purrr httr tidyr
+#' @import dplyr stringr lubridate readr readxl rvest purrr httr tidyr tibble
 #' @importFrom curl curl_download
 #' @importFrom magrittr extract2
 #' @return where \code{nest_data} is \code{TRUE} a nested data_frame by period and type of filer,
@@ -10067,7 +10156,7 @@ get_period_type_adv_data <-
 #' @family entity search
 #' @family fund data
 #' @examples
-#' #' \dontrun{
+#' \dontrun{
 #' get_data_adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"), all_periods = FALSE, is_exempt = c(FALSE,TRUE), only_most_recent = FALSE, nest_data = FALSE)
 #'
 #' get_data_adv_managers_periods_summaries(only_most_recent = TRUE)
@@ -10076,45 +10165,60 @@ get_data_adv_managers_periods_summaries <-
   function(periods = c("2006-06"),
            all_periods = FALSE,
            only_most_recent = FALSE,
-           is_exempt = c(TRUE, FALSE),
+           include_exempt = TRUE,
            nest_data = FALSE,
            return_message = TRUE) {
+    if (!'sec_adv_url_df' %>% exists()) {
+      sec_adv_url_df <-
+        get_data_adv_period_urls()
+
+      assign(x = 'sec_url_df', eval(sec_adv_url_df),  envir = .GlobalEnv)
+    }
+
+    df_urls <- sec_adv_url_df
+
+    if (!include_exempt) {
+      df_urls <-
+        df_urls %>%
+        filter(!isExempt)
+    }
+
+    if (periods %>% length() > 0) {
+      urls <-
+        df_urls %>%
+        filter(periodData %in% periods) %>%
+        pull(urlZip)
+    }
+
     if (all_periods) {
-      periods <-
-        get_data_adv_period_urls() %>% .$periodData %>% unique()
+      urls <-
+        df_urls %>%
+        pull(urlZip)
     }
 
     if (only_most_recent) {
-      periods <-
-        get_data_adv_period_urls() %>% slice(1) %>% .$periodData %>% unique()
+      urls <-
+        df_urls %>%
+        filter(dateData == max(dateData)) %>%
+        pull(urlZip)
     }
 
-    input_df <-
-      expand.grid(
-        period = periods,
-        only_most_recent = only_most_recent,
-        exempt = is_exempt,
-        stringsAsFactors = F
-      ) %>%
-      as_data_frame()
-
-    get_period_type_adv_data_safe <-
-      possibly(get_period_type_adv_data, NULL)
+    parse_adv_urls_safe <-
+      purrr::possibly(parse_adv_urls, data_frame())
 
     all_adv_data <-
-      1:nrow(input_df) %>%
-      purrr::map_df(function(x) {
-        get_period_type_adv_data_safe(
-          period = input_df$period[x],
-          is_exempt = input_df$exempt[x],
-          only_most_recent = input_df$only_most_recent[x],
-          return_message = return_message
-        )
-      }) %>%
-      suppressWarnings()
+      parse_adv_urls_safe(urls = urls, return_message = return_message)
+
     has_data <-
       all_adv_data %>% nrow() > 0
     if (has_data) {
+
+      all_adv_data <-
+        all_adv_data %>%
+        dplyr::select(-isExempt) %>%
+        left_join(df_urls) %>%
+        suppressMessages()
+
       all_adv_data <-
         all_adv_data %>%
         mutate_at(.vars =
@@ -10222,7 +10326,9 @@ get_data_adv_managers_periods_summaries <-
         nest(-c(dateDataADV, isExempt), .key = 'dataADV')
     }
     closeAllConnections()
-    return(all_adv_data)
+    gc()
+
+    all_adv_data
   }
 
 #' ADV managers most recent summary data
@@ -10244,7 +10350,7 @@ get_data_adv_managers_periods_summaries <-
 #' @family entity search
 #' @family fund data
 #' @examples
-#' #' \dontrun{
+#' \dontrun{
 #' get_data_adv_managers_current_period_summary(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasManagerFelonyPleaConviction", "hasManagerFelonyCharge", "hasManagerMisdemeanorPleaConviction"))
 #' }
 

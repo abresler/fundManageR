@@ -2,13 +2,10 @@
 % Please edit documentation in R/adv_functions.R
 \name{get_data_adv_period_urls}
 \alias{get_data_adv_period_urls}
-\title{Get ADV Summary Filing Data URLs for All Applicable Periods}
+\title{Get ADV summary filing urls for all available periods}
 \usage{
-get_data_adv_period_urls(return_wide = TRUE)
-}
-\arguments{
-\item{return_wide}{}
+get_data_adv_period_urls()
 }
 \description{
-Get ADV Summary Filing Data URLs for All Applicable Periods
+#' @return
 }

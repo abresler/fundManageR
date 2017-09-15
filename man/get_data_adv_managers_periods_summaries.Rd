@@ -5,19 +5,19 @@
 \title{ADV managers periods data}
 \usage{
 get_data_adv_managers_periods_summaries(periods = c("2006-06"),
-  all_periods = FALSE, only_most_recent = FALSE, is_exempt = c(TRUE,
-  FALSE), nest_data = FALSE, return_message = TRUE)
+  all_periods = FALSE, only_most_recent = FALSE, include_exempt = TRUE,
+  nest_data = FALSE, return_message = TRUE)
 }
 \arguments{
 \item{periods}{dates in year-month form}
 
 \item{all_periods}{include all periods}
 
-\item{is_exempt}{exempt, non-exempt filers}
-
 \item{nest_data}{return a nested data frame}
 
 \item{return_message}{return a message after parsing data}
+
+\item{is_exempt}{exempt, non-exempt filers}
 }
 \value{
 where \code{nest_data} is \code{TRUE} a nested data_frame by period and type of filer,
@@ -29,7 +29,7 @@ information for every ADV filing manager
 from 2006 onwards.
 }
 \examples{
-#' \dontrun{
+\dontrun{
 get_data_adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"), all_periods = FALSE, is_exempt = c(FALSE,TRUE), only_most_recent = FALSE, nest_data = FALSE)
 
 get_data_adv_managers_periods_summaries(only_most_recent = TRUE)
