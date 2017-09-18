@@ -9912,19 +9912,20 @@ parse_sec_adv_data_url <-
 
     con <-
       unzip(tmp)
-    is_excel <- con %>% str_count("XLS|xls|xlsx|XLSX") > 0
+    is_excel <-
+      con %>% stringr::str_detect("XLS|xls|xlsx|XLSX") %>%  sum(na.rm = TRUE) > 0
     if (is_excel) {
       adv_data <-
         con[[1]] %>% parse_adv_excel_data()
     }
-    is_csv <- con %>% str_count("csv|CSV") > 0
+    is_csv <- con %>% str_detect("csv|CSV") %>%  sum(na.rm = TRUE) > 0
     if (is_csv) {
       adv_data <-
         con %>%
         parse_adv_csv() %>%
         suppressWarnings()
     }
-    is_txt <- con %>% str_count("txt|TXT") > 0
+    is_txt <- con %>% str_detect("txt|TXT") %>%  sum(na.rm = TRUE) > 0
     if (is_txt) {
       adv_data <-
         con %>% parse_adv_txt_data()
@@ -9947,18 +9948,48 @@ parse_sec_adv_data_url <-
     adv_data <-
       adv_data[, adv_names]
 
-    df_names <-
-      names(adv_data) %>%
-      map_df(function(x) {
-        data_frame(nameActual = sec_names_df %>%
-                     dplyr::filter(nameSEC == x) %>%
-                     .$nameActual)
-      }) %>%
-      .$nameActual
+    if (adv_data %>% tibble::has_name("5H__1")) {
+      adv_data <-
+        adv_data %>%
+        dplyr::rename(`5I(1)` = `5H__1`)
+    }
+
+    adv_names <- names(adv_data)
+    actual_adv <-
+      sec_names_df %>%
+      pull(nameSEC)
+
+    actual_names <-
+      1:length(adv_names) %>%
+      map_chr(function(x) {
+
+        adv_name <-
+          adv_names[[x]]
+
+        if (!adv_name %in% actual_adv) {
+          return(adv_name)
+        }
+
+        sec_names_df %>%
+          filter(nameSEC == adv_name) %>%
+          pull(nameActual)
+
+      })
 
     adv_data <-
       adv_data %>%
-      purrr::set_names(df_names)
+      purrr::set_names(actual_names)
+
+    column_ids <-
+      data_frame(nameActual = names(adv_data)) %>%
+      mutate(idRow = 1:n()) %>%
+      group_by(nameActual) %>%
+      filter(idRow == min(idRow)) %>%
+      pull(idRow)
+
+    adv_data <-
+      adv_data[,column_ids] %>%
+      as_data_frame()
 
     has_columns <-
       (adv_data %>%
@@ -10072,6 +10103,12 @@ parse_sec_adv_data_url <-
       }
     }
 
+    if (adv_data %>% tibble::has_name("idCIK")) {
+      if (adv_data$idCIK %>% class() == "logical") {
+        adv_data <- adv_data %>% dplyr::select(-idCIK)
+      }
+    }
+
     if ('rangeClientsFinancialPlanning' %in% names(adv_data)) {
       if (adv_data$rangeClientsFinancialPlanning %>% class() == 'numeric') {
         adv_data <-
@@ -10103,16 +10140,23 @@ parse_sec_adv_data_url <-
     return(adv_data)
   }
 
-parse_adv_urls <- function(urls, return_message = TRUE) {
+parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.zip', return_message = TRUE) {
   df <-
     data_frame()
   success <- function(res) {
+
+
+
     parse_sec_adv_data_url_safe <-
       purrr::possibly(parse_sec_adv_data_url, data_frame())
+
     page_url <- res$url
+
+      glue::glue("parsing {page_url}") %>% message()
+
     data <-
       page_url %>%
-      parse_sec_adv_data_url(return_message = return_message)
+      parse_sec_adv_data_url_safe(return_message = return_message)
 
     df <<-
       df %>%
@@ -10132,8 +10176,6 @@ parse_adv_urls <- function(urls, return_message = TRUE) {
   df
 }
 
-
-
 #' ADV managers periods data
 #'
 #' This function returns monthly summary
@@ -10145,7 +10187,7 @@ parse_adv_urls <- function(urls, return_message = TRUE) {
 #' @param is_exempt exempt, non-exempt filers
 #' @param nest_data return a nested data frame
 #' @param return_message return a message after parsing data
-#' @import dplyr stringr lubridate readr readxl rvest purrr httr tidyr tibble
+#' @import dplyr stringr lubridate readr readxl rvest purrr httr tidyr tibble glue
 #' @importFrom curl curl_download
 #' @importFrom magrittr extract2
 #' @return where \code{nest_data} is \code{TRUE} a nested data_frame by period and type of filer,
@@ -10209,15 +10251,19 @@ get_data_adv_managers_periods_summaries <-
     all_adv_data <-
       parse_adv_urls_safe(urls = urls, return_message = return_message)
 
-    has_data <-
-      all_adv_data %>% nrow() > 0
-    if (has_data) {
+    if (all_adv_data %>% nrow() == 0) {
+      return(all_adv_data)
+    }
 
       all_adv_data <-
         all_adv_data %>%
         dplyr::select(-isExempt) %>%
         left_join(df_urls) %>%
         suppressMessages()
+
+      all_adv_data <-
+        all_adv_data %>%
+        arrange(desc(dateDataADV))
 
       all_adv_data <-
         all_adv_data %>%
@@ -10318,7 +10364,7 @@ get_data_adv_managers_periods_summaries <-
             everything()
           )
       }
-    }
+
 
     if (nest_data) {
       all_adv_data <-
