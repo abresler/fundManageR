@@ -70,7 +70,9 @@ get_data_ycombinator_alumni <-
       mutate_at(json_data %>% dplyr::select(matches("name")) %>% names(),
                 funs(. %>% str_to_upper())) %>%
       mutate_at(.vars = "urlCompany",
-                funs(ifelse(. == '', NA, .)))
+                funs(ifelse(. == '', NA, .))) %>%
+      mutate_if(is.character,
+                str_trim)
 
 
     if (return_message)  {
