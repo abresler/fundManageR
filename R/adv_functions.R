@@ -220,6 +220,7 @@ munge_fund_names <-
             ""
           )
       ) %>%
+      mutate(nameFundClean = nameFundClean %>% str_trim() %>% str_replace_all("  ", " ")) %>%
       select(
         typeFundEntity,
         nameFund,
