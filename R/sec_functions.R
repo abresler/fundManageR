@@ -437,7 +437,7 @@ parse_sec_cusip_url <-
 
     df_metadata <-
       url %>%
-      extract_metadata() %>%
+      tabulizer::extract_metadata() %>%
       flatten_df()
 
     if ('modified' %in% names(df_metadata)) {
@@ -464,11 +464,11 @@ parse_sec_cusip_url <-
     if (table_area %>% is.na()) {
       tables <-
         url %>%
-        extract_tables(start_page:df_metadata$pages)
+        tabulizer::extract_tables(start_page:df_metadata$pages)
     } else {
       tables <-
         url %>%
-        extract_tables(start_page:df_metadata$pages,
+        tabulizer::extract_tables(start_page:df_metadata$pages,
                        area = list(table_area))
     }
 
@@ -586,7 +586,7 @@ parse_sec_cusip_url <-
 #' @param nest_data \code{TRUE} return nested data frame
 #' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
-#' @import purrr stringr dplyr rvest tabulizer formattable tidyr xml2
+#' @import purrr stringr dplyr rvest formattable tidyr xml2
 #' @importFrom lubridate mdy
 #' @importFrom readr read_csv
 #' @return

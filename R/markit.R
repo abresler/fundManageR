@@ -1,7 +1,3 @@
-gdeltr2::load_needed_packages(c('readr', 'jsonlite', 'curl', 'purrr', 'dplyr', 'tidyr', 'stringr', 'rvest', 'xml2', 'tabulizer'))
-
-# tickers ------------------------------------------------------------------
-
 get_data_ticker_trade <-
   function(ticker = "bxp" , return_message = TRUE) {
   json_url <-
