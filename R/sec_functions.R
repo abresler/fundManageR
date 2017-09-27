@@ -586,7 +586,7 @@ parse_sec_cusip_url <-
 #' @param nest_data \code{TRUE} return nested data frame
 #' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
-#' @import purrr stringr dplyr rvest formattable tidyr xml2
+#' @import purrr stringr dplyr rvest formattable tidyr xml2 tabulizer
 #' @importFrom lubridate mdy
 #' @importFrom readr read_csv
 #' @return

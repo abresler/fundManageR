@@ -325,7 +325,7 @@ parse_nareit_constituent_url <-
 #' @export
 #' @family NAREIT
 #' @family index constituents
-#' @import purrr stringr dplyr rvest formattable lubridate tidyr readr curl
+#' @import purrr stringr dplyr rvest formattable lubridate tidyr readr curl tabulizer
 #' @examples
 #' get_data_nareit_constituent_years(years = 1991:2016, resolve_names = TRUE, nest_data = TRUE, return_message = TRUE)
 get_data_nareit_constituent_years <-
