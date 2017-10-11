@@ -741,6 +741,94 @@ parse_reit_info_page <-
           suppressWarnings() %>%
           suppressMessages()
       }
+
+      if (page %>% html_nodes('#block-reit-company-company-office a') %>% length() > 0){
+        url_company <-
+          page %>% html_nodes('#block-reit-company-company-office a') %>%
+          html_text()
+
+        if (!url_company %>% str_detect("http://")) {
+          url_company <- str_c('http://', url_company, sep = '')
+        }
+        data <-
+          data %>%
+          mutate(urlCompany = url_company)
+      } else {
+        data <-
+          data %>%
+          mutate(urlCompany = NA)
+      }
+
+      if (page %>% html_nodes('.reit-company-address__line-1') %>% length() > 0){
+        address_1 <-
+          page %>%
+          html_nodes('.reit-company-address__line-1') %>%
+          html_text() %>%
+          str_trim()
+        if (page %>%
+            html_nodes('.reit-company-address__line-2') %>% length() > 0) {
+        address_2 <-
+          page %>%
+          html_nodes('.reit-company-address__line-2') %>%
+          html_text() %>%
+          str_trim()
+        address <-
+          str_c(address_1, address_2, sep = ', ')
+        } else {
+          address <- address_1
+        }
+
+        city <- page %>%
+          html_nodes('.reit-company-address__city') %>%
+          html_text() %>%
+          str_trim()
+
+        if (city %>% substr(nchar(city), nchar(city)) == ",") {
+          city <-
+            city %>% substr(1, nchar(city) - 1)
+        }
+
+        state <-
+          page %>%
+          html_nodes('.reit-company-address__state') %>%
+          html_text() %>%
+          str_trim()
+
+        data <-
+          data %>%
+          mutate(addressCompany = address,
+                 cityCompany = city,
+                 stateCompany  = state)
+      } else {
+        data <-
+          data %>%
+          mutate(addressCompany = NA,
+                 cityCompany = NA,
+                 stateCompany  = NA)
+      }
+
+      if (page %>% html_nodes('.reit-company-contact__name') %>% length() > 0) {
+        people <-
+          page %>%
+          html_nodes('.reit-company-contact__name') %>%
+          html_text() %>%
+          str_trim()
+
+        title <-
+          page %>%
+          html_nodes('.reit-company-contact__title') %>%
+          html_text() %>%
+          str_trim() %>%
+          str_replace_all("[^[:alnum:]]", "") %>%
+          str_c('title', ., sep = '')
+
+        data <-
+          data %>%
+          bind_cols(data_frame(people, title) %>%
+          spread(title, people))
+
+      }
+
       df <<-
         df %>%
         bind_rows(data)
@@ -782,7 +870,9 @@ get_data_nareit_entities <-
       purrr::possibly(parse_reit_info_page, data_frame())
 
     reits_df <-
-      get_reit_entity_dictionary()
+      get_reit_entity_dictionary() %>%
+      dplyr::select(-urlCompany) %>%
+      suppressWarnings()
 
     if (!include_private_non_public) {
       reits_df <-
@@ -790,12 +880,12 @@ get_data_nareit_entities <-
         filter(!isPrivateNonPublicREIT)
     }
 
-    all_data <-
-      reits_df$urlNAREIT %>%
-      map_df(function(x) {
-        parse_reit_info_page_safe(urls = x, return_message = return_message)
-      }) %>%
-      suppressWarnings()
+      all_data <-
+        reits_df$urlNAREIT %>%
+        map_df(function(x) {
+          parse_reit_info_page_safe(urls = x, return_message = return_message)
+        }) %>%
+        suppressWarnings()
 
     all_data <-
       all_data %>%
@@ -808,6 +898,15 @@ get_data_nareit_entities <-
 
     all_data <-
       all_data %>%
+      separate(nameExchange, into = c('nameExchange', 'idExchange'), sep = '\\(') %>%
+      mutate(idExchange = idExchange %>% str_replace_all('\\)', ''))
+
+    all_data <-
+      all_data %>%
+      separate(statusListing, into = c('typeListing', 'typeListingTraded'), sep = '\\,')
+
+    all_data <-
+      all_data %>%
       mutate_at(.vars = all_data %>% dplyr::select(matches("^price|^dividend")) %>% names(),
                 funs(. %>% formattable::currency(digits = 2))) %>%
       mutate_at(.vars = all_data %>% dplyr::select(matches("^amount")) %>% names(),
@@ -816,13 +915,8 @@ get_data_nareit_entities <-
                 funs(. %>% formattable::comma(digits = 0))) %>%
       mutate_at(.vars = all_data %>% dplyr::select(matches("^pct")) %>% names(),
                 funs(. %>% formattable::percent(digits = 2))) %>%
-      select(typeCompany, statusListing, nameSector, nameCompany, idTicker, everything())
-
-    all_data <-
-      all_data %>%
-      left_join(reits_df %>% dplyr::select(idTicker, nameCompany, urlCompany)) %>%
-      dplyr::select(typeCompany:idTicker, urlCompany, everything()) %>%
-      suppressMessages()
+      mutate_if(is.character, str_trim) %>%
+      select(typeCompany, typeListing, typeListingTraded, nameSector, nameCompany, idTicker, urlCompany, everything())
 
     if (return_message) {
       list("Returned information for ", all_data %>% nrow(), ' REITs') %>%
