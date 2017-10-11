@@ -82,7 +82,7 @@ parse_nareit_constituent_url <-
 
       tables <-
         url %>%
-        extract_tables(1:df_metadata$pages)
+        tabulizer::extract_tables(1:df_metadata$pages)
 
       all_data <-
         1:length(tables) %>%
@@ -2001,7 +2001,7 @@ get_data_nareit_mergers_acquisitions <-
 
     tables <-
       url %>%
-      extract_tables(pages = pages)
+      tabulizer::extract_tables(pages = pages)
 
     all_data <-
       1:length(tables) %>%
@@ -2027,6 +2027,7 @@ get_data_nareit_mergers_acquisitions <-
       filter(!yearMerger == 'YEAR') %>%
       select(-c(V5, V7))
 
+    if (all_data %>% tibble::has_name("V13")) {
     all_data <-
       all_data %>%
       mutate(
@@ -2038,6 +2039,75 @@ get_data_nareit_mergers_acquisitions <-
       ) %>%
       select(-matches("^V")) %>%
       suppressWarnings()
+    } else {
+      all_data <-
+        all_data %>%
+        filter(V9 == "") %>%
+        filter(!yearMerger == "2017") %>%
+        mutate_all(funs(ifelse(. == '', NA, .))) %>%
+        dplyr::select(which(colMeans(is.na(.)) < 1)) %>%
+        purrr::set_names(c("yearMerger", "nameAcquiror", "nameTarget",
+                           "typeAcquiror", "amountAcquisitionPrice",  "dateAnnounced", "dateComplete", "statusTransaction")) %>%
+        bind_rows(
+          all_data %>%
+            filter(!V9 == "") %>%
+            mutate_all(funs(ifelse(. == '', NA, .))) %>%
+            dplyr::select(which(colMeans(is.na(.)) < 1)) %>%
+            mutate(typeAcquiror = case_when(
+              nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
+              nameTarget %>% str_detect("PUBLIC REIT") ~ "PUBLIC REIT",
+              nameTarget %>% str_detect("PUBLIC REAL ESTATE COMPANY") ~ "PUBLIC REAL ESTATE COMPANY",
+              nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
+              nameTarget %>% str_detect("REAL ESTATE ADVISORY FIRM") ~ "REAL ESTATE ADVISORY FIRM",
+              nameTarget %>% str_detect("ASSET MANAGEMENT FIRM") ~ "ASSET MANAGER",
+              nameTarget %>% str_detect("BROKERAGE FIRM") ~ "BROKERAGE FIRM",
+              nameTarget %>% str_detect("REAL ESTATE OPERATING COMPANY") ~ "REAL ESTATE OPERATING COMPANY",
+              nameTarget %>% str_detect("NON-TRADED REIT") ~ "NON-TRADED REIT",
+              nameTarget %>% str_detect("PRIVATE EQUITY FIRM") ~ "PRIVATE EQUITY FIRM",
+              nameTarget %>% str_detect("INVESTOR GROUP") ~ "INVESTOR GROUP",
+              nameTarget %>% str_detect("PRIVATE REIT") ~ "PRIVATE REIT",
+              nameTarget %>% str_detect("PRIVATE REAL ESTATE COMPANY") ~ "PRIVATE REAL ESTATE COMPANY"
+            )) %>%
+            mutate(nameTarget = nameTarget %>% str_replace_all("PRIVATE REAL ESTATE COMPANY|PRIVATE REIT|INVESTOR GROUP|NON-TRADED REIT|REAL ESTATE OPERATING COMPANY|BROKERAGE FIRM|ASSET MANAGEMENT FIRM|PUBLIC REAL ESTATE COMPANY|PUBLIC REIT|ASSET MANAGER|PRIVATE EQUITY FIRM|REAL ESTATE ADVISORY FIRM", "") %>% str_trim()) %>%
+            purrr::set_names(c("yearMerger", "nameAcquiror", "nameTarget",
+                              "amountAcquisitionPrice",  "dateAnnounced", "dateComplete", "statusTransaction",
+                              "typeAcquiror"))
+        ) %>%
+        bind_rows(
+          all_data %>%
+            filter(V9 == "") %>%
+            filter(yearMerger == "2017") %>%
+            mutate_all(funs(ifelse(. == '', NA, .))) %>%
+            dplyr::select(which(colMeans(is.na(.)) < 1)) %>%
+            mutate(typeAcquiror = case_when(
+              nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
+              nameTarget %>% str_detect("PUBLIC REIT") ~ "PUBLIC REIT",
+              nameTarget %>% str_detect("PUBLIC REAL ESTATE COMPANY") ~ "PUBLIC REAL ESTATE COMPANY",
+              nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
+              nameTarget %>% str_detect("REAL ESTATE ADVISORY FIRM") ~ "REAL ESTATE ADVISORY FIRM",
+              nameTarget %>% str_detect("ASSET MANAGEMENT FIRM") ~ "ASSET MANAGER",
+              nameTarget %>% str_detect("BROKERAGE FIRM") ~ "BROKERAGE FIRM",
+              nameTarget %>% str_detect("REAL ESTATE OPERATING COMPANY") ~ "REAL ESTATE OPERATING COMPANY",
+              nameTarget %>% str_detect("NON-TRADED REIT") ~ "NON-TRADED REIT",
+              nameTarget %>% str_detect("PRIVATE EQUITY FIRM") ~ "PRIVATE EQUITY FIRM",
+              nameTarget %>% str_detect("INVESTOR GROUP") ~ "INVESTOR GROUP",
+              nameTarget %>% str_detect("PRIVATE REIT") ~ "PRIVATE REIT",
+              nameTarget %>% str_detect("PRIVATE REAL ESTATE COMPANY") ~ "PRIVATE REAL ESTATE COMPANY"
+            )) %>%
+            mutate(nameTarget = nameTarget %>% str_replace_all("PRIVATE REAL ESTATE COMPANY|PRIVATE REIT|INVESTOR GROUP|NON-TRADED REIT|REAL ESTATE OPERATING COMPANY|BROKERAGE FIRM|ASSET MANAGEMENT FIRM|PUBLIC REAL ESTATE COMPANY|PUBLIC REIT|ASSET MANAGER|PRIVATE EQUITY FIRM|REAL ESTATE ADVISORY FIRM", "") %>% str_trim()) %>%
+            purrr::set_names(c("yearMerger", "nameAcquiror", "nameTarget",
+                               "amountAcquisitionPrice",  "dateAnnounced", "statusTransaction",
+                               "typeAcquiror"))
+        ) %>%
+        distinct() %>%
+        mutate(
+          yearMerger = yearMerger %>% as.numeric(),
+          amountAcquisitionPrice =  amountAcquisitionPrice %>% readr::parse_number() * 1000000,
+          dateAnnounced = dateAnnounced %>%  lubridate::dmy(),
+          dateComplete = dateComplete %>% lubridate::dmy()
+        ) %>%
+        suppressMessages()
+    }
 
     all_data <-
       all_data %>%
