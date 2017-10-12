@@ -43,7 +43,7 @@ get_tradeview_regions_metrics(regions = c("canada", "america"),
   "pre_change", "change_from_open", "low", "volume", "relative_volume", "type",
   "subtype", "eps_surprise_fq", "market_cap_calc", "exchange", "price_sales",
   "eps_surprise_percent_fq"),      sort = list(sortBy = "market_cap_basic",
-  sortOrder = "desc"), options = list(lang = "eng"), range = c(0, 1.5e+21)),
+  sortOrder = "desc"), options = list(lang = "eng"), range = c(0, 1.5e+13)),
   return_message = TRUE)
 }
 \arguments{

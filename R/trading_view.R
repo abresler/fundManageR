@@ -717,10 +717,10 @@ get_tradeview_regions_metrics <-
              sort = list(sortBy = 'market_cap_basic',
                          sortOrder = 'desc'),
              options = list(lang = 'eng'),
-             range = c(0, 1500000000000000000000)
+             range = c(0, 15000000000000)
            ),
            return_message = TRUE) {
-
+    options(scipen = 99999999999999)
     glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
       message()
 
