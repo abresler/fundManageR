@@ -6,11 +6,11 @@
 \usage{
 generate_trade_view_metric_query(filter = data_frame(left =
   "market_cap_basic", operation = "nempty"), symbols = list(query = list(types
-  = c("stock", "fund", "dr"))), metrics = c("name", "sector", "close",
-  "change_abs", "change", "volume", "market_cap_basic", "price_earnings_ttm",
-  "earnings_per_share_basic_ttm", "number_of_employees", "description"),
+  = c("stock", "fund", "dr"))), metrics = c("change", "change_abs", "close",
+  "description", "earnings_per_share_basic_ttm", "market_cap_basic", "name",
+  "number_of_employees", "price_earnings_ttm", "sector", "volume"),
   sort = list(sortBy = "market_cap_basic", sortOrder = "desc"),
-  options = list(lang = "eng"), range = c(0, 1.5e+09))
+  options = list(lang = "eng"), range = c(0, 1.5e+13))
 }
 \arguments{
 \item{range}{}

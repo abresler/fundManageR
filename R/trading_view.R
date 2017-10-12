@@ -1,3 +1,19 @@
+
+# dictionaries ------------------------------------------------------------
+
+get_tradeingview_chart_items <-
+  function() {
+    json_data <-
+      "https://pine-facade.tradingview.com/pine-facade/list?filter=standard" %>%
+      jsonlite::fromJSON(simplifyDataFrame = TRUE)
+
+    data <-
+      json_data[1:6] %>%
+      tibble::as_data_frame()
+
+    data
+  }
+
 # events ------------------------------------------------------------------
 parse_result_number <-
   function(x) {
@@ -182,7 +198,24 @@ hot_list_slugs <- c(
 # https://esd-feed.tradingview.com/estimates?symbol=xbit&exchange=nasdaq
 
 # https://news-headlines.tradingview.com/headlines/yahoo/symbol/FB/?locale=en -- news
+generate_slug <-
+  function(value = "nyse", sep_pre = "&",parameter = "exchange", symbol = "=", sep_post = "") {
+    if (value %>% purrr::is_null()) {
+      return("")
+    }
+    glue::glue("{sep_pre}{parameter}{symbol}{value}{sep_post}") %>%
+      as.character()
+  }
 
+generate_ticker_estimates_url <-
+  function(ticker = "cim", exchange = NULL) {
+    slug_exchange <-
+      generate_slug(value = exchange)
+    base <- "https://esd-feed.tradingview.com/estimates"
+
+    glue::glue("{base}?symbol={ticker}{slug_exchange}") %>%
+      as.character()
+  }
 
 
 # scan --------------------------------------------------------------------
@@ -520,23 +553,13 @@ generate_trade_view_metric_query <-
   function(filter = data_frame(left = 'market_cap_basic',
                                operation = 'nempty'),
            symbols = list(query = list(types = c('stock', 'fund', 'dr'))),
-           metrics = c(
-             "name",
-             "sector",
-             "close",
-             "change_abs",
-             "change",
-             "volume",
-             "market_cap_basic",
-             "price_earnings_ttm",
-             "earnings_per_share_basic_ttm",
-             "number_of_employees",
-             "description"
-           ),
+           metrics =c("change", "change_abs", "close", "description", "earnings_per_share_basic_ttm",
+                      "market_cap_basic", "name", "number_of_employees", "price_earnings_ttm",
+                      "sector", "volume"),
            sort = list(sortBy = 'market_cap_basic',
                        sortOrder = 'desc'),
            options = list(lang = 'eng'),
-           range = c(0, 1500000000)) {
+           range = c(0, 15000000000000)) {
     metrics <-
       c('name', metrics) %>%
       unique()
@@ -568,6 +591,7 @@ parse_tradeview_metric_url <-
 
     requests <-
       reticulate::import("requests")
+
     json <-
       requests$post(url = url, data = data_query)
 
@@ -613,7 +637,26 @@ parse_tradeview_metric_url <-
 #'
 #' Get data for trade view query
 #'
-#' @param regions
+#' @param regions vector of regions \itemize{
+#' \item america
+#' \item uk
+#' \item australia
+#' \item brazil
+#' \item canada
+#' \item euronext
+#' \item germany
+#' \item hongkong
+#' \item india
+#' \item japan
+#' \item mexico
+#' \item newzealand
+#' \item russia
+#' \item singapore
+#' \item spain
+#' \item switzerland
+#' \item taiwan
+#' \item turkey
+#' }
 #' @param query list of query parameters \itemize{
 #' \item filter - list of query parameters
 #' \item symbols - list of types
@@ -630,32 +673,57 @@ parse_tradeview_metric_url <-
 #' @examples
 get_tradeview_regions_metrics <-
   function(regions = c('canada', 'america'),
-
            query = list(
              filter = data_frame(left = 'market_cap_basic',
                                  operation = 'nempty'),
              symbols = list(query = list(types = c(
                'stock', 'fund', 'dr'
              ))),
-             metrics = c(
-               "name",
-               "sector",
-               "close",
-               "change_abs",
-               "change",
-               "volume",
-               "market_cap_basic",
-               "price_earnings_ttm",
-               "earnings_per_share_basic_ttm",
-               "number_of_employees",
-               "description"
-             ),
+             metrics = c("beta_5_year", "earnings_release_date", "earnings_per_share_forecast_next_fq",
+                         "operating_margin", "return_on_equity", "current_ratio", "debt_to_assets",
+                         "price_revenue_ttm", "amount_recent", "market_cap_basic", "ebitda",
+                         "fundamental_currency_code", "total_assets", "current_session",
+                         "earnings_per_share_fq", "earnings_per_share_forecast_fq", "earnings_release_next_time",
+                         "cash_ratio", "yield_upcoming", "sector", "basic_eps_net_income",
+                         "price_book_ratio", "quick_ratio", "net_debt", "total_shares_outstanding_fundamental",
+                         "enterprise_value_fq", "beta_3_year", "total_capital", "earnings_per_share_diluted_ttm",
+                         "last_annual_eps", "revenue_fq", "ex_dividend_date_recent", "price_earnings_ttm",
+                         "debt_to_equity", "pre_tax_margin", "debt_to_equity_fq", "number_of_employees",
+                         "total_current_assets", "last_annual_revenue", "revenue_forecast_fq",
+                         "industry", "return_on_assets", "return_of_invested_capital_percent_ttm",
+                         "return_on_invested_capital", "gross_profit", "dividends_paid",
+                         "preferred_dividends", "earnings_release_next_date", "dividends_yield",
+                         "price_sales_ratio", "yield_recent", "ex_dividend_date_upcoming",
+                         "total_shares_outstanding", "price_earnings_to_growth_ttm", "price_book_fq",
+                         "enterprise_value_ebitda_ttm", "rtc", "amount_upcoming", "average_volume",
+                         "revenue_per_employee", "after_tax_margin", "net_income", "earnings_release_time",
+                         "type_recent", "dividends_per_share_fq", "payment_date_upcoming",
+                         "gross_margin_percent_ttm", "earnings_per_share_basic_ttm", "price_free_cash_flow_ttm",
+                         "long_term_capital", "total_debt", "country", "total_revenue",
+                         "gross_margin", "number_of_shareholders", "type_upcoming", "beta_1_year",
+                         "goodwill", "expected_annual_dividends", "revenue_forecast_next_fq",
+                         "payment_date_recent", "low", "volume", "pre_change_abs", "gap",
+                         "open", "volume", "pre_change_abs", "time", "change_from_open",
+                         "low", "high", "close", "volume", "change_abs", "open", "change_from_open",
+                         "change_abs", "time", "change", "pre_change_abs", "time", "gap",
+                         "high", "open", "change_from_open", "change_abs", "low", "close",
+                         "change", "change_abs", "close", "time", "change", "pre_change",
+                         "close", "high", "gap", "change", "open", "high", "pre_change",
+                         "pre_change", "pre_change_abs", "gap", "pre_change", "change_from_open",
+                         "low", "volume", "relative_volume", "type", "subtype", "eps_surprise_fq",
+                         "market_cap_calc", "exchange", "price_sales", "eps_surprise_percent_fq"
+             )
+             ,
              sort = list(sortBy = 'market_cap_basic',
                          sortOrder = 'desc'),
              options = list(lang = 'eng'),
-             range = c(0, 1500000000)
+             range = c(0, 1500000000000000000000)
            ),
            return_message = TRUE) {
+
+    glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
+      message()
+
     urls <-
       glue::glue("https://scanner.tradingview.com/{regions}/scan")
 
@@ -719,7 +787,8 @@ get_tradeview_regions_metrics <-
     data <-
       df_companies %>%
       left_join(df_values) %>%
-      suppressMessages()
+      suppressMessages() %>%
+      dplyr::select(which(colMeans(is.na(.)) < 1))
 
     data
 
