@@ -559,7 +559,7 @@ generate_trade_view_metric_query <-
            sort = list(sortBy = 'market_cap_basic',
                        sortOrder = 'desc'),
            options = list(lang = 'eng'),
-           range = c(0, 15000000000000)) {
+           range = c(0, 1500000)) {
     metrics <-
       c('name', metrics) %>%
       unique()
@@ -720,7 +720,7 @@ get_tradeview_regions_metrics <-
              range = c(0, 15000000000000)
            ),
            return_message = TRUE) {
-    options(scipen = 99999999999999)
+    options(scipen = 99999)
     glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
       message()
 
