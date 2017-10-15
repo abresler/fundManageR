@@ -9193,7 +9193,7 @@ get_manager_brochure_data <-
 #'
 #' @return
 #' @export
-#' @import curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble pdftools tidyr curlconverter jsonlite
+#' @import curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble pdftools tidyr jsonlite
 #' @examples
 #' get_data_adv_managers_brochures(entity_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE, nest_data = TRUE)
 get_data_adv_managers_brochures <-
