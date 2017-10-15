@@ -1179,7 +1179,7 @@ get_data_dtcc_today <-
 #' @export
 #' @family DTCC
 #' @family transaction data
-#' @import curl dplyr purrr readr lubridate stringr tidyr curlconverter
+#' @import curl dplyr purrr readr lubridate stringr tidyr
 #' @examples
 #' \dontrun{
 #' get_data_dtcc_trades()

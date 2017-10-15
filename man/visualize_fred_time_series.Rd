@@ -6,8 +6,8 @@
 \usage{
 visualize_fred_time_series(series_id = "DGS2", use_random = FALSE,
   fred_data_transformation = NULL, date_start = NULL, date_end = NULL,
-  plot_transformations = c("mean", "median", "smooth"), plot_labels = FALSE,
-  interactive = FALSE)
+  plot_transformations = c("mean", "median", "smooth"),
+  use_hrbr_theme = FALSE, plot_labels = FALSE, interactive = FALSE)
 }
 \arguments{
 \item{series_id}{any FRED series ID}
@@ -16,13 +16,15 @@ visualize_fred_time_series(series_id = "DGS2", use_random = FALSE,
 
 \item{date_start}{data start date, if \code{NULL} all chosen}
 
-\item{date_end}{data end date,}
+\item{date_end}{data end date}
 
 \item{plot_transformations}{Any plot transformations you wish to apply \itemize{
 \code{median}: Median value
 \code{mean}: Mean value
 \code{smooth}: GAM smooth line
 }}
+
+\item{use_hrbr_theme}{uses Bob Rudis theme}
 
 \item{plot_labels}{if \code{TRUE} text of any plot transformations are plotted}
 

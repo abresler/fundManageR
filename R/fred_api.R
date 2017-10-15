@@ -806,6 +806,7 @@ plot_time_series <-
            fred_data_transformation = NULL,
            transformations = c('mean', 'median', 'smooth'),
            plot_labels = FALSE,
+           use_hrbr_theme = FALSE,
            interactive = FALSE) {
 
     transformation_options <- c('mean', 'median', 'smooth')
@@ -899,17 +900,24 @@ plot_time_series <-
         subtitle = sub_title,
         caption = caption_text
       ) +
-      hrbrthemes::theme_ipsum_rc(grid = "XY") +
       scale_x_date(expand = c(0, 0))
 
-    if (is_percent) {
+    if (use_hrbr_theme) {
+      check_for_hrb()
       plot <-
         plot +
-        hrbrthemes::scale_y_percent()
-    } else {
-      plot <-
-        plot +
-        hrbrthemes::scale_y_comma()
+        hrbrthemes::theme_ipsum_rc(grid = "XY")
+
+      if (is_percent) {
+        plot <-
+          plot +
+          hrbrthemes::scale_y_percent()
+      } else {
+        plot <-
+          plot +
+          hrbrthemes::scale_y_comma()
+      }
+
     }
 
     include_mean <-
@@ -1029,7 +1037,8 @@ plot_time_series <-
 #' \item \code{index}
 #' }
 #' @param date_start data start date, if \code{NULL} all chosen
-#' @param date_end data end date,
+#' @param date_end data end date
+#' @param use_hrbr_theme uses Bob Rudis theme
 #' @param plot_transformations Any plot transformations you wish to apply \itemize{
 #' \code{median}: Median value
 #' \code{mean}: Mean value
@@ -1037,7 +1046,7 @@ plot_time_series <-
 #' }
 #' @param plot_labels if \code{TRUE} text of any plot transformations are plotted
 #' @param interactive if \code{TRUE} visualization turned into an interactive plotly widget
-#' @import purrr jsonlite dplyr stringr ggplot2 tidyr hrbrthemes
+#' @import purrr jsonlite dplyr stringr ggplot2 tidyr
 #' @importFrom plotly ggplotly
 #' @return if \code{interactive} a plotly htmlwidget or else a static ggplot2 visualization
 #' @export
@@ -1052,9 +1061,9 @@ visualize_fred_time_series <-
            date_start = NULL,
            date_end = NULL,
            plot_transformations = c('mean', 'median', 'smooth'),
+           use_hrbr_theme = FALSE,
            plot_labels = FALSE,
            interactive = FALSE) {
-    check_for_hrb()
 
     if (use_random) {
     if (!'df_fred_symbols' %>% exists()) {
@@ -1077,8 +1086,9 @@ visualize_fred_time_series <-
       date_end = date_end,
       fred_data_transformation = fred_data_transformation,
       transformations = plot_transformations,
+      use_hrbr_theme = use_hrbr_theme,
       plot_labels = plot_labels,
       interactive = interactive
     )
-    return(plot)
+    plot
   }

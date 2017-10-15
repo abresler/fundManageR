@@ -139,7 +139,7 @@ parse_finra_c_url <-
 
     res <-
       clean_url %>%
-      make_req()
+      curlconverter::make_req()
 
     html_page <-
       res[[1]]() %>%
@@ -8736,7 +8736,7 @@ return_selected_adv_tables <-
 #'
 #' @return a \code{data_frame}
 #' @export
-#' @import tidyverse curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble tidyr curlconverter xml2
+#' @import tidyverse curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble tidyr xml2
 #' @importFrom lazyeval as_name
 #' @importFrom curl curl_download
 #' @importFrom magrittr %>%
