@@ -25,3 +25,4 @@ Other utility function: \code{\link{drop_na_columns}},
   \code{\link{tidy_column_formats}},
   \code{\link{tidy_column_relations}}
 }
+\concept{utility function}

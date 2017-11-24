@@ -28,3 +28,4 @@ Other utility function: \code{\link{drop_na_columns}},
   \code{\link{get_class_df}},
   \code{\link{tidy_column_relations}}
 }
+\concept{utility function}

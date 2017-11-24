@@ -9,3 +9,4 @@ get_data_edgar_tickers()
 \description{
 SEC listed public companys
 }
+\concept{SEC EDGAR}

@@ -23,3 +23,6 @@ Other dictionary: \code{\link{get_data_location_codes}},
   \code{\link{get_dictionary_sic_codes}},
   \code{\link{get_reit_entity_dictionary}}
 }
+\concept{SEC
+get_data_sec_rules()}
+\concept{dictionary}

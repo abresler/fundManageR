@@ -2,8 +2,6 @@
 % Please edit documentation in R/edgar_rf.R
 \name{get_dictionary_sec_rules}
 \alias{get_dictionary_sec_rules}
-\alias{get_dictionary_sec_rules}
-\alias{get_dictionary_sec_rules}
 \title{SEC Rule dictionary}
 \usage{
 get_dictionary_sec_rules()

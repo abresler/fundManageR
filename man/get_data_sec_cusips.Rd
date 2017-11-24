@@ -61,6 +61,7 @@ Other SEC: \code{\link{get_data_edgar_filing_streams}},
   \code{\link{get_data_sec_municipal_advisors}},
   \code{\link{get_data_sec_securities_filing_counts}},
   \code{\link{get_data_sec_securities_metrics_by_exchange}},
+  \code{\link{get_data_sec_xbrl_periods}},
   \code{\link{get_data_securities_offerings}},
   \code{\link{get_data_us_public_companies}},
   \code{\link{get_dictionary_sec_filing_codes}},
@@ -85,6 +86,7 @@ Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_sec_investment_companies}},
   \code{\link{get_data_sec_money_market_funds}},
   \code{\link{get_data_sec_municipal_advisors}},
+  \code{\link{get_data_sec_xbrl_periods}},
   \code{\link{get_data_securities_offerings}},
   \code{\link{get_data_us_public_companies}},
   \code{\link{get_data_ycombinator_alumni}}
@@ -93,3 +95,6 @@ Other securities search: \code{\link{get_data_mmf_owned_debt_securities}},
   \code{\link{get_data_rf_sec_13F_companies}},
   \code{\link{get_data_securities_offerings}}
 }
+\concept{SEC}
+\concept{entity search}
+\concept{securities search}

@@ -70,3 +70,6 @@ Other partnership calculation: \code{\link{calculate_cash_flow_dates}},
   \code{\link{calculate_days_accrued_pref}},
   \code{\link{tidy_promote_structure}}
 }
+\concept{calculation}
+\concept{leveraged finance calculation}
+\concept{partnership calculation}

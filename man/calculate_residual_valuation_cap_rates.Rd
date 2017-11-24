@@ -47,3 +47,5 @@ Other calculation: \code{\link{calculate_cash_flow_dates}},
 
 Other residual value calculation: \code{\link{calculate_residual_valuation_ebitda_multiples}}
 }
+\concept{calculation}
+\concept{residual value calculation}

@@ -46,3 +46,5 @@ Other partnership calculation: \code{\link{calculate_cash_flow_dates}},
   \code{\link{calculate_days_accrued_pref}},
   \code{\link{calculate_irr_periods}}
 }
+\concept{calculation}
+\concept{partnership calculation}

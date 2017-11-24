@@ -44,3 +44,5 @@ Other index values: \code{\link{get_data_crsp_indicies_returns}},
   \code{\link{get_data_msci_realtime_index_values}},
   \code{\link{get_data_nareit_annual_subsector_returns}}
 }
+\concept{NAREIT}
+\concept{index values}

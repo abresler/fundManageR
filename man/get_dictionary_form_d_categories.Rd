@@ -2,8 +2,6 @@
 % Please edit documentation in R/edgar_rf.R
 \name{get_dictionary_form_d_categories}
 \alias{get_dictionary_form_d_categories}
-\alias{get_dictionary_form_d_categories}
-\alias{get_dictionary_form_d_categories}
 \title{Form-D dictionary}
 \usage{
 get_dictionary_form_d_categories()

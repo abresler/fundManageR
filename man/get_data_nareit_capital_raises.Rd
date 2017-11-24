@@ -45,3 +45,5 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_reit_funds}},
   \code{\link{get_reit_entity_dictionary}}
 }
+\concept{NAREIT}
+\concept{capital raises}

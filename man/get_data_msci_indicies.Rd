@@ -22,3 +22,4 @@ get_data_msci_indicies()
 Other MSCI: \code{\link{get_data_msci_indicies_constituents}},
   \code{\link{get_data_msci_realtime_index_values}}
 }
+\concept{MSCI}

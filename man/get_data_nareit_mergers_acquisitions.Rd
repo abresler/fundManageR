@@ -43,3 +43,5 @@ Other transaction data: \code{\link{get_data_dtcc_most_recent_trades}},
   \code{\link{get_data_dtcc_trades}},
   \code{\link{get_data_sec_securities_metrics_by_exchange}}
 }
+\concept{NAREIT}
+\concept{transaction data}

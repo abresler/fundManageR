@@ -42,3 +42,5 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
 Other property data: \code{\link{get_data_nareit_notable_properties}},
   \code{\link{get_data_nareit_state_info}}
 }
+\concept{NAREIT}
+\concept{property data}

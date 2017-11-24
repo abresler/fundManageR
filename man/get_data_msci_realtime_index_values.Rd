@@ -38,3 +38,6 @@ Other index values: \code{\link{get_data_crsp_indicies_returns}},
 Other real-time data: \code{\link{get_data_dtcc_most_recent_trades}},
   \code{\link{get_data_us_public_companies}}
 }
+\concept{MSCI}
+\concept{index values}
+\concept{real-time data}

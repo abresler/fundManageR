@@ -49,3 +49,5 @@ Other partnership calculation: \code{\link{calculate_cash_flow_dates}},
   \code{\link{calculate_irr_periods}},
   \code{\link{tidy_promote_structure}}
 }
+\concept{calculation}
+\concept{partnership calculation}

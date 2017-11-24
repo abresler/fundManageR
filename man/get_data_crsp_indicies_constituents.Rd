@@ -32,3 +32,5 @@ Other index constituents: \code{\link{get_data_msci_indicies_constituents}},
   \code{\link{get_data_nareit_constituent_years}},
   \code{\link{get_data_sp500_constituents}}
 }
+\concept{CRSP}
+\concept{index constituents}

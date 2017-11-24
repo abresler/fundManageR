@@ -64,3 +64,5 @@ Other transaction data: \code{\link{get_data_dtcc_most_recent_trades}},
   \code{\link{get_data_nareit_mergers_acquisitions}},
   \code{\link{get_data_sec_securities_metrics_by_exchange}}
 }
+\concept{DTCC}
+\concept{transaction data}

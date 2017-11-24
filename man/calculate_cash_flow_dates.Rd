@@ -72,3 +72,6 @@ Other partnership calculation: \code{\link{calculate_cash_flow_waterfall_partner
   \code{\link{calculate_irr_periods}},
   \code{\link{tidy_promote_structure}}
 }
+\concept{calculation}
+\concept{leveraged finance calculation}
+\concept{partnership calculation}
