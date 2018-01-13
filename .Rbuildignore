@@ -2,3 +2,5 @@
 ^\.Rproj\.user$
 ^\.Rprofile
 ^\.Rhistory
+^docs$
+^_pkgdown\.yml$

@@ -90,7 +90,7 @@ pad_cik <-
       list(zeros, cik %>% as.character()) %>%
       purrr::reduce(paste0)
 
-    return(cik_code)
+    cik
   }
 
 pad_sic <-

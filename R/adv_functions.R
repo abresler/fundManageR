@@ -4062,6 +4062,8 @@ get_section_5_data <-
                                        paste0(idCRD))
     }
 
+    is_new_iapd <- page %>% html_nodes('.QueryHeaderLabel') %>% html_text() %>% str_detect(" Amount of Regulatory Assets") %>% sum(na.rm = T) > 0
+
     section_exists <-
       section_name %in% sitemap_df$idSection
 
@@ -4687,7 +4689,11 @@ get_section_5_data <-
 
             client_summary_image_df <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(get_check_box_value_df())
+
+            if (!is_new_iapd) {
+            client_summary_image_df <-
+              client_summary_image_df %>%
               bind_cols(get_section_5_node_name_df()) %>%
               dplyr::select(nameItem,
                             fullnameItem,
@@ -4712,8 +4718,13 @@ get_section_5_data <-
               mutate_at(.vars = client_summary_df %>% dplyr::select(matches("^is|^has")) %>% names(),
                         .funs = as.logical)
 
+            } else {
+
+            }
+
             return(client_summary_df)
           }
+
         find_text_node_safe <-
           possibly(find_text_node, NULL)
 
@@ -4721,6 +4732,7 @@ get_section_5_data <-
           page %>%
           get_entity_manager_name()
 
+        ##
         node_text <-
           page %>%
           parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ClientCompensation_ctl00_trIAPDHeader + tr + tr')
@@ -4920,7 +4932,7 @@ get_section_5_data <-
         mutate(countAccountsNonDiscretionary = countAccountsTotal - countAccountsDiscretionary)
     }
 
-    return(section_5_data)
+    section_5_data
   }
 
 
