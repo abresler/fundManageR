@@ -1,3 +1,37 @@
+dictionary_finra_names <-
+  function() {
+    data_frame(nameFINRA = c("bc_branch_city", "bc_branch_zip", "bc_firm_name", "bc_branch_state",
+                             "bc_firm_id", "bc_branch_id"),
+               nameActual = c("cityCompany", "zipcodeCompany", "nameCompany", "stateCompany",
+                              "idCompany", "idBranch")
+
+    )
+  }
+
+resolve_finra_names <- function(finra_names) {
+  df_finra <-
+    dictionary_finra_names()
+
+  finra_names %>%
+    map_chr(function(id){
+      no_name <-
+        df_finra %>%
+        filter(nameFINRA == id) %>%
+        nrow() == 0
+
+      if (no_name) {
+        glue::glue("Missing {id} in dictionary") %>% message()
+        return(id)
+      }
+      df_finra %>%
+        filter(nameFINRA == id) %>%
+        pull(nameActual) %>%
+        unique() %>%
+        .[[1]]
+    })
+
+}
+
 # parsing -----------------------------------------------------------------
 get_html_page <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=160080') {
@@ -1145,6 +1179,14 @@ parse_finra_json_url <-
       has_middle <-
         'nameMiddle' %in% names(df_fields)
       if (has_middle) {
+
+        df_fields <-
+          df_fields %>%
+          mutate(nameFiler = ifelse(
+            nameMiddle %>% is.na(),
+            str_c(nameFirst, nameLast, sep = " "),
+            str_c(nameFirst, nameMiddle, nameLast,  sep = " ")
+          ))
         df_fields <-
           df_fields %>%
           mutate(nameFiler = list(nameFirst, nameMiddle, nameLast) %>% purrr::invoke(paste, .)) %>%
@@ -1173,9 +1215,9 @@ parse_finra_json_url <-
 
     if (!name_match_threshold %>% is_null()) {
       if ('scoreWord' %in% names(df_fields)) {
-      df_fields <-
-        df_fields %>%
-        filter(scoreWord >= name_match_threshold)
+        df_fields <-
+          df_fields %>%
+          filter(scoreWord >= name_match_threshold)
       }
     }
 
@@ -1277,14 +1319,14 @@ parse_finra_json_url <-
       has_broker <-
         urls_json %>% length() > 0
       if (has_broker) {
-      parse_broker_json_url_safe <-
-        purrr::possibly(parse_broker_json_url, data_frame())
+        parse_broker_json_url_safe <-
+          purrr::possibly(parse_broker_json_url, data_frame())
 
-      broker_df <-
-        urls_json %>%
-        map_df(function(x) {
-          parse_broker_json_url_safe(url = x)
-        })
+        broker_df <-
+          urls_json %>%
+          map_df(function(x) {
+            parse_broker_json_url_safe(url = x)
+          })
 
         df_fields <-
           df_fields %>%
@@ -1416,7 +1458,110 @@ parse_finra_json_url <-
       suppressMessages() %>%
       dplyr::select(which(colMeans(is.na(.)) < 1))
     closeAllConnections()
-    return(df_fields)
+
+    if (df_fields %>% tibble::has_name("idDisclosure")) {
+      df_fields <-
+        df_fields %>%
+        dplyr::rename(hasDisclosures = idDisclosure) %>%
+        mutate(hasDisclosures = ifelse(hasDisclosures == "Y", TRUE, FALSE))
+    }
+
+    if (df_fields %>% tibble::has_name("fields.bc_namesuffix")) {
+      df_fields <-
+        df_fields %>%
+        dplyr::rename(nameSuffix = fields.bc_namesuffix)
+    }
+
+    if (df_fields %>% tibble::has_name("fields.bc_industry_cal_date")) {
+      df_fields <-
+        df_fields %>%
+        dplyr::rename(posixDateStartIndustry = fields.bc_industry_cal_date)
+    }
+
+    if (df_fields %>% tibble::has_name("fields.bc_default_employment")) {
+      df_fields <-
+        df_fields %>%
+        dplyr::rename(descriptionEmployer = fields.bc_default_employment)
+
+      employers <-
+        df_fields %>%
+        filter(!is.na(descriptionEmployer)) %>%
+        pull(descriptionEmployer) %>%
+        unique()
+
+      df_emps <-
+        employers %>%
+        map_df(function(employer){
+        df_emp <-
+          employer %>%
+          jsonlite::fromJSON(simplifyDataFrame = T) %>%
+          dplyr::as_data_frame()
+
+        actual_names <- resolve_finra_names(finra_names = names(df_emp))
+        df_emp %>%
+          purrr::set_names(actual_names) %>%
+          mutate(descriptionEmployer = employer)
+      })
+
+      df_fields <-
+        df_fields %>%
+        left_join(df_emps) %>%
+        suppressMessages()
+    }
+
+    if (df_fields %>% tibble::has_name("nameMiddle")) {
+      df_fields <-
+        df_fields %>%
+        mutate(nameFiler = ifelse(
+          nameMiddle %>% is.na(),
+          str_c(nameFirst, nameLast, sep = " "),
+          str_c(nameFirst, nameMiddle, nameLast,  sep = " ")
+        ))
+    }
+
+    if (df_fields %>% tibble::has_name("typeActiveFiler")) {
+      df_fields <-
+        df_fields %>%
+        dplyr::rename(isActiveFINRA = typeActiveFiler) %>%
+        mutate(isActiveFINRA = ifelse(isActiveFINRA == "Active", TRUE, FALSE))
+    }
+
+    df_fields <-
+      df_fields %>%
+      mutate_at(
+        c(
+          "nameFiler",
+          "nameFirst",
+          "nameLast",
+          "nameMiddle",
+          "nameCompany",
+          "cityCompany"
+        ),
+        funs(. %>% str_to_upper())
+      ) %>%
+      dplyr::select(
+        one_of(
+          "nameFiler",
+          "isPerson",
+          "countEmployments",
+          "countDaysIndustry",
+          "countFINRARegistrations" ,
+          "isActiveFINRA",
+          "hasDisclosures",
+          "idCRD",
+          "nameCompany",
+          "idCompany",
+          "idBranch",
+          "cityCompany",
+          "stateCompany",
+          "zipcodeCompany"
+        ),
+        everything()
+      ) %>%
+      dplyr::select(-one_of(c("idRow", "descriptionEmployer"))) %>%
+      suppressWarnings()
+
+    df_fields
   }
 
 
