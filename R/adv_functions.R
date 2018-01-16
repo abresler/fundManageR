@@ -1525,7 +1525,7 @@ parse_finra_json_url <-
         dplyr::rename(isActiveFINRA = typeActiveFiler) %>%
         mutate(isActiveFINRA = ifelse(isActiveFINRA == "Active", TRUE, FALSE))
     }
-
+    if (df_fields %>% tibble::has_name("nameFiler")) {
     df_fields <-
       df_fields %>%
       mutate_at(
@@ -1538,10 +1538,16 @@ parse_finra_json_url <-
           "cityCompany"
         ),
         funs(. %>% str_to_upper())
-      ) %>%
-      dplyr::select(
-        one_of(
+      )
+    }
+
+
+    df_fields <-
+      df_fields  %>%
+      dplyr::select(one_of(
+        c(
           "nameFiler",
+          "nameFirm",
           "isPerson",
           "countEmployments",
           "countDaysIndustry",
@@ -1555,9 +1561,9 @@ parse_finra_json_url <-
           "cityCompany",
           "stateCompany",
           "zipcodeCompany"
-        ),
-        everything()
-      ) %>%
+        )
+      ),
+      everything()) %>%
       dplyr::select(-one_of(c("idRow", "descriptionEmployer"))) %>%
       suppressWarnings()
 
@@ -1847,7 +1853,7 @@ get_url_crd <-
 
 get_manager_sec_page <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=156663') {
-    httr::set_config(config(ssl_verifypeer = 0L))
+    httr::set_config(httr::config(ssl_verifypeer = 0L))
     page_status <-
       url %>%
       GET()
@@ -2566,7 +2572,7 @@ get_managers_adv_sitemap_adv <-
         manager_data$urlManagerADV %>% unique()
     }
 
-    if ('urls' %>% exists & entity_names %>% is_null()) {
+    if ('urls' %>% exists() & entity_names %>% is_null()) {
       manager_data <-
         get_data_adv_managers_metadata_safe(crd_ids = idCRDs, entity_names = NULL)
 
