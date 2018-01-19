@@ -237,7 +237,7 @@ test_manager <-
     search_names = 'EJF Capital',
     crd_ids = 156663,
     all_sections = T,
-    assign_to_enviornment = T
+    assign_to_environment = T
   )
 ```
 
@@ -269,17 +269,3 @@ cash_flows <-
 
 fundManageR::calculate_irr_periods(dates = dates, cash_flows = cash_flows, return_wide = T)
 ```
-
-### Coming Soon
-
-  - Full roll out of `visualize_` functions
-  - Mergers and Acquisition data
-  - Integrated leveraged cash flow analysis calculations
-  - Catch-up calculations in promote structures
-  - [XBRL](https://www.xbrl.org/) wrapper
-  - [Open Corporates]('https://opencorporates.com/) wrapper
-  - [Form D](https://en.wikipedia.org/wiki/Form_D) wrapper
-  - State specific
-    [UCC](https://en.wikipedia.org/wiki/Uniform_Commercial_Code)
-    wrappers
-  - Delaware, Cayman Island, and Nevada entity registration wrappers
