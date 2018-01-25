@@ -4,15 +4,17 @@
 \alias{get_data_nareit_entities}
 \title{NAREIT constituents}
 \usage{
-get_data_nareit_entities(include_private_non_public = TRUE,
-  return_message = TRUE)
+get_data_nareit_entities(parse_member_data = TRUE, return_message = T)
 }
 \arguments{
-\item{include_private_non_public}{\code{TRUE} include privately traded or over-the-counter traded REITs \code{TRUE}, \code{FALSE}}
+\item{parse_member_data}{if \code{TRUE} parses information about the member companies including
+company metadata, company properties, company contacts and more}
 
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
+a \code{data_frame}
+
 data_frame
 }
 \description{
@@ -21,7 +23,7 @@ NAREIT members.
 }
 \examples{
 \dontrun{
-get_data_nareit_entities(include_private_non_public = TRUE, return_message = TRUE)
+get_data_nareit_entities(get_data_nareit_entities = TRUE, return_message = TRUE)
 }
 }
 \references{
@@ -37,8 +39,7 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_nareit_notable_properties}},
   \code{\link{get_data_nareit_property_msa}},
   \code{\link{get_data_nareit_state_info}},
-  \code{\link{get_data_reit_funds}},
-  \code{\link{get_reit_entity_dictionary}}
+  \code{\link{get_data_reit_funds}}
 
 Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_adv_managers_filings}},

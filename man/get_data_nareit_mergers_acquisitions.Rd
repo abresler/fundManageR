@@ -36,8 +36,7 @@ Other NAREIT: \code{\link{get_data_nareit_annual_subsector_returns}},
   \code{\link{get_data_nareit_notable_properties}},
   \code{\link{get_data_nareit_property_msa}},
   \code{\link{get_data_nareit_state_info}},
-  \code{\link{get_data_reit_funds}},
-  \code{\link{get_reit_entity_dictionary}}
+  \code{\link{get_data_reit_funds}}
 
 Other transaction data: \code{\link{get_data_dtcc_most_recent_trades}},
   \code{\link{get_data_dtcc_trades}},

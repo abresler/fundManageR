@@ -37,8 +37,7 @@ Other NAREIT: \code{\link{get_data_nareit_capital_raises}},
   \code{\link{get_data_nareit_notable_properties}},
   \code{\link{get_data_nareit_property_msa}},
   \code{\link{get_data_nareit_state_info}},
-  \code{\link{get_data_reit_funds}},
-  \code{\link{get_reit_entity_dictionary}}
+  \code{\link{get_data_reit_funds}}
 
 Other index values: \code{\link{get_data_crsp_indicies_returns}},
   \code{\link{get_data_fred_symbols}},

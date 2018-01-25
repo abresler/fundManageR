@@ -38,8 +38,7 @@ Other dictionary: \code{\link{get_data_location_codes}},
   \code{\link{get_data_sic_naics_codes}},
   \code{\link{get_dictionary_sec_filing_codes}},
   \code{\link{get_dictionary_sec_form_codes}},
-  \code{\link{get_dictionary_sic_codes}},
-  \code{\link{get_reit_entity_dictionary}}
+  \code{\link{get_dictionary_sic_codes}}
 }
 \concept{FRED}
 \concept{dictionary}

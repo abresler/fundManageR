@@ -106,15 +106,15 @@
 NAREIT members.</p>
     
 
-    <pre class="usage"><span class='fu'>get_data_nareit_entities</span>(<span class='kw'>include_private_non_public</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>get_data_nareit_entities</span>(<span class='kw'>parse_member_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='no'>T</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a> Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>include_private_non_public</th>
-      <td><p><code>TRUE</code> include privately traded or over-the-counter traded REITs <code>TRUE</code>, <code>FALSE</code></p></td>
+      <th>parse_member_data</th>
+      <td><p>if <code>TRUE</code> parses information about the member companies including
+company metadata, company properties, company contacts and more</p></td>
     </tr>
     <tr>
       <th>return_message</th>
@@ -124,7 +124,8 @@ NAREIT members.</p>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>data_frame</p>
+    <p>a <code>data_frame</code></p>
+<p>data_frame</p>
     
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
@@ -141,8 +142,7 @@ NAREIT members.</p>
   <code><a href='get_data_nareit_notable_properties.html'>get_data_nareit_notable_properties</a></code>,
   <code><a href='get_data_nareit_property_msa.html'>get_data_nareit_property_msa</a></code>,
   <code><a href='get_data_nareit_state_info.html'>get_data_nareit_state_info</a></code>,
-  <code><a href='get_data_reit_funds.html'>get_data_reit_funds</a></code>,
-  <code><a href='get_reit_entity_dictionary.html'>get_reit_entity_dictionary</a></code></p>
+  <code><a href='get_data_reit_funds.html'>get_data_reit_funds</a></code></p>
 <p>Other entity search: <code><a href='get_data_adv_managers_current_period_summary.html'>get_data_adv_managers_current_period_summary</a></code>,
   <code><a href='get_data_adv_managers_filings.html'>get_data_adv_managers_filings</a></code>,
   <code><a href='get_data_adv_managers_metadata.html'>get_data_adv_managers_metadata</a></code>,
@@ -169,7 +169,7 @@ NAREIT members.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><span class='co'># NOT RUN {</span>
-<span class='fu'>get_data_nareit_entities</span>(<span class='kw'>include_private_non_public</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
+<span class='fu'>get_data_nareit_entities</span>(<span class='kw'>get_data_nareit_entities</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 <span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

@@ -22,7 +22,6 @@ Other dictionary: \code{\link{get_data_sec_rules}},
   \code{\link{get_dictionary_all_fred_series_ids}},
   \code{\link{get_dictionary_sec_filing_codes}},
   \code{\link{get_dictionary_sec_form_codes}},
-  \code{\link{get_dictionary_sic_codes}},
-  \code{\link{get_reit_entity_dictionary}}
+  \code{\link{get_dictionary_sic_codes}}
 }
 \concept{dictionary}

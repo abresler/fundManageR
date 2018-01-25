@@ -502,336 +502,135 @@ get_data_nareit_constituent_years <-
 
 
 # reits -------------------------------------------------------------------
-
-#' NAREIT member dictionary
-#'
-#' This function returns a
-#' data frame of all NAREIT members
-#'
-#' @return \code{data_frame}
-#' @export
-#' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
-#' @import purrr stringr dplyr rvest formattable lubridate tidyr readr
-#' @family dictionary
-#' @family NAREIT
-#' @examples
-#' get_reit_entity_dictionary()
-get_reit_entity_dictionary <-
+dictionary_nareit_names <-
   function() {
-    url <-
-      "https://www.reit.com/investing/investor-resources/reit-directories/reits-by-ticker-symbol?field_rtc_stock_exchange_tid=All"
+    data_frame(nameNAREIT = c("Company Type", "Listing Status", "Industry Sector", "Investment Sector",
+                              "Ticker", "Exchange", "Previous Day Close", "Current Day High & Low",
+                              "Day's Volume", "30 Day Average Volume", "52 Week High & Low",
+                              "Market Cap", "Prev. Quarter Dividend", "Yield", "Prev. Quarter FFO"
+    )
+    ,
+    nameActual  = c("typeCompany", "statusListing", "sectorCompany", "typeInvestment",
+                    "idTicker", "nameExchangeSlug", "pricePreviousDay", "highlowDay",
+                    "volumeDay", "volume30Day", "highlow52Week",
+                    "amountMarketCapitalization", "dividendQuarterPrior", "pctYield", "amountFFOQuarterPrior"
+    )
+    )
+  }
+parse_page_item <-
+  function(page, item = "priceCompany", css = ".price", is_number = F) {
+    values <-
+      page %>%
+      html_nodes(css) %>%
+      html_text() %>%
+      str_trim()
+
+    if (is_number) {
+      values <-
+        values %>%
+        str_replace_all("Stock Price: ", "") %>%
+        readr::parse_number() %>% suppressWarnings()
+    }
+
+    data_frame(item, value = values)
+  }
+
+parse_nareit_page <-
+  function(url = "https://www.reit.com/investing/reit-directory?page=1") {
     page <-
       url %>%
       read_html()
 
-    entities <-
+    company <-
       page %>%
-      html_nodes('.views-field-title a') %>%
-      html_text() %>%
-      unique() %>%
-      str_to_upper()
+      parse_page_item(item = "nameCompany", css = ".name a") %>%
+      mutate(idRow = 1:n()) %>%
+      spread(item, value)
 
-    companies_tickers <-
+
+    url_company <-
       page %>%
-      html_nodes('td') %>%
-      html_text() %>%
-      str_trim()
+      html_nodes('.name a') %>%
+      html_attr('href') %>%
+      str_c("https://www.reit.com", .)
 
-    tickers <-
-      1:length(companies_tickers) %>%
-      map_chr(function(x) {
-        items <-
-          companies_tickers[[x]] %>%
-          str_split('\n') %>%
-          flatten_chr() %>%
-          str_trim()
-
-        if (items %>% length() == 1) {
-          return(NA)
-        }
-
-        ticker <-
-          items[[2]]
-
-        if (ticker == "N/A") {
-          ticker <-
-            NA
-        }
-        return(ticker)
-      })
-
-    urls <-
+    sector <-
       page %>%
-      html_nodes('.views-field-title a') %>%
-      html_attr('href')
+      parse_page_item(item = "sectorCompany", css = ".sector") %>%
+      mutate(idRow = 1:n()) %>%
+      spread(item, value)
 
-    url_nareit_data <-
-      urls[c(TRUE, FALSE)] %>%
-      paste0('http://www.reit.com', .)
+    ticker <-
+      page %>%
+      parse_page_item(item = "idTicker", css = ".ticker") %>%
+      mutate(idRow = 1:n()) %>%
+      spread(item, value)
 
-    url_webpage <-
-      urls[c(FALSE, TRUE)] %>%
-      str_to_lower()
+    address <-
+      page %>%
+      parse_page_item(item = "addressCompany", css = ".address") %>%
+      mutate(idRow = 1:n()) %>%
+      spread(item, value)
 
-    url_webpage[url_webpage == 'http://'] <-
-      NA
+    last_price <-
+      page %>%
+      parse_page_item(item = "priceLast",
+                      css = ".price",
+                      is_number = T) %>%
+      mutate(idRow = 1:n()) %>%
+      spread(item, value)
 
-    url_webpage <-
-      url_webpage %>% str_replace_all('http://https://|http://http://', 'http://')
+    returns <-
+      page %>% html_nodes(".return") %>% html_text() %>% str_trim() %>%
+      str_replace_all("1 Mo. Total Return: ", "")
 
-    url_df <-
-      data_frame(
-        nameCompany = entities,
-        idTicker = tickers[1:length(entities)],
-        urlNAREIT = url_nareit_data,
-        urlCompany = url_webpage,
-        urlData = url
-      ) %>%
-      mutate_all(str_trim) %>%
-      mutate(isPrivateNonPublicREIT = ifelse(idTicker %>% is.na(), TRUE, FALSE)) %>%
-      select(nameCompany, idTicker, isPrivateNonPublicREIT, everything()) %>%
-      tidyr::separate(idTicker, into = c('idTicker', 'idExchange'), sep = '\\.|\\ ') %>%
-      mutate_if(is.character, str_trim)
+    df_returns <-
+      data_frame(returns) %>%
+      tidyr::separate(returns,
+                      into = c("pctReturnMonth", "pctReturnDay"),
+                      sep = "\\ ") %>%
+      mutate_all(readr::parse_number) %>%
+      mutate(pctReturnMonth = pctReturnMonth / 100,
+             pctReturnDay = pctReturnDay / 100) %>%
+      mutate(idRow = 1:n())
 
-    closeAllConnections()
-    return(url_df)
+    df <-
+      list(company, sector, ticker, address, last_price, df_returns) %>%
+      purrr::reduce(left_join) %>%
+      mutate(urlCompanyNAREIT = url_company,
+             dateData = Sys.Date(),
+             urlNAREITPage = url) %>%
+      select(-idRow) %>%
+      select(dateData, sectorCompany, everything()) %>%
+      suppressMessages() %>%
+      suppressWarnings()
+
+    df
+
   }
 
-parse_reit_info_page <-
-  function(urls = "https://www.reit.com/company/alexandria-real-estate-equities-inc",
-           return_message = TRUE) {
+parse_nareit_pages <-
+  function(urls = c("https://www.reit.com/investing/reit-directory?page=1", "https://www.reit.com/investing/reit-directory?page=2"), return_message = T) {
     df <-
       data_frame()
-    success <- function(res){
+    success <- function(res) {
+      url <-
+        res$url
+
       if (return_message) {
-        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% message()
+        glue::glue("Parsing {url}") %>%
+          message()
       }
-      page <-
-        res$content %>%
-        read_html()
+      parse_nareit_page.safe <-
+        purrr::possibly(parse_nareit_page, data_frame())
 
-      company <-
-        page %>%
-        html_nodes('#page-title') %>%
-        html_text() %>%
-        str_to_upper()
+      all_data <-
+        parse_nareit_page.safe(url = url)
 
-      has_price <-
-        page %>%
-        html_nodes('.price') %>% length() > 0
-
-      if (has_price) {
-        price <-
-          page %>%
-          html_nodes('.price') %>%
-          html_text() %>%
-          readr::parse_number()
-      } else {
-        price <- NA
-      }
-
-      has_return <-
-        page %>%
-        html_nodes('.return') %>% length() > 0
-
-
-      if (has_return) {
-        return_1mo <-
-          page %>%
-          html_nodes('.return') %>%
-          html_text() %>%
-          str_trim() %>%
-          str_replace_all('1 Mo. Total Return: ','') %>%
-          str_split('\\ ') %>%
-          flatten_chr() %>%
-          .[[1]] %>% readr::parse_number() / 100
-
-      } else {
-        return_1mo <- NA
-      }
-
-      has_description <-
-        page %>%
-        html_nodes('.body') %>% length() > 0
-
-      if (has_description) {
-        description <-
-          page %>%
-          html_nodes('.body') %>%
-          html_text() %>%
-          str_trim()
-      } else {
-        description <- NA
-      }
-
-      values <-
-        page %>%
-        html_nodes('.overview .reit-values__value') %>%
-        html_text() %>%
-        str_to_upper() %>%
-        str_trim()
-
-      items <-
-        c(
-          'typeCompany',
-          'statusListing',
-          'nameSector',
-          'typeInvestment',
-          'idTicker',
-          'nameExchange'
-        )
-
-      data <-
-        data_frame(value = values,
-                   item = items[1:length(values)],
-        ) %>%
-        spread(item, value) %>%
-        mutate(nameCompany = company,
-               descriptionCompany = description,
-               pctReturn1Month = return_1mo,
-               priceLast = price,
-               urlNAREIT = res$url)
-
-      has_performance <-
-        page %>% html_nodes('.performance .reit-values__value') %>% length() > 0
-
-      if (has_performance) {
-        values <-
-          page %>%
-          html_nodes('.performance .reit-values__value') %>%
-          html_text() %>%
-          str_trim()
-        items <-
-          c('priceClose', 'rangeDay', 'volumeDay',
-            'volume30DayAvg',
-            'amountMarketCapitalization',
-            'dividendLastQuarter',
-            'pctYield', 'amountFFOPriorQuarter')
-
-        df_performance <-
-          data_frame(items, values) %>%
-          spread(items, values) %>%
-          separate(rangeDay, into = c('priceDayHigh', 'priceDayLow'), sep = '\\ - ')
-
-        df_performance <-
-          df_performance %>%
-          mutate_at(
-            c('volume30DayAvg' , 'volumeDay'),
-            funs(. %>% readr::parse_number() %>% formattable::comma(digits = 0))
-          ) %>%
-          mutate_at(
-            c('amountFFOPriorQuarter' , 'amountMarketCapitalization'),
-            funs(
-              ifelse(
-                . %>% str_detect('mil'),
-                . %>% readr::parse_number() * 1000000,
-                . %>% readr::parse_number() * 1000000000
-              ) %>% formattable::currency(digits = 0)
-            )) %>%
-          mutate_at(
-            c('dividendLastQuarter' , 'priceClose', 'priceDayLow', 'priceDayHigh'),
-            funs(. %>% readr::parse_number() %>% formattable::currency(digits = 2))
-          ) %>%
-          mutate(pctYield = (pctYield %>% readr::parse_number() / 100) %>% formattable::percent(digits = 2),
-                 nameCompany = company)
-
-        data <-
-          data %>%
-          left_join(df_performance) %>%
-          suppressWarnings() %>%
-          suppressMessages()
-      }
-
-      if (page %>% html_nodes('#block-reit-company-company-office a') %>% length() > 0){
-        url_company <-
-          page %>% html_nodes('#block-reit-company-company-office a') %>%
-          html_text()
-
-        if (!url_company %>% str_detect("http://")) {
-          url_company <- str_c('http://', url_company, sep = '')
-        }
-        data <-
-          data %>%
-          mutate(urlCompany = url_company)
-      } else {
-        data <-
-          data %>%
-          mutate(urlCompany = NA)
-      }
-
-      if (page %>% html_nodes('.reit-company-address__line-1') %>% length() > 0){
-        address_1 <-
-          page %>%
-          html_nodes('.reit-company-address__line-1') %>%
-          html_text() %>%
-          str_trim()
-        if (page %>%
-            html_nodes('.reit-company-address__line-2') %>% length() > 0) {
-        address_2 <-
-          page %>%
-          html_nodes('.reit-company-address__line-2') %>%
-          html_text() %>%
-          str_trim()
-        address <-
-          str_c(address_1, address_2, sep = ', ')
-        } else {
-          address <- address_1
-        }
-
-        city <- page %>%
-          html_nodes('.reit-company-address__city') %>%
-          html_text() %>%
-          str_trim()
-
-        if (city %>% substr(nchar(city), nchar(city)) == ",") {
-          city <-
-            city %>% substr(1, nchar(city) - 1)
-        }
-
-        state <-
-          page %>%
-          html_nodes('.reit-company-address__state') %>%
-          html_text() %>%
-          str_trim()
-
-        data <-
-          data %>%
-          mutate(addressCompany = address,
-                 cityCompany = city,
-                 stateCompany  = state)
-      } else {
-        data <-
-          data %>%
-          mutate(addressCompany = NA,
-                 cityCompany = NA,
-                 stateCompany  = NA)
-      }
-
-      if (page %>% html_nodes('.reit-company-contact__name') %>% length() > 0) {
-        people <-
-          page %>%
-          html_nodes('.reit-company-contact__name') %>%
-          html_text() %>%
-          str_trim()
-
-        title <-
-          page %>%
-          html_nodes('.reit-company-contact__title') %>%
-          html_text() %>%
-          str_trim() %>%
-          str_replace_all("[^[:alnum:]]", "") %>%
-          str_c('title', ., sep = '')
-
-        data <-
-          data %>%
-          bind_cols(data_frame(people, title) %>%
-          spread(title, people))
-
-      }
 
       df <<-
         df %>%
-        bind_rows(data)
+        bind_rows(all_data)
     }
     failure <- function(msg){
       data_frame()
@@ -846,89 +645,495 @@ parse_reit_info_page <-
   }
 
 
+parse_nareit_entity_page <-
+  function(url = "https://www.reit.com/investing/reit-directory/alexandria-real-estate-equities-inc") {
+    page <-
+      url %>%
+      read_lines() %>%
+      str_c(collapse = "") %>%
+      read_html()
+    company_ticker <-
+      page %>%
+      html_nodes(".name") %>%
+      html_text() %>% str_trim() %>%
+      str_split("\n|                      ") %>%
+      flatten_chr() %>%
+      str_trim() %>%
+      discard(~ .x == "") %>%
+      str_replace_all("\\(|\\)", "")
+
+    item <-  c("nameCompany", "idTicker")
+    df_metadata <-
+      data_frame(item = item[1:length(company_ticker)], value = company_ticker) %>%
+      spread(item, value)
+
+    description <-
+      page %>%
+      parse_page_item(item = "descriptionCompany", css = ".investor__body")
+
+    if (description %>% length() > 0) {
+      df_metadata <-
+        df_metadata %>%
+        mutate(descriptionCompany = description %>% pull(value))
+    }
+
+
+    price <-
+      page %>%
+      parse_page_item(item = "priceStock",
+                      css = ".value",
+                      is_number = T) %>%
+      pull(value)
+
+    if (price %>% length() > 0) {
+      df_metadata <-
+        df_metadata %>%
+        mutate(priceLast = price %>% as.integer())
+    }
+
+    returns <-
+      page %>% html_nodes(".values span") %>% html_text() %>% map_dbl(readr::parse_number)
+
+
+    if (returns %>% length() > 0) {
+      items <- c("pctReturnMonth", "pctReturnDay")
+      df_ret <- data_frame(item = items[1:length(returns)],
+                           value = returns) %>%
+        spread(item, value)
+      if (df_ret %>% tibble::has_name("pctReturnMonth")) {
+        df_ret <- df_ret %>% mutate(pctReturnMonth = pctReturnMonth / 100)
+      }
+
+      if (df_ret %>% tibble::has_name("pctReturnDay")) {
+        df_ret <- df_ret %>% mutate(pctReturnDay = pctReturnDay / 100)
+      }
+      df_metadata <-
+        df_metadata %>%
+        bind_cols(df_ret)
+    }
+
+    overview_items <-
+      page %>% html_nodes(".reit-values__title") %>% html_text() %>% str_trim()
+
+    overview_values <-
+      page %>% html_nodes(".reit-values__value") %>% html_text() %>% str_trim()
+
+    df_names <-
+      dictionary_nareit_names()
+
+    actual_names <-
+      overview_items %>%
+      map_chr(function(item){
+        df_names %>%
+          filter(nameNAREIT == item) %>%
+          pull(nameActual)
+      })
+
+    data <-
+      data_frame(item = actual_names, value = overview_values) %>%
+      spread(item, value) %>%
+      select(one_of(actual_names))
+
+    if (data %>% has_name("nameExchangeSlug")) {
+      data <-
+        data %>%
+        tidyr::separate(nameExchangeSlug, into = c("nameExchange", "slugExchange"), sep = "\\(") %>%
+        mutate(slugExchange = slugExchange %>% str_replace_all("\\)", ""))
+    }
+
+    if (data %>% has_name("pctYield")) {
+      data <-
+        data %>%
+        mutate(pctYield = pctYield %>% readr::parse_number() / 100)
+    }
+
+    if (data %>% has_name("highlowDay")) {
+      data <-
+        data %>%
+        separate(
+          highlowDay,
+          into = c("priceLowDay", "priceHighDay"),
+          sep = "\\-",
+          convert = T
+        ) %>%
+        mutate_at(c("priceLowDay", "priceHighDay"),
+                  funs(. %>% readr::parse_number()))
+    }
+
+    if (data %>% has_name("highlow52Week")) {
+      data <-
+        data %>%
+        separate(
+          highlow52Week,
+          into = c("price52WeekLow", "price52WeekHigh"),
+          sep = "\\-",
+          convert = T
+        ) %>%
+        mutate_at(c("price52WeekLow", "price52WeekHigh"),
+                  funs(. %>% readr::parse_number()))
+    }
+
+    if (data %>% has_name("amountMarketCapitalization")) {
+      data <- data %>%
+        mutate(
+          amountMarketCapitalization = case_when(
+            amountMarketCapitalization %>% str_to_lower() %>% str_detect("bil") ~ amountMarketCapitalization %>% readr::parse_number() * 1000000000,
+            amountMarketCapitalization %>% str_to_lower() %>% str_detect("mil") ~ amountMarketCapitalization %>% readr::parse_number() * 1000000,
+            TRUE ~ amountMarketCapitalization %>% readr::parse_number()
+          )
+        )
+    }
+
+    if (data %>% has_name("amountFFOQuarterPrior")) {
+      data <- data %>%
+        mutate(
+          amountFFOQuarterPrior = case_when(
+            amountFFOQuarterPrior %>% str_to_lower() %>% str_detect("bil") ~ amountFFOQuarterPrior %>% readr::parse_number() * 1000000000,
+            amountFFOQuarterPrior %>% str_to_lower() %>% str_detect("mil") ~ amountFFOQuarterPrior %>% readr::parse_number() * 1000000,
+            TRUE ~ amountFFOQuarterPrior %>% readr::parse_number()
+          )
+        )
+    }
+    num_names <-
+      names(data)[names(data) %in% c("pricePreviousDay",
+                                     "dividendQuarterPrior",
+                                     "volumeDay",
+                                     "volume30Day")]
+    if (num_names %>% length() > 0) {
+      data <-
+        data %>%
+        mutate_at(num_names,
+                  funs(. %>% readr::parse_number()))
+    }
+
+    data <-
+      data %>%
+      mutate_if(is.character,
+                str_trim)
+
+    data <-
+      df_metadata %>%
+      left_join(data) %>%
+      suppressMessages()
+
+    urlCompany <-
+      case_when(
+        page %>% html_nodes(".reit-company-address__website a") %>% html_attr("href") %>% length() > 0 ~ page %>% html_nodes(".reit-company-address__website a") %>% html_attr("href"),
+        TRUE ~ NA_character_
+      )
+
+    addressStreetCompany <-
+      page %>% html_nodes(".reit-company-address__line-1") %>% html_text() %>% str_trim()
+    suite <- page %>% html_nodes(".reit-company-address__line-2")
+
+    if (suite %>% length() > 0) {
+      suiteCompany <-
+        suite %>% html_text() %>% str_trim()
+    } else {
+      suiteCompany <- NA
+    }
+
+    cityCompany <-
+      page %>% html_nodes(".reit-company-address__city") %>% html_text() %>% str_trim() %>% str_replace_all("\\,", "") %>% str_trim()
+
+    stateCompany <-
+      page %>% html_nodes(".reit-company-address__state") %>% html_text() %>% str_trim()
+    zipCodeCompany <-
+      page %>% html_nodes(".reit-company-address__zip") %>% html_text() %>% str_trim()
+
+    phone <-
+      page %>% html_nodes(".reit-company-address__phone")
+
+    if (phone %>% length() > 0) {
+      phoneCompany <-
+        phone %>% html_text() %>% str_trim()
+    } else {
+      phoneCompany <- NA
+    }
+
+    data <-
+      data %>%
+      mutate(
+        addressStreetCompany,
+        suiteCompany,
+        cityCompany,
+        stateCompany,
+        zipCodeCompany,
+        phoneCompany,
+        urlCompany
+      )
+
+
+    contacts <-
+      page %>% html_nodes(".reit-company-contact__name") %>% html_text() %>% str_trim()
+
+    if (contacts %>% length() > 0) {
+      titles <-
+        page %>% html_nodes(".reit-company-contact__title") %>% html_text() %>% str_trim()
+
+      df_contacts <-
+        data_frame(titlePerson = titles, namePerson = contacts) %>%
+        separate_rows(namePerson, sep = "\\, ") %>%
+        separate_rows(titlePerson, sep = "\\ & ") %>%
+        mutate_all(str_trim)
+
+      data <-
+        data %>%
+        mutate(dataContacts = list(df_contacts))
+    }
+
+    news <-
+      page %>% html_nodes(".news-container a") %>% html_attr('href')
+
+
+    if (news %>% length() > 0) {
+      titles <-
+        page %>% html_nodes(".news-container a") %>% html_text() %>% str_trim()
+
+      dates <-
+        page %>% html_nodes(".news-detail .date") %>% html_text() %>% str_trim() %>% lubridate::mdy()
+
+      df_news <-
+        data_frame(
+          dateArticle = dates,
+          titleArticle = titles,
+          urlArticle = news
+        )
+
+      data <-
+        data %>%
+        mutate(dataNews = list(df_news))
+    }
+
+    has_properties <-
+      page %>% html_nodes(".reit-icon__chevron-right") %>% length() > 0
+
+    if (has_properties) {
+      states <- page %>% html_nodes(".reit-icon__chevron-right")
+      df_properties <-
+        1:length(states) %>%
+        map_df(function(x) {
+          nameState <- states[x] %>% html_text()
+          state_slug <-
+            states[x] %>% html_attr("href") %>% substr(1, 3)
+          tenant_css <-
+            glue::glue("{state_slug}-properties .tenant")
+          city_css <-
+            glue::glue("{state_slug}-properties .location")
+          tenants <- page %>% html_nodes(tenant_css) %>% html_text()
+          cities <- page %>% html_nodes(city_css) %>% html_text()
+
+          data_frame(addressStreetProperty = tenants,
+                     cityProperty = cities) %>%
+            slice(2:nrow(.)) %>%
+            separate_rows(addressStreetProperty, sep = "              ") %>%
+            mutate_all(str_trim) %>%
+            mutate(stateProperty = nameState) %>%
+            mutate(
+              addressProperty = glue::glue(
+                "{addressStreetProperty}, {cityProperty}, {stateProperty}"
+              ) %>% as.character()
+            )
+
+        })
+
+      df_properties <-
+        df_properties %>%
+        filter(!addressStreetProperty == "")
+
+      data <-
+        data %>%
+        mutate(dataPortfolio = list(df_properties))
+    }
+    data %>%
+      mutate(urlCompanyNAREIT = url)
+
+  }
+
+parse_nareit_entity_pages <-
+  function(urls = c("https://www.reit.com/investing/reit-directory/weyerhaeuser",
+                    "https://www.reit.com/investing/reit-directory/rlj-lodging-trust",
+                    "https://www.reit.com/investing/reit-directory/rayonier-inc",
+                    "https://www.reit.com/investing/reit-directory/pebblebrook-hotel-trust",
+                    "https://www.reit.com/investing/reit-directory/corenergy-infrastructure-trust",
+                    "https://www.reit.com/investing/reit-directory/host-hotels-resorts-inc",
+                    "https://www.reit.com/investing/reit-directory/hersha-hospitality-trust",
+                    "https://www.reit.com/investing/reit-directory/vici-properties-inc"),
+           return_message = T) {
+    df <-
+      data_frame()
+    success <- function(res) {
+      url <-
+        res$url
+
+      if (return_message) {
+        glue::glue("Parsing {url}") %>%
+          message()
+      }
+      parse_nareit_entity_page.safe <-
+        purrr::possibly(parse_nareit_entity_page, data_frame())
+
+      all_data <-
+        parse_nareit_entity_page.safe(url = url)
+
+
+      df <<-
+        df %>%
+        bind_rows(all_data)
+    }
+    failure <- function(msg){
+      data_frame()
+    }
+    urls %>%
+      walk(function(x){
+        curl_fetch_multi(url = x, success, failure)
+      })
+    multi_run()
+    closeAllConnections()
+    df <-
+      df %>%
+      mutate(hasPortfolioData = dataPortfolio %>% map_dbl(length) > 0,
+             hasContactData = dataContacts %>% map_dbl(length) > 0)
+    df
+  }
+
 #' NAREIT constituents
 #'
 #' This function returns information about all active
 #' NAREIT members.
 #'
-#' @param include_private_non_public \code{TRUE} include privately traded or over-the-counter traded REITs \code{TRUE}, \code{FALSE}
+#'
+#' @param parse_member_data if \code{TRUE} parses information about the member companies including
+#' company metadata, company properties, company contacts and more
 #' @param return_message \code{TRUE} return a message after data import
+#'
+#' @return a \code{data_frame}
+#' @export
 #' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
 #' @return data_frame
 #' @family NAREIT
 #' @family entity search
 #' @export
-#' @import purrr stringr dplyr rvest formattable lubridate tidyr readr
+#' @import purrr stringr dplyr rvest lubridate tidyr readr
 #' @examples
 #' \dontrun{
-#' get_data_nareit_entities(include_private_non_public = TRUE, return_message = TRUE)
+#' get_data_nareit_entities(get_data_nareit_entities = TRUE, return_message = TRUE)
 #' }
+
 get_data_nareit_entities <-
-  function(include_private_non_public = TRUE,
-           return_message = TRUE) {
-    parse_reit_info_page_safe <-
-      purrr::possibly(parse_reit_info_page, data_frame())
+  function(parse_member_data = TRUE, return_message = T) {
+    page_count_nodes <- ".pager__item--last a"
+    base_url <-
+      "https://www.reit.com/investing/reit-directory?field_rtc_listing_status_tid_selective[]=524&field_address_country_selective[]=US&sort_by=title"
+    page <-
+      base_url %>%
+      read_html()
 
-    reits_df <-
-      get_reit_entity_dictionary() %>%
-      dplyr::select(-urlCompany) %>%
-      suppressWarnings()
+    pages <-
+      page %>%
+      html_node(page_count_nodes) %>%
+      html_attr("href") %>%
+      str_split("page=") %>%
+      flatten_chr() %>%
+      .[[2]] %>% as.numeric()
 
-    if (!include_private_non_public) {
-      reits_df <-
-        reits_df %>%
-        filter(!isPrivateNonPublicREIT)
-    }
+    urls <-
+      glue::glue("{base_url}&page={1:pages}") %>% as.character()
 
-      all_data <-
-        reits_df$urlNAREIT %>%
-        map_df(function(x) {
-          parse_reit_info_page_safe(urls = x, return_message = return_message)
-        }) %>%
-        suppressWarnings()
+    urls <-
+      c(base_url, urls)
+
+    all_data <-
+      parse_nareit_pages(urls = urls, return_message = return_message) %>%
+      distinct()
 
     all_data <-
       all_data %>%
-      mutate_all(funs(ifelse(. == '', NA, .))) %>%
-      mutate(
-        idTicker = ifelse(idTicker %in% c('', 'N/A'), NA, idTicker),
-        nameExchange = ifelse(idTicker %>% is.na(), NA, nameExchange)
+      separate(
+        addressCompany,
+        into = c("cityCompany", "stateCompany"),
+        sep = "\\, ",
+        remove = F
       ) %>%
-      filter(!nameCompany == "NAREIT")
+      mutate_if(is.character,
+                str_trim)
 
     all_data <-
       all_data %>%
-      separate(nameExchange, into = c('nameExchange', 'idExchange'), sep = '\\(') %>%
-      mutate(idExchange = idExchange %>% str_replace_all('\\)', ''))
+      mutate_if(is.character,
+                funs(if_else(. == "N/A", NA_character_, .))) %>%
+      arrange(nameCompany)
 
     all_data <-
       all_data %>%
-      separate(statusListing, into = c('typeListing', 'typeListingTraded'), sep = '\\,')
+      mutate(isPublicCompany = !idTicker %>% is.na()) %>%
+      select(dateData, isPublicCompany, everything())
 
-    all_data <-
-      all_data %>%
-      mutate_at(.vars = all_data %>% dplyr::select(matches("^price|^dividend")) %>% names(),
-                funs(. %>% formattable::currency(digits = 2))) %>%
-      mutate_at(.vars = all_data %>% dplyr::select(matches("^amount")) %>% names(),
-                funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(.vars = all_data %>% dplyr::select(matches("^volume")) %>% names(),
-                funs(. %>% formattable::comma(digits = 0))) %>%
-      mutate_at(.vars = all_data %>% dplyr::select(matches("^pct")) %>% names(),
-                funs(. %>% formattable::percent(digits = 2))) %>%
-      mutate_if(is.character, str_trim) %>%
-      select(typeCompany, typeListing, typeListingTraded, nameSector, nameCompany, idTicker, urlCompany, everything())
-
-    if (return_message) {
-      list("Returned information for ", all_data %>% nrow(), ' REITs') %>%
-        purrr::invoke(paste0, .) %>%
-        message()
+    if (!parse_member_data) {
+      return(all_data)
     }
-    closeAllConnections()
-    return(all_data)
+
+    company_urls <- all_data$urlCompanyNAREIT
+
+    df_companies <-
+      parse_nareit_entity_pages(urls = company_urls, return_message = return_message)
+
+    all_data <-
+      all_data %>%
+      select(-one_of(
+        c(
+          "sectorCompany",
+          "nameCompany",
+          "cityCompany",
+          "stateCompany",
+          "priceLast",
+          "idTicker", "pctReturnMonth", "pctReturnDay"
+        )
+      )) %>%
+      left_join(df_companies) %>%
+      suppressMessages() %>%
+      mutate_if(is.character,
+                funs(if_else(. == "N/A", NA_character_, .))) %>%
+      mutate_if(is.character,
+                funs(if_else(. == "", NA_character_, .))) %>%
+      select(one_of( c(
+        "dateData",
+        "sectorCompany",
+        "idTicker",
+        "nameCompany",
+        "cityCompany",
+        "stateCompany",
+        "priceLast"
+      )), everything())
+
+    all_data <-
+      all_data %>%
+      mutate(
+        ratioFFO = ifelse(
+          amountFFOQuarterPrior > 0 ,
+          amountMarketCapitalization  / (4 * amountFFOQuarterPrior),
+          NA
+        ),
+        countShares = amountMarketCapitalization / priceLast,
+        amountDividend = dividendQuarterPrior * countShares,
+        ratioDividendCoverage =
+          ifelse(
+            amountFFOQuarterPrior > 0 ,
+            amountFFOQuarterPrior  / amountDividend,
+            NA
+          )
+      ) %>%
+      select(
+        dateData:amountFFOQuarterPrior,
+        ratioDividendCoverage,
+        ratioFFO,
+        countShares,
+        amountDividend,
+        everything()
+      ) %>%
+      arrange(nameCompany)
+    all_data
   }
-
-
-
 
 # reit_properties ---------------------------------------------------------
 #' NAREIT notable properties
@@ -2436,6 +2641,7 @@ parse_fund_reit_page <-
       html_nodes('.data a') %>%
       html_text() %>%
       str_to_upper()
+
     column_df <-
       data_frame(
         number = 2:7,
@@ -2467,7 +2673,10 @@ parse_fund_reit_page <-
           items %>% gsub('n/a', NA, .)
 
         data_frame(item, value = items)
-      }) %>%
+      })
+
+  df_values <-
+    df_values %>%
       group_by(item) %>%
       mutate(idRow = 1:n()) %>%
       ungroup() %>%

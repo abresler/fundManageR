@@ -63,8 +63,7 @@ Other dictionary: \code{\link{get_data_location_codes}},
   \code{\link{get_data_sic_naics_codes}},
   \code{\link{get_dictionary_all_fred_series_ids}},
   \code{\link{get_dictionary_sec_filing_codes}},
-  \code{\link{get_dictionary_sic_codes}},
-  \code{\link{get_reit_entity_dictionary}}
+  \code{\link{get_dictionary_sic_codes}}
 
 Other SEC: \code{\link{get_data_edgar_filing_streams}},
   \code{\link{get_data_mmf_owned_debt_securities}},
@@ -96,8 +95,7 @@ Other dictionary: \code{\link{get_data_location_codes}},
   \code{\link{get_data_sic_naics_codes}},
   \code{\link{get_dictionary_all_fred_series_ids}},
   \code{\link{get_dictionary_sec_filing_codes}},
-  \code{\link{get_dictionary_sic_codes}},
-  \code{\link{get_reit_entity_dictionary}}
+  \code{\link{get_dictionary_sic_codes}}
 
 Other SEC: \code{\link{get_data_edgar_filing_streams}},
   \code{\link{get_data_mmf_owned_debt_securities}},
@@ -129,8 +127,7 @@ Other dictionary: \code{\link{get_data_location_codes}},
   \code{\link{get_data_sic_naics_codes}},
   \code{\link{get_dictionary_all_fred_series_ids}},
   \code{\link{get_dictionary_sec_filing_codes}},
-  \code{\link{get_dictionary_sic_codes}},
-  \code{\link{get_reit_entity_dictionary}}
+  \code{\link{get_dictionary_sic_codes}}
 }
 \concept{SEC}
 \concept{dictionary}
