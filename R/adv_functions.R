@@ -10196,7 +10196,7 @@ get_data_adv_managers_periods_summaries <-
 #' This function returns abbreviated ADV data for
 #' all filing managers for the most recent period.
 #'
-#' For multiple periods and all information see \code{\link{get_data_adv_managers_periods_summariess}}
+#' For multiple periods and all information see \code{\link{get_data_adv_managers_periods_summaries}}
 #'
 #' @param file_directory directory you want to save your data into, if none specified a temporary file will be created
 #' @param folder_name older you want the data to be downloaded into

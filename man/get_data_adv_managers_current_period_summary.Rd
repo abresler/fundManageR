@@ -52,7 +52,7 @@ This function returns abbreviated ADV data for
 all filing managers for the most recent period.
 }
 \details{
-For multiple periods and all information see \code{\link{get_data_adv_managers_periods_summariess}}
+For multiple periods and all information see \code{\link{get_data_adv_managers_periods_summaries}}
 }
 \examples{
 \dontrun{
