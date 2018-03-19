@@ -160,7 +160,7 @@ get_data_market_events <-
         message()
     }
     gc()
-    closeAllConnections()
+
     data
   }
 
@@ -408,7 +408,7 @@ parse_regions_security_urls <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    closeAllConnections()
+
     df
   }
 
@@ -575,7 +575,7 @@ parse_metric_dictionaries_url <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    closeAllConnections()
+
     df
   }
 
@@ -749,7 +749,7 @@ parse_tradeview_metric_url <-
         "Acquired {nrow(data) %>% formattable::comma(digits = 0)} listed metrics for {tickers} securities in {idRegion %>% str_to_title()}"
       ) %>% message()
     }
-    closeAllConnections()
+
     gc()
     data
   }
@@ -984,7 +984,7 @@ parse_trading_view_news_url <-
                     descriptionArticle,
                     everything())
     gc()
-    closeAllConnections()
+
     data
   }
 
@@ -1013,7 +1013,7 @@ parse_tradingview_news_urls <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    closeAllConnections()
+
     df
   }
 

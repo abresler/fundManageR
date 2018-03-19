@@ -9137,7 +9137,7 @@ parse_xml_tables <-
         nameSECFull = nameSECFull %>% str_replace_all('filerInfo.|issuerCredentials.', '')
       )
 
-    closeAllConnections()
+
     rm(tables)
     rm(page)
     rm(url)
@@ -9330,7 +9330,7 @@ parse_sec_form <-
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>% message()
     }
-    closeAllConnections()
+
     rm(df_metadata)
     return(data)
   }
@@ -11623,7 +11623,7 @@ parse_xml_tables <-
         nameSECFull = nameSECFull %>% str_replace_all('filerInfo.|issuerCredentials.', '')
       )
 
-    closeAllConnections()
+
     rm(tables)
     rm(page)
     rm(url)
@@ -11812,7 +11812,7 @@ parse_sec_form <-
 
     ## maybe add IDCK
 
-    closeAllConnections()
+
     rm(df_metadata)
     return(data)
   }
@@ -12248,7 +12248,7 @@ get_all_filings <- function(urls, return_message = TRUE)  {
     map_df(function(x){
       parse_sec_filing_index(urls = x, return_message = return_message)
     })
-  closeAllConnections()
+
   return(df_filings)
 }
 
@@ -14526,7 +14526,7 @@ get_data_edgar_tickers <-
       )) %>%
       distinct() %>%
       mutate(nameCompany = nameCompany %>% str_to_upper())
-    closeAllConnections()
+
     return(all_companies)
   }
 
@@ -15520,7 +15520,7 @@ parse_boolean_search_page <-
             urlSECFilingDirectory
           )
         )
-      closeAllConnections()
+
       df <<-
         df %>%
         bind_rows(data)
@@ -15688,7 +15688,7 @@ generate_search_term_urls <-
         )
       })
     rm(page)
-    closeAllConnections()
+
     df_urls <-
       data_frame(termSearch = search_term,
                  countFilings = filings, urlSECSearch = urls)
@@ -15962,7 +15962,7 @@ parse_most_recent_filing_form_page <-
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>% message()
     }
-    closeAllConnections()
+
 
     return(data)
   }
@@ -16759,7 +16759,7 @@ parse_index_filing_page <-
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>% message()
     }
-    closeAllConnections()
+
     return(df)
   }
 
@@ -17226,7 +17226,7 @@ get_data_edgar_entities_cik <-
       suppressMessages() %>%
       suppressWarnings()
 
-    closeAllConnections()
+
 
     all_data <-
       all_data %>%
@@ -17247,21 +17247,6 @@ get_data_edgar_entities_cik <-
 # sec_metadata  -----------------------------------------------------------
 
 
-
-gdeltr2::load_needed_packages(
-  c(
-    'curl',
-    'glue',
-    'dplyr',
-    'purrr',
-    'stringr',
-    'rvest',
-    'xml2',
-    'curl',
-    'stringr',
-    'tidyr'
-  )
-)
 
 extract_info <- function(page, css_node) {
   info <-
@@ -17385,7 +17370,7 @@ parse_company_pages <-
       data <-
         parse_company_info(url = res$url)
 
-      closeAllConnections()
+
       df <<-
         df %>%
         bind_rows(data)
@@ -17398,7 +17383,7 @@ parse_company_pages <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    closeAllConnections()
+
     df
   }
 
@@ -17639,7 +17624,7 @@ parse_cik_filer_page <-
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>% message()
     }
-    closeAllConnections()
+
     return(df_page_items)
   }
 get_df_general_name_df <-
@@ -18037,7 +18022,7 @@ get_data_sic_code_filer <-
       mutate(idSIC = sic) %>%
       select(idSIC, everything())
 
-    closeAllConnections()
+
 
     if (return_message) {
       list('\nReturned ', all_data %>% nrow() %>% formattable::comma(digits = 0),

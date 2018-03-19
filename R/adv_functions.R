@@ -40,7 +40,7 @@ get_html_page <-
       url %>%
       httr::GET() %>%
       xml2::read_html()
-    closeAllConnections()
+
     return(page)
   }
 
@@ -178,7 +178,7 @@ parse_finra_c_url <-
     html_page <-
       res[[1]]() %>%
       content(as = "parsed")
-    closeAllConnections()
+
     return(html_page)
   }
 
@@ -1065,7 +1065,7 @@ parse_finra_pdf_brochure <-
       }) %>%
       dplyr::select(textPage) %>%
       summarise(textBrochure = textPage %>% paste0(collapse = '\n'))
-    closeAllConnections()
+
     return(pdf_text_df)
 
   }
@@ -1457,7 +1457,7 @@ parse_finra_json_url <-
       mutate(urlFINRA = url) %>%
       suppressMessages() %>%
       dplyr::select(which(colMeans(is.na(.)) < 1))
-    closeAllConnections()
+
 
     if (df_fields %>% tibble::has_name("idDisclosure")) {
       df_fields <-
@@ -1691,7 +1691,7 @@ get_data_finra_entities <-
       all_data %>%
       mutate(urlManagerSummaryADV = 'https://adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>% paste0(idCRD))
     gc()
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -1768,7 +1768,7 @@ get_data_finra_people <-
         funs(. %>% formattable::comma(digits = 0))
       )
     gc()
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -1833,7 +1833,7 @@ parse_sec_manager_pdf_url <-
         dplyr::select(-c(item, idItem)) %>%
         spread(nameItem, value)
     }
-    closeAllConnections()
+
     return(pdf_data)
 
   }
@@ -2076,7 +2076,7 @@ get_manager_sec_page <-
         manager_df %>%
         dplyr::select(idCRD, nameEntityManager, everything())
     }
-    closeAllConnections()
+
     return(manager_df)
   }
 
@@ -2157,7 +2157,7 @@ get_data_adv_managers_metadata <-
       map_df(get_manager_sec_page_safe) %>%
       suppressWarnings() %>%
       filter(!idCRD %>% is.na())
-    closeAllConnections()
+
     return(sec_summary_data)
   }
 
@@ -3155,7 +3155,7 @@ parse_table_node_df <-
       ) %>%
       mutate(numberTable = table_number) %>%
       dplyr::select(numberTable, everything())
-    closeAllConnections()
+
     return(table_node_df)
   }
 
@@ -3563,7 +3563,7 @@ parse_funds_tables <-
           section_matrix_df = section_matrix_df
         )
       })
-    closeAllConnections()
+
     return(all_table_data)
   }
 
@@ -8622,7 +8622,7 @@ get_crd_sections_data <-
         dplyr::select(idCRD, nameEntityManager, nameTable, dataTable)
     }
     gc()
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -9053,7 +9053,7 @@ get_data_adv_managers_filings <-
 
       assign(x = table_name, eval(data %>% mutate_adv_data()),  envir = .GlobalEnv)
     }
-closeAllConnections()
+
 # gc()
 return(all_data)
 
@@ -9471,7 +9471,7 @@ get_data_adv_period_urls <-
       suppressMessages() %>%
       dplyr::select(-baseNameURL)
     gc()
-    closeAllConnections()
+
     url_df
 
   }
@@ -10185,7 +10185,7 @@ get_data_adv_managers_periods_summaries <-
         all_adv_data %>%
         nest(-c(dateDataADV, isExempt), .key = 'dataADV')
     }
-    closeAllConnections()
+
     gc()
 
     all_adv_data
@@ -10296,7 +10296,7 @@ get_data_adv_managers_current_period_summary <-
     all_data <-
       all_data %>%
       dplyr::select(one_of(select_names))
-    closeAllConnections()
+
     return(all_data)
   }
 

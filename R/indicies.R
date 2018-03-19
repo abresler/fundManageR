@@ -64,7 +64,7 @@ get_data_sp500_constituents <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df)
   }
 
@@ -111,7 +111,7 @@ get_data_msci_indicies <-
       group_by(nameIndex) %>%
       filter(idIndex == min(idIndex)) %>%
       ungroup()
-    closeAllConnections()
+
     return(index_name_df)
 
   }
@@ -143,7 +143,7 @@ parse_msci_json_constituent_url <- function(url = "https://www.msci.com/c/portal
         message()
     }
 
-    closeAllConnections()
+
 
     df <<-
       df %>%
@@ -260,7 +260,7 @@ get_data_msci_indicies_constituents <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(const_df)
   }
 
@@ -349,6 +349,6 @@ get_data_msci_realtime_index_values <-
                  typeCurrency
                ))
     }
-    closeAllConnections()
+
     return(index_data)
   }

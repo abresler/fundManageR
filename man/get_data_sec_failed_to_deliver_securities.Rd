@@ -54,15 +54,13 @@ Other SEC: \code{\link{get_data_edgar_filing_streams}},
   \code{\link{get_data_sec_municipal_advisors}},
   \code{\link{get_data_sec_securities_filing_counts}},
   \code{\link{get_data_sec_securities_metrics_by_exchange}},
-  \code{\link{get_data_sec_xbrl_periods}},
   \code{\link{get_data_securities_offerings}},
   \code{\link{get_data_us_public_companies}},
   \code{\link{get_dictionary_sec_filing_codes}},
   \code{\link{get_dictionary_sec_form_codes}},
   \code{\link{get_dictionary_sic_codes}}
 
-Other public company data: \code{\link{get_data_sec_securities_metrics_by_exchange}},
-  \code{\link{get_data_sec_xbrl_periods}}
+Other public company data: \code{\link{get_data_sec_securities_metrics_by_exchange}}
 }
 \concept{SEC}
 \concept{public company data}

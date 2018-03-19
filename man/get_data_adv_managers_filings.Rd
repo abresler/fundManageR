@@ -78,7 +78,6 @@ Other entity search: \code{\link{get_data_adv_managers_current_period_summary}},
   \code{\link{get_data_sec_investment_companies}},
   \code{\link{get_data_sec_money_market_funds}},
   \code{\link{get_data_sec_municipal_advisors}},
-  \code{\link{get_data_sec_xbrl_periods}},
   \code{\link{get_data_securities_offerings}},
   \code{\link{get_data_us_public_companies}},
   \code{\link{get_data_ycombinator_alumni}}

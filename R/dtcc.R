@@ -532,7 +532,7 @@ parse_for_underlying_asset <-
           select(-idRow) %>%
           suppressMessages()
       }
-      closeAllConnections()
+
       return(data)
     }
   }
@@ -728,7 +728,7 @@ download_dtcc_url <-
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>% message()
     }
-    closeAllConnections()
+
     return(data)
   }
 
@@ -870,7 +870,7 @@ parse_most_recent_url <-
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>% message()
     }
-    closeAllConnections()
+
     return(df)
   }
 
@@ -972,7 +972,7 @@ get_data_dtcc_most_recent_trades <-
         all_data %>%
         nest(-c(nameAsset, typeAction), .key = 'dataDTCC')
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -1028,7 +1028,7 @@ get_data_today <-
     data <-
       dtcc_url %>%
       get_c_url_data_safe()
-    closeAllConnections()
+
     return(data)
   }
 
@@ -1304,6 +1304,6 @@ get_data_dtcc_trades <-
         all_data %>%
         nest(-c(dateData, nameAsset), .key = dataDTCC)
     }
-    closeAllConnections()
+
     return(all_data)
   }

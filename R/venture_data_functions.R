@@ -112,7 +112,6 @@ get_data_ycombinator_alumni <-
         json_data %>%
         nest(-batchYC, .key = 'dataClass')
     }
-    closeAllConnections()
     gc()
     json_data
   }
@@ -201,6 +200,5 @@ get_data_cb_unicorns <-
            ' Billion') %>%
         message()
     }
-    closeAllConnections()
     return(unicorn_df)
   }

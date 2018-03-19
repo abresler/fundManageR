@@ -120,7 +120,7 @@ parse_table_node <-
       left_join(df_series) %>%
       left_join(df_tags) %>%
       suppressMessages()
-    closeAllConnections()
+
     return(df)
   }
 
@@ -244,7 +244,7 @@ parse_fred_page <-
         purrr::invoke(paste0, .) %>% message()
 
     }
-    closeAllConnections()
+
     return(df_items)
 
   }
@@ -433,7 +433,7 @@ parse_fred_search <-
             message()
         }
         rm(res)
-        closeAllConnections()
+
 
         df <<-
           df %>%
@@ -448,7 +448,7 @@ parse_fred_search <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    closeAllConnections()
+
     df
   }
 

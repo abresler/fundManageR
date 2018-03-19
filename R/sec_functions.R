@@ -62,7 +62,7 @@ get_data_sec_ciks <-
         ) %>%
         message()
     }
-    closeAllConnections()
+
     return(cik_data)
   }
 
@@ -106,7 +106,7 @@ get_foia_url_df <-
         return(df)
       }) %>%
       mutate(urlFOIA = urls)
-    closeAllConnections()
+
     return(url_df)
   }
 
@@ -200,7 +200,7 @@ parse_foia_url_df <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(data)
   }
 
@@ -414,7 +414,7 @@ get_cusip_url_df <-
       )) %>%
       suppressWarnings() %>%
       suppressMessages()
-    closeAllConnections()
+
     return(url_df)
   }
 
@@ -561,7 +561,7 @@ parse_sec_cusip_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -680,7 +680,7 @@ get_data_sec_cusips <-
         nest(-periodData, .key = 'dataCUSIPs')
 
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -778,7 +778,7 @@ parse_closed_end_fund_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df)
 
   }
@@ -868,7 +868,7 @@ get_data_sec_closed_end_funds <-
         all_data %>%
         nest(-yearData, .key = 'dataClosedEndFunds')
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -985,7 +985,7 @@ get_data_sec_investment_companies <-
         df %>%
         nest(-nameManager, .key = 'dataManager')
     }
-    closeAllConnections()
+
     return(df)
 
   }
@@ -1111,7 +1111,7 @@ parse_mmf_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df)
 
   }
@@ -1245,7 +1245,7 @@ get_data_sec_money_market_funds <-
           nest(-c(nameFiler, dateData), .key = 'dataMutualFund')
       }
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -1288,7 +1288,7 @@ parse_bankruptcy_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df)
   }
 
@@ -1377,7 +1377,7 @@ get_data_sec_bankruptcies <-
         all_data %>%
         nest(-yearData, .key = 'dataBankruptcies')
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -1460,7 +1460,7 @@ parse_brokers_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df)
   }
 
@@ -1572,7 +1572,7 @@ get_data_sec_broker_dealers <-
         all_data %>%
         nest(-dateData, .key = 'dataBrokers')
     }
-    closeAllConnections()
+
     return(all_data)
 
   }
@@ -1601,7 +1601,7 @@ parse_municpal_dealer_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df)
 
   }
@@ -1746,7 +1746,7 @@ get_data_sec_municipal_advisors <-
         all_data %>%
         nest(-dateData, .key = 'dataMunicpalDealers')
     }
-    closeAllConnections()
+
     return(all_data)
 
   }
@@ -1803,7 +1803,7 @@ parse_fail_to_deliver_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df)
   }
 
@@ -1855,7 +1855,7 @@ get_fail_to_deliver_urls <-
         monthData = dateData %>% lubridate::month(),
         yearData = dateData %>% lubridate::year()
       )
-    closeAllConnections()
+
     return(url_df)
   }
 
@@ -1967,7 +1967,7 @@ get_data_sec_failed_to_deliver_securities <-
         all_data %>%
         nest(-dateData, .key = 'dataFailedToDeliverSecurities')
     }
-    closeAllConnections()
+
     return(all_data)
 
   }
@@ -2016,7 +2016,7 @@ get_market_structure_url_df <-
       ) %>%
       suppressMessages() %>%
       select(dateData = idPeriod, urlData)
-    closeAllConnections()
+
     return(url_df)
   }
 
@@ -2081,7 +2081,7 @@ parse_market_structure_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df)
   }
 
@@ -2212,7 +2212,7 @@ get_data_sec_securities_metrics_by_exchange <-
         all_data %>%
         nest(-dateData, .key = 'dataQuarterlyMetrics')
     }
-    closeAllConnections()
+
     return(all_data)
 
   }
@@ -2383,7 +2383,7 @@ get_xbrl_url_df <-
       ) %>%
       mutate_at(.vars = c('yearData', 'quarterData'),
                 funs(. %>% as.numeric()))
-    closeAllConnections()
+
     return(url_df)
   }
 
@@ -2688,7 +2688,7 @@ parse_xbrl_url <-
           urlData = url
         ) %>%
         select(periodData:urlData, nameTable, dataTable)
-      closeAllConnections()
+
       return(all_data)
     }
 
@@ -2712,7 +2712,7 @@ parse_xbrl_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(all_data)
   }
 

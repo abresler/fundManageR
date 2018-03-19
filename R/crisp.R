@@ -57,7 +57,7 @@ get_data_crsp_files <-
       crsp_urls %>%
       filter(isSummaryFile == F)
   }
-  closeAllConnections()
+
   return(crsp_urls)
 
   }
@@ -127,7 +127,7 @@ parse_crsp_index_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(data)
   }
 
@@ -165,7 +165,7 @@ get_data_crsp_indicies_constituents <-
       all_data %>%
         tidyr::nest(.key = dataTable, -c(dateData, countryIndex, nameIndex))
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -215,6 +215,6 @@ get_data_crsp_indicies_returns <-
         all_data %>%
         tidyr::nest(.key = dataTable,  -periodData)
     }
-    closeAllConnections()
+
     return(all_data)
   }

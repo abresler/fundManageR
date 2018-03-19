@@ -2432,7 +2432,6 @@ get_data_tickers_metrics <-
     data %>%
     clean_names()
   gc()
-  closeAllConnections()
   data
 }
 

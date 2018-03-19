@@ -29,7 +29,7 @@ get_nareit_constiutent_urls <-
     df <-
       data_frame(yearData = year,
                urlData = urls)
-    closeAllConnections()
+
     return(df)
   }
 
@@ -296,7 +296,7 @@ parse_nareit_constituent_url <-
           purrr::invoke(paste0, .) %>%
           message()
       }
-      closeAllConnections()
+
       df <<-
         df %>%
         bind_rows(all_data)
@@ -496,7 +496,7 @@ get_data_nareit_constituent_years <-
         all_data %>%
         nest(-c(yearData, dateFile), .key = 'dataConstituents')
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -640,7 +640,7 @@ parse_nareit_pages <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    closeAllConnections()
+
     df
   }
 
@@ -989,7 +989,7 @@ parse_nareit_entity_pages <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    closeAllConnections()
+
     df <-
       df %>%
       mutate(hasPortfolioData = dataPortfolio %>% map_dbl(length) > 0,
@@ -1214,7 +1214,7 @@ get_data_nareit_notable_properties <-
           select(-matches("url")) %>% names(),
         funs(. %>% str_to_upper())
       )
-    closeAllConnections()
+
     return(df)
   }
 
@@ -1276,7 +1276,7 @@ parse_json_hq <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df_long)
   }
 
@@ -1341,7 +1341,7 @@ parse_json_holdings <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(df_long)
   }
 
@@ -1380,7 +1380,7 @@ parse_json_state_metadata <-
       select(idState:countHeadquarters,
              countSingleFamilyHomes,
              urlImageSample)
-    closeAllConnections()
+
     return(df)
 
   }
@@ -1470,7 +1470,7 @@ get_data_nareit_property_msa <-
         nest(-c(nameMSA, coordinateLatitude, coordinateLongitude),
              .key = 'dataProperties')
     }
-    closeAllConnections()
+
     return(df_property)
 
   }
@@ -1630,7 +1630,7 @@ get_data_nareit_state_info <-
       mutate_at(df_property %>% select(matches("count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0))) %>%
       arrange(desc(codeState))
-    closeAllConnections()
+
     return(df_property)
 
   }
@@ -1763,7 +1763,7 @@ get_data_nareit_monthly_returns <-
         data %>%
         gather(item, value, -c(dateData, nameIndex, urlData), convert = T)
     }
-    closeAllConnections()
+
     return(data)
   }
 
@@ -1877,7 +1877,7 @@ get_data_nareit_annual_subsector_returns <-
                -c(dateData, nameSector, nameSubSector, urlData),
                convert = T)
     }
-    closeAllConnections()
+
     return(data)
   }
 
@@ -1971,7 +1971,7 @@ get_nareit_capital_urls <-
         indexSheet = c(1, 2, 1),
         urlData = capital_urls
       )
-    closeAllConnections()
+
     return(url_df)
   }
 
@@ -2074,7 +2074,7 @@ parse_nareit_offering_url <-
         purrr::invoke(paste0, .) %>%
         message()
     }
-    closeAllConnections()
+
     return(data)
   }
 
@@ -2166,7 +2166,7 @@ get_data_nareit_capital_raises <-
         all_data %>%
         nest(-typeCapital, .key = dataOfferingNAREIT)
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -2411,7 +2411,7 @@ get_data_nareit_mergers_acquisitions <-
         all_data %>%
         nest(-yearMerger, .key = 'dataTransactions')
     }
-    closeAllConnections()
+
     return(all_data)
   }
 
@@ -2608,7 +2608,7 @@ get_data_nareit_industry_tracker <-
         data %>%
         nest(-yearData, .key = 'dataTracker')
     }
-    closeAllConnections()
+
     return(data)
   }
 
@@ -2699,7 +2699,7 @@ parse_fund_reit_page <-
       mutate(idRow = 1:n()) %>%
       left_join(df_values) %>%
       suppressMessages()
-    closeAllConnections()
+
     return(df)
 
   }
@@ -2797,7 +2797,7 @@ parse_reit_fund_info_page <-
             message()
         }
         rm(page)
-        closeAllConnections()
+
 
         df <<-
           df %>%
@@ -2812,7 +2812,7 @@ parse_reit_fund_info_page <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    closeAllConnections()
+
     df
   }
 
