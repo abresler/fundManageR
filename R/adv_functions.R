@@ -35,13 +35,10 @@ resolve_finra_names <- function(finra_names) {
 # parsing -----------------------------------------------------------------
 get_html_page <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=160080') {
-    httr::set_config(httr::config(ssl_verifypeer = 0L))
     page <-
-      url %>%
-      httr::GET() %>%
-      xml2::read_html()
+      url %>% curl::curl() %>% xml2::read_html()
 
-    return(page)
+    page
   }
 
 
@@ -54,7 +51,7 @@ check_html_node <-
       node_exists <-
         F
     }
-    return(node_exists)
+    node_exists
   }
 
 
@@ -81,7 +78,7 @@ get_html_node_text <-
       node_text <-
         NA
     }
-    return(node_text)
+    node_text
   }
 
 
@@ -2538,11 +2535,7 @@ get_managers_adv_sitemap_adv <-
 
     if (!purrr::is_null(idCRDs)) {
       urls <-
-        list(
-          'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=',
-          idCRDs
-        ) %>%
-        purrr::reduce(paste0)
+        glue::glue("http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRDs}") %>% as.character()
     }
 
     if (!purrr::is_null(entity_names)) {
@@ -9340,7 +9333,7 @@ get_manager_brochure_data <-
       }
     }
 
-    return(pdf_data)
+    pdf_data
 
   }
 
@@ -9370,23 +9363,27 @@ get_data_adv_managers_brochures <-
       stop("Please enter a CRD ID or a search name")
     }
     get_search_crd_ids_safe <-
-      possibly(get_search_crd_ids, NULL)
+      possibly(get_search_crd_ids, data_frame())
 
     crds <-
       get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
 
     get_manager_brochure_data_safe <-
-      possibly(get_manager_brochure_data, NULL)
+      possibly(get_manager_brochure_data, data_frame())
 
     all_data <-
-      1:length(crds) %>%
-      map_df(function(x) {
+     crds %>%
+      map_df(function(crd) {
         manager_pdf <-
-          get_manager_brochure_data(id_crd = crds[[x]] %>% as.numeric(),
-                                    split_pages = split_pages)
-        paste0('idCRD: ', x, ' - ', 'Manager Brochure') %>%
-          message()
-        return(manager_pdf)
+          get_manager_brochure_data_safe(id_crd = as.numeric(crd), split_pages = split_pages)
+
+        if (nrow(manager_pdf) >= 1) {
+          manager <- manager_pdf$nameEntityManager %>% unique()
+          date_file <- manager_pdf$datetimeCreated %>% unique()
+          glue::glue("Acquired ADV brochure for {manager} filed on {date_file}") %>% message()
+        }
+
+        manager_pdf
       })
 
     if (nest_data) {
@@ -9401,7 +9398,7 @@ get_data_adv_managers_brochures <-
         ),
         .key = 'dataBrochure')
     }
-    return(all_data)
+    all_data
   }
 
 

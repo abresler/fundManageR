@@ -2731,7 +2731,6 @@ parse_xbrl_url <-
 #' }
 #' @param only_most_recent \code{TRUE} search only the most recent period
 #' @param return_message \code{TRUE} return a message after data import
-#' @param nest_data \code{TRUE} return nested data frame
 #' @param tables underlying XBRL tables you want to include \itemize{
 #' \item \code{NULL}: all tables (default)
 #' \item \code{Presentation}: presentation data
@@ -2741,7 +2740,8 @@ parse_xbrl_url <-
 #' }
 #' @param only_all \code{TRUE} returns a joined file of the four tables
 #' @param assign_to_environment \code{TRUE} assign the results into your environment
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#'
+#' @return nested \code{data_frame} or \code{data_frame}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest formattable
@@ -2754,7 +2754,6 @@ parse_xbrl_url <-
 #' \dontrun{
 #' get_data_sec_xbrl_periods(only_most_recent = TRUE, only_all = TRUE, assign_to_environment = TRUE, return_message = TRUE)
 #' }
-#'
 get_data_sec_xbrl_periods <-
   function(only_most_recent = TRUE,
            years = NULL,
