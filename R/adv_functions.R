@@ -3160,6 +3160,7 @@ extract_node_data <-
     options(scipen = 99999)
     letter_section_location <-
       c('7c', '23c', '24d', '25d', '26c', '28e')
+
     letter_section_other <-
       c(
         '7a',
@@ -3241,9 +3242,10 @@ extract_node_data <-
         }
         if (variable_name %>% str_detect("pct")) {
           node_value <-
-            node_value %>% str_replace('\\%', '') %>% str_trim() %>% as.numeric()
+            node_value %>% str_replace('\\%', '') %>% str_trim() %>% as.numeric() %>% suppressWarnings()
         }
-        if (node_value %>% str_detect('\\$')) {
+
+        if (node_value %>% str_detect('\\$') &!is.na(node_value)) {
           node_value <-
             node_value %>% str_replace('\\$|\\', '')
         }
@@ -3477,7 +3479,7 @@ parse_funds_tables <-
             table_css_node_df = table_css_node_df
           )
 
-        response_df <-
+      response_df <-
           get_table_check_box_data(
             page = page,
             table_number = table_number,
@@ -3485,20 +3487,22 @@ parse_funds_tables <-
             only_radio = T
           )
 
-        fund_table_data <-
-          1:nrow(section_matrix_df) %>%
-          map_df(function(x) {
-            table_node_df %>%
-              extract_node_data(
-                variable_name = section_matrix_df$variableName[x],
-                section_letter = section_matrix_df$sectionLetter[x],
-                method = 'max'
-              ) %>%
-              mutate(valueNode = valueNode %>% as.character())
-          }) %>%
-          suppressWarnings() %>%
-          mutate(valueNode = ifelse(valueNode %in% c('', '-'), NA, valueNode)) %>%
-          dplyr::filter(!valueNode %>% is.na())
+      extract_node_data_safe <-
+        purrr::possibly(extract_node_data, data_frame())
+      fund_table_data <-
+        1:nrow(section_matrix_df) %>%
+        map_df(function(x) {
+          extract_node_data(
+            table_node_df = table_node_df,
+            variable_name = section_matrix_df$variableName[x],
+            section_letter = section_matrix_df$sectionLetter[x],
+            method = 'max'
+          ) %>%
+            mutate(valueNode = valueNode %>% as.character())
+        }) %>%
+        suppressWarnings() %>%
+        mutate(valueNode = ifelse(valueNode %in% c('', '-'), NA, valueNode)) %>%
+        dplyr::filter(!valueNode %>% is.na())
 
         col_order <-
           fund_table_data$nameVariable
@@ -4833,7 +4837,8 @@ get_section_5_data <-
 
             client_summary_image_df <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df())
+              left_join(get_check_box_value_df()) %>%
+              suppressMessages()
 
             if (!is_new_iapd) {
             client_summary_image_df <-
@@ -5279,23 +5284,24 @@ get_section_7b_data <-
           page %>%
           get_entity_manager_name()
 
-        has_fund_data <-
+        main <-
           page %>%
-          html_nodes(
-            '#ctl00_ctl00_cphMainContent_cphAdvFormContent_PrvtFundReportingListPH_grdFunds_ctl01_lblTotalRecords'
-          ) %>%
-          html_text() %>%
-          str_replace_all("Total Funds: ", '') %>%
-          as.numeric() %>% length() > 0
+          html_nodes('.main div')
+
+        all_div_ids <-
+          main %>%
+          html_attr('id') %>%
+          unique() %>%
+          discard(is.na)
+
+        has_fund_data <-
+          length(all_div_ids) >= 1
+
         if (has_fund_data) {
-          fund_count <-
-            page %>%
-            html_nodes(
-              '#ctl00_ctl00_cphMainContent_cphAdvFormContent_PrvtFundReportingListPH_grdFunds_ctl01_lblTotalRecords'
-            ) %>%
-            html_text() %>%
-            str_replace_all("Total Funds: ", '') %>%
-            as.numeric()
+          page_table_nodes <- all_div_ids[all_div_ids %>% str_detect("pnlFund")]
+          page_table_nodes <- str_c("#", page_table_nodes)
+          fund_count <- length(page_table_nodes)
+
           page_sequences <-
             seq(3, length.out = fund_count) %>% as.character() %>%
             map_chr(function(x) {
@@ -5306,16 +5312,13 @@ get_section_7b_data <-
               }
             })
 
-          page_table_nodes <-
-            '#ctl00_ctl00_cphMainContent_cphAdvFormContent_PrvtFundReportingListPH_grdFunds_ctl' %>%
-            paste0(page_sequences, '_pnlFund')
-
           table_css_node_df <-
             data_frame(
               numberTable = 1:fund_count,
               pageSequenceNode = page_sequences,
               tableCSSNode = page_table_nodes
             )
+
           section_matrix_df <-
             get_section_matrix_df()
 
@@ -5336,16 +5339,8 @@ get_section_7b_data <-
             total_aum <-
               all_data$amountFundGrossAUM %>% sum(na.rm = T) %>% formattable::currency()
 
-            "Parsed " %>%
-              paste0(
-                name_entity_manager,
-                ' they have ',
-                fund_count,
-                ' fund vehicles and ',
-                total_aum,
-                ' in private fund AUM'
-              ) %>%
-              message()
+            glue::glue("Parsed {name_entity_manager} they have {fund_count} fund vehicles
+                       and {total_aum} in private fund AUM") %>% message()
           }
 
           if (return_wide) {
@@ -5360,7 +5355,7 @@ get_section_7b_data <-
           all_data <-
             data_frame(nameEntityManager = name_entity_manager)
         }
-        return(all_data)
+        all_data
       }
 
     parse_private_fund_data_safe <-
@@ -9883,7 +9878,7 @@ parse_sec_adv_data_url <-
 
       adv_data[, char_col] <-
         adv_data[, char_col] %>%
-        magrittr::extract2(1) %>%
+        pull(1) %>%
         lubridate::mdy()
 
 
@@ -10000,7 +9995,6 @@ parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.z
 #' @param return_message return a message after parsing data
 #' @import dplyr stringr lubridate readr readxl rvest purrr httr tidyr tibble glue
 #' @importFrom curl curl_download
-#' @importFrom magrittr extract2
 #' @return where \code{nest_data} is \code{TRUE} a nested data_frame by period and type of filer,
 #' where \code{nest_data} is \code{FALSE} a data_frame
 #' @export
