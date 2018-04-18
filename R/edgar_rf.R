@@ -77,20 +77,21 @@ tidy_column_formats <-
 
 pad_cik <-
   function(cik = 886982) {
+    cik_char <- cik %>%
+      as.character()
     cik_chars <-
-      cik %>%
+       cik_char %>%
       nchar()
 
     zeros_needed <-
       10 - cik_chars
+
     zeros <-
       rep(0,zeros_needed) %>% as.character() %>% paste0(collapse = '')
 
     cik_code <-
-      list(zeros, cik %>% as.character()) %>%
-      purrr::reduce(paste0)
-
-    cik
+      glue::glue("{zeros}{cik_char}") %>% as.character()
+    cik_code
   }
 
 pad_sic <-
@@ -14550,6 +14551,7 @@ get_cik_filing_count <-
     page <-
       url %>%
       read_html()
+
     no_data <-
       page %>%
       html_nodes(css = 'p+ b') %>%
@@ -14579,7 +14581,7 @@ get_cik_filing_count <-
         purrr::reduce(paste0) %>%
         message()
     }
-    return(df)
+    df
   }
 
 #' Title
@@ -15287,8 +15289,7 @@ get_data_edgar_ft_terms <-
     if (include_counts) {
       df_counts <-
         all_data %>%
-        select(idCIKFiler) %>%
-        .$idCIKFiler %>%
+        pull(idCIKFiler) %>%
         unique() %>%
         map_df(function(x){
           get_cik_filing_count(cik = x)
