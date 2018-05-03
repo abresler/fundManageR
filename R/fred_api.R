@@ -82,7 +82,7 @@ parse_table_node <-
         data_frame(
           countItemPage = x,
           nameItem = periods,
-          idSeries = series_ids,
+          idSeriesDetailed = series_ids,
           dateUpdated = dates
         ) %>%
         mutate(countItem = 1:n())
@@ -90,6 +90,10 @@ parse_table_node <-
       df_series <-
         df_series %>%
         nest(-countItemPage, .key = dataSeries)
+
+      df_series <-
+        df_series %>%
+        mutate(hasDetailedSeries = !dataSeries %>% map_lgl(is.null))
     } else {
       df_series <-
         data_frame(countItemPage = x)
@@ -153,6 +157,190 @@ get_fred_page_count <-
       purrr::reduce(paste0)
 
     data_frame(numberPage = fred_pages, urlPage = urls)
+  }
+
+.parse_fred_ft_html <-
+  function(url = "https://fred.stlouisfed.org/search?st=China",
+           page_no = 1,
+           return_message = T) {
+    page <-
+      url %>%
+      read_html()
+
+    item_count <-
+      page %>%
+      html_nodes('.series-title') %>%
+      length()
+
+    df_css_nodes <-
+      data_frame(idRow = 1:item_count,
+                 nodeNumber = c(2, seq(
+                   5, by = 3, length.out = item_count - 1
+                 )))
+
+    df_items <-
+      1:item_count %>%
+      map_df(function(x) {
+        table_no <-
+          df_css_nodes %>%
+          filter(idRow == x) %>%
+          .$nodeNumber
+
+        table_node_css <-
+          glue::glue(".series-pager-attr:nth-child({table_no}) td")
+
+        page_no <-
+          x
+
+        table_nodes <-
+          page %>%
+          html_nodes(css = table_node_css)
+
+        df_table <-
+          table_nodes %>%
+          parse_table_node(x = page_no)
+
+        link_nodes <-
+          page %>%
+          html_nodes('.series-title') %>%
+          .[[x]]
+
+        series_id <-
+          link_nodes %>%
+          strip_series()
+
+        series_name <-
+          link_nodes %>%
+          html_text() %>%
+          str_to_upper()
+
+        table_df <-
+          data_frame(countItemPage = x,
+                     idSeries = series_id,
+                     nameSeries = series_name) %>%
+          mutate(
+            urlFREDAPI = glue::glue(
+              "https://fred.stlouisfed.org/graph/graph-data.php?id={idSeries}"
+            ) %>% as.character()
+          ) %>%
+          left_join(df_table) %>%
+          suppressMessages()
+        table_df
+      })
+
+    df_items <-
+      df_items %>%
+      mutate(urlPage = url,
+             numberPage = page_no) %>%
+      select(numberPage, everything())
+
+    if (return_message) {
+      glue::glue("Parsed {url}") %>% message()
+    }
+    df_items
+  }
+
+.parse_fred_ft_slug_count <-
+  function(url = "https://fred.stlouisfed.org/search?st=China&pageID=1") {
+    page <-
+      url %>%
+      read_html()
+
+    base_url <-
+      url %>% str_remove_all("&pageID=1")
+
+    no_extra <-
+      page %>%
+      html_nodes('.ph20 p a') %>%
+      html_text() %>%
+      readr::parse_number() %>%
+      discard(is.na) %>% length() == 0
+
+    if (no_extra) {
+      df <- data_frame(numberPage = 1, urlPage = as.character(url))
+      return(df)
+    }
+
+    last_page <-
+      page %>%
+      html_nodes('.ph20 p a') %>%
+      html_text() %>%
+      readr::parse_number() %>%
+      discard(is.na) %>%
+      max() %>%
+      suppressWarnings()
+
+    fred_pages <-
+      seq(1, last_page)
+
+    urls <- glue::glue("{base_url}&pageID={fred_pages}") %>% as.character()
+
+    data_frame(numberPage = fred_pages, urlPage = as.character(urls))
+
+  }
+
+.parse_fred_html_search_term <-
+  function(search_term = "China Debt",
+           return_message = TRUE) {
+    if (return_message) {
+      glue::glue("Searching for for {search_term}\n") %>% message()
+    }
+    term_slug <- search_term %>% URLencode()
+    search_url <-
+      glue::glue("https://fred.stlouisfed.org/search?st={term_slug}&pageID=1")
+
+    df_urls <-
+      search_url %>% .parse_fred_ft_slug_count() %>% suppressWarnings() %>%
+      mutate(termSearch = search_term) %>%
+      select(termSearch, everything())
+
+    .parse_fred_ft_html_safe <-
+      purrr::possibly(.parse_fred_ft_html, data_frame())
+    df_data <-
+      1:nrow(df_urls) %>%
+      map_df(function(x) {
+        .parse_fred_ft_html(
+          url = df_urls$urlPage[[x]],
+          page_no = df_urls$numberPage[[x]],
+          return_message = return_message
+        )
+      })
+
+    all_data <-
+      df_data %>%
+      left_join(df_urls) %>%
+      select(termSearch, numberPage, everything()) %>%
+      suppressMessages()
+
+    if (return_message) {
+      glue::glue("Found {nrow(all_data)} FRED series for {search_term}") %>% message()
+    }
+
+    all_data
+  }
+
+.get_data_fred_terms_ids_html <-
+  function(search_terms = c("China Debt", "China Investment"),
+           return_message = TRUE) {
+    .parse_fred_html_search_term_safe <-
+      purrr::possibly(.parse_fred_html_search_term, data_frame())
+
+    all_data <-
+      search_terms %>%
+      map_df(function(search_term){
+        .parse_fred_html_search_term(search_term = search_term,
+                                     return_message = return_message)
+      })
+
+    all_data <-
+      all_data %>%
+      group_by(idSeries) %>%
+      mutate(idRow = 1:n()) %>%
+      ungroup() %>%
+      filter(idRow == min(idRow)) %>%
+      select(-idRow)
+
+    all_data
   }
 
 parse_fred_page <-
@@ -235,18 +423,14 @@ parse_fred_page <-
 
     df_items <-
       df_items %>%
-      mutate(urlPage = url,
+      mutate(urlPage = as.character(url),
              idPage = no_page) %>%
       select(idPage, everything())
 
     if (return_message) {
-      list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
-
+      glue::glue("Parsed {url}") %>% message()
     }
-
-    return(df_items)
-
+    df_items
   }
 
 get_data_all_fred_series_ids <-
@@ -428,9 +612,8 @@ parse_fred_search <-
                  everything())
 
         if (return_message) {
-          list("Found ", nrow(data), ' FRED series for ', search_term) %>%
-            purrr::reduce(paste0) %>%
-            message()
+          glue::glue("Found {nrow(data)} FRED series for {search_term}") %>% message()
+
         }
         rm(res)
 
@@ -452,46 +635,63 @@ parse_fred_search <-
     df
   }
 
-#' FRED Terms Series IDs
-#'
-#' This function returns
-#' matching FRED series ID for a given
-#' search term.  The maximum number of results is
-#' 100 for broader search use #' \code{\link{get_dictionary_all_fred_series_ids}} function.
-#'
-#' @param search_terms
-#' @param return_message
-#' @param nest_data
-#'
-#' @return
-#' @export
-#' @import dplyr lubridate tidyr purrr jsonlite curl
-#' @examples
-get_data_fred_terms_ids <-
+.get_data_fred_terms_ids_json <-
   function(search_terms = c("China", "Property"),
-           nest_data = FALSE,
            return_message = TRUE) {
     terms <-
       search_terms %>% map_chr(URLencode)
 
     json_urls <-
-      list(
-        'https://fred.stlouisfed.org/graph/ajax-requests.php?action=find_series&q=',
-        terms
-      ) %>%
-      purrr::reduce(paste0)
+      glue::glue("https://fred.stlouisfed.org/graph/ajax-requests.php?action=find_series&q={terms}") %>% as.character()
 
     all_data <-
       json_urls %>%
       parse_fred_search(return_message = return_message)
+    all_data
+  }
 
-    if (nest_data) {
-      all_data <-
-        all_data %>%
-        nest(-termSearch, .key = dataResults)
+
+#' FRED Terms Series IDs
+#'
+#' This function returns
+#' matching FRED series ID for a given
+#' search term.  When using
+#' `use_json_api` search results limited to 100,
+#'
+#' @param search_terms vector of search terms
+#' @param use_json_api if \code{TRUE} uses faster json API but results limted to 100
+#' default \code{FALSE}
+#' @param return_message if \code{TRUE} returns message
+#'
+#' @return a \code{data_frame}
+#' @export
+#' @import dplyr lubridate tidyr purrr jsonlite curl rvest glue stringr
+#' @examples
+#' get_data_fred_terms_ids(search_terms = c("China Debt", "China Housing"))
+get_data_fred_terms_ids <-
+  function(search_terms = NULL,
+           use_json_api = FALSE,
+           return_message = TRUE) {
+    if (purrr::is_null(search_terms)) {
+      stop("Please enter search terms")
     }
 
-    return(all_data)
+    if (use_json_api) {
+      .get_data_fred_terms_ids_json_safe <-
+        purrr::possibly(.get_data_fred_terms_ids_json, data_frame())
+      all_data <-
+        .get_data_fred_terms_ids_json_safe(search_terms = search_terms, return_message = return_message)
+      return(all_data)
+
+    }
+
+    .get_data_fred_terms_ids_html_safe <-
+      purrr::possibly(.get_data_fred_terms_ids_html, data_frame())
+
+    all_data <-
+      .get_data_fred_terms_ids_html_safe(search_terms = search_terms, return_message = return_message)
+
+    all_data
   }
 
 # api ---------------------------------------------------------------------
