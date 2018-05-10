@@ -1,5 +1,6 @@
 
 
+
 # utilities ---------------------------------------------------------------
 
 #' Import RDA file
@@ -215,9 +216,11 @@ get_fred_page_count <-
           str_to_upper()
 
         table_df <-
-          data_frame(countItemPage = x,
-                     idSeries = series_id,
-                     nameSeries = series_name) %>%
+          data_frame(
+            countItemPage = x,
+            idSeries = series_id,
+            nameSeries = series_name
+          ) %>%
           mutate(
             urlFREDAPI = glue::glue(
               "https://fred.stlouisfed.org/graph/graph-data.php?id={idSeries}"
@@ -273,7 +276,8 @@ get_fred_page_count <-
     fred_pages <-
       seq(1, last_page)
 
-    urls <- glue::glue("{base_url}&pageID={fred_pages}") %>% as.character()
+    urls <-
+      glue::glue("{base_url}&pageID={fred_pages}") %>% as.character()
 
     data_frame(numberPage = fred_pages, urlPage = as.character(urls))
 
@@ -327,7 +331,7 @@ get_fred_page_count <-
 
     all_data <-
       search_terms %>%
-      map_df(function(search_term){
+      map_df(function(search_term) {
         .parse_fred_html_search_term(search_term = search_term,
                                      return_message = return_message)
       })
@@ -642,7 +646,9 @@ parse_fred_search <-
       search_terms %>% map_chr(URLencode)
 
     json_urls <-
-      glue::glue("https://fred.stlouisfed.org/graph/ajax-requests.php?action=find_series&q={terms}") %>% as.character()
+      glue::glue(
+        "https://fred.stlouisfed.org/graph/ajax-requests.php?action=find_series&q={terms}"
+      ) %>% as.character()
 
     all_data <-
       json_urls %>%
@@ -1008,13 +1014,12 @@ plot_time_series <-
            plot_labels = FALSE,
            use_hrbr_theme = FALSE,
            interactive = FALSE) {
-
     transformation_options <- c('mean', 'median', 'smooth')
 
     wrong_transforms <-
       transformations %>%
-      purrr::map_dbl(function(x){
-        transformation_options %>% grep(x,.) %>% length()
+      purrr::map_dbl(function(x) {
+        transformation_options %>% grep(x, .) %>% length()
       }) %>%
       sum(na.rm = TRUE) == 0
 
@@ -1045,7 +1050,7 @@ plot_time_series <-
       if (series_name %>% nchar > 50) {
         title <-
           series_name %>% str_split_fixed(pattern = '\\ ', 5) %>% as.character() %>% {
-            paste0(paste0(.[1:4], collapse = ' '), '\n',.[5])
+            paste0(paste0(.[1:4], collapse = ' '), '\n', .[5])
           }
       }
     } else {
@@ -1058,7 +1063,8 @@ plot_time_series <-
         data$dateData %>% min(na.rm = TRUE),
         ' to ',
         data$dateData %>% max(na.rm = TRUE),
-        ' - FRED Series ID: ', data$idSymbol %>% unique()
+        ' - FRED Series ID: ',
+        data$idSymbol %>% unique()
       ) %>% purrr::reduce(paste0)
 
     type <-
@@ -1068,13 +1074,18 @@ plot_time_series <-
 
     if (!fred_data_transformation %>% is_null()) {
       sub_title <-
-        list(sub_title, '\nFRED Transformation of ', fred_data_transformation) %>%
+        list(sub_title,
+             '\nFRED Transformation of ',
+             fred_data_transformation) %>%
         purrr::reduce(paste0)
     }
 
     if ('nameSource' %in% names(data)) {
       caption_text <-
-        list("Source data from ",data$nameSource %>% unique, '\n', 'via FRED from fundManageR') %>%
+        list("Source data from ",
+             data$nameSource %>% unique,
+             '\n',
+             'via FRED from fundManageR') %>%
         purrr::reduce(paste0)
     } else {
       caption_text <-
@@ -1144,8 +1155,13 @@ plot_time_series <-
 
         plot <-
           plot +
-          annotate("text", x = mean(data$dateData, na.rm = TRUE), y = mean_value * 1.75, label = mean_label,
-                   colour = "#ff0f0f")
+          annotate(
+            "text",
+            x = mean(data$dateData, na.rm = TRUE),
+            y = mean_value * 1.75,
+            label = mean_label,
+            colour = "#ff0f0f"
+          )
 
       }
     }
@@ -1154,19 +1170,22 @@ plot_time_series <-
       median_value <- data$value %>% median(na.rm = TRUE)
       plot <-
         plot +
-        geom_hline(
-          yintercept = median_value,
-          colour = "#6600ff",
-          linetype = "dashed"
-        )
+        geom_hline(yintercept = median_value,
+                   colour = "#6600ff",
+                   linetype = "dashed")
       if (plot_labels) {
         median_label <-
           list("Median: ", digits(median_value, 3)) %>% purrr::reduce(paste0)
 
-      plot <-
-        plot +
-        annotate("text", x = mean(data$dateData, na.rm = TRUE), y = median_value * 1.5, label = median_label,
-                 colour = "#6600ff")
+        plot <-
+          plot +
+          annotate(
+            "text",
+            x = mean(data$dateData, na.rm = TRUE),
+            y = median_value * 1.5,
+            label = median_label,
+            colour = "#6600ff"
+          )
 
       }
     }
@@ -1205,7 +1224,7 @@ plot_time_series <-
     return(plot)
   }
 
-  check_for_hrb <- function() {
+check_for_hrb <- function() {
   df_pkgs <-
     installed.packages() %>%
     dplyr::as_data_frame()
@@ -1215,8 +1234,12 @@ plot_time_series <-
     filter(Package %>% stringr::str_detect('hrbrthemes')) %>% nrow() == 0
 
   if (missing_hrb_themes) {
-    stop(list("Missing hrbrthemes which is needed to plot please install using devtools::install_github('hrbrmstr/hrbrthemes')\nAlso make sure to download Roboto font at https://fonts.google.com/specimen/Roboto") %>%
-      purrr::reduce(paste0))
+    stop(
+      list(
+        "Missing hrbrthemes which is needed to plot please install using devtools::install_github('hrbrmstr/hrbrthemes')\nAlso make sure to download Roboto font at https://fonts.google.com/specimen/Roboto"
+      ) %>%
+        purrr::reduce(paste0)
+    )
   }
 }
 
@@ -1264,31 +1287,295 @@ visualize_fred_time_series <-
            use_hrbr_theme = FALSE,
            plot_labels = FALSE,
            interactive = FALSE) {
-
     if (use_random) {
-    if (!'df_fred_symbols' %>% exists()) {
-      "Asssigning FRED symbols to your environment as df_fred_symbols" %>% message()
-      assign(x = 'df_fred_symbols', value = eval(get_dictionary_all_fred_series_ids()), envir = .GlobalEnv)
-    }
+      if (!'df_fred_symbols' %>% exists()) {
+        "Asssigning FRED symbols to your environment as df_fred_symbols" %>% message()
+        assign(
+          x = 'df_fred_symbols',
+          value = eval(get_dictionary_all_fred_series_ids()),
+          envir = .GlobalEnv
+        )
+      }
       "\nBuckle your seatbelts we are plotting one random time series from the nearly 400,000 available on FRED" %>% message()
       series_id <- df_fred_symbols %>% sample_n(1) %>% .$idSeries
     }
 
     fred_df <-
-      get_data_fred_symbol(symbol = series_id, transformation = fred_data_transformation, nest_data = FALSE, return_wide = FALSE) %>%
+      get_data_fred_symbol(
+        symbol = series_id,
+        transformation = fred_data_transformation,
+        nest_data = FALSE,
+        return_wide = FALSE
+      ) %>%
       suppressWarnings() %>%
       suppressMessages()
 
     plot <-
       plot_time_series(
-      data = fred_df,
-      date_start = date_start,
-      date_end = date_end,
-      fred_data_transformation = fred_data_transformation,
-      transformations = plot_transformations,
-      use_hrbr_theme = use_hrbr_theme,
-      plot_labels = plot_labels,
-      interactive = interactive
-    )
+        data = fred_df,
+        date_start = date_start,
+        date_end = date_end,
+        fred_data_transformation = fred_data_transformation,
+        transformations = plot_transformations,
+        use_hrbr_theme = use_hrbr_theme,
+        plot_labels = plot_labels,
+        interactive = interactive
+      )
     plot
+  }
+
+
+#' Plot ggplot time series
+#'
+#' @param data a data frame
+#' @param date_start if not NULL date starting
+#' @param date_end if not NULL date ending
+#' @param transformations \itemize{
+#' \item \code{smooth} -- smoothed line
+#' \item \code{mean} -- mean
+#' \item \code{median}
+#' }
+#' @param include_recessions if \code{TRUE} includes recession bars
+#' @param x_breaks  number of x breks
+#' @param plot_labels if \code{TRUE} plots labels
+#' @param use_hrbr_theme if \code{TRUE} returns hrbr theme
+#'
+#' @return a ggplot2 object
+#' @export
+#' @import dplyr glue tis grid hrbrthemes purrr readr stringr formattable
+#' @examples
+plot_time_series_static <-
+  function(data,
+           date_start = NULL,
+           date_end = NULL,
+           transformations = c('mean', 'median', 'smooth'),
+           include_recessions = TRUE,
+           x_breaks = 12,
+           plot_labels = TRUE,
+           use_hrbr_theme = TRUE)  {
+    data <-
+      data %>%
+      filter(!is.na(value))
+
+    value_type <-
+      data$typeValue %>% unique()
+    data_source <- data$nameSource %>% unique()
+    data_frequency <-
+      data$frequencyData %>% unique() %>% str_to_lower()
+    series_name <- data %>% pull(nameSeries) %>% unique()
+    start_date <-
+      data %>% pull(dateData) %>% min(na.rm = T) %>% .[[1]]
+    end_date <-
+      data %>% pull(dateData) %>% max(na.rm = T) %>% .[[1]]
+    data <-
+      data %>%
+      select(-c(nameSeries, typeValue, nameSource))
+
+    split_series <-
+      series_name %>% nchar() > 50
+
+    if (split_series) {
+      title <-
+        stringi::stri_wrap(str = series_name, width = 50) %>% str_c(collapse = "\n")
+    } else {
+      title <- series_name
+    }
+
+    if (include_recessions) {
+      recession_title <- " -- U.S. recessions in red"
+    } else {
+      recession_title <- ''
+    }
+    start_d <- data$dateData %>% min(na.rm = TRUE)
+    end_d <- data$dateData %>% max(na.rm = TRUE)
+    symbol <- data$idSymbol %>% unique()
+
+    sub_title <-
+      glue::glue("Data from {start_d} to {end_d} for FRED ID {symbol}{recession_title}")
+
+    type <-
+      value_type
+
+    is_percent <- type %>% stringr::str_detect('PERCENT')
+
+    if (!data_source %>% purrr::is_null()) {
+      caption_text <-
+        glue::glue(
+          "Source data: {data_source}\nReported {data_frequency}\nvia FRED from fundManageR"
+        )
+    } else {
+      caption_text <-
+        "Sourced from FRED via fundManageR"
+    }
+
+    plot <-
+      data %>%
+      ggplot(aes(x = dateData, y = value)) +
+      theme_minimal() +
+      geom_line(color = "#00B0F0", size = .5) +
+      geom_area(fill = "#00B0F0",
+                alpha = 0.25,
+                color = NA) +
+      theme(
+        panel.background = element_rect(fill = "#fffff8", color = NA),
+        plot.background = element_rect(fill = "#fffff8", color = NA)
+      ) +
+      labs(
+        x = NULL,
+        y = type,
+        title = title,
+        subtitle = sub_title,
+        caption = caption_text
+      ) +
+      scale_x_date(expand = c(0, 0),
+                   breaks = scales::pretty_breaks(n = x_breaks))
+
+    plot <-
+      plot +
+      hrbrthemes::theme_ipsum_rc(
+        grid = "XY",
+        plot_title_size = 10,
+        subtitle_size = 8.5,
+        caption_size = 8.5,
+        axis_text_size = 10,
+        axis_title_size = 10,
+        strip_text_size = 10
+      )
+
+    if (is_percent) {
+      plot <-
+        plot +
+        hrbrthemes::scale_y_percent(breaks = scales::pretty_breaks(n = 10))
+    } else {
+      plot <-
+        plot +
+        hrbrthemes::scale_y_comma(breaks = scales::pretty_breaks(n = 10))
+    }
+
+
+    include_mean <-
+      'mean' %in% (transformations %>% str_to_lower())
+
+    include_median <-
+      'median' %in% (transformations %>% str_to_lower())
+
+    include_smooth <-
+      'smooth' %in% (transformations %>% str_to_lower())
+
+    if (include_mean) {
+      mean_value <-
+        data$value %>% mean(na.rm = TRUE)
+      plot <-
+        plot +
+        geom_hline(yintercept = mean_value,
+                   colour = "#ff0f0f",
+                   linetype = "dashed")
+
+      if (plot_labels) {
+        mean_label <-
+          list("Mean: ", formattable::comma(mean_value, digits = 3)) %>% purrr::reduce(paste0)
+
+
+        my_grob <-
+          grid::grid.text(
+            mean_label,
+            x = 0.7,
+            y = .93,
+            gp = gpar(
+              col = "#ff0f0f",
+              fontsize = 8,
+              fontface = "bold"
+            )
+          )
+
+        plot <-
+          plot + annotation_custom(my_grob)
+      }
+    }
+
+    if (include_median) {
+      median_value <- data$value %>% median(na.rm = TRUE)
+      plot <-
+        plot +
+        geom_hline(yintercept = median_value,
+                   colour = "#6600ff",
+                   linetype = "dashed")
+
+      if (plot_labels) {
+        median_label <-
+          list("Median: ",  formattable::comma(median_value, digits = 3)) %>% purrr::reduce(paste0)
+
+        my_grob2 <-
+          grid::grid.text(
+            median_label,
+            x = 0.35,
+            y = .93,
+            gp = gpar(
+              col = "#6600ff",
+              fontsize = 8,
+              fontface = "bold"
+            )
+          )
+
+        plot <-
+          plot + annotation_custom(my_grob2)
+      }
+    }
+
+    if (include_smooth) {
+      plot <-
+        plot +
+        geom_smooth(
+          colour = "#000000",
+          method = 'loess',
+          span = .3,
+          size = .5,
+          alpha = 0.45
+        ) %>%
+        suppressWarnings() %>%
+        suppressMessages()
+    }
+
+    if (include_recessions) {
+      df_recession_start_end <-
+        tis::nberDates() %>%
+        as_data_frame() %>%
+        mutate_all(lubridate::ymd) %>%
+        purrr::set_names(c("dateStart", "dateEnd"))
+
+
+      df_recessions <-
+        df_recession_start_end %>%
+        filter(dateStart >= start_date)
+
+      has_recessions <- df_recessions %>% nrow() > 0
+
+      df_recessions <-
+        df_recessions %>%
+        filter(dateEnd <= end_date)
+
+      really_has_recessions <-
+        nrow(df_recessions) > 0 && has_recessions
+
+      if (really_has_recessions) {
+        plot <-
+          plot +
+          geom_rect(
+            data = df_recessions ,
+            inherit.aes = F,
+            aes(
+              xmin = dateStart,
+              xmax = dateEnd,
+              ymin = -Inf,
+              ymax = +Inf
+            ),
+            fill = "red",
+            alpha = 0.2
+          )
+
+      }
+    }
+
+    plot
+
   }

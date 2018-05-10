@@ -1,7 +1,7 @@
 Package: fundManageR
 Type: Package
 Title: Investment management toolkit for R
-Version: 0.5.02061
+Version: 0.5.02062
 Authors@R: person("Alex", "Bresler", email = "abresler@asbcllc.com", role = c("aut", "cre"))
 Maintainer: Alex Bresler <abresler@asbcllc.com>
 Description: A comprehensive investment management industry toolkit for R that provides access to common industry calculation functions and a variety of data feeds.  Data feeds include a full wrapper of The Securities and Exchange Commission, FINRA, NAREIT, DTCC, YCombinator, MSCI, Center for Research in Securities Prices (CRSP) and more.  More data feeds and calculation functions will be added over time.
