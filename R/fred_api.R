@@ -240,6 +240,12 @@ get_fred_page_count <-
     if (return_message) {
       glue::glue("Parsed {url}") %>% message()
     }
+
+    df_items <-
+      df_items %>%
+      mutate(isDiscontinued = nameSeries %>% str_detect("DISCONTINUED")) %>%
+      select(numberPage,countItemPage, isDiscontinued, everything())
+
     df_items
   }
 
@@ -700,6 +706,93 @@ get_data_fred_terms_ids <-
     all_data
   }
 
+.get_fred_tag <-
+  function(tag = "interest rate",
+           return_message = TRUE) {
+    if (return_message) {
+      glue::glue("Searching for for tag {tag}\n") %>% message()
+    }
+    term_slug <- tag %>% URLencode()
+    search_url <-
+      glue::glue("https://fred.stlouisfed.org/tags/series?t={term_slug}&pageID=1")
+
+    df_urls <-
+      search_url %>% .parse_fred_ft_slug_count() %>% suppressWarnings() %>%
+      mutate(tagSearch = tag) %>%
+      select(tagSearch, everything())
+
+    .parse_fred_ft_html_safe <-
+      purrr::possibly(.parse_fred_ft_html, data_frame())
+    df_data <-
+      1:nrow(df_urls) %>%
+      map_df(function(x) {
+        .parse_fred_ft_html(
+          url = df_urls$urlPage[[x]],
+          page_no = df_urls$numberPage[[x]],
+          return_message = return_message
+        )
+      })
+
+    all_data <-
+      df_data %>%
+      left_join(df_urls) %>%
+      select(tagSearch, numberPage, everything()) %>%
+      suppressMessages()
+
+    if (return_message) {
+      glue::glue("Found {nrow(all_data)} FRED series for {tag}") %>% message()
+    }
+
+    all_data
+  }
+
+#' FRED tag search
+#'
+#' @param tags vector of tags
+#' @param return_message if \code{TRUE} returns message
+#' @param nest_data if \code{TRUE} nests data
+#'
+#' @return \code{data_frame}
+#' @export
+#' @import dplyr purrr glue rvest curl stringr tidyr
+#' @examples
+#' get_data_fred_tags(tags = c("spread", "swaps"))
+get_data_fred_tags <-
+  function(tags = NULL,
+           return_message = T,
+           nest_data = F) {
+
+    if (tags %>% purrr::is_null()) {
+      stop("Please Enter Tag")
+    }
+    .get_fred_tag_safe <-
+      purrr::possibly(.get_fred_tag, data_frame())
+
+    all_data <-
+      tags %>%
+      map_df(function(tag){
+        .get_fred_tag_safe(tag = tag, return_message = return_message)
+      })
+
+    all_data <-
+      all_data %>%
+      group_by(idSeries) %>%
+      mutate(id = row_number()) %>%
+      ungroup() %>%
+      filter(id == min(id)) %>%
+      select(-id)
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest(-c(tagSearch), .key = 'dataTag') %>%
+        mutate(countSeriesTag = dataTag %>% map_dbl(nrow))
+    }
+
+    all_data
+  }
+
+
 # api ---------------------------------------------------------------------
 generate_fred_symbol_url <-
   function(symbol = c('DGS10'),
@@ -893,7 +986,12 @@ get_data_fred_symbol <-
       ) %>% purrr::reduce(paste0) %>% message()
     }
 
-    return(data)
+    data <-
+      data %>%
+      filter(!is.na(value)) %>%
+      mutate(urlSeries = glue::glue("https://fred.stlouisfed.org/series/{symbol}") %>% as.character())
+
+    data
   }
 
 #'  Federal Reserve Economic Data time series data_frame
@@ -969,6 +1067,7 @@ get_data_fred_symbols <-
           nameSource,
           typeValue,
           urlData,
+          urlSeries,
           frequencyData,
           dateUpdated
         )) %>%
@@ -990,6 +1089,7 @@ get_data_fred_symbols <-
               typeValue,
               frequencyData,
               dateUpdated,
+              urlSeries,
               urlData
             ),
             .key = dataFRED
@@ -1003,6 +1103,154 @@ get_data_fred_symbols <-
   }
 
 
+# description -------------------------------------------------------------
+
+.parse_fred_description_url <-
+  function(url = "https://fred.stlouisfed.org/series/A756RA3A086NBEA", include_tags = F) {
+    page <-
+    url %>%
+    read_html()
+
+  text_citation <-
+    page %>%
+    html_nodes(".citation") %>%
+    html_text() %>%
+    str_trim() %>%
+    str_split(", \n ") %>%
+    flatten_chr() %>%
+    str_trim() %>%
+    str_split("\n|\\;") %>%
+    flatten_chr() %>%
+    str_trim() %>%
+    purrr::discard(function(x){ x %in% c("", url)}) %>%
+    str_c(collapse =  " -- ")
+
+  links <-
+    page %>% html_nodes("strong+ a")
+
+  sources <- links %>% html_text() %>% str_remove_all("\n")
+
+  urls <- links %>% html_attr('href')
+
+  items <- c("nameSource", "nameRelease")
+
+  data <-
+    data_frame(item = items[seq_along(sources)], value = sources) %>%
+    tidyr::spread(item, value) %>%
+    select(one_of(items))
+
+  items <- c("urlSource", "urlRelease")
+
+  df_urls <-
+    data_frame(item = items[seq_along(urls)], value = urls) %>%
+    tidyr::spread(item, value) %>%
+    select(one_of(items))
+
+  data <-
+    data %>%
+    bind_cols(df_urls) %>%
+    mutate(descriptionSeries = text_citation,
+           urlSeries = url)
+  if (include_tags) {
+  categories <-
+    page %>%
+    html_nodes(".fg-cat-lnk-gtm") %>% html_text()
+
+  df_cat <-
+    data_frame(nameCategory = categories) %>%
+    mutate(numberCategory = 1:n()) %>%
+    select(numberCategory, everything())
+
+  tags <-
+    page %>%
+    html_nodes(".fg-tag-lnk-gtm") %>% html_text()
+
+  df_tags <-
+    data_frame(nameCategory = categories) %>%
+    mutate(numberCategory = 1:n()) %>%
+    select(numberCategory, everything())
+
+  data <-
+    data %>%
+    mutate(dataTags = list(df_tags),
+           dataCategories = list(df_cat))
+
+  }
+
+  data
+  }
+
+.parse_fred_description_urls <-
+  function(urls = c(
+    "https://fred.stlouisfed.org/series/PECILBU18PA42011A647NCEN",
+    "https://fred.stlouisfed.org/series/A862RS2Q224SBEA",
+    "https://fred.stlouisfed.org/series/SMU34350842023600001A"
+  ),
+  include_tags = F,
+  return_message = TRUE) {
+    df <-
+      data_frame()
+
+    success <- function(res) {
+      url <-
+        res$url
+
+      if (return_message) {
+        glue::glue("Parsing {url}") %>%
+          message()
+      }
+      .parse_fred_description_url_safe <-
+        purrr::possibly(.parse_fred_description_url, data_frame())
+
+      all_data <-
+        .parse_fred_description_url_safe(url = url, include_tags = include_tags)
+
+
+      df <<-
+        df %>%
+        bind_rows(all_data)
+    }
+    failure <- function(msg) {
+      data_frame()
+    }
+    urls %>%
+      map(function(x) {
+        curl_fetch_multi(url = x, success, failure)
+      })
+    multi_run()
+    df
+  }
+
+#' FRED Symbols descriptions
+#'
+#' @param symbols vector of symbols
+#' @param include_tags if \code{TRUE} returns symbols
+#' @param return_message if \code{TRUE} returns message
+#'
+#' @return a \code{data_frame}
+#' @export
+#'
+#' @examples
+#' get_data_fred_symbols_descriptions(symbols = c("DGS2", "DGS10"))
+get_data_fred_symbols_descriptions <-
+  function(symbols = c("DGS2", "DGS10"),
+           include_tags = FALSE,
+           return_message = TRUE) {
+    df_urls <-
+      data_frame(idSymbol = symbols,
+               urlSeries = glue::glue("https://fred.stlouisfed.org/series/{idSymbol}") %>% as.character())
+
+    data <-
+      .parse_fred_description_urls(urls = df_urls$urlSeries, return_message = return_message,
+                                   include_tags = include_tags)
+
+    data <-
+      df_urls %>%
+      left_join(data) %>%
+      suppressMessages()
+
+    data
+  }
 # plot --------------------------------------------------------------------
 
 plot_time_series <-
