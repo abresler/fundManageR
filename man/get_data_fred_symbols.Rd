@@ -6,29 +6,20 @@
 \usage{
 get_data_fred_symbols(symbols = c("DGS2", "DGS10", "DGS30"),
   transformations = c("default"), convert_date_time = TRUE,
-  nest_data = TRUE, return_wide = FALSE, return_message = TRUE)
+  nest_data = TRUE, include_metadata = TRUE, return_message = TRUE)
 }
 \arguments{
 \item{symbols}{fred symbols to search, see \href{https://fred.stlouisfed.org/tags/series}{FRED symbols} for options}
+
+\item{transformations}{transformations}
 
 \item{convert_date_time}{converts date from datetime to date form}
 
 \item{nest_data}{\code{TRUE} return nested data frame}
 
-\item{return_wide}{\code{TRUE} return data in wide form}
+\item{include_metadata}{if \code{TRUE} returns meta data from time series}
 
-\item{transformation}{a transformation on the index values \itemize{
-\item \code{default}
-\item \code{change}
-\item \code{change prior year}
-\item \code{percent change}
-\item \code{percent change prior year}
-\item \code{compounded rate of change}
-\item \code{continiously compounded rate of change}
-\item \code{continiously compounded annual rate of change}
-\item \code{natural log}
-\item \code{index}
-}}
+\item{return_message}{if \code{TRUE} return message}
 }
 \value{
 a \code{data_frame}
@@ -43,9 +34,9 @@ return_wide = TRUE, nest_data = FALSE)
 
 get_data_fred_symbols(
 symbols = c("CPIAUCSL", "A191RL1Q225SBEA", "UNRATE"),
-return_wide = FALSE,
 convert_date_time = TRUE,
-nest_data = TRUE
+nest_data = TRUE,
+include_metadata
 )
 
 }

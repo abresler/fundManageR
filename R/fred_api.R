@@ -793,6 +793,79 @@ get_data_fred_tags <-
   }
 
 
+# muge --------------------------------------------------------------------
+
+.munge_fred_data <-
+  function(data) {
+
+    if (nrow(data) <= 1) {
+      return(data_frame())
+    }
+    obs <- nrow(data)
+    date_first <-
+      data$dateData %>% min()
+    date_max <- data$dateData %>% max()
+    value_first <-
+      data$value[[1]]
+
+    value_peak <-
+      data %>% filter(value == max(value)) %>% pull(value) %>% unique() %>% .[[1]]
+
+    date_peak <- data %>% filter(value == max(value)) %>% pull(dateData) %>% unique() %>% .[[1]]
+
+    value_trough <-
+      data %>% filter(value == min(value)) %>% pull(value) %>% unique() %>% .[[1]]
+
+    date_trough <-
+      data %>% filter(value == min(value)) %>% pull(dateData) %>% unique() %>% .[[1]]
+
+    value_last <-
+      data$value[nrow(data)]
+
+    value_change <-
+      value_last -  value_first
+
+    calculate_irr_periods_safe <-
+      purrr::possibly(calculate_irr_periods, data_frame())
+
+    df_irr <-
+      calculate_irr_periods_safe(
+        dates = c(date_first, date_max),
+        cash_flows = c(-value_first, value_last),
+        return_percentage = F,
+        return_message = F
+      )
+
+    if (df_irr %>% nrow() > 0) {
+      df_irr <-
+        df_irr %>%
+        select(
+          dateFirst = dateStart,
+          dateLast = dateEnd,
+          pctIRRIndex = pctIRR,
+          ratioIndex = multipleCapital
+        ) %>%
+        mutate(pctIRRIndex = pctIRRIndex * 100,
+               ratioIndex = ratioIndex %>% as.numeric())
+    }
+
+    df_irr %>%
+      mutate(
+        countObservations = obs,
+        valueInitial = value_first,
+        valueRecent = value_last,
+        isIncrease = value_last > value_first,
+        valueChange = value_change,
+        datePeak = date_peak,
+        valuePeak = value_peak,
+        dateTrough = date_trough,
+        valueTrough = value_trough,
+        ratioPeak = valueRecent / valuePeak,
+        ratioTrough = valueRecent / valueTrough
+      )
+  }
+
+
 # api ---------------------------------------------------------------------
 generate_fred_symbol_url <-
   function(symbol = c('DGS10'),
@@ -950,8 +1023,7 @@ get_data_fred_symbol <-
   function(symbol = 'DGS2',
            transformation = NULL,
            convert_date_time = TRUE,
-           nest_data = FALSE,
-           return_wide = FALSE,
+           include_metadata = TRUE,
            return_message = TRUE) {
     if (symbol %>% is_null()) {
       stop("Please enter a FRED series ID")
@@ -973,23 +1045,47 @@ get_data_fred_symbol <-
            call. = TRUE)
     }
 
-    if (return_message) {
-      list(
-        '\nReturned ',
-        data %>% nrow() %>% formattable::comma(digits = 0),
-        ' values for ',
-        data$nameSeries %>% unique(),
-        ' from ',
-        data$dateData %>% min(na.rm = T),
-        ' to ',
-        data$dateData %>% max(na.rm = T)
-      ) %>% purrr::reduce(paste0) %>% message()
-    }
-
     data <-
       data %>%
       filter(!is.na(value)) %>%
       mutate(urlSeries = glue::glue("https://fred.stlouisfed.org/series/{symbol}") %>% as.character())
+
+    df_data <-
+      data %>%
+      select(dateData, value)
+
+    df_meta <-
+      data %>%
+      select(-one_of("dateData", "value")) %>%
+      distinct()
+
+    if (include_metadata) {
+      df_m <-
+        .munge_fred_data(data = df_data) %>%
+        mutate(idSymbol = symbol)
+      df_meta <-
+        df_meta %>%
+        left_join(df_m) %>%
+        suppressMessages()
+    }
+
+    data <-
+      df_meta %>%
+      mutate(dataFRED = list(df_data))
+
+    if (return_message) {
+      list(
+        '\nReturned ',
+        df_data %>% nrow() %>% formattable::comma(digits = 0),
+        ' values for ',
+        data$nameSeries %>% unique(),
+        ' from ',
+        df_data$dateData %>% min(na.rm = T),
+        ' to ',
+        df_data$dateData %>% max(na.rm = T)
+      ) %>% purrr::reduce(paste0) %>% message()
+    }
+
 
     data
   }
@@ -1002,20 +1098,11 @@ get_data_fred_symbol <-
 #'
 #' @param convert_date_time converts date from datetime to date form
 #' @param symbols fred symbols to search, see \href{https://fred.stlouisfed.org/tags/series}{FRED symbols} for options
-#' @param transformation a transformation on the index values \itemize{
-#' \item \code{default}
-#' \item \code{change}
-#' \item \code{change prior year}
-#' \item \code{percent change}
-#' \item \code{percent change prior year}
-#' \item \code{compounded rate of change}
-#' \item \code{continiously compounded rate of change}
-#' \item \code{continiously compounded annual rate of change}
-#' \item \code{natural log}
-#' \item \code{index}
-#' }
-#' @param return_wide \code{TRUE} return data in wide form
+#' @param transformations transformations
+#' @param return_message if \code{TRUE} return message
 #' @param nest_data \code{TRUE} return nested data frame
+#' @param include_metadata if \code{TRUE} returns meta data from time series
+#'
 #' @return a \code{data_frame}
 #' @export
 #' @import dplyr lubridate tidyr purrr jsonlite
@@ -1026,9 +1113,9 @@ get_data_fred_symbol <-
 #'
 #' get_data_fred_symbols(
 #' symbols = c("CPIAUCSL", "A191RL1Q225SBEA", "UNRATE"),
-#' return_wide = FALSE,
 #' convert_date_time = TRUE,
-#' nest_data = TRUE
+#' nest_data = TRUE,
+#' include_metadata = TRUE
 #' )
 #'
 get_data_fred_symbols <-
@@ -1036,7 +1123,7 @@ get_data_fred_symbols <-
            transformations = c("default"),
            convert_date_time = TRUE,
            nest_data = TRUE,
-           return_wide = FALSE,
+           include_metadata = TRUE,
            return_message = TRUE) {
     df_options <-
       expand.grid(symbol = symbols,
@@ -1053,52 +1140,19 @@ get_data_fred_symbols <-
           symbol = df_options$symbol[[x]],
           transformation = df_options$transform[[x]],
           convert_date_time = convert_date_time,
+          include_metadata = include_metadata,
           return_message = return_message
         )
       })
 
-
-
-    if (return_wide) {
+    if (!nest_data) {
       all_data <-
         all_data %>%
-        select(-c(
-          nameSeries,
-          nameSource,
-          typeValue,
-          urlData,
-          urlSeries,
-          frequencyData,
-          dateUpdated
-        )) %>%
-        spread(idSymbol, value)
-      if (nest_data) {
-        all_data <-
-          all_data %>%
-          nest(-nameTransformation, .key = dataFRED)
-      }
-    } else {
-      if (nest_data) {
-        all_data <-
-          all_data %>%
-          nest(
-            -c(
-              nameSeries,
-              nameTransformation,
-              nameSource,
-              typeValue,
-              frequencyData,
-              dateUpdated,
-              urlSeries,
-              urlData
-            ),
-            .key = dataFRED
-          )
-      }
+        unnest()
     }
 
 
-    return(all_data)
+    all_data
 
   }
 
