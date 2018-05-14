@@ -1220,9 +1220,9 @@ get_data_fred_symbols <-
     html_nodes(".fg-tag-lnk-gtm") %>% html_text()
 
   df_tags <-
-    data_frame(nameCategory = categories) %>%
-    mutate(numberCategory = 1:n()) %>%
-    select(numberCategory, everything())
+    data_frame(nameTag = tags) %>%
+    mutate(numberTag = 1:n()) %>%
+    select(numberTag, everything())
 
   data <-
     data %>%

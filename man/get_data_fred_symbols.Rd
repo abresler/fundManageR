@@ -36,7 +36,7 @@ get_data_fred_symbols(
 symbols = c("CPIAUCSL", "A191RL1Q225SBEA", "UNRATE"),
 convert_date_time = TRUE,
 nest_data = TRUE,
-include_metadata
+include_metadata = TRUE
 )
 
 }
