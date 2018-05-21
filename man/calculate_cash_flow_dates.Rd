@@ -10,7 +10,7 @@ calculate_cash_flow_dates(dates = c("2016-09-01", "2017-08-31", "2018-08-31",
   447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166,
   8788626.76409155), working_capital = 125000,
   remove_cumulative_cols = TRUE, include_final_day = TRUE,
-  distribution_frequency = NA)
+  is_annual_budget = T, distribution_frequency = NA)
 }
 \arguments{
 \item{dates}{vector of dates}

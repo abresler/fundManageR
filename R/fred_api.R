@@ -1208,7 +1208,7 @@ get_data_fred_symbols <-
   if (include_tags) {
   categories <-
     page %>%
-    html_nodes(".fg-cat-lnk-gtm") %>% html_text()
+    html_nodes(".fg-cat-lnk-gtm") %>% html_text() %>% str_trim()
 
   df_cat <-
     data_frame(nameCategory = categories) %>%
@@ -1217,7 +1217,7 @@ get_data_fred_symbols <-
 
   tags <-
     page %>%
-    html_nodes(".fg-tag-lnk-gtm") %>% html_text()
+    html_nodes(".fg-tag-lnk-gtm") %>% html_text() %>% str_trim()
 
   df_tags <-
     data_frame(nameTag = tags) %>%

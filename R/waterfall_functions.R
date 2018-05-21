@@ -42,24 +42,24 @@ calculate_irr_periods <-
     "2026-05-31"
   ),
   cash_flows = c(
-    -3000,
-    478.515738547242,
-    478.515738547242,
-    478.515738547242,
-    478.515738547242,
-    478.515738547242,
-    478.515738547242,
-    478.515738547242,
-    478.515738547242,
-    478.515738547242,
-    478.515738547278
+    3000,
+    -478.515738547242,
+    -478.515738547242,
+    -478.515738547242,
+    -478.515738547242,
+    -478.515738547242,
+    -478.515738547242,
+    -478.515738547242,
+    -478.515738547242,
+    -478.515738547242,
+    -478.515738547278
   ),
   date_format = '%Y-%m-%d',
-  scale_to_100 = FALSE,
-  return_percentage = FALSE,
-  return_df = TRUE,
-  return_wide = TRUE,
-  return_message = TRUE) {
+  scale_to_100 = F,
+  return_percentage = F,
+  return_df = T,
+  return_wide = T,
+  return_message = T) {
     secant <-
       function(par,
                fn,
@@ -133,20 +133,23 @@ calculate_irr_periods <-
 
     dateEnd <-
       max(dates) %>% ymd
+
     equityContributions <-
-      cash_flows[cash_flows < 0] %>%
-      sum %>%
+      cash_flows[cash_flows > 0] %>%
+      sum() %>%
       formattable::currency(digits = 2)
 
     equityDistributions <-
-      cash_flows[cash_flows > 0] %>%
-      sum %>%
+      cash_flows[cash_flows < 0] %>%
+      sum() %>%
       formattable::currency(digits = 2)
+
     multipleCapital <-
-      -(equityDistributions / equityContributions) %>% digits(digits = 3)
+      (abs(equityDistributions) / equityContributions) %>% digits(digits = 3)
     valueProfit <-
-      equityDistributions + equityContributions
-    if (return_df ==  T)
+      -(equityDistributions + equityContributions)
+
+    if (return_df)
       data <-
       data_frame(
         dateStart,
@@ -164,10 +167,10 @@ calculate_irr_periods <-
     }
 
     if (return_message) {
-      "Cash Flow produces a " %>%
+      "Cash Flow Produces a " %>%
         paste0(
           irr * 100,
-          '% IRR\nFrom ',
+          '% irr\nFrom ',
           dateStart,
           ' to ',
           dateEnd,
@@ -180,8 +183,9 @@ calculate_irr_periods <-
         message()
     }
 
-    if (return_wide == F) {
-      data %>%
+    if (return_wide) {
+      data <-
+        data %>%
         gather(metric, value, -c(dateStart, dateEnd, dateTimeCF))
     }
 
@@ -244,6 +248,7 @@ calculate_cash_flow_dates <-
   working_capital = 125000,
   remove_cumulative_cols = TRUE,
   include_final_day = TRUE,
+  is_annual_budget = T,
   distribution_frequency = NA) {
     distribution_frequencies <-
       c(NA,
@@ -254,12 +259,11 @@ calculate_cash_flow_dates <-
         'sale')
 
     distribution_frequency <-
-      distribution_frequency %>% str_to_lower %>%
+      distribution_frequency %>% str_to_lower() %>%
       str_replace_all('yearly', 'annually') %>% str_replace_all('residual', 'sale')
 
-    if (!distribution_frequency %>% str_to_lower %in% distribution_frequencies) {
-      stop("'\nDistribution frequency can only be\n" %>%
-             paste0(paste0(distribution_frequencies, collapse = '\n')))
+    if (!distribution_frequency %>% str_to_lower() %in% distribution_frequencies) {
+      distribution_frequency <- 'annually'
     }
     dates <-
       dates %>%
@@ -289,20 +293,21 @@ calculate_cash_flow_dates <-
         isDistribution =
           case_when(
             (
-              distribution_dates_df$idPeriod > 0 &
+              idPeriod > 0 &
                 is_annual_budget == T &
-                !distribution_frequency == 'sale'
+                (!distribution_frequency == 'sale')
             ) ~ T,
             (
               is_at_sale == T &
                 distribution_dates_df$idPeriod == max(distribution_dates_df$idPeriod)
             ) ~ T,
             NA ~ F
-          ),
-        isDistribution = if_else(isDistribution %>% is.na, F, T) %>% as.numeric,
-        isDistribution = if_else(idPeriod == max(idPeriod), T, F) %>% as.numeric,
-        isDistribution = if_else(distribution_frequency %>% is.na, T, F, )  %>% as.numeric
-      )
+          ))
+
+    distribution_dates_df <-
+      distribution_dates_df %>%
+      mutate_at('isDistribution',
+                funs(ifelse(isDistribution %>% is.na(), FALSE, .) %>% as.numeric()))
 
     if (working_capital > 0) {
       working_capital <-
@@ -310,12 +315,13 @@ calculate_cash_flow_dates <-
     }
 
     cf_data <-
-      data_frame(date = dates %>% ymd,
+      data_frame(date = dates %>% ymd(),
                  cashFlow = cash_flows %>% currency(digits = 2)) %>%
       mutate(idPeriod = 0:(nrow(.) - 1)) %>%
       dplyr::select(idPeriod, everything()) %>%
       left_join(distribution_dates_df) %>%
       suppressMessages()
+
 
     cf_data <-
       cf_data %>%
@@ -347,7 +353,7 @@ calculate_cash_flow_dates <-
       ) %>%
       mutate(
         daysAccrued = as.numeric((date - dplyr::lag(date))),
-        daysAccrued = ifelse(daysAccrued %>% is.na, 0, daysAccrued),
+        daysAccrued = ifelse(daysAccrued %>% is.na(), 0, daysAccrued),
         cumDays = cumsum(daysAccrued),
         cumContribution = cumsum(capitalContribution),
         cumDistribution = cumsum(capitalDistribution),
@@ -430,8 +436,8 @@ calculate_cash_flow_dates <-
 #' @family partnership calculation
 #' @examples
 #' calculate_cash_flows_returns(dates = c( "2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31", "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31" ),
-#' cash_flows = c( -4151601, 119499.036215643, 257186.036215643, 447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166, 8788626.7640915 ),
-#' working_capital = 125000, remove_cumulative_cols = T, distribution_frequency = 'annually', date_format = '%Y-%m-%d', scale_to_100 = F, return_percentage = F, return_df = T, return_message = T
+#' cash_flows = c(4151601, -119499.036215643, -257186.036215643, -447646.036215643, -200652.036215643, -510409.036215643, -193.036215643166, -8788626.7640915 ),
+#' working_capital = 125000, remove_cumulative_cols = T, distribution_frequency = 'yearly', date_format = '%Y-%m-%d', scale_to_100 = F, return_percentage = F, return_df = T, return_message = T
 #' )
 calculate_cash_flows_returns <-
   function(dates = c(
@@ -474,14 +480,14 @@ calculate_cash_flows_returns <-
     cf_return_data <-
       calculate_irr_periods(
         dates = cf_data$date,
-        cash_flows = -cf_data$capitalCF,
+        cash_flows = cf_data$capitalCF,
         date_format = date_format,
         return_percentage = return_percentage,
         return_df = return_df,
         return_message = return_message
       )
 
-    return(cf_data)
+    cf_Data
 
   }
 
@@ -1586,11 +1592,9 @@ calculate_cash_flow_waterfall_partnership <-
       dplyr::filter(!toCF == 0) %>%
       mutate(
         toGP = -ifelse(item == 'toPromote', toCF * share_gp_promote, toCF * pct_gp),
-        toLP = -ifelse(
-          item == 'toPromote',
-          toCF * share_lp_promote_share,
-          toCF * pct_lp
-        )
+        toLP = -ifelse(item == 'toPromote',
+                       toCF * share_lp_promote_share,
+                       toCF * pct_lp)
       ) %>%
       mutate_at(.vars = c('toCF', 'toGP', 'toLP'),
                 .funs = currency) %>%
@@ -1612,13 +1616,15 @@ calculate_cash_flow_waterfall_partnership <-
       entity_waterfall %>%
       dplyr::select(date, toCF) %>%
       group_by(date) %>%
-      mutate(toCF = -toCF) %>%
-      summarise(totalCF = sum(toCF))
+      summarise(totalCF = sum(toCF) %>% formattable::currency()) %>%
+      ungroup()
+
     gp_cf <-
       entity_waterfall %>%
       dplyr::select(date, toGP) %>%
       group_by(date) %>%
-      summarise(totalCF = sum(toGP))
+      summarise(totalCF = sum(toGP)) %>%
+      ungroup()
 
     lp_cf <-
       entity_waterfall %>%
@@ -1634,12 +1640,13 @@ calculate_cash_flow_waterfall_partnership <-
         return_df = T
       ) %>%
       mutate(typeEntity = 'Partnership') %>%
-      dplyr::select(typeEntity, everything())
+      dplyr::select(typeEntity, everything()) %>%
+      suppressWarnings()
 
     gp_return_df <-
       calculate_irr_periods(
         dates = gp_cf$date,
-        cash_flows = gp_cf$totalCF,
+        cash_flows = -gp_cf$totalCF,
         return_percentage = T,
         return_df = T
       ) %>%
@@ -1649,7 +1656,7 @@ calculate_cash_flow_waterfall_partnership <-
     lp_return_df <-
       calculate_irr_periods(
         dates = lp_cf$date,
-        cash_flows = lp_cf$totalCF,
+        cash_flows = -lp_cf$totalCF,
         return_percentage = T,
         return_df = T
       ) %>%
@@ -1658,7 +1665,16 @@ calculate_cash_flow_waterfall_partnership <-
 
     partnership_return_summary <-
       gp_return_df %>%
-      bind_rows(list(lp_return_df, total_return_df)) %>%
+      bind_rows(list(lp_return_df, total_return_df))
+
+    if (partnership_return_summary %>% tibble::has_name("value")) {
+      partnership_return_summary <-
+        partnership_return_summary %>%
+        spread(metric, value)
+    }
+
+    partnership_return_summary <-
+      partnership_return_summary %>%
       mutate_at(.vars = c('pctIRR'),
                 .funs = percent) %>%
       mutate_at(
