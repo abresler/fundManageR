@@ -160,7 +160,8 @@ calculate_irr_periods <-
         valueProfit,
         multipleCapital,
         dateTimeCF = Sys.time()
-      )
+      ) %>%
+      mutate(pctIRR = percent(pctIRR, digits = 3))
     else {
       data <-
         irr
@@ -183,7 +184,7 @@ calculate_irr_periods <-
         message()
     }
 
-    if (return_wide) {
+    if (!return_wide) {
       data <-
         data %>%
         gather(metric, value, -c(dateStart, dateEnd, dateTimeCF))

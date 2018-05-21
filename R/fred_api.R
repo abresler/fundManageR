@@ -831,7 +831,7 @@ get_data_fred_tags <-
     df_irr <-
       calculate_irr_periods_safe(
         dates = c(date_first, date_max),
-        cash_flows = c(-value_first, value_last),
+        cash_flows = c(value_first, -value_last),
         return_percentage = F,
         return_message = F
       )
