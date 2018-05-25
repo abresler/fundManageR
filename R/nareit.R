@@ -1,6 +1,6 @@
 
 # constituency ------------------------------------------------------------
-get_nareit_constiutent_urls <-
+.get_nareit_constiutent_urls <-
   function() {
     page <-
       "https://www.reit.com/investing/index-data/monthly-index-constituents" %>%
@@ -33,7 +33,7 @@ get_nareit_constiutent_urls <-
     return(df)
   }
 
-parse_nareit_constituent_url <-
+.parse_nareit_constituent_url <-
   function(url = "https://www.reit.com/sites/default/files/returns/FNUSIC2016.pdf",
            return_message = TRUE) {
     df <-
@@ -337,21 +337,21 @@ get_data_nareit_constituent_years <-
       stop("Please enter years, they can start in 1991")
     }
     url_df <-
-      get_nareit_constiutent_urls()
+      .get_nareit_constiutent_urls()
 
     urls <-
       url_df %>%
       filter(yearData %in% years) %>%
       .$urlData
 
-    parse_nareit_constituent_url_safe <-
-      purrr::possibly(parse_nareit_constituent_url, data_frame())
+    .parse_nareit_constituent_url_safe <-
+      purrr::possibly(.parse_nareit_constituent_url, data_frame())
 
     all_data <-
       urls %>%
       map_df(function(x) {
         x %>% message()
-        parse_nareit_constituent_url_safe(url = x, return_message = return_message)
+        .parse_nareit_constituent_url_safe(url = x, return_message = return_message)
       }) %>%
       suppressWarnings()
 
@@ -502,7 +502,7 @@ get_data_nareit_constituent_years <-
 
 
 # reits -------------------------------------------------------------------
-dictionary_nareit_names <-
+.dictionary_nareit_names <-
   function() {
     data_frame(nameNAREIT = c("Company Type", "Listing Status", "Industry Sector", "Investment Sector",
                               "Ticker", "Exchange", "Previous Day Close", "Current Day High & Low",
@@ -517,7 +517,7 @@ dictionary_nareit_names <-
     )
     )
   }
-parse_page_item <-
+.parse_page_item <-
   function(page, item = "priceCompany", css = ".price", is_number = F) {
     values <-
       page %>%
@@ -535,7 +535,7 @@ parse_page_item <-
     data_frame(item, value = values)
   }
 
-parse_nareit_page <-
+.parse_nareit_page <-
   function(url = "https://www.reit.com/investing/reit-directory?page=1") {
     page <-
       url %>%
@@ -543,7 +543,7 @@ parse_nareit_page <-
 
     company <-
       page %>%
-      parse_page_item(item = "nameCompany", css = ".name a") %>%
+      .parse_page_item(item = "nameCompany", css = ".name a") %>%
       mutate(idRow = 1:n()) %>%
       spread(item, value)
 
@@ -556,25 +556,25 @@ parse_nareit_page <-
 
     sector <-
       page %>%
-      parse_page_item(item = "sectorCompany", css = ".sector") %>%
+      .parse_page_item(item = "sectorCompany", css = ".sector") %>%
       mutate(idRow = 1:n()) %>%
       spread(item, value)
 
     ticker <-
       page %>%
-      parse_page_item(item = "idTicker", css = ".ticker") %>%
+      .parse_page_item(item = "idTicker", css = ".ticker") %>%
       mutate(idRow = 1:n()) %>%
       spread(item, value)
 
     address <-
       page %>%
-      parse_page_item(item = "addressCompany", css = ".address") %>%
+      .parse_page_item(item = "addressCompany", css = ".address") %>%
       mutate(idRow = 1:n()) %>%
       spread(item, value)
 
     last_price <-
       page %>%
-      parse_page_item(item = "priceLast",
+      .parse_page_item(item = "priceLast",
                       css = ".price",
                       is_number = T) %>%
       mutate(idRow = 1:n()) %>%
@@ -609,7 +609,7 @@ parse_nareit_page <-
 
   }
 
-parse_nareit_pages <-
+.parse_nareit_pages <-
   function(urls = c("https://www.reit.com/investing/reit-directory?page=1", "https://www.reit.com/investing/reit-directory?page=2"), return_message = T) {
     df <-
       data_frame()
@@ -621,11 +621,11 @@ parse_nareit_pages <-
         glue::glue("Parsing {url}") %>%
           message()
       }
-      parse_nareit_page.safe <-
-        purrr::possibly(parse_nareit_page, data_frame())
+      .parse_nareit_page.safe <-
+        purrr::possibly(.parse_nareit_page, data_frame())
 
       all_data <-
-        parse_nareit_page.safe(url = url)
+        .parse_nareit_page.safe(url = url)
 
 
       df <<-
@@ -645,7 +645,7 @@ parse_nareit_pages <-
   }
 
 
-parse_nareit_entity_page <-
+.parse_nareit_entity_page <-
   function(url = "https://www.reit.com/investing/reit-directory/alexandria-real-estate-equities-inc") {
     page <-
       url %>%
@@ -669,7 +669,7 @@ parse_nareit_entity_page <-
 
     description <-
       page %>%
-      parse_page_item(item = "descriptionCompany", css = ".investor__body")
+      .parse_page_item(item = "descriptionCompany", css = ".investor__body")
 
     if (description %>% length() > 0) {
       df_metadata <-
@@ -680,7 +680,7 @@ parse_nareit_entity_page <-
 
     price <-
       page %>%
-      parse_page_item(item = "priceStock",
+      .parse_page_item(item = "priceStock",
                       css = ".value",
                       is_number = T) %>%
       pull(value)
@@ -719,7 +719,7 @@ parse_nareit_entity_page <-
       page %>% html_nodes(".reit-values__value") %>% html_text() %>% str_trim()
 
     df_names <-
-      dictionary_nareit_names()
+      .dictionary_nareit_names()
 
     actual_names <-
       overview_items %>%
@@ -950,7 +950,7 @@ parse_nareit_entity_page <-
 
   }
 
-parse_nareit_entity_pages <-
+.parse_nareit_entity_pages <-
   function(urls = c("https://www.reit.com/investing/reit-directory/weyerhaeuser",
                     "https://www.reit.com/investing/reit-directory/rlj-lodging-trust",
                     "https://www.reit.com/investing/reit-directory/rayonier-inc",
@@ -970,11 +970,11 @@ parse_nareit_entity_pages <-
         glue::glue("Parsing {url}") %>%
           message()
       }
-      parse_nareit_entity_page.safe <-
-        purrr::possibly(parse_nareit_entity_page, data_frame())
+      .parse_nareit_entity_page.safe <-
+        purrr::possibly(.parse_nareit_entity_page, data_frame())
 
       all_data <-
-        parse_nareit_entity_page.safe(url = url)
+        .parse_nareit_entity_page.safe(url = url)
 
 
       df <<-
@@ -1044,7 +1044,7 @@ get_data_nareit_entities <-
       c(base_url, urls)
 
     all_data <-
-      parse_nareit_pages(urls = urls, return_message = return_message) %>%
+      .parse_nareit_pages(urls = urls, return_message = return_message) %>%
       distinct()
 
     all_data <-
@@ -1076,7 +1076,7 @@ get_data_nareit_entities <-
     company_urls <- all_data$urlCompanyNAREIT
 
     df_companies <-
-      parse_nareit_entity_pages(urls = company_urls, return_message = return_message)
+      .parse_nareit_entity_pages(urls = company_urls, return_message = return_message)
 
     all_data <-
       all_data %>%
@@ -1218,10 +1218,10 @@ get_data_nareit_notable_properties <-
     return(df)
   }
 
-parse_json_hq <-
+.parse_json_hq <-
   function(url = "http://app.reitsacrossamerica.com/states/NY/headquartered",
            return_message = TRUE) {
-    codeState <-
+    slugState <-
       url %>%
       str_replace_all('http://app.reitsacrossamerica.com/states/|/headquartered',
                       '')
@@ -1234,56 +1234,46 @@ parse_json_hq <-
       json_data$reits %>% length() == 0
 
     if (no_data) {
-      return(data_frame(codeState))
+      return(data_frame(slugState))
     }
 
     df_hq <-
       json_data$reits$reit %>%
       as_data_frame() %>%
       select(-matches("slug_url")) %>%
-      purrr::set_names(c('idSNL', 'nameCompany', 'urlCompany'))
+      purrr::set_names(c(
+        'idSNL',
+        'nameCompany',
+        "cityCompany",
+        'urlCompany',
+        "urlNAREIT"
+      ))
 
     df_hq <-
       df_hq %>%
-      mutate(idSNL = idSNL %>% as.numeric(),
+      mutate(idSNL = idSNL %>% readr::parse_number(),
              nameCompany = nameCompany %>% str_to_upper()) %>%
-      mutate(codeState)
+      mutate(slugState) %>%
+      suppressWarnings()
 
-    df_long <-
-      df_hq %>%
-      gather(item, value, -codeState) %>%
-      group_by(item) %>%
-      mutate(countItem = (1:n()) - 1) %>%
-      ungroup() %>%
-      mutate(item = ifelse(countItem == 0, item, paste(item, countItem, sep = ''))) %>%
-      arrange(countItem) %>%
-      select(-countItem)
-
-    col_order <-
-      c('codeState', df_long$item)
-
-    df_long <-
-      df_long %>%
-      spread(item, value) %>%
-      select(one_of(col_order))
 
     if (return_message) {
       list(
         df_hq %>% nrow() %>% formattable::comma(digits = 0),
         " REITs are headquartered in ",
-        codeState
+        slugState
       ) %>%
         purrr::invoke(paste0, .) %>%
         message()
     }
 
-    return(df_long)
+    df_hq
   }
 
-parse_json_holdings <-
+.parse_json_holdings <-
   function(url = "http://app.reitsacrossamerica.com/companies/holding/NY",
            return_message = TRUE) {
-    codeState <-
+    slugState <-
       url %>%
       str_replace_all('http://app.reitsacrossamerica.com/companies/holding/',
                       '')
@@ -1296,7 +1286,7 @@ parse_json_holdings <-
       json_data$companies$company %>% length() == 0
 
     if (no_data) {
-      return(data_frame(codeState))
+      return(data_frame(slugState))
     }
 
     df_holdings <-
@@ -1312,11 +1302,11 @@ parse_json_holdings <-
         nameCompany = nameCompany %>% str_to_upper(),
         urlCompany = ifelse(urlCompany == '', NA, urlCompany)
       ) %>%
-      mutate(codeState)
+      mutate(slugState)
 
     df_long <-
       df_holdings %>%
-      gather(item, value, -codeState) %>%
+      gather(item, value, -slugState) %>%
       group_by(item) %>%
       mutate(countItem = (1:n()) - 1) %>%
       ungroup() %>%
@@ -1325,7 +1315,7 @@ parse_json_holdings <-
       select(-countItem)
 
     col_order <-
-      c('codeState', df_long$item)
+      c('slugState', df_long$item)
 
     df_long <-
       df_long %>%
@@ -1336,7 +1326,7 @@ parse_json_holdings <-
       list(
         df_holdings %>% nrow() %>% formattable::comma(digits = 0),
         " REITs own assets in ",
-        codeState
+        slugState
       ) %>%
         purrr::invoke(paste0, .) %>%
         message()
@@ -1346,7 +1336,7 @@ parse_json_holdings <-
   }
 
 
-parse_json_state_metadata <-
+.parse_json_state_metadata <-
   function() {
     json_data <-
       "http://app.reitsacrossamerica.com/states" %>%
@@ -1360,7 +1350,7 @@ parse_json_state_metadata <-
       purrr::set_names(
         c(
           'idState',
-          'codeState',
+          'slugState',
           'amountValuationOwnedProperties',
           'countProperties',
           'countAcresTimberland',
@@ -1413,9 +1403,11 @@ get_data_nareit_property_msa <-
       json_data$features$properties %>%
       as_data_frame() %>%
       select(-matches("_string")) %>%
-      select(-type) %>%
+      select(-type)
+
+    df_property <-
+      df_property %>%
       purrr::set_names(c(
-        'countProperties',
         'amountValuationOwnedProperties',
         'nameMSA',
         'nameSector'
@@ -1455,8 +1447,8 @@ get_data_nareit_property_msa <-
 
     if (return_message) {
       list(
-        df_property$countProperties %>% sum(na.rm = T) %>% formattable::comma(digits = 0),
-        " REIT owned properties across ",
+        df_property$amountValuationOwnedProperties %>% sum(na.rm = T) %>% formattable::currency(digits = 0),
+        " worth of REIT owned properties across ",
         df_property$nameMSA %>% unique() %>% length(),
         ' MSAs'
       ) %>%
@@ -1508,16 +1500,14 @@ get_data_nareit_state_info <-
       as_data_frame() %>%
       select(-matches("_string")) %>%
       select(-type) %>%
-      purrr::set_names(
-        c(
-          'countProperties',
-          'amountValuationOwnedProperties',
-          'codeState',
-          'nameSector'
-        )
+      purrr::set_names(c('amountValuationOwnedProperties',
+                         "slugState",
+                         'nameSector')) %>%
+      mutate(
+        idLocation = 1:n(),
+        amountValuationOwnedProperties = amountValuationOwnedProperties * 1000000000 %>% formattable::currency(digits = 0)
       ) %>%
-      mutate(idLocation = 1:n()) %>%
-      select(idLocation, codeState, nameSector, everything())
+      select(idLocation, slugState, nameSector, everything())
 
     df_lat_lon <-
       json_data$features$geometry %>%
@@ -1526,10 +1516,10 @@ get_data_nareit_state_info <-
       unnest()
 
     df_lat_lon <-
-      df_lat_lon[c(TRUE, FALSE),] %>%
+      df_lat_lon[c(TRUE, FALSE), ] %>%
       mutate(item = 'coordinateLongitude') %>%
       list(.,
-           df_lat_lon[c(FALSE, TRUE),] %>%
+           df_lat_lon[c(FALSE, TRUE), ] %>%
              mutate(item = 'coordinateLatitude')) %>%
       bind_rows() %>%
       select(idLocation, coordinates, item) %>%
@@ -1548,18 +1538,18 @@ get_data_nareit_state_info <-
       suppressMessages()
 
     df_md <-
-      parse_json_state_metadata()
+      .parse_json_state_metadata()
 
     df_property <-
       df_md %>%
       left_join(df_property %>%
-                  nest(-codeState, .key = dataPropertiesOwned)) %>%
+                  nest(-slugState, .key = dataPropertiesOwned)) %>%
       suppressWarnings() %>%
       suppressMessages()
 
     if (include_reit_hq) {
       states <-
-        df_property$codeState %>%
+        df_property$slugState %>%
         unique() %>%
         sort()
 
@@ -1569,20 +1559,20 @@ get_data_nareit_state_info <-
              "/headquartered") %>%
         purrr::invoke(paste0, .)
 
-      parse_json_hq_safe <-
-        purrr::possibly(parse_json_hq, data_frame())
+      .parse_json_hq_safe <-
+        purrr::possibly(.parse_json_hq, data_frame())
 
       df_hqs <-
         url_states %>%
         map_df(function(x) {
-          parse_json_hq_safe(url = x,
+          .parse_json_hq_safe(url = x,
                              return_message = return_message)
         })
 
       if (nest_data) {
         df_hqs <-
           df_hqs %>%
-          nest(-codeState, .key = dataCompanyHQs)
+          nest(-slugState, .key = dataCompanyHQs)
       }
 
       df_property <-
@@ -1593,7 +1583,7 @@ get_data_nareit_state_info <-
 
     if (include_reit_holdings) {
       states <-
-        df_property$codeState %>%
+        df_property$slugState %>%
         unique() %>%
         sort()
 
@@ -1602,20 +1592,20 @@ get_data_nareit_state_info <-
              states) %>%
         purrr::invoke(paste0, .)
 
-      parse_json_holdings_safe <-
-        purrr::possibly(parse_json_holdings, data_frame())
+      .parse_json_holdings_safe <-
+        purrr::possibly(.parse_json_holdings, data_frame())
 
       holdings_df <-
         url_states %>%
         map_df(function(x) {
-          parse_json_holdings_safe(url = x,
+          .parse_json_holdings_safe(url = x,
                                    return_message = return_message)
         })
 
       if (nest_data) {
         holdings_df <-
           holdings_df %>%
-          nest(-codeState, .key = dataCompanyHoldings)
+          nest(-slugState, .key = dataCompanyHoldings)
       }
 
 
@@ -1629,7 +1619,7 @@ get_data_nareit_state_info <-
       df_property %>%
       mutate_at(df_property %>% select(matches("count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0))) %>%
-      arrange(desc(codeState))
+      arrange(desc(slugState))
 
     return(df_property)
 
@@ -1886,7 +1876,7 @@ get_data_nareit_annual_subsector_returns <-
 
 # https://www.reit.com/data-research/data/reit-capital-offerings
 
-get_nareit_offering_name_df <-
+.get_nareit_offering_name_df <-
   function() {
     data_frame(
       nameNAREIT = c(
@@ -1951,7 +1941,7 @@ get_nareit_offering_name_df <-
     )
   }
 
-get_nareit_capital_urls <-
+.get_nareit_capital_urls <-
   function() {
     page <-
       "https://www.reit.com/data-research/data/reit-capital-offerings" %>%
@@ -1959,7 +1949,7 @@ get_nareit_capital_urls <-
 
     capital_urls <-
       page %>%
-      html_nodes('p:nth-child(4) a') %>%
+      html_nodes('p:nth-child(3) a') %>%
       html_attr('href') %>%
       paste0('https://www.reit.com', .) %>% {
         .[2:length(.)]
@@ -1975,7 +1965,7 @@ get_nareit_capital_urls <-
     return(url_df)
   }
 
-parse_nareit_offering_url <-
+.parse_nareit_offering_url <-
   function(url = "https://www.reit.com/sites/default/files/IndustryData/IPOs.xls",
            sheet = 1,
            return_message = TRUE) {
@@ -1990,6 +1980,7 @@ parse_nareit_offering_url <-
       data.frame(stringsAsFactors = FALSE) %>%
       suppressWarnings() %>%
       as_data_frame()
+
     con %>% unlink()
     rm(con)
     data <-
@@ -2003,7 +1994,7 @@ parse_nareit_offering_url <-
     }
 
     nareit_offering_name_df <-
-      get_nareit_offering_name_df()
+      .get_nareit_offering_name_df()
 
     actual_names <-
       names(data) %>%
@@ -2027,8 +2018,10 @@ parse_nareit_offering_url <-
       data %>%
       mutate_at(data %>% select(matches("^countShares|^amountProceeds")) %>% names(),
                 funs(. %>% as.numeric() * 1000000)) %>%
-      mutate_at(data %>% select(matches("^price")) %>% names(),
-                funs(. %>% readr::parse_number())) %>%
+      mutate_at(
+        data %>% select(matches("^price")) %>% names(),
+        funs(. %>% as.character() %>% readr::parse_number())
+      ) %>%
       mutate(urlData = url) %>%
       select(dateOffering, nameCompany, everything())
 
@@ -2075,7 +2068,7 @@ parse_nareit_offering_url <-
         message()
     }
 
-    return(data)
+    data
   }
 
 #' NAREIT capital raises
@@ -2107,7 +2100,7 @@ get_data_nareit_capital_raises <-
            nest_data = TRUE,
            return_message = TRUE) {
     url_df <-
-      get_nareit_capital_urls() %>%
+      .get_nareit_capital_urls() %>%
       mutate(typeCapital = typeCapital %>% str_to_upper())
 
     if (!capital_type %>% is_null()) {
@@ -2122,13 +2115,13 @@ get_data_nareit_capital_raises <-
         url_df %>%
         filter(typeCapital %in% capital_type)
     }
-    parse_nareit_offering_url_safe <-
-      purrr::possibly(parse_nareit_offering_url, data_frame())
+    .parse_nareit_offering_url_safe <-
+      purrr::possibly(.parse_nareit_offering_url, data_frame())
 
     all_data <-
       1:nrow(url_df) %>%
       map_df(function(x) {
-        parse_nareit_offering_url_safe(
+        .parse_nareit_offering_url_safe(
           url = url_df$urlData[[x]],
           sheet = url_df$indexSheet[[x]],
           return_message = return_message
@@ -2199,7 +2192,7 @@ get_data_nareit_mergers_acquisitions <-
 
     url <-
       page %>%
-      html_nodes('#block-system-main a') %>%
+      html_nodes('h3 a') %>%
       html_attr('href') %>%
       .[[1]] %>%
       paste0('https://www.reit.com', .)
@@ -2221,11 +2214,9 @@ get_data_nareit_mergers_acquisitions <-
 
     all_data <-
       all_data %>%
-      dplyr::rename(
-        yearMerger = V1,
-        nameAcquiror = V2,
-        nameTarget = V3
-      ) %>%
+      dplyr::rename(yearMerger = V1,
+                    nameAcquiror = V2,
+                    nameTarget = V3) %>%
       fill(yearMerger) %>%
       mutate(nameAcquiror = ifelse(nameAcquiror == '', NA, nameAcquiror)) %>%
       filter(!nameAcquiror %>% is.na()) %>%
@@ -2233,17 +2224,17 @@ get_data_nareit_mergers_acquisitions <-
       select(-c(V5, V7))
 
     if (all_data %>% tibble::has_name("V13")) {
-    all_data <-
-      all_data %>%
-      mutate(
-        typeAcquiror = ifelse(V4 == '', V6, V4),
-        amountAcquisitionPrice =  ifelse(V4 == '', V8, V6) %>% readr::parse_number() * 1000000,
-        dateAnnounced = ifelse(V4 == '', V11, V8) %>% lubridate::dmy(),
-        dateComplete =  ifelse(V4 == '', V12, V9) %>% lubridate::dmy(),
-        statusTransaction = ifelse(V4 == '', V13, V10)
-      ) %>%
-      select(-matches("^V")) %>%
-      suppressWarnings()
+      all_data <-
+        all_data %>%
+        mutate(
+          typeAcquiror = ifelse(V4 == '', V6, V4),
+          amountAcquisitionPrice =  ifelse(V4 == '', V8, V6) %>% readr::parse_number() * 1000000,
+          dateAnnounced = ifelse(V4 == '', V11, V8) %>% lubridate::dmy(),
+          dateComplete =  ifelse(V4 == '', V12, V9) %>% lubridate::dmy(),
+          statusTransaction = ifelse(V4 == '', V13, V10)
+        ) %>%
+        select(-matches("^V")) %>%
+        suppressWarnings()
     } else {
       all_data <-
         all_data %>%
@@ -2251,58 +2242,103 @@ get_data_nareit_mergers_acquisitions <-
         filter(!yearMerger == "2017") %>%
         mutate_all(funs(ifelse(. == '', NA, .))) %>%
         dplyr::select(which(colMeans(is.na(.)) < 1)) %>%
-        purrr::set_names(c("yearMerger", "nameAcquiror", "nameTarget",
-                           "typeAcquiror", "amountAcquisitionPrice",  "dateAnnounced", "dateComplete", "statusTransaction")) %>%
+        purrr::set_names(
+          c(
+            "yearMerger",
+            "nameAcquiror",
+            "nameTarget",
+            "typeAcquiror",
+            "amountAcquisitionPrice",
+            "dateAnnounced",
+            "dateComplete",
+            "statusTransaction"
+          )
+        ) %>%
         bind_rows(
           all_data %>%
             filter(!V9 == "") %>%
             mutate_all(funs(ifelse(. == '', NA, .))) %>%
-            dplyr::select(which(colMeans(is.na(.)) < 1)) %>%
-            mutate(typeAcquiror = case_when(
-              nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
-              nameTarget %>% str_detect("PUBLIC REIT") ~ "PUBLIC REIT",
-              nameTarget %>% str_detect("PUBLIC REAL ESTATE COMPANY") ~ "PUBLIC REAL ESTATE COMPANY",
-              nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
-              nameTarget %>% str_detect("REAL ESTATE ADVISORY FIRM") ~ "REAL ESTATE ADVISORY FIRM",
-              nameTarget %>% str_detect("ASSET MANAGEMENT FIRM") ~ "ASSET MANAGER",
-              nameTarget %>% str_detect("BROKERAGE FIRM") ~ "BROKERAGE FIRM",
-              nameTarget %>% str_detect("REAL ESTATE OPERATING COMPANY") ~ "REAL ESTATE OPERATING COMPANY",
-              nameTarget %>% str_detect("NON-TRADED REIT") ~ "NON-TRADED REIT",
-              nameTarget %>% str_detect("PRIVATE EQUITY FIRM") ~ "PRIVATE EQUITY FIRM",
-              nameTarget %>% str_detect("INVESTOR GROUP") ~ "INVESTOR GROUP",
-              nameTarget %>% str_detect("PRIVATE REIT") ~ "PRIVATE REIT",
-              nameTarget %>% str_detect("PRIVATE REAL ESTATE COMPANY") ~ "PRIVATE REAL ESTATE COMPANY"
-            )) %>%
-            mutate(nameTarget = nameTarget %>% str_replace_all("PRIVATE REAL ESTATE COMPANY|PRIVATE REIT|INVESTOR GROUP|NON-TRADED REIT|REAL ESTATE OPERATING COMPANY|BROKERAGE FIRM|ASSET MANAGEMENT FIRM|PUBLIC REAL ESTATE COMPANY|PUBLIC REIT|ASSET MANAGER|PRIVATE EQUITY FIRM|REAL ESTATE ADVISORY FIRM", "") %>% str_trim()) %>%
-            purrr::set_names(c("yearMerger", "nameAcquiror", "nameTarget",
-                              "amountAcquisitionPrice",  "dateAnnounced", "dateComplete", "statusTransaction",
-                              "typeAcquiror"))
+            dplyr::select(which(colMeans(is.na(
+              .
+            )) < 1)) %>%
+            mutate(
+              typeAcquiror = case_when(
+                nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
+                nameTarget %>% str_detect("PUBLIC REIT") ~ "PUBLIC REIT",
+                nameTarget %>% str_detect("PUBLIC REAL ESTATE COMPANY") ~ "PUBLIC REAL ESTATE COMPANY",
+                nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
+                nameTarget %>% str_detect("REAL ESTATE ADVISORY FIRM") ~ "REAL ESTATE ADVISORY FIRM",
+                nameTarget %>% str_detect("ASSET MANAGEMENT FIRM") ~ "ASSET MANAGER",
+                nameTarget %>% str_detect("BROKERAGE FIRM") ~ "BROKERAGE FIRM",
+                nameTarget %>% str_detect("REAL ESTATE OPERATING COMPANY") ~ "REAL ESTATE OPERATING COMPANY",
+                nameTarget %>% str_detect("NON-TRADED REIT") ~ "NON-TRADED REIT",
+                nameTarget %>% str_detect("PRIVATE EQUITY FIRM") ~ "PRIVATE EQUITY FIRM",
+                nameTarget %>% str_detect("INVESTOR GROUP") ~ "INVESTOR GROUP",
+                nameTarget %>% str_detect("PRIVATE REIT") ~ "PRIVATE REIT",
+                nameTarget %>% str_detect("PRIVATE REAL ESTATE COMPANY") ~ "PRIVATE REAL ESTATE COMPANY"
+              )
+            ) %>%
+            mutate(
+              nameTarget = nameTarget %>% str_replace_all(
+                "PRIVATE REAL ESTATE COMPANY|PRIVATE REIT|INVESTOR GROUP|NON-TRADED REIT|REAL ESTATE OPERATING COMPANY|BROKERAGE FIRM|ASSET MANAGEMENT FIRM|PUBLIC REAL ESTATE COMPANY|PUBLIC REIT|ASSET MANAGER|PRIVATE EQUITY FIRM|REAL ESTATE ADVISORY FIRM",
+                ""
+              ) %>% str_trim()
+            ) %>%
+            purrr::set_names(
+              c(
+                "yearMerger",
+                "nameAcquiror",
+                "nameTarget",
+                "amountAcquisitionPrice",
+                "dateAnnounced",
+                "dateComplete",
+                "statusTransaction",
+                "typeAcquiror"
+              )
+            )
         ) %>%
         bind_rows(
           all_data %>%
             filter(V9 == "") %>%
             filter(yearMerger == "2017") %>%
             mutate_all(funs(ifelse(. == '', NA, .))) %>%
-            dplyr::select(which(colMeans(is.na(.)) < 1)) %>%
-            mutate(typeAcquiror = case_when(
-              nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
-              nameTarget %>% str_detect("PUBLIC REIT") ~ "PUBLIC REIT",
-              nameTarget %>% str_detect("PUBLIC REAL ESTATE COMPANY") ~ "PUBLIC REAL ESTATE COMPANY",
-              nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
-              nameTarget %>% str_detect("REAL ESTATE ADVISORY FIRM") ~ "REAL ESTATE ADVISORY FIRM",
-              nameTarget %>% str_detect("ASSET MANAGEMENT FIRM") ~ "ASSET MANAGER",
-              nameTarget %>% str_detect("BROKERAGE FIRM") ~ "BROKERAGE FIRM",
-              nameTarget %>% str_detect("REAL ESTATE OPERATING COMPANY") ~ "REAL ESTATE OPERATING COMPANY",
-              nameTarget %>% str_detect("NON-TRADED REIT") ~ "NON-TRADED REIT",
-              nameTarget %>% str_detect("PRIVATE EQUITY FIRM") ~ "PRIVATE EQUITY FIRM",
-              nameTarget %>% str_detect("INVESTOR GROUP") ~ "INVESTOR GROUP",
-              nameTarget %>% str_detect("PRIVATE REIT") ~ "PRIVATE REIT",
-              nameTarget %>% str_detect("PRIVATE REAL ESTATE COMPANY") ~ "PRIVATE REAL ESTATE COMPANY"
-            )) %>%
-            mutate(nameTarget = nameTarget %>% str_replace_all("PRIVATE REAL ESTATE COMPANY|PRIVATE REIT|INVESTOR GROUP|NON-TRADED REIT|REAL ESTATE OPERATING COMPANY|BROKERAGE FIRM|ASSET MANAGEMENT FIRM|PUBLIC REAL ESTATE COMPANY|PUBLIC REIT|ASSET MANAGER|PRIVATE EQUITY FIRM|REAL ESTATE ADVISORY FIRM", "") %>% str_trim()) %>%
-            purrr::set_names(c("yearMerger", "nameAcquiror", "nameTarget",
-                               "amountAcquisitionPrice",  "dateAnnounced", "statusTransaction",
-                               "typeAcquiror"))
+            dplyr::select(which(colMeans(is.na(
+              .
+            )) < 1)) %>%
+            mutate(
+              typeAcquiror = case_when(
+                nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
+                nameTarget %>% str_detect("PUBLIC REIT") ~ "PUBLIC REIT",
+                nameTarget %>% str_detect("PUBLIC REAL ESTATE COMPANY") ~ "PUBLIC REAL ESTATE COMPANY",
+                nameTarget %>% str_detect("ASSET MANAGER") ~ "ASSET MANAGER",
+                nameTarget %>% str_detect("REAL ESTATE ADVISORY FIRM") ~ "REAL ESTATE ADVISORY FIRM",
+                nameTarget %>% str_detect("ASSET MANAGEMENT FIRM") ~ "ASSET MANAGER",
+                nameTarget %>% str_detect("BROKERAGE FIRM") ~ "BROKERAGE FIRM",
+                nameTarget %>% str_detect("REAL ESTATE OPERATING COMPANY") ~ "REAL ESTATE OPERATING COMPANY",
+                nameTarget %>% str_detect("NON-TRADED REIT") ~ "NON-TRADED REIT",
+                nameTarget %>% str_detect("PRIVATE EQUITY FIRM") ~ "PRIVATE EQUITY FIRM",
+                nameTarget %>% str_detect("INVESTOR GROUP") ~ "INVESTOR GROUP",
+                nameTarget %>% str_detect("PRIVATE REIT") ~ "PRIVATE REIT",
+                nameTarget %>% str_detect("PRIVATE REAL ESTATE COMPANY") ~ "PRIVATE REAL ESTATE COMPANY"
+              )
+            ) %>%
+            mutate(
+              nameTarget = nameTarget %>% str_replace_all(
+                "PRIVATE REAL ESTATE COMPANY|PRIVATE REIT|INVESTOR GROUP|NON-TRADED REIT|REAL ESTATE OPERATING COMPANY|BROKERAGE FIRM|ASSET MANAGEMENT FIRM|PUBLIC REAL ESTATE COMPANY|PUBLIC REIT|ASSET MANAGER|PRIVATE EQUITY FIRM|REAL ESTATE ADVISORY FIRM",
+                ""
+              ) %>% str_trim()
+            ) %>%
+            purrr::set_names(
+              c(
+                "yearMerger",
+                "nameAcquiror",
+                "nameTarget",
+                "amountAcquisitionPrice",
+                "dateAnnounced",
+                "statusTransaction",
+                "typeAcquiror"
+              )
+            )
         ) %>%
         distinct() %>%
         mutate(
@@ -2362,11 +2398,9 @@ get_data_nareit_mergers_acquisitions <-
           nameAcquiror
         )
       ) %>%
-      separate(
-        nameAcquiror,
-        into = c('nameAcquiror', 'nameAcquirorAKA'),
-        sep = '\\('
-      ) %>%
+      separate(nameAcquiror,
+               into = c('nameAcquiror', 'nameAcquirorAKA'),
+               sep = '\\(') %>%
       separate(nameTarget,
                into = c('nameTarget', 'nameTargetAKA'),
                sep = '\\(') %>%
