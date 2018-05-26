@@ -2651,94 +2651,85 @@ get_data_nareit_industry_tracker <-
 # reit_funds --------------------------------------------------------------
 
 
-parse_fund_reit_page <-
-  function(return_message = TRUE) {
+.parse_fund_reit_page <-
+  function(url, return_message = TRUE) {
+
+    if (return_message) {
+      glue::glue("Parsing {url}") %>% message()
+    }
+
     page <-
-      "https://www.reit.com/investing/investing-reits/list-reit-funds" %>%
+      url %>%
       xml2::read_html()
 
     fund_stems <-
       page %>%
-      html_nodes('.data a') %>%
+      html_nodes('.fund a') %>%
       html_attr('href')
+
+    fund_stems <-
+      fund_stems[fund_stems %>% str_detect("/investing/")]
 
     urls <-
       fund_stems %>%
-      paste0('https://www.reit.com', .)
+      paste0('https://www.reit.com', .) %>%
+      unique()
 
-    tickers <-
-      fund_stems %>%
-      str_replace_all('\\/morningstar/ticker/', '') %>% str_to_upper()
-
-    funds <-
-      page %>%
-      html_nodes('.data a') %>%
-      html_text() %>%
-      str_to_upper()
-
-    column_df <-
-      data_frame(
-        number = 2:7,
-        nameColumn = c(
-          'ratingMorningstar',
-          'pctReturnYTD',
-          'pctReturn3YR',
-          'pctReturn5YR',
-          'amountInvestmentMinimum',
-          'pctExpenses'
-        )
-      )
-    df_values <-
-      2:7 %>%
-      map_df(function(x) {
-        item <-
-          column_df %>% filter(number == x) %>% .$nameColumn
-
-        css_node <-
-          list('td:nth-child(' , x, ') .data') %>%
-          purrr::reduce(paste0)
-
-        items <-
-          page %>%
-          html_nodes(css_node) %>%
-          html_text()
-
-        items <-
-          items %>% gsub('n/a', NA, .)
-
-        data_frame(item, value = items)
-      })
-
-  df_values <-
-    df_values %>%
-      group_by(item) %>%
-      mutate(idRow = 1:n()) %>%
-      ungroup() %>%
-      spread(item, value) %>%
-      filter(!amountInvestmentMinimum %>% is.na())
-
-    df_values <-
-      df_values %>%
-      mutate_at(df_values %>% select(matches("amount|pct")) %>% names(),
-                funs(. %>% readr::parse_number())) %>%
-      mutate_at(df_values %>% select(matches("amount")) %>% names(),
-                funs(. %>% formattable::currency())) %>%
-      mutate_at(df_values %>% select(matches("pct")) %>% names(),
-                funs((. / 100) %>% formattable::percent(digits = 3)))
+    fund_nodes <-  page %>% html_nodes('.fund')
 
     df <-
-      data_frame(nameManager = funds,
-                 idTicker = tickers,
-                 urlNAREIT = urls) %>%
-      mutate(idRow = 1:n()) %>%
-      left_join(df_values) %>%
-      suppressMessages()
+      1:length(fund_nodes) %>%
+      map_df(function(x) {
+        fund_node <- fund_nodes[[x]]
+        categoryFund  <-
+          fund_node %>% html_nodes(".category") %>% html_text() %>% str_trim()
+        nameFundOperator <-
+          fund_node %>% html_nodes(".provider") %>% html_text() %>% str_trim()
+        nameFund <-
+          fund_node %>% html_nodes(".name a") %>% html_text() %>% str_trim()
+        idTicker <-
+          fund_node %>% html_nodes(".ticker") %>% html_text() %>% str_trim()
+        priceNAV <-
+          fund_node %>% html_nodes(".nav") %>% html_text()
 
-    return(df)
+        pctReturnMonth <-
+          fund_node %>% html_nodes(".return") %>% html_text()
 
+        data <-
+          data_frame(categoryFund,
+                   nameFundOperator,
+                   nameFund,
+                   idTicker)
+        if (priceNAV %>% length() > 0) {
+          priceNAV <-
+            priceNAV %>% str_split("\\$") %>% flatten_chr() %>% .[[2]] %>% readr::parse_number()
+
+          data <-
+            data %>%
+            mutate(priceNAV)
+        }
+
+        if (pctReturnMonth %>% length() > 0) {
+          pctReturnMonth <-
+            pctReturnMonth %>%
+            str_trim() %>% .[[2]] %>%
+            readr::parse_number() / 100
+
+          data <-
+            data %>%
+            mutate(pctReturnMonth)
+        }
+        data
+
+      })
+
+    df <-
+      df %>%
+      mutate(urlNAREIT = urls)
+    df
   }
 
-parse_reit_fund_info_page <-
+.parse_reit_fund_info_page <-
   function(urls,
            return_message = TRUE) {
     df <-
@@ -2752,41 +2743,64 @@ parse_reit_fund_info_page <-
 
         values <-
           page %>%
-          html_nodes('.fund-summary .data') %>%
-          html_text()
+          html_nodes('.reit-values__value') %>%
+          html_text() %>%
+          str_trim()
 
         table_values <-
           page %>%
-          html_nodes('.number .data') %>%
+          html_nodes('.data') %>%
           html_text()
         is_billions <-
           values %>% str_detect("bil") %>% sum() > 0
+
         items <-
-          c(
-            'amountNAV',
-            'pctReturn1Day',
-            'pctYieldTTM',
-            'amountAssets',
-            'pctExpenses',
-            'pctTurnover',
-            'amountInvestmentMinimum',
-            'pctYield30Day'
-          )
+          c('categoryFund',
+            "amountAssets",
+            "amountInvestmentMinimum",
+            "pctReturn1Month",
+            "pctExpenses",
+            "pctYield30Day",
+            "pctYieldTTM",
+            "pctTurnOver")
 
         data <-
           data_frame(item = items, value  = values) %>%
-          mutate(value = value %>% readr::parse_number()) %>%
           spread(item, value) %>%
+          suppressWarnings() %>%
+          mutate_at(
+            c(
+              "amountAssets",
+              "amountInvestmentMinimum",
+              "pctReturn1Month",
+              "pctExpenses",
+              "pctYield30Day",
+              "pctYieldTTM",
+              "pctTurnOver"
+            ),
+            funs(. %>% readr::parse_number())
+          ) %>%
           suppressWarnings()
 
         data <-
           data %>%
-          mutate(
-            amountAssets = ifelse(
-              is_billions,
-              amountAssets * 1000000000,
-              amountAssets * 1000000
+          mutate_at(
+            c(
+              "pctReturn1Month",
+              "pctExpenses",
+              "pctYield30Day",
+              "pctYieldTTM",
+              "pctTurnOver"
             ),
+            funs(. / 100)
+          )
+
+        data <-
+          data %>%
+          mutate(
+            amountAssets = ifelse(is_billions,
+                                  amountAssets * 1000000000,
+                                  amountAssets * 1000000),
             amountAssets = amountAssets %>% formattable::currency(digits = 0)
           ) %>%
           mutate(urlNAREIT = res$url)
@@ -2872,20 +2886,35 @@ parse_reit_fund_info_page <-
 get_data_reit_funds <-
   function(parse_fund_details = TRUE,
            return_message = TRUE) {
+
+    url = "https://www.reit.com/investing/reit-funds"
+
+    pages <- url %>% read_html() %>% html_nodes('.pager__item--last a') %>% html_attr('href') %>% str_split("page=") %>% flatten_chr() %>% .[[2]] %>% as.numeric()
+
+    urls <- glue::glue("https://www.reit.com/investing/reit-funds?page={1:pages}") %>% as.character()
+    .parse_fund_reit_page_safe <-
+      purrr::possibly(.parse_fund_reit_page, data_frame())
+
     df_table <-
-      parse_fund_reit_page()
+      urls %>%
+      map_df(function(url){
+        .parse_fund_reit_page_safe(url = url, return_message = return_message)
+      })
+
+
 
     if (parse_fund_details) {
-      parse_reit_fund_info_page_safe <-
-        purrr::possibly(parse_reit_fund_info_page, data_frame())
+      .parse_reit_fund_info_page_safe <-
+        purrr::possibly(.parse_reit_fund_info_page, data_frame())
 
       urls <-
         df_table$urlNAREIT
 
       detail_df <-
         urls %>%
-        map_df(function(x){
-          parse_reit_fund_info_page_safe(urls = x, return_message = return_message)
+        map_df(function(x) {
+          x %>% message()
+          .parse_reit_fund_info_page_safe(urls = x, return_message = return_message)
         })
 
       detail_df <-
