@@ -2425,6 +2425,50 @@ get_data_nareit_mergers_acquisitions <-
         typeAcquiror = typeAcquiror %>% str_replace_all('\\-', '') %>% str_trim()
       )
 
+    all_data <-
+      all_data %>%
+      mutate(
+        typeAcquiror = case_when(
+          typeAcquiror == "ASSET MANAGEMENT FIRM" ~ "Asset Manager",
+          typeAcquiror == "ASSET MANAGER" ~  "Asset Manager",
+          typeAcquiror ==  "AUSTRALIAN LPT" ~ "Asset Manager",
+          typeAcquiror ==  "AUSTRALIAN LPT & PRIVATE EQUITY FIRM" ~ "Investor Group",
+          typeAcquiror == "BROKERAGE FIRM" ~ "Investment Bank",
+          typeAcquiror == "CANADIAN REIT" ~ "Public REIT",
+          typeAcquiror == "CLOSEDEND INVESTMENT COMPANY" ~ "Private REIT",
+          typeAcquiror == "CORRECTIONAL FACILITY OPERATOR" ~ "Public REIT",
+          typeAcquiror == "FINANCIAL LENDING COMPANY" ~ "Mortgage Bank/Lender",
+          typeAcquiror == "HEALTH CARE PROVIDER (PUBLIC COMPANY)" ~ "Public REIT",
+          typeAcquiror == "INVESTMENT ADVIOR/BROKERAGE FIRM" ~ "Investment Bank",
+          typeAcquiror == "INVESTMENT ADVISOR" ~ "Investment Bank",
+          typeAcquiror == "INVESTMENT ADVISOR/BROKERAGE FIRM" ~ "Investment Bank",
+          typeAcquiror == "INVESTMENT ADVISOR/PENSION FUND" ~ "Investor Group",
+          typeAcquiror == "INVESTOR GROUP" ~ "Investor Group",
+          typeAcquiror == "MORTGAGE BANKING FIRM" ~ "Mortgage Bank/Lender",
+          typeAcquiror == "NONTRADED REIT" ~ "Private REIT",
+          typeAcquiror == "PENSION FUND" ~ "Pension Fund",
+          typeAcquiror == "PENSION TRUST FUND" ~ "Pension Fund",
+          typeAcquiror == "PRIVATE EQUITY FIRM" ~ "Private Equity",
+          typeAcquiror == "PRIVATE EQUITY FIRM & REOC" ~ "Private Equity",
+          typeAcquiror == "PRIVATE EQUITY JOINT VENTURE" ~ "Private Equity",
+          typeAcquiror == "PRIVATE REAL ESTATE COMPANY" ~ "Private Company",
+          typeAcquiror == "PRIVATE REAL ESTATE JOINT VENTURE" ~ "Private Company",
+          typeAcquiror == "PRIVATE REIT" ~ "Private REIT",
+          typeAcquiror == "PUBLIC NONREIT AND REIT" ~ "Private REIT",
+          typeAcquiror == "PUBLIC PENSION FUND" ~ "Pension Fund",
+          typeAcquiror == "PUBLIC REAL ESTATE COMPANY" ~ "Public REIT",
+          typeAcquiror == "PUBLIC REIT" ~ "Public REIT",
+          typeAcquiror == "PUBLIC REIT; INVESTMENT ADVISOR" ~ "Investor Group",
+          typeAcquiror == "PUBLIC REIT/INVESTMENT ADVISOR" ~ "Investor Group",
+          typeAcquiror == "PUBLIC TOWER COMPANY"  ~ "Public REIT",
+          typeAcquiror == "REAL ESTATE ADVISORY FIRM" ~ "Real Estate Advisor",
+          typeAcquiror == "REAL ESTATE COMPANY/ BROKERAGE FIRM" ~ "Investment Bank",
+          typeAcquiror == "REAL ESTATE OPERATING COMPANY" ~ "Public REIT",
+          typeAcquiror == "REAL ESTATE OPERATING PARTNERSHIP" ~ "Public REIT",
+          TRUE  ~ typeAcquiror
+        )
+      )
+
     if (return_message) {
       list(
         "You acquired ",
