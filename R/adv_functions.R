@@ -207,6 +207,7 @@ find_text_node <-
       text_node <-
         text_node %>%
         str_replace_all('\\$', '') %>% str_trim() %>%
+        as.character() %>%
         readr::parse_number()
 
       text_node <-
@@ -783,7 +784,7 @@ parse_broker_json_url <-
           if ('idCRD' %in% names(df_items)) {
             df_items <-
               df_items %>%
-              mutate(idCRD = idCRD %>% readr::parse_number())
+              mutate(idCRD = idCRD %>% as.character() %>% readr::parse_number())
           }
 
           df_items <-
@@ -3238,6 +3239,7 @@ extract_node_data <-
           node_value <-
             node_value %>% str_replace('\\$', '') %>%
             str_trim() %>%
+            as.character() %>%
             readr::parse_number()
         }
         if (variable_name %>% str_detect("pct")) {
@@ -7323,7 +7325,7 @@ get_schedule_d_data <-
         section_data %>%
         gather(item, value, -c(nameEntityManager, idCRD)) %>%
         mutate(
-          countItem = item %>% readr::parse_number(),
+          countItem = item %>% as.character() %>% readr::parse_number(),
           countItem = if_else(countItem %>% is.na, 0, countItem),
           countItem = countItem + 1,
           item = item %>% str_replace_all('[1-9]', '')
@@ -7579,6 +7581,7 @@ get_section_drp <-
           values <-
             values %>%
             str_replace_all('\\$', '') %>%
+            as.character() %>%
             readr::parse_number() %>%
             suppressWarnings()
         }
@@ -8641,6 +8644,7 @@ get_search_crd_ids <-
       id_crds <-
         search_name_df %>%
         .$idCRD %>%
+        as.character() %>%
         readr::parse_number()
 
       crd_df <-
@@ -9227,7 +9231,9 @@ parse_manager_brochure_data <-
               page_text[!page_text == '']
 
             remove_last_line <-
-              !page_text[page_text %>% length() %>% max] %>% readr::parse_number() %>% is.na %>% suppressWarnings()
+              !page_text[page_text %>% length() %>% max] %>%
+              as.character() %>%
+              readr::parse_number() %>% is.na %>% suppressWarnings()
 
             if (remove_last_line) {
               page_text <-
