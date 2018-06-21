@@ -1112,7 +1112,7 @@ resolve_name_df <-
                         "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
                       )
                     ) %>% names,
-                  funs(. %>% readr::parse_number())) %>%
+                  funs(. %>% as.character() %>% readr::parse_number())) %>%
         suppressWarnings()
       return(data)
     }
@@ -1138,7 +1138,7 @@ resolve_name_df <-
                       "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
                     )
                   ) %>% names,
-                funs(. %>% readr::parse_number())) %>%
+                funs(. %>% as.character() %>% readr::parse_number())) %>%
       suppressWarnings()
 
     return(data)
@@ -2017,7 +2017,7 @@ parse_rf_search_name <-
         into = c('idCompanyType', 'idCIKTicker', 'idTypeFiler'),
         sep = '\\#'
       ) %>%
-      mutate(idCIK = idCIKTicker %>% readr::parse_number()) %>%
+      mutate(idCIK = idCIKTicker %>% as.character() %>% readr::parse_number()) %>%
       left_join(type_df) %>%
       left_join(get_company_type_df()) %>%
       suppressWarnings() %>%
@@ -3749,7 +3749,7 @@ parse_json_subsidiaries <-
                         "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
                       )
                     ) %>% names,
-                  funs(. %>% readr::parse_number())) %>%
+                  funs(. %>% as.character() %>% readr::parse_number())) %>%
         suppressWarnings()
       return(data)
     }
@@ -5348,7 +5348,7 @@ parse_insider_trade_json_url <-
                 .funs = lubridate::ymd) %>%
       mutate_at(.vars =
                   trade_df %>% select(matches("idCIK|count|amount|price")) %>% names(),
-                .funs = readr::parse_number) %>%
+                funs(. %>% as.character() %>% readr::parse_number())) %>%
       left_join(data_frame(
         idInsiderType = c("D", "ND"),
         typeInsider = c("Director", "Non-Director")
@@ -6939,7 +6939,7 @@ parse_json_trades <-
                 .funs = lubridate::ymd) %>%
       mutate_at(.vars =
                   trade_df %>% select(matches("idCIK|count|amount|price")) %>% names(),
-                .funs = readr::parse_number) %>%
+                funs(. %>% as.character() %>% readr::parse_number())) %>%
       left_join(data_frame(
         idInsiderType = c("D", "ND"),
         typeInsider = c("Director", "Non-Director")
@@ -7269,7 +7269,7 @@ get_data_us_public_companies <-
         into = c("X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9")
       ) %>%
       mutate_at(.vars = c("X5", "X6", "X7", "X8", "X9"),
-                .funs = readr::parse_number) %>%
+                funs(. %>% as.character() %>% readr::parse_number())) %>%
       purrr::set_names(
         c(
           'idTicker',
@@ -8889,7 +8889,7 @@ parse_full_form_names <-
             sec_name %>% str_split('\\.') %>% flatten_chr()
 
           countItem <-
-            pieces[2] %>% readr::parse_number() %>% suppressWarnings()
+            pieces[2] %>% as.character() %>% readr::parse_number() %>% suppressWarnings()
 
           name_item <-
             items[length(items)]
@@ -8914,7 +8914,7 @@ parse_full_form_names <-
             item <-
               pieces[[1]]
             countItem <-
-              pieces[2] %>% readr::parse_number() %>% suppressWarnings()
+              pieces[2] %>%as.character() %>%  readr::parse_number() %>% suppressWarnings()
           }
           return(data_frame(nameTable = 'footnotes', nameSECFull = sec_name, nameSEC = item, countItem))
         }
@@ -8953,7 +8953,7 @@ parse_full_form_names <-
 
         if (piece_count > 2) {
           countItem <-
-            pieces[2] %>% readr::parse_number() %>% suppressWarnings()
+            pieces[2] %>%as.character() %>%  readr::parse_number() %>% suppressWarnings()
 
           df <-
             data_frame(
@@ -9158,7 +9158,7 @@ parse_sec_form <-
     }
 
     cik <-
-      url %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>% str_split('/') %>% flatten_chr() %>% .[[1]] %>% readr::parse_number() %>% suppressMessages()
+      url %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>% str_split('/') %>% flatten_chr() %>% .[[1]] %>% as.character() %>% readr::parse_number() %>% suppressMessages()
 
     df_title <-
       sec_form_title_df()
@@ -9465,8 +9465,8 @@ parse_xbrl_filer_url <-
     df_fct <-
       df_fct %>%
       mutate(
-        isNumber = ifelse(!fact %>% readr::parse_number() %>% is.na(), TRUE, FALSE),
-        amountFact = ifelse(isNumber == TRUE, fact %>% readr::parse_number(), NA)
+        isNumber = ifelse(!fact %>% as.character() %>% readr::parse_number() %>% is.na(), TRUE, FALSE),
+        amountFact = ifelse(isNumber == TRUE, fact %>% as.character() %>% readr::parse_number(), NA)
       ) %>%
       separate(elementId,
                c('codeElement', 'nameElement'),
@@ -11372,7 +11372,7 @@ parse_full_form_names <-
             sec_name %>% str_split('\\.') %>% flatten_chr()
 
           countItem <-
-            pieces[2] %>% readr::parse_number() %>% suppressWarnings()
+            pieces[2] %>% as.character() %>%  readr::parse_number() %>% suppressWarnings()
 
           name_item <-
             items[length(items)]
@@ -11397,7 +11397,7 @@ parse_full_form_names <-
             item <-
               pieces[[1]]
             countItem <-
-              pieces[2] %>% readr::parse_number() %>% suppressWarnings()
+              pieces[2] %>% as.character() %>% readr::parse_number() %>% suppressWarnings()
           }
           return(data_frame(nameTable = 'footnotes', nameSECFull = sec_name, nameSEC = item, countItem))
         }
@@ -11436,7 +11436,9 @@ parse_full_form_names <-
 
         if (piece_count > 2) {
           countItem <-
-            pieces[2] %>% readr::parse_number() %>% suppressWarnings()
+            pieces[2] %>%
+            as.character() %>%
+            readr::parse_number() %>% suppressWarnings()
 
           df <-
             data_frame(
@@ -11644,7 +11646,7 @@ parse_sec_form <-
     }
 
     cik <-
-      url %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>% str_split('/') %>% flatten_chr() %>% .[[1]] %>% readr::parse_number() %>% suppressMessages()
+      url %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>% str_split('/') %>% flatten_chr() %>% .[[1]] %>% as.character() %>% readr::parse_number() %>% suppressMessages()
 
     df_title <-
       sec_form_title_df()
@@ -12528,7 +12530,7 @@ parse_text_headers <- function(text_blob){
       data %>%
       separate(nameCodeSIC, into = c('nameIndustry', 'idSIC'), sep = '\\[') %>%
       mutate(nameIndustry = nameIndustry %>% str_trim() %>% str_to_upper(),
-             idSIC = idSIC %>% readr::parse_number()) %>%
+             idSIC = idSIC %>% as.character() %>% readr::parse_number()) %>%
       suppressWarnings()
   }
   return(data)
@@ -12654,7 +12656,7 @@ parse_xbrl_filer_url <-
       df_fct %>%
       mutate(
         isNumber = ifelse(!fact %>% readr::parse_number() %>% is.na(), TRUE, FALSE),
-        amountFact = ifelse(isNumber == TRUE, fact %>% readr::parse_number(), NA)
+        amountFact = ifelse(isNumber == TRUE, fact %>%as.character() %>%  readr::parse_number(), NA)
       ) %>%
       separate(elementId,
                c('codeElement', 'nameElement'),
@@ -14565,6 +14567,7 @@ get_cik_filing_count <-
       page %>%
       html_nodes(css = 'p+ b') %>%
       html_text() %>%
+      as.character() %>%
       readr::parse_number()
 
     pages <-
@@ -14624,6 +14627,7 @@ get_sic_filing_count <-
       page %>%
       html_nodes(css = 'p+ b') %>%
       html_text() %>%
+      as.character() %>%
       readr::parse_number()
 
     pages <-
@@ -14660,7 +14664,7 @@ resolve_form_columns <-
       mutate_at(data %>% select(
         matches("^price|^count|^amount|^value|^idCIK|^yearIncorporation|^idSIC|^pershare|^number|^percent|^term|^pct|^score|^year")
       ) %>% names(),
-      funs(. %>% readr::parse_number())) %>%
+      funs(. %>% as.character() %>% readr::parse_number())) %>%
       mutate_at(data %>% select(matches("^is|^has")) %>% names(),
                 funs(
                   ifelse(
@@ -15143,6 +15147,7 @@ generate_ft_search_urls <-
       page %>%
       html_nodes('#header .normal+ .normalbold') %>%
       html_text() %>%
+      as.character() %>%
       readr::parse_number() %>%
       max(na.rm = TRUE)
 
@@ -15207,6 +15212,7 @@ parse_ft_filing_page <-
             str_split('/') %>%
             flatten_chr() %>%
             .[[1]] %>%
+            as.character() %>%
             readr::parse_number()
         })
 
@@ -15478,6 +15484,7 @@ parse_boolean_search_page <-
         page %>%
         html_nodes('td:nth-child(6)') %>%
         html_text() %>%
+        as.character() %>%
         readr::parse_number()
 
       data <-
@@ -15508,7 +15515,7 @@ parse_boolean_search_page <-
         ) %>%
         mutate_at(
           c('idCIKFilerSubmission', 'codeYear', 'countFilerYearFilings'),
-          funs(. %>% readr::parse_number())
+          funs(. %>% as.character() %>% readr::parse_number())
         ) %>%
         suppressMessages() %>%
         suppressWarnings() %>%
@@ -15648,6 +15655,7 @@ generate_search_term_urls <-
       page %>%
       html_nodes(css = 'p+ b') %>%
       html_text() %>%
+      as.character() %>%
       readr::parse_number()
 
     if (parameter %>% is_null()){
@@ -16217,7 +16225,7 @@ parse_most_recent_stream <-
         data %>%
         mutate(
           typeFileDocument = descriptionFileSize %>% map_chr(stringi::stri_extract_last_boundaries),
-          sizeFile = readr::parse_number(descriptionFileSize),
+          sizeFile = readr::parse_number(as.character(descriptionFileSize)),
           sizeFileBytes = ifelse(typeFileDocument == "MB", sizeFile * 1024, 1048576 * sizeFile)
         ) %>%
         select(-c(typeFileDocument, descriptionFileSize, sizeFile))
@@ -16428,6 +16436,7 @@ get_year_index_urls <-
     yearData <-
       url %>%
       str_replace_all('https://www.sec.gov/Archives/edgar/daily-index|/','') %>%
+      as.character() %>%
       readr::parse_number()
 
     page <-
@@ -16439,6 +16448,7 @@ get_year_index_urls <-
       html_nodes('td a') %>%
       html_attr('href') %>%
       str_replace_all('\\QTR|/','') %>%
+      as.character() %>%
       readr::parse_number()
 
     urls <-
@@ -16974,6 +16984,7 @@ guess_page_ongoing <-
       str_split('&') %>%
       flatten_chr() %>%
       .[[1]] %>%
+      as.character() %>%
       readr::parse_number()
 
     items <-
@@ -17307,6 +17318,7 @@ parse_company_info <-
     SIC <-
       page %>%
       extract_info(".identInfo acronym+ a") %>%
+      as.character() %>%
       readr::parse_number()
 
     street.address <-
@@ -17349,7 +17361,7 @@ parse_company_info <-
       data_frame(
         nameCompany = company_name,
         slugCIK = cik,
-        idCIK = readr::parse_number(cik),
+        idCIK = readr::parse_number(as.character(cik)),
         idSIC = SIC,
         stateIncorporatd = state.inc,
         monthDayFiscalYearEnd = fiscal.year.end
@@ -17462,6 +17474,7 @@ guess_page_ongoing <-
       str_split('&') %>%
       flatten_chr() %>%
       .[[1]] %>%
+      as.character() %>%
       readr::parse_number()
 
     items <-
