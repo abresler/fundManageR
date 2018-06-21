@@ -4643,8 +4643,10 @@ get_data_sec_filer <-
 
         filing_df <-
           filing_df %>%
-          mutate(urlSECFilingDirectory = urlSECFilingDirectory %>% gsub('archives', 'Archives',.),
-                 urlSEC = urlSEC %>% gsub('archives', 'Archives',.))
+          mutate(
+            urlSECFilingDirectory = urlSECFilingDirectory %>% gsub('archives', 'Archives', .),
+            urlSEC = urlSEC %>% gsub('archives', 'Archives', .)
+          )
 
         has_subsidiaries <-
           (filing_df %>%
@@ -4810,8 +4812,10 @@ get_data_sec_filer <-
               }
             }
           }
+
         parse_for_tables_rf_safe <-
           purrr::possibly(parse_for_tables_rf, data_frame())
+
         tables_edgar <-
           parse_for_tables_rf_safe(
             filing_df = filing_df,
@@ -4825,6 +4829,7 @@ get_data_sec_filer <-
           )
         has_edgar_tables <-
           tables_edgar %>% nrow() > 0
+
         if (has_edgar_tables) {
 
           all_data <-
