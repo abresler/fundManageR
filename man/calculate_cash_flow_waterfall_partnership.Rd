@@ -6,12 +6,14 @@
 \usage{
 calculate_cash_flow_waterfall_partnership(dates = c("2016-09-01",
   "2017-08-31"), cash_flows = c(-1500000, 1.05e+08),
-  working_capital = 2e+05, promote_structure = c("20 over 12", "30 over 20",
-  "50 over 3.5x", "100 over 10x"), assign_to_environment = TRUE,
-  general_partner_pct = 0.05, gp_promote_share = 1, unnest_data = FALSE,
+  working_capital = 2e+05, promote_structure = c("20 over 12",
+  "30 over 20", "50 over 3.5x", "100 over 10x"),
+  assign_to_environment = TRUE, general_partner_pct = 0.05,
+  gp_promote_share = 1, unnest_data = FALSE,
   exclude_partnership_total = FALSE, distribution_frequency = NA,
   is_actual_360 = TRUE, widen_promote_structure = FALSE,
-  bind_to_cf = FALSE, remove_zero_cols = TRUE, widen_waterfall = FALSE)
+  bind_to_cf = FALSE, remove_zero_cols = TRUE,
+  widen_waterfall = FALSE)
 }
 \arguments{
 \item{dates}{vector of dates in year-month-day format}

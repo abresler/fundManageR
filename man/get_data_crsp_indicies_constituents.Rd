@@ -4,7 +4,8 @@
 \alias{get_data_crsp_indicies_constituents}
 \title{CRSP index constituents}
 \usage{
-get_data_crsp_indicies_constituents(nest_data = TRUE, return_message = TRUE)
+get_data_crsp_indicies_constituents(nest_data = TRUE,
+  return_message = TRUE)
 }
 \arguments{
 \item{nest_data}{\code{TRUE} return nested data frame}

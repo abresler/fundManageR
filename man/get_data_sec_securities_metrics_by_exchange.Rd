@@ -5,7 +5,8 @@
 \title{SEC quarterly securities transaction metrics}
 \usage{
 get_data_sec_securities_metrics_by_exchange(only_most_recent = FALSE,
-  years = 2016, months = NULL, nest_data = TRUE, return_message = TRUE)
+  years = 2016, months = NULL, nest_data = TRUE,
+  return_message = TRUE)
 }
 \arguments{
 \item{only_most_recent}{\code{TRUE} search only the most recent period}

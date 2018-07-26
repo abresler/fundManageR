@@ -2154,7 +2154,9 @@ get_data_adv_managers_metadata <-
       adv_urls %>%
       map_df(get_manager_sec_page_safe) %>%
       suppressWarnings() %>%
-      filter(!idCRD %>% is.na())
+      filter(!idCRD %>% is.na()) %>%
+      mutate_if(is.character,
+                funs(. %>% str_trim()))
 
     return(sec_summary_data)
   }

@@ -5,8 +5,9 @@
 \title{SEC filer}
 \usage{
 get_data_sec_filer(entity_names = NULL, tickers = NULL, ciks = NULL,
-  tables = NULL, nest_data = FALSE, parse_all_filing_url_data = FALSE,
-  parse_xbrl = FALSE, parse_subsidiaries = FALSE, parse_13F = FALSE,
+  tables = NULL, nest_data = FALSE,
+  parse_all_filing_url_data = FALSE, parse_xbrl = FALSE,
+  parse_subsidiaries = FALSE, parse_13F = FALSE,
   parse_asset_files = FALSE, parse_small_offerings = FALSE,
   parse_complete_text_filings = FALSE, parse_form_d = FALSE,
   parse_form_3_4s = FALSE, assign_to_environment = TRUE,

@@ -4,7 +4,8 @@
 \alias{get_data_nareit_monthly_returns}
 \title{NAREIT monthly returns by sector}
 \usage{
-get_data_nareit_monthly_returns(return_wide = TRUE, return_message = TRUE)
+get_data_nareit_monthly_returns(return_wide = TRUE,
+  return_message = TRUE)
 }
 \arguments{
 \item{return_wide}{\code{TRUE} return data in wide form}

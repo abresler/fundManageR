@@ -5,7 +5,8 @@
 \title{NAREIT properties by state}
 \usage{
 get_data_nareit_state_info(include_reit_hq = TRUE,
-  include_reit_holdings = TRUE, nest_data = TRUE, return_message = TRUE)
+  include_reit_holdings = TRUE, nest_data = TRUE,
+  return_message = TRUE)
 }
 \arguments{
 \item{include_reit_hq}{\code{TRUE} include REIT headquarter locations}

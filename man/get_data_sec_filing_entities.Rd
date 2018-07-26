@@ -5,8 +5,8 @@
 \title{SEC filing entity metdata
 via Rank and Filed}
 \usage{
-get_data_sec_filing_entities(entity_names = c("Rockwood Capital", "Vornado",
-  "Two Sigma"), return_message = TRUE)
+get_data_sec_filing_entities(entity_names = c("Rockwood Capital",
+  "Vornado", "Two Sigma"), return_message = TRUE)
 }
 \arguments{
 \item{entity_names}{vector of names to search}

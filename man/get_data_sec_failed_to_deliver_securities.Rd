@@ -5,7 +5,8 @@
 \title{SEC failed to deliver securities}
 \usage{
 get_data_sec_failed_to_deliver_securities(only_most_recent = TRUE,
-  years = 2016, months = NULL, nest_data = TRUE, return_message = TRUE)
+  years = 2016, months = NULL, nest_data = TRUE,
+  return_message = TRUE)
 }
 \arguments{
 \item{only_most_recent}{\code{TRUE} search only the most recent period}

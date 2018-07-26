@@ -4,7 +4,8 @@
 \alias{get_dictionary_all_fred_series_ids}
 \title{FRED Series IDs}
 \usage{
-get_dictionary_all_fred_series_ids(fred_file = NULL, return_message = TRUE)
+get_dictionary_all_fred_series_ids(fred_file = NULL,
+  return_message = TRUE)
 }
 \arguments{
 \item{fred_file}{the type of dictionary you wish to import \itemize{

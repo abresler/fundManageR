@@ -5,12 +5,12 @@
 \title{Generate tradeview metric query}
 \usage{
 generate_trade_view_metric_query(filter = data_frame(left =
-  "market_cap_basic", operation = "nempty"), symbols = list(query = list(types
-  = c("stock", "fund", "dr"))), metrics = c("change", "change_abs", "close",
-  "description", "earnings_per_share_basic_ttm", "market_cap_basic", "name",
-  "number_of_employees", "price_earnings_ttm", "sector", "volume"),
-  sort = list(sortBy = "market_cap_basic", sortOrder = "desc"),
-  options = list(lang = "eng"), range = c(0, 1500000))
+  "market_cap_basic", operation = "nempty"), symbols = list(query =
+  list(types = c("stock", "fund", "dr"))), metrics = c("change",
+  "change_abs", "close", "description", "earnings_per_share_basic_ttm",
+  "market_cap_basic", "name", "number_of_employees", "price_earnings_ttm",
+  "sector", "volume"), sort = list(sortBy = "market_cap_basic", sortOrder
+  = "desc"), options = list(lang = "eng"), range = c(0, 1500000))
 }
 \arguments{
 \item{range}{}

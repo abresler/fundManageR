@@ -4,8 +4,9 @@
 \alias{get_data_tickers_tradingview_news}
 \title{Tradingview tickers news}
 \usage{
-get_data_tickers_tradingview_news(tickers = c("FB", "AAPL", "NFLX", "GOOG",
-  "VNO", "EQR", "BXP"), return_message = TRUE, nest_data = FALSE)
+get_data_tickers_tradingview_news(tickers = c("FB", "AAPL", "NFLX",
+  "GOOG", "VNO", "EQR", "BXP"), return_message = TRUE,
+  nest_data = FALSE)
 }
 \description{
 Returns news data for specified tickers

@@ -4,10 +4,11 @@
 \alias{get_data_tradingview_regions_tickers}
 \title{Tradingview regions traded securities}
 \usage{
-get_data_tradingview_regions_tickers(regions = c("america", "uk", "australia",
-  "brazil", "canada", "euronext", "germany", "hongkong", "india", "japan",
-  "mexico", "newzealand", "russia", "singapore", "spain", "switzerland",
-  "taiwan", "turkey"), return_message = TRUE, nest_data = FALSE)
+get_data_tradingview_regions_tickers(regions = c("america", "uk",
+  "australia", "brazil", "canada", "euronext", "germany", "hongkong",
+  "india", "japan", "mexico", "newzealand", "russia", "singapore", "spain",
+  "switzerland", "taiwan", "turkey"), return_message = TRUE,
+  nest_data = FALSE)
 }
 \arguments{
 \item{regions}{vector of regions \itemize{

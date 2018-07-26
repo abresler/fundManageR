@@ -4,8 +4,8 @@
 \alias{calculate_residual_valuation_ebitda_multiples}
 \title{Residual value, EBITDA multiple method}
 \usage{
-calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15,
-  20), ebitda = "$27,500,000", cost_of_sale = "5\%",
+calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10,
+  15, 20), ebitda = "$27,500,000", cost_of_sale = "5\%",
   debt_balance = "$350,000,000", return_wide = T)
 }
 \arguments{

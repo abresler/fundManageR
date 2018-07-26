@@ -4,8 +4,8 @@
 \alias{get_data_sec_closed_end_funds}
 \title{SEC registered closed-end funds}
 \usage{
-get_data_sec_closed_end_funds(only_most_recent = FALSE, years = 2014:2017,
-  nest_data = TRUE, return_message = TRUE)
+get_data_sec_closed_end_funds(only_most_recent = FALSE,
+  years = 2014:2017, nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
 \item{only_most_recent}{\code{TRUE} return only the most recent year}

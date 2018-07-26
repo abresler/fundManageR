@@ -4,8 +4,8 @@
 \alias{calculate_residual_valuation_cap_rates}
 \title{Residual value, capitalization rate method}
 \usage{
-calculate_residual_valuation_cap_rates(cap_rates = c(0.05, 0.0525, 0.06, 0.2),
-  net_operating_income = "$27,500,000", cost_of_sale = "5\%",
+calculate_residual_valuation_cap_rates(cap_rates = c(0.05, 0.0525, 0.06,
+  0.2), net_operating_income = "$27,500,000", cost_of_sale = "5\%",
   debt_balance = "$350,000,000", return_wide = T)
 }
 \arguments{

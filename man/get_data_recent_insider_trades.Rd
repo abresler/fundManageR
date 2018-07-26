@@ -4,7 +4,8 @@
 \alias{get_data_recent_insider_trades}
 \title{Insider trades, most recent}
 \usage{
-get_data_recent_insider_trades(nest_data = FALSE, return_message = TRUE)
+get_data_recent_insider_trades(nest_data = FALSE,
+  return_message = TRUE)
 }
 \arguments{
 \item{nest_data}{\code{TRUE} return nested data frame}

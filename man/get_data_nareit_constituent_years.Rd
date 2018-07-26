@@ -4,8 +4,8 @@
 \alias{get_data_nareit_constituent_years}
 \title{NAREIT index constituency data by year}
 \usage{
-get_data_nareit_constituent_years(years = 2010:2016, resolve_names = TRUE,
-  nest_data = TRUE, return_message = TRUE)
+get_data_nareit_constituent_years(years = 2010:2016,
+  resolve_names = TRUE, nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
 \item{years}{vector of years to search starting in 1991}

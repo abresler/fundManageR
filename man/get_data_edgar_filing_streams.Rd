@@ -8,9 +8,11 @@ get_data_edgar_filing_streams(start_date = "2017-02-15",
   end_date = Sys.Date(), only_most_recent_data = FALSE,
   index_type = "master", table_name_initial = "Filing Logs",
   parse_all_filings = FALSE, parse_complete_text_filings = FALSE,
-  parse_form_d = FALSE, parse_13F = FALSE, parse_small_offerings = FALSE,
-  parse_form_3_4s = FALSE, parse_asset_files = FALSE, parse_xbrl = FALSE,
-  assign_to_environment = TRUE, nest_data = TRUE, return_message = TRUE)
+  parse_form_d = FALSE, parse_13F = FALSE,
+  parse_small_offerings = FALSE, parse_form_3_4s = FALSE,
+  parse_asset_files = FALSE, parse_xbrl = FALSE,
+  assign_to_environment = TRUE, nest_data = TRUE,
+  return_message = TRUE)
 }
 \arguments{
 \item{start_date}{starting date in year-month-date form}

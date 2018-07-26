@@ -5,8 +5,8 @@
 \title{Leveraged return metrics}
 \usage{
 calculate_leverage_metrics(purchase_price = 0,
-  capitalized_acquisition_costs = 0, capital_investment = 0, revenue = 0,
-  expenses = 0, loan_to_cost = 0, interest_rate = 0,
+  capitalized_acquisition_costs = 0, capital_investment = 0,
+  revenue = 0, expenses = 0, loan_to_cost = 0, interest_rate = 0,
   borrow_capital_investment = F, borrow_capitalized_costs = T,
   leverage_threshold = 0.95, is_interest_only = FALSE,
   interest_only_periods = 0, is_actual_360 = TRUE,

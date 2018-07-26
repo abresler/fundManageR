@@ -4,7 +4,8 @@
 \alias{get_data_sec_investment_companies}
 \title{SEC registered investment companies}
 \usage{
-get_data_sec_investment_companies(nest_data = TRUE, return_message = TRUE)
+get_data_sec_investment_companies(nest_data = TRUE,
+  return_message = TRUE)
 }
 \arguments{
 \item{return_message}{\code{TRUE} return a message after data import}

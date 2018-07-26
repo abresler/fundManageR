@@ -4,10 +4,11 @@
 \alias{get_data_regions_tradingview_metrics}
 \title{Tradingview searchable metrics by region}
 \usage{
-get_data_regions_tradingview_metrics(regions = c("america", "uk", "australia",
-  "brazil", "canada", "euronext", "germany", "hongkong", "india", "japan",
-  "mexico", "newzealand", "russia", "singapore", "spain", "switzerland",
-  "taiwan", "turkey"), return_message = TRUE, nest_data = FALSE)
+get_data_regions_tradingview_metrics(regions = c("america", "uk",
+  "australia", "brazil", "canada", "euronext", "germany", "hongkong",
+  "india", "japan", "mexico", "newzealand", "russia", "singapore", "spain",
+  "switzerland", "taiwan", "turkey"), return_message = TRUE,
+  nest_data = FALSE)
 }
 \arguments{
 \item{regions}{vector of regions \itemize{

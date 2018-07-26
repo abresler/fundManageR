@@ -4,7 +4,8 @@
 \alias{get_data_tickers_trades}
 \title{Tickers trades}
 \usage{
-get_data_tickers_trades(tickers = c("PEI", "bxp"), return_message = TRUE)
+get_data_tickers_trades(tickers = c("PEI", "bxp"),
+  return_message = TRUE)
 }
 \arguments{
 \item{return_message}{}

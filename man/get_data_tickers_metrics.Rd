@@ -4,12 +4,13 @@
 \alias{get_data_tickers_metrics}
 \title{finbox ticker metrics}
 \usage{
-get_data_tickers_metrics(tickers = c("AAPL", "NFLX", "FB", "GOOG", "TSLA",
-  "VNO"), metrics = c("total_current_assets", "total_net_income_margin",
-  "total_net_income", "pre_tax_income_cagr", "cash_from_operations",
-  "stock_price_open", "operating_income_margin", "total_current_liabilities",
-  "avg_ebit_margin", "after_tax_cost_of_debt_mid"), multiple_types = c("ltm",
-  "fwd"), period_types = c("fy", "fq", "ytd"), return_message = TRUE)
+get_data_tickers_metrics(tickers = c("AAPL", "NFLX", "FB", "GOOG",
+  "TSLA", "VNO"), metrics = c("total_current_assets",
+  "total_net_income_margin", "total_net_income", "pre_tax_income_cagr",
+  "cash_from_operations", "stock_price_open", "operating_income_margin",
+  "total_current_liabilities", "avg_ebit_margin",
+  "after_tax_cost_of_debt_mid"), multiple_types = c("ltm", "fwd"),
+  period_types = c("fy", "fq", "ytd"), return_message = TRUE)
 }
 \arguments{
 \item{return_message}{}

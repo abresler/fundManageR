@@ -7,9 +7,10 @@
 get_data_adv_managers_filings(entity_names = NULL, crd_ids = NULL,
   all_sections = TRUE, section_names = c("Registration",
   "Identifying Information", "Organization", "Successions",
-  "Private Fund Reporting", "Direct Manager Owners", "Indirect Manager Owners",
-  "Other Manager Information", "Manager Signatories"), flatten_tables = TRUE,
-  gather_data = FALSE, assign_to_environment = TRUE)
+  "Private Fund Reporting", "Direct Manager Owners",
+  "Indirect Manager Owners", "Other Manager Information",
+  "Manager Signatories"), flatten_tables = TRUE, gather_data = FALSE,
+  assign_to_environment = TRUE)
 }
 \arguments{
 \item{entity_names}{vector entities you want to search}
