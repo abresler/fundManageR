@@ -5762,30 +5762,30 @@ get_section_11_data <-
         node_item_df <-
           c(
             "hasManagementSupervisedPersonEvent",
-            "hasManagerFelonyPleaConviction",
-            "hasManagerFelonyCharge",
-            "hasManagerMisdemeanorPleaConviction",
-            "hasManagerMisdemeanrCharge",
-            "hasManagerSEC_CFTCFalseStatementOmission",
-            "hasManagerSEC_CFTCStatuteViolation",
-            "hasManagerSEC_CFTCAuthorizationAction",
-            "hasManagerSEC_CFTCOrderAgainst",
-            "hasManagerSEC_CFCPenaltyCeaseDesist",
-            "hasManagerFederalStateForeignFalseStatement",
-            "hasManagerFederalStateForeignInvestmentViolation",
-            "hasManagerFederalStateForeignBusinessRevokeSuspended",
-            "hasManagerFederalStateForeignOrderAgainst",
-            "hasManagerFederalStateForeignLicenseRevoked",
-            "hasManagerSelfRegulatedBodyFalseStatement",
-            "hasManagerSelfRegulatedBodyRuleViolation",
-            "hasManagerSelfRegulatedBodyBusinessRevokeSuspension",
-            "hasManagerSelfRegulatedBodyActivityBan",
-            "hasManagerAttorneyAccountantFederalContractorPriorBanRevoke",
-            "isManagerSubjectToRegulatoryProceeding",
-            "hasManagerDomesticForeignCourtEnjoinedInvestmentActivity",
-            "hasManagerDomesticForeignCourtGuiltyStatuteViolation",
-            "hasManagerDomesticForeignCourtDismissedActionSettlementPursuant",
-            "isManagerDomesticForeignCourtSubjectToProceeding"
+            "hasFelonyPleaConviction",
+            "hasFelonyCharge",
+            "hasMisdemeanorPleaConviction",
+            "hasMisdemeanrCharge",
+            "hasSEC_CFTCFalseStatementOmission",
+            "hasSEC_CFTCStatuteViolation",
+            "hasSEC_CFTCAuthorizationAction",
+            "hasSEC_CFTCOrderAgainst",
+            "hasSEC_CFCPenaltyCeaseDesist",
+            "hasFederalStateForeignFalseStatement",
+            "hasFederalStateForeignInvestmentViolation",
+            "hasFederalStateForeignBusinessRevokeSuspended",
+            "hasFederalStateForeignOrderAgainst",
+            "hasFederalStateForeignLicenseRevoked",
+            "hasSelfRegulatedBodyFalseStatement",
+            "hasSelfRegulatedBodyRuleViolation",
+            "hasSelfRegulatedBodyBusinessRevokeSuspension",
+            "hasSelfRegulatedBodyActivityBan",
+            "hasAttorneyAccountantFederalContractorPriorBanRevoke",
+            "isSubjectToRegulatoryProceeding",
+            "hasDomesticForeignCourtEnjoinedInvestmentActivity",
+            "hasDomesticForeignCourtGuiltyStatuteViolation",
+            "hasDomesticForeignCourtDismissedActionSettlementPursuant",
+            "isDomesticForeignCourtSubjectToProceeding"
           ) %>%
           get_item_name_yes_no_df()
         return(node_item_df)
@@ -9475,8 +9475,41 @@ get_data_adv_period_urls <-
     url_df
 
   }
+.assign_sec_names <-
+  function(data) {
+    df_actual_names <-
+      dictionary_sec_names()
 
-get_sec_adv_name_df <-
+    actual_names <-
+      names(data) %>%
+      map_chr(function(name) {
+        no_name <-
+          df_actual_names %>%
+          filter(nameSEC == name) %>%
+          nrow() == 0
+
+        if (no_name) {
+          glue::glue("Missing {name} in dictionary") %>% message()
+          return(name)
+        }
+        df_actual_names %>%
+          filter(nameSEC == name) %>%
+          pull(nameActual) %>%
+          unique() %>%
+          .[[1]]
+      })
+
+    actual_names
+  }
+
+
+#' SEC Name Dictionary
+#'
+#' @return
+#' @export
+#'
+#' @examples
+dictionary_sec_names <-
   function() {
     sec_name_df <-
       data_frame(
@@ -9539,13 +9572,109 @@ get_sec_adv_name_df <-
                     "5D(j)(3)", "5D(k)(1)", "5D(k)(2)", "5D(k)(3)", "5D(l)(1)", "5D(l)(2)",
                     "5D(l)(3)", "5D(m)(1)", "5D(m)(2)", "5D(m)(3)", "5D(n)(1)", "5D(n)(2)",
                     "5D(n)(3)", "5D(n)(3) - Other", "5F(3)", "5I(2)(a)", "5I(2)(b)",
-                    "5I(2)(c)", "5J(1)", "5J(2)", "8H(1)", "8H(2)"),
+                    "5I(2)(c)", "5J(1)", "5J(2)", "8H(1)", "8H(2)",
+                    "7A8(a) BD Qual Cust", "Additional CRD Number", "Additional Regulatory Contact Name",
+                     "Additional Regulatory Contact Person City", "Additional Regulatory Contact Person Country",
+                     "Additional Regulatory Contact Person E-mail", "Additional Regulatory Contact Person Facsimile",
+                     "Additional Regulatory Contact Person Postal Code", "Additional Regulatory Contact Person State",
+                     "Additional Regulatory Contact Person Street Address 1", "Additional Regulatory Contact Person Street Address 2",
+                     "Additional Regulatory Contact Person Telephone", "Additional Regulatory Contact Person Titles",
+                     "Amount ERA US Private Fund Assets", "Any Hedge Funds", "Any Liquidity Funds",
+                     "Any Other Funds", "Any PE Funds", "Any PFs a Master", "Any Real Estate Funds",
+                     "Any Securitized Funds", "Any VC Funds", "Chief Compliance Officer City",
+                     "Chief Compliance Officer Country", "Chief Compliance Officer E-mail",
+                     "Chief Compliance Officer Facsimile", "Chief Compliance Officer Name",
+                     "Chief Compliance Officer Other Titles", "Chief Compliance Officer Postal Code",
+                     "Chief Compliance Officer State", "Chief Compliance Officer Street Address 1",
+                     "Chief Compliance Officer Street Address 2", "Chief Compliance Officer Telephone",
+                     "Control/Controlled by Related Person", "Count of 11A(1) disclosures",
+                     "Count of 11A(2) disclosures", "Count of 11B(1) disclosures",
+                     "Count of 11B(2) disclosures", "Count of 11C(1) disclosures",
+                     "Count of 11C(2) disclosures", "Count of 11C(3) disclosures",
+                     "Count of 11C(4) disclosures", "Count of 11C(5) disclosures",
+                     "Count of 11D(1) disclosures", "Count of 11D(2) disclosures",
+                     "Count of 11D(3) disclosures", "Count of 11D(4) disclosures",
+                     "Count of 11D(5) disclosures", "Count of 11E(1) disclosures",
+                     "Count of 11E(2) disclosures", "Count of 11E(3) disclosures",
+                     "Count of 11E(4) disclosures", "Count of 11F disclosures", "Count of 11G disclosures",
+                     "Count of 11H(1)(a) disclosures", "Count of 11H(1)(b) disclosures",
+                     "Count of 11H(1)(c) disclosures", "Count of 11H(2) disclosures",
+                     "Count of BD Affiliates", "Count of Control person Public Reporting Company",
+                     "Count of IA Affiliates", "Count of IA/BD Affiliates", "Count of Private Funds - 7B(1)",
+                     "Count of Private Funds - 7B(2)", "EIN of the Other person compensating CCO",
+                     "First ADV Filing Date", "Location of Books and Records City",
+                     "Location of Books and Records Country", "Location of Books and Records Postal Code",
+                     "Location of Books and Records State", "Location of Books and Records Street Address 1",
+                     "Location of Books and Records Street Address 2", "Mail Office Private Residence Flag",
+                     "Main Office Private Residence Flag", "Name of the other person compensating CCO",
+                     "Share Location", "Share Supervised Persons", "Sole Proprietor City",
+                     "Sole Proprietor Country", "Sole Proprietor Postal Code", "Sole Proprietor State",
+                     "Sole Proprietor Street Address 1", "Sole Proprietor Street Address 2",
+                     "Total Gross Assets of Private Funds", "Total number of additional CRD numbers",
+                     "Total Number of Books and Records Locations", "Total number of CIK numbers",
+                     "Total number of Hedge funds", "Total number of Liquidity funds",
+                     "Total number of Other funds", "Total number of PE funds", "Total number of Real Estate funds",
+                     "Total number of Securitized funds", "Total number of VC funds",
+                     "Total Number of Website Addresses", "Under Common Control",
+                    "12A", "12B(1)", "12B(2)", "12C(1)", "12C(2)", "4A", "4B",
+                    "5.G.(3) - Total amount of Parallel Assets", "5.G.(3) - Total number of RICs or BDCs",
+                    "5.I.(2) - Total number of wrap fee programs", "5.K.(1)(a)(i) end year percentage",
+                    "5.K.(1)(a)(i) midyear percentage", "5.K.(1)(a)(ii) end year percentage",
+                    "5.K.(1)(a)(ii) midyear percentage", "5.K.(1)(a)(iii) end year percentage",
+                    "5.K.(1)(a)(iii) midyear percentage", "5.K.(1)(a)(iv) end year percentage",
+                    "5.K.(1)(a)(iv) midyear percentage", "5.K.(1)(a)(ix) end year percentage",
+                    "5.K.(1)(a)(ix) midyear percentage", "5.K.(1)(a)(v) end year percentage",
+                    "5.K.(1)(a)(v) midyear percentage", "5.K.(1)(a)(vi) end year percentage",
+                    "5.K.(1)(a)(vi) midyear percentage", "5.K.(1)(a)(vii) end year percentage",
+                    "5.K.(1)(a)(vii) midyear percentage", "5.K.(1)(a)(viii) end year percentage",
+                    "5.K.(1)(a)(viii) midyear percentage", "5.K.(1)(a)(x) end year percentage",
+                    "5.K.(1)(a)(x) midyear percentage", "5.K.(1)(a)(xi) end year percentage",
+                    "5.K.(1)(a)(xi) midyear percentage", "5.K.(1)(a)(xii)  - Other description",
+                    "5.K.(1)(a)(xii) end year percentage", "5.K.(1)(a)(xii) midyear percentage",
+                    "5.K.(1)(b)(i) end year percentage", "5.K.(1)(b)(ii) end year percentage",
+                    "5.K.(1)(b)(iii) end year percentage", "5.K.(1)(b)(iv) end year percentage",
+                    "5.K.(1)(b)(ix) end year percentage", "5.K.(1)(b)(v) end year percentage",
+                    "5.K.(1)(b)(vi) end year percentage", "5.K.(1)(b)(vii) end year percentage",
+                    "5.K.(1)(b)(viii) end year percentage", "5.K.(1)(b)(x) end year percentage",
+                    "5.K.(1)(b)(xi) end year percentage", "5.K.(1)(b)(xii)  - Other description",
+                    "5.K.(1)(b)(xii) end year percentage", "5.K.(2)(a)(i)(1) 10-149",
+                    "5.K.(2)(a)(i)(1) less 10", "5.K.(2)(a)(i)(1) over 150", "5.K.(2)(a)(i)(2) 10-149",
+                    "5.K.(2)(a)(i)(2) less 10", "5.K.(2)(a)(i)(2) over 150", "5.K.(2)(a)(i)(3)(a) 10-149 percentage",
+                    "5.K.(2)(a)(i)(3)(a) less 10 percentage", "5.K.(2)(a)(i)(3)(a) over 150 percentage",
+                    "5.K.(2)(a)(i)(3)(b) 10-149 percentage", "5.K.(2)(a)(i)(3)(b) less 10 percentage",
+                    "5.K.(2)(a)(i)(3)(b) over 150 percentage", "5.K.(2)(a)(i)(3)(c) 10-149 percentage",
+                    "5.K.(2)(a)(i)(3)(c) less 10 percentage", "5.K.(2)(a)(i)(3)(c) over 150 percentage",
+                    "5.K.(2)(a)(i)(3)(d) 10-149 percentage", "5.K.(2)(a)(i)(3)(d) less 10 percentage",
+                    "5.K.(2)(a)(i)(3)(d) over 150 percentage", "5.K.(2)(a)(i)(3)(e) 10-149 percentage",
+                    "5.K.(2)(a)(i)(3)(e) less10 percentage", "5.K.(2)(a)(i)(3)(e) over 150 percentage",
+                    "5.K.(2)(a)(i)(3)(f) 10-149 percentage", "5.K.(2)(a)(i)(3)(f) less 10 percentage",
+                    "5.K.(2)(a)(i)(3)(f) over 150 percentage", "5.K.(2)(a)(ii)(1) 10-149",
+                    "5.K.(2)(a)(ii)(1) less 10", "5.K.(2)(a)(ii)(1) over 150", "5.K.(2)(a)(ii)(2) 10-149",
+                    "5.K.(2)(a)(ii)(2) less 10", "5.K.(2)(a)(ii)(2) over 150", "5.K.(2)(a)(ii)(3)(a) 10-149 percentage",
+                    "5.K.(2)(a)(ii)(3)(a) less 10 percentage", "5.K.(2)(a)(ii)(3)(a) over 150 percentage",
+                    "5.K.(2)(a)(ii)(3)(b) 10-149 percentage", "5.K.(2)(a)(ii)(3)(b) less 10 percentage",
+                    "5.K.(2)(a)(ii)(3)(b) over 150 percentage", "5.K.(2)(a)(ii)(3)(c) 10-149 percentage",
+                    "5.K.(2)(a)(ii)(3)(c) less 10 percentage", "5.K.(2)(a)(ii)(3)(c) over 150 percentage",
+                    "5.K.(2)(a)(ii)(3)(d) 10-149 percentage", "5.K.(2)(a)(ii)(3)(d) less 10 percentage",
+                    "5.K.(2)(a)(ii)(3)(d) over 150 percentage", "5.K.(2)(a)(ii)(3)(e) 10-149 percentage",
+                    "5.K.(2)(a)(ii)(3)(e) less10 percentage", "5.K.(2)(a)(ii)(3)(e) over 150 percentage",
+                    "5.K.(2)(a)(ii)(3)(f) 10-149 percentage", "5.K.(2)(a)(ii)(3)(f) less 10 percentage",
+                    "5.K.(2)(a)(ii)(3)(f) over 150 percentage", "5.K.(2)(b)(1) 10-149",
+                    "5.K.(2)(b)(1) less 10", "5.K.(2)(b)(1) over150", "5.K.(2)(b)(2) 10-149",
+                    "5.K.(2)(b)(2) less 10", "5.K.(2)(b)(2) over150", "5.K.(4) - Total amount of custodians that hold 10% or more of separately managed assets",
+                    "5.K.(4) - Total number of custodians that hold 10% or more of separately managed assets",
+                    "5K(1)", "5K(2)", "5K(3)", "5K(4)", "9C Unqual Opinion", "Acquired Firm",
+                    "Acquired Firm CRD#", "Acquired Firm SEC#", "Total Custody Amount",
+                    "Total Number of Acquired Firms", "Total number of relying advisers",
+                    "Umbrella Registration"
+
+                    ),
         nameActual =c("idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager",
                       "nameEntityManagerLegal", "addressStreet1OfficePrimary", "addressStreet2OfficePrimary",
                       "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary",
-                      "zipOfficePrimary", "phoneOfficePrimary", "faxOfficePrimary",
+                      "zipcodeOfficePrimary", "phoneOfficePrimary", "faxOfficePrimary",
                       "addressStreet1OfficeMail", "addressStreet2OfficeMail", "cityOfficeMail",
-                      "stateOfficeMail", "countryOfficeMail", "zipOfficeMail", "statusSEC",
+                      "stateOfficeMail", "countryOfficeMail", "zipcodeOfficeMail", "statusSEC",
                       "dateStatusSEC", "stateDateJurisdictionNotice", "dateADVLatest",
                       "dateFormVersion", "hasEntityMultipleURLs", "urlManager", "isForeignRegisteredEntity",
                       "isSECSection12_15Reporter", "idCIK", "hasAUMGreater1B", "idLEI",
@@ -9614,17 +9743,17 @@ get_sec_adv_name_df <-
                       "hasIndependentAccountSurpriseAuditClientFunds", "hasIndependentAccountantPrepareInternalControlReports",
                       "isQualifiedCustodian", "hasRelatedQualifiedCustodian", "monthYearLastSurpriseAudit",
                       "countQualifiedCustodians", "hasControlPersonUnnamed", "hasManagementSupervisedPersonEvent",
-                      "hasManagerFelonyPleaConviction", "hasManagerFelonyCharge", "hasManagerMisdemeanorPleaConviction",
-                      "hasManagerMisdemeanrCharge", "hasManagerSEC_CFTCFalseStatementOmission",
-                      "hasManagerSEC_CFTCStatuteViolation", "hasManagerSEC_CFTCAuthorizationAction",
-                      "hasManagerSEC_CFTCOrderAgainst", "hasManagerSEC_CFCPenaltyCeaseDesist",
-                      "hasManagerFederalStateForeignFalseStatement", "hasManagerFederalStateForeignInvestmentViolation",
-                      "hasManagerFederalStateForeignBusinessRevokeSuspended", "hasManagerFederalStateForeignOrderAgainst",
-                      "hasManagerFederalStateForeignLicenseRevoked", "hasManagerSelfRegulatedBodyFalseStatement",
-                      "hasManagerSelfRegulatedBodyRuleViolation", "hasManagerSelfRegulatedBodyBusinessRevokeSuspension",
-                      "hasManagerSelfRegulatedBodyActivityBan", "hasManagerAttorneyAccountantFederalContractorPriorBanRevoke",
-                      "isManagerSubjectToRegulatoryProceeding", "hasManagerDomesticForeignCourtEnjoinedInvestmentActivity",
-                      "hasManagerDomesticForeignCourtGuiltyStatuteViolation", "hasManagerDomesticForeignCourtDismissedActionSettlementPursuant",
+                      "hasFelonyPleaConviction", "hasFelonyCharge", "hasMisdemeanorPleaConviction",
+                      "hasMisdemeanrCharge", "hasSEC_CFTCFalseStatementOmission",
+                      "hasSEC_CFTCStatuteViolation", "hasSEC_CFTCAuthorizationAction",
+                      "hasSEC_CFTCOrderAgainst", "hasSEC_CFCPenaltyCeaseDesist",
+                      "hasFederalStateForeignFalseStatement", "hasFederalStateForeignInvestmentViolation",
+                      "hasFederalStateForeignBusinessRevokeSuspended", "hasFederalStateForeignOrderAgainst",
+                      "hasFederalStateForeignLicenseRevoked", "hasSelfRegulatedBodyFalseStatement",
+                      "hasSelfRegulatedBodyRuleViolation", "hasSelfRegulatedBodyBusinessRevokeSuspension",
+                      "hasSelfRegulatedBodyActivityBan", "hasAttorneyAccountantFederalContractorPriorBanRevoke",
+                      "isSubjectToRegulatoryProceeding", "hasDomesticForeignCourtEnjoinedInvestmentActivity",
+                      "hasDomesticForeignCourtGuiltyStatuteViolation", "hasDomesticForeignCourtDismissedActionSettlementPursuant",
                       "isManagerDomesticForeignCourtSubjectToProceeding", "nameSECRegion",
                       "idCRD", "idSEC", "addressStreet1OfficePrimary", "addressStreet1OfficePrimary2",
                       "cityStateZipOfficePrimary", "cityStateZipOfficeMail", "nameContact",
@@ -9668,13 +9797,155 @@ get_sec_adv_name_df <-
                       "amountRegulatoryAUMNonUSPersons", "amountRegulatoryAUMWrapFee",
                       "amountRegulatoryAUMWrapFeePortfolioManager", "amountRegulatoryAUMWrapFeeSponsor",
                       "hasLimitedInvestmentAdvice", "hasClientReportingDifferentThanIAPD",
-                      "hasEmployeeClientReferralFees", "hasEmployeeCompensationClientReferralFees"
+                      "hasEmployeeClientReferralFees", "hasEmployeeCompensationClientReferralFees",
+                      "hasQualified7ACustomers", "idCRDAdditional", "nameRegulatoryContactAdditional",
+                      "cityRegulatoryContactAdditional", "countryRegulatoryContactAdditional",
+                      "emailRegulatoryContactAdditional", "faxRegulatoryContactAdditional",
+                      "zipcodeRegulatoryContactAdditional", "stateRegulatoryContactAdditional",
+                      "addressStreet1RegulatoryContactAdditional", "addressStreet2RegulatoryContactAdditional",
+                      "phoneRegulatoryContactAdditional", "titleRegulatoryContactAdditional",
+                      "amountUSPrivateFundAssetsERA", "hasHedgeFunds", "hasLiquidityFunds",
+                      "hasFundsOther", "hasPEFunds", "hasPFMasterFund", "hasRealEstateFunds",
+                      "hasSecuritizedFunds", "hasVCFunds", "cityChiefComplianceOfficer",
+                      "countryChiefComplianceOfficer", "emailChiefComplianceOfficer",
+                      "faxChiefComplianceOfficer", "nameChiefComplianceOfficer",
+                      "titleOtherChiefComplianceOfficer", "zipcodeChiefComplianceOfficer",
+                      "stateChiefComplianceOfficer", "addressStreet1ChiefComplianceOfficer",
+                      "addresssStreet2ChiefComplianceOfficer", "phoneChiefComplianceOfficer",
+"isRelatedPersonControlledManager", "countDisclosuresFelonyPleaConviction",
+"countDisclosuresFelonyCharge", "countDisclosuresMisdemeanorPleaConviction",
+"countDisclosuresMisdemeanorCharge", "countDisclosuresSEC_CFTCFalseStatementOmission",
+                      "countDisclosuresSEC_CFTCStatuteViolation", "countDisclosuresSEC_CFTCAuthorizationAction",
+                      "countDisclosuresSEC_CFTCOrderAgainst", "countDisclosuresSEC_CFCPenaltyCeaseDesist",
+                      "countDisclosuresFederalStateForeignFalseStatement", "countDisclosuresFederalStateForeignInvestmentViolation",
+                      "countDisclosuresFederalStateForeignBusinessRevokeSuspended", "countDisclosuresFederalStateForeignOrderAgainst",
+                      "countDisclosuresFederalStateForeignLicenseRevoked", "countDisclosuresSelfRegulatedBodyFalseStatement",
+                      "countDisclosuresSelfRegulatedBodyRuleViolation", "countDisclosuresSelfRegulatedBodyBusinessRevokeSuspension",
+                      "countDisclosuresSelfRegulatedBodyActivityBan", "countDisclosuresAttorneyAccountantFederalContractorPriorBanRevoke",
+                      "countDisclosuresSubjectToRegulatoryProceeding",
+                      "countDisclosuresDomesticForeignCourtEnjoinedInvestmentActivity",
+                      "countDisclosuresDomesticForeignCourtGuiltyStatuteViolation",
+                      "countDisclosuresDomesticForeignCourtDismissedActionSettlementPursuant",
+                      "countDisclosuresDomesticForeignCourtSubjectToProceeding",
+                      "countAffiliatesBusinessDevelopment", "countControlPersonsPublicCompany",
+                      "countAffiliatesInvestmentAdvisors", "countAffiliatesInvestmentAdvisorsBusinesDevelopmentTotal", "countPrivateFunds7B1",
+                      "countPrivateFunds7B2", "idEINCompanyCOO",
+                      "dateADVFilingFirast",
+                      "cityBooks",
+                      "countryBooks", "zipcodeBooks",
+                      "stateBooks", "addressStreet1Books",
+                      "addressStreet2Books",
+                      "isMailOfficeAddressResidence",
+                      "isMainOfficeAddressResidence", "nameEntityCOOCompensator",
+                      "isSharedOffice", "hasSharedSupervisedPersons", "citySoleProprietor",
+                      "countrySoleProprietor", "zipcodeSoleProprietor", "stateSoleProprietor",
+                      "addressStreet1SoleProprietor", "addressStreet2SoleProprietor",
+                      "amountAUMTotal", "countCRDs",
+                      "countRecordsLocations", "countCIKs",
+                      "countHedgeFunds", "countLiquidityFunds",
+                      "countFundsOther", "countPEFunds", "countRealEstateFunds",
+                      "countSecuritizedFunds", "countVentureFunds",
+                      "countWebsites", "isUnderCommonControl",
+"hasOverAssets5M", "hasControlOtherAdvisorOverAssets25M", "hasControlOtherAdvisorOverAssets5M", "isControlledByAdvisorOverAssets25M", "isControlledByAdvisorOverAssets5M", "hasLegalStatusChanged", "dateLegalStatusChange",
+"countParallelAssets", "countRIC_BIC",
+"countWrapFeePrograms",
+"pctManagedAccountExchangeTradedSecuritiesYearEnd",
+"pctManagedAccountExchangeTradedSecuritiesYearMid", "pctManagedAccountNonExchangeTradedSecuritiesYearEnd",
+"pctManagedAccountNonExchangeTradedSecuritiesYearMid",
+"pctManagedAccountBondsGovernmentAgencyYearEnd",
+"pctManagedAccountBondsGovernmentAgencyYearMid",
+"pctManagedAccountBondsStateLocalYearEnd",
+"pctManagedAccountBondsStateLocalYearMid",
+"pctManagedAccountSecuritiesIC_BCYearEnd",
+"pctManagedAccountSecuritiesIC_BCYearMid",
+"pctManagedAccountBondsSovereignYearEnd",
+"pctManagedAccountBondsSovereignYearMid",
+"pctManagedAccountBondsCorporateInvestmentGradeYearEnd",
+"pctManagedAccountBondsCorporateInvestmentGradeYearMid",
+"pctManagedAccountBondsCorporateNonInvestmentGradeYearEnd",
+"pctManagedAccountBondsCorporateNonInvestmentGradeYearMid",
+"pctManagedAccountDerivativesYearEnd",
+"pctManagedAccountDerivativesYearMid",
+"pctManagedAccountSecuritiesPooledInvestmentYearEnd",
+"pctManagedAccountSecuritiesPooledInvestmentYearMid",
+"pctManagedAccountCashYearEnd",
+"pctManagedAccountCashYearMid",
+"descriptionManagedAccountOther",
+"pctManagedAccountOtherYearEnd",
+"pctManagedAccountOtherYearMid",
+"pctManagedAccountExchangeTradedSecuritiesYearEndFinal",
+"pctManagedAccountNonExchangeTradedSecuritiesYearEndFinal",
+"pctManagedAccountBondsGovernmentAgencyYearEndFinal",
+"pctManagedAccountBondsStateLocalYearEndFinal",
+"pctManagedAccountSecuritiesIC_BCYearEndFinal",
+"pctManagedAccountBondsSovereignYearEndFinal",
+"pctManagedAccountBondsCorporateInvestmentGradeYearEndFinal",
+"pctManagedAccountBondsCorporateNonInvestmentGradeYearEndFinal",
+"pctManagedAccountDerivativesYearEndFinal",
+"pctManagedAccountSecuritiesPooledInvestmentYearEndFinal",
+"pctManagedAccountCashYearEnd",
+"descriptionManagedAccountOtherFinal",
+"pctManagedAccountOtherYearEndFinal",
+"amountAUMRegulatory10_149PercentNotionalYearMid",
+"amountAUMRegulatory10LessPercentNotionalYearMid",
+"amountAUMRegulatory150OverPercentNotionalYearMid",
+"amountBorrowings10_149PercentNotionalYearMid",
+"amountBorrowings10LessPercentNotionalYearMid",
+"amountBorrowings150OverPercentNotionalYearMid",
+"pctDerivativeInterestRate10_149PercentNotionalYearMid",
+"pctDerivativeInterestRateDerivative10LessPercentNotionalYearMid",
+"pctDerivativeInterestRateDerivative150OverPercentNotionalYearMid",
+"pctDerivativeFOREXD10_149PercentNotionalYearMid",
+"pctDerivativeFOREXD10LessPercentNotionalYearMid",
+"pctDerivativeFOREXD150OverPercentNotionalYearMid",
+"pctDerivativeCredit10_149PercentNotionalYearMid",
+"pctDerivativeCredit10LessPercentNotionalYearMid",
+"pctDerivativeCredit150OverPercentNotionalYearMid",
+"pctDerivativeEquity10_149PercentNotionalYearMid",
+"pctDerivativeEquity10LessPercentNotionalYearMid",
+"pctDerivativeEquity150OverPercentNotionalYearMid",
+"pctDerivativeCommodity10_149PercentNotionalYearMid",
+"pctDerivativeCommodity10LessPercentNotionalYearMid", "pctDerivativeCommodity150OverPercentNotionalYearMid",
+"pctDerivativeOther10_149PercentNotionalYearMid", "pctDerivativeOther10LessPercentNotionalYearMid",
+"pctDerivativeOther150OverPercentNotionalYearMid",
+"amountAUMRegulatory10_149PercentNotionalYearEnd",
+"amountAUMRegulatory10LessPercentNotionalYearEnd",
+"amountAUMRegulatory150OverPercentNotionalYearEnd",
+"amountBorrowings10_149PercentNotionalYearEnd",
+"amountBorrowings10LessPercentNotionalYearEnd",
+"amountBorrowings150OverPercentNotionalYearEnd",
+"pctDerivativeInterestRate10_149PercentNotionalYearEnd",
+"pctDerivativeInterestRateExposure10LessPercentNotionalYearEnd", "pctDerivativeInterestRate150OverPercentNotionalYearEnd",
+"pctDerivativeFOREXDExposure10_149PercentNotionalYearEnd", "pctDerivativeFOREXDExposure10LessPercentNotionalYearEnd",
+"pctDerivativeFOREXD150OverPercentNotionalYearEnd",
+"pctDerivativeCreditExposure10_149PercentNotionalYearEnd",
+"pctDerivativeCreditExposure10LessPercentNotionalYearEnd",
+"pctDerivativeCredit150OverPercentNotionalYearEnd",
+"pctDerivativeEquityExposure10_149PercentNotionalYearEnd", "pctDerivativeEquityExposure10LessPercentNotionalYearEnd",
+"pctDerivativeEquity150OverPercentNotionalYearEnd",
+"pctDerivativeCommodityExposure10_149PercentNotionalYearEnd",
+"pctDerivativeCommodity10LessPercentNotionalYearEnd",
+"pctDerivativeCommodity150OverPercentNotionalYearEnd",
+"pctDerivativeOther10_149PercentNotionalYearEnd", "pctDerivativeOther10LessPercentNotional",
+"pctDerivativeOther150OverPercentNotionalYearEnd",
+"amountBorrowings10_149PercentNotionalYearEndSubAdviser",
+"amountAUMRegulatory10LessPercentNotionalYearSubAdviser", "amountAUMRegulatory150OverPercentNotionalYearEndSubAdviser",
+"amountBorrowings10_149PercentNotionalYearEndSubAdviser",
+"amountBorrowings10LessPercentNotionalYearEndSubAdviser",
+"amountBorrowings150OverPercentNotionalYearEndSubAdviser",
+"amountCustodiansHoldingOver10PCTAssetsManaged",
+"countCustodiansHoldingOver10PCTAssetsManaged",
+"hasSeperateAccounts", "hasSeperateAccountsWithBorrowingsDerivatives", "hasSeperateAccountCustodians", "has5K4", "hasUnEqualAccountingOpinion", "nameFirmAcquired",
+"idCRDFirmsAcquired", "idSECFirmsAcquired", "amountCustodyAUM",
+"countFirmsAcquired", "countRelyingAdvisors",
+"hasUmbrellaRegistration"
+
         )
       )
     sec_name_df
   }
 
-parse_adv_excel_data <-
+.parse_adv_excel_data <-
   function(file_path = "/Users/alexbresler/Desktop/adv_data/ia080116.xlsx") {
     excel_data <-
       file_path %>%
@@ -9685,7 +9956,7 @@ parse_adv_excel_data <-
     return(excel_data)
   }
 
-parse_adv_csv <-
+.parse_adv_csv <-
   function(file_path = "/Users/alexbresler/Desktop/adv_data/IA FOIA Download 7-30-10.CSV") {
     data <-
       file_path %>%
@@ -9694,7 +9965,7 @@ parse_adv_csv <-
       suppressWarnings()
     return(data)
   }
-parse_adv_txt_data <-
+.parse_adv_txt_data <-
   function(file_path = "/Users/alexbresler/Desktop/adv_data/5010912_10044_00050000_00050000.txt") {
     data <-
       file_path %>%
@@ -9726,69 +9997,41 @@ parse_sec_adv_data_url <-
 
     con <-
       unzip(tmp)
+
     is_excel <-
       con %>% stringr::str_detect("XLS|xls|xlsx|XLSX") %>%  sum(na.rm = TRUE) > 0
     if (is_excel) {
       adv_data <-
-        con[[1]] %>% parse_adv_excel_data()
+        con[[1]] %>% .parse_adv_excel_data()
     }
-    is_csv <- con %>% str_detect("csv|CSV") %>%  sum(na.rm = TRUE) > 0
+
+    is_csv <-
+      con %>% str_detect("csv|CSV") %>%  sum(na.rm = TRUE) > 0
     if (is_csv) {
       adv_data <-
         con %>%
-        parse_adv_csv() %>%
+        .parse_adv_csv() %>%
         suppressWarnings()
     }
-    is_txt <- con %>% str_detect("txt|TXT") %>%  sum(na.rm = TRUE) > 0
+    is_txt <-
+      con %>% str_detect("txt|TXT") %>%  sum(na.rm = TRUE) > 0
     if (is_txt) {
       adv_data <-
-        con %>% parse_adv_txt_data()
+        con %>%
+        .parse_adv_txt_data()
     }
 
     con %>%
       unlink()
 
-    sec_names_df <-
-      get_sec_adv_name_df()
-
-    adv_names <-
-      data_frame(nameSEC = names(adv_data)) %>%
-      mutate(idRow = 1:n()) %>%
-      group_by(nameSEC) %>%
-      dplyr::filter(idRow == min(idRow)) %>%
-      ungroup() %>%
-      .$idRow
-
-    adv_data <-
-      adv_data[, adv_names]
+    actual_names <-
+      .assign_sec_names(data = adv_data)
 
     if (adv_data %>% tibble::has_name("5H__1")) {
       adv_data <-
         adv_data %>%
         dplyr::rename(`5I(1)` = `5H__1`)
     }
-
-    adv_names <- names(adv_data)
-    actual_adv <-
-      sec_names_df %>%
-      pull(nameSEC)
-
-    actual_names <-
-      1:length(adv_names) %>%
-      map_chr(function(x) {
-
-        adv_name <-
-          adv_names[[x]]
-
-        if (!adv_name %in% actual_adv) {
-          return(adv_name)
-        }
-
-        sec_names_df %>%
-          filter(nameSEC == adv_name) %>%
-          pull(nameActual)
-
-      })
 
     adv_data <-
       adv_data %>%
@@ -9802,8 +10045,9 @@ parse_sec_adv_data_url <-
       pull(idRow)
 
     adv_data <-
-      adv_data[,column_ids] %>%
-      as_data_frame()
+      adv_data[, column_ids] %>%
+      as_data_frame() %>%
+      select(idCRD, matches("^nameEntityManager"), everything())
 
     has_columns <-
       (adv_data %>%
@@ -9913,7 +10157,8 @@ parse_sec_adv_data_url <-
 
     if (adv_data %>% tibble::has_name("countClientsFinancialPlanningOver500Rounded")) {
       if (adv_data$countClientsFinancialPlanningOver500Rounded %>% class() == "logical") {
-        adv_data <- adv_data %>% dplyr::select(-countClientsFinancialPlanningOver500Rounded)
+        adv_data <-
+          adv_data %>% dplyr::select(-countClientsFinancialPlanningOver500Rounded)
       }
     }
 
@@ -9932,9 +10177,7 @@ parse_sec_adv_data_url <-
     }
 
     if (return_message) {
-      list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        message()
+      glue::glue("Parsed {url}") %>% message()
     }
 
     adv_data <-
@@ -9942,16 +10185,16 @@ parse_sec_adv_data_url <-
       mutate(dateDataADV = date_data,
              isExempt = is_exempt) %>%
       dplyr::select(dateDataADV, isExempt, everything())
-
+    to_upper_names <- adv_data %>% dplyr::select(
+      matches("^country|^name|^city|^state|^range[A-Z]|^type[A-Z]")
+    ) %>% names()
     adv_data <-
       adv_data %>%
-      mutate_at(adv_data %>% dplyr::select(
-        matches("^country|^name|^city|^state|^range[A-Z]|^type[A-Z]")
-      ) %>% names(),
-      funs(. %>% stringr::str_to_upper())) %>%
+      mutate_at(to_upper_names,
+                funs(. %>% stringr::str_to_upper())) %>%
       mutate(urlZip = url)
 
-    return(adv_data)
+    adv_data
   }
 
 parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.zip', return_message = TRUE) {
@@ -10210,7 +10453,7 @@ get_data_adv_managers_periods_summaries <-
 #' @family fund data
 #' @examples
 #' \dontrun{
-#' get_data_adv_managers_current_period_summary(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasManagerFelonyPleaConviction", "hasManagerFelonyCharge", "hasManagerMisdemeanorPleaConviction"))
+#' get_data_adv_managers_current_period_summary(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasFelonyPleaConviction", "hasFelonyCharge", "hasMisdemeanorPleaConviction"))
 #' }
 
 get_data_adv_managers_current_period_summary <-
@@ -10280,17 +10523,17 @@ get_data_adv_managers_current_period_summary <-
     "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities",
     "countEmployeesLicensedInsuranceAgents",
     "countEmployeesSolicitAdvisoryClients",
-    "hasManagerFelonyPleaConviction",
-    "hasManagerFelonyCharge",
-    "hasManagerMisdemeanorPleaConviction"
+    "hasFelonyPleaConviction",
+    "hasFelonyCharge",
+    "hasMisdemeanorPleaConviction"
   ),
   return_message = TRUE) {
     get_data_adv_managers_periods_summaries_safe <-
-      purrr::possibly(get_data_adv_managers_periods_summaries, NULL)
+      purrr::possibly(get_data_adv_managers_periods_summaries, data_frame())
 
     all_data <-
       get_data_adv_managers_periods_summaries(only_most_recent = TRUE,
-                                              is_exempt = c(TRUE, FALSE))
+                                              include_exempt  = c(TRUE, FALSE))
 
     all_data <-
       all_data %>%
