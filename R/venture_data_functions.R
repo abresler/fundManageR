@@ -110,7 +110,7 @@ get_data_ycombinator_alumni <-
     if (nest_data) {
       json_data <-
         json_data %>%
-        nest(-batchYC, .key = 'dataClass')
+        nest(-batchYC, .key = dataClass)
     }
     gc()
     json_data

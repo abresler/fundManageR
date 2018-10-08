@@ -12578,7 +12578,7 @@ parse_text_filing <-
     df_text <-
       parse_for_text(text_blob = text_blob) %>%
       mutate(idAccession = df_headers$idAccession) %>%
-      nest(-idAccession, .key = 'textFiling')
+      nest(-idAccession, .key = textFiling)
 
     data <-
       df_headers %>%

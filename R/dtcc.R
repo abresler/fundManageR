@@ -970,7 +970,7 @@ get_data_dtcc_most_recent_trades <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(nameAsset, typeAction), .key = 'dataDTCC')
+        nest(-c(nameAsset, typeAction), .key = dataDTCC)
     }
 
     return(all_data)
@@ -1140,7 +1140,7 @@ get_data_dtcc_today <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(dateData, nameAsset), .key = 'dataDTCC')
+        nest(-c(dateData, nameAsset), .key = dataDTCC)
     }
     return(all_data)
   }

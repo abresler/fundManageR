@@ -276,7 +276,7 @@ get_data_sec_foia_requests <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-yearData, .key = 'dataFOIA')
+        nest(-yearData, .key = dataFOIA)
     }
 
     return(all_data)
@@ -677,7 +677,7 @@ get_data_sec_cusips <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-periodData, .key = 'dataCUSIPs')
+        nest(-periodData, .key = dataCUSIPs)
 
     }
 
@@ -866,7 +866,7 @@ get_data_sec_closed_end_funds <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-yearData, .key = 'dataClosedEndFunds')
+        nest(-yearData, .key = dataClosedEndFunds)
     }
 
     return(all_data)
@@ -983,7 +983,7 @@ get_data_sec_investment_companies <-
     if (nest_data) {
       df <-
         df %>%
-        nest(-nameManager, .key = 'dataManager')
+        nest(-nameManager, .key = dataManager)
     }
 
     return(df)
@@ -1238,11 +1238,11 @@ get_data_sec_money_market_funds <-
       if (only_most_recent) {
         all_data <-
           all_data %>%
-          nest(-nameFiler, .key = 'dataMutualFund')
+          nest(-nameFiler, .key = dataMutualFund)
       } else {
         all_data <-
           all_data %>%
-          nest(-c(nameFiler, dateData), .key = 'dataMutualFund')
+          nest(-c(nameFiler, dateData), .key = dataMutualFund)
       }
     }
 
@@ -1375,7 +1375,7 @@ get_data_sec_bankruptcies <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-yearData, .key = 'dataBankruptcies')
+        nest(-yearData, .key = dataBankruptcies)
     }
 
     return(all_data)
@@ -1570,7 +1570,7 @@ get_data_sec_broker_dealers <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-dateData, .key = 'dataBrokers')
+        nest(-dateData, .key = dataBrokers)
     }
 
     return(all_data)
@@ -1744,7 +1744,7 @@ get_data_sec_municipal_advisors <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-dateData, .key = 'dataMunicpalDealers')
+        nest(-dateData, .key = dataMunicipalDealers)
     }
 
     return(all_data)
@@ -1965,7 +1965,7 @@ get_data_sec_failed_to_deliver_securities <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-dateData, .key = 'dataFailedToDeliverSecurities')
+        nest(-dateData, .key = dataFailedToDeliverSecurities)
     }
 
     return(all_data)
@@ -2210,7 +2210,7 @@ get_data_sec_securities_metrics_by_exchange <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-dateData, .key = 'dataQuarterlyMetrics')
+        nest(-dateData, .key = dataQuarterlyMetrics)
     }
 
     return(all_data)

@@ -416,7 +416,7 @@ tidy_column_relations <-
           data %>%
           select(-dplyr::matches(ignore_cols)) %>%
           left_join(df %>%
-                      nest(-idRow, .key = 'dataResolved')) %>%
+                      nest(-idRow, .key = dataResolved)) %>%
           suppressMessages()
         return(data)
       }

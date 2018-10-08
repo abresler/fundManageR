@@ -934,7 +934,7 @@ parse_broker_json_url <-
 
     all_df <-
       all_df %>%
-      tidyr::nest(-urlFINRABrokerJSON, .key = 'dataFINRABroker')
+      tidyr::nest(-urlFINRABrokerJSON, .key = dataFINRABroker)
     return(all_df)
   }
 
@@ -1275,7 +1275,7 @@ parse_finra_json_url <-
 
       df_related_entities <-
         df_related_entities %>%
-        nest(-idRow, .key = 'dateRelatedEntities')
+        nest(-idRow, .key = dateRelatedEntities)
 
       df_fields <-
         df_fields %>%
@@ -9399,7 +9399,7 @@ get_data_adv_managers_brochures <-
           datetimeCreated,
           countPages
         ),
-        .key = 'dataBrochure')
+        .key = dataBrochure)
     }
     all_data
   }
@@ -10425,7 +10425,7 @@ get_data_adv_managers_periods_summaries <-
     if (nest_data) {
       all_adv_data <-
         all_adv_data %>%
-        nest(-c(dateDataADV, isExempt), .key = 'dataADV')
+        nest(-c(dateDataADV, isExempt), .key = dataADV)
     }
 
     gc()

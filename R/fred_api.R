@@ -785,7 +785,7 @@ get_data_fred_tags <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(tagSearch), .key = 'dataTag') %>%
+        nest(-c(tagSearch), .key = dataTag) %>%
         mutate(countSeriesTag = dataTag %>% map_dbl(nrow))
     }
 

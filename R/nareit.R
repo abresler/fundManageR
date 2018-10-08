@@ -494,7 +494,7 @@ get_data_nareit_constituent_years <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(yearData, dateFile), .key = 'dataConstituents')
+        nest(-c(yearData, dateFile), .key = dataConstituents)
     }
 
     return(all_data)
@@ -1460,7 +1460,7 @@ get_data_nareit_property_msa <-
       df_property <-
         df_property %>%
         nest(-c(nameMSA, coordinateLatitude, coordinateLongitude),
-             .key = 'dataProperties')
+             .key = dataProperties)
     }
 
     return(df_property)
@@ -2487,7 +2487,7 @@ get_data_nareit_mergers_acquisitions <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-yearMerger, .key = 'dataTransactions')
+        nest(-yearMerger, .key = dataTransactions)
     }
 
     return(all_data)
@@ -2684,7 +2684,7 @@ get_data_nareit_industry_tracker <-
     if (nest_data) {
       data <-
         data %>%
-        nest(-yearData, .key = 'dataTracker')
+        nest(-yearData, .key = dataTracker)
     }
 
     return(data)

@@ -481,7 +481,7 @@ get_data_tradingview_regions_tickers <-
       all_data <-
         all_data %>%
         nest(-c(urlJSON, regionSecurities),
-             .key = 'dataTickers')
+             .key = dataTickers)
     }
 
     all_data
@@ -647,7 +647,7 @@ get_data_regions_tradingview_metrics <-
       all_data <-
         all_data %>%
         nest(-c(urlJSON, regionSecurities),
-             .key = 'dataMetrics')
+             .key = dataMetrics)
     }
 
     all_data
