@@ -1,4 +1,4 @@
-get_data_dallas_fed_housing_urls <-
+.dallas_fed_housing_urls <-
   function() {
   page <-
     "https://www.dallasfed.org/institute/houseprice#tab2" %>%
@@ -23,7 +23,7 @@ get_data_dallas_fed_housing_urls <-
     )
   df <-
     quarter_names %>%
-    map_df(function(x) {
+    future_map_dfr(function(x) {
       year <- x %>% readr::parse_number()
       quarter <-
         x %>% str_to_lower %>% str_split('\\ ') %>% flatten_chr() %>% .[[1]]
@@ -45,7 +45,7 @@ get_data_dallas_fed_housing_urls <-
   return(df)
   }
 
-parse_housing_excel <-
+.parse_housing_excel <-
   function(url = "https://www.dallasfed.org/-/media/Documents/institute/houseprice/hp1603.xlsx?la=en",
            return_message = TRUE){
     td <-
@@ -55,13 +55,14 @@ parse_housing_excel <-
 
     url %>%
       curl::curl_download(destfile = tf)
+
     sheet_names <-
       tf %>%
       readxl::excel_sheets()
 
     data <-
       2:length(sheet_names) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         code_index <-
           sheet_names[[x]]
 
@@ -95,7 +96,7 @@ parse_housing_excel <-
         nameCountryActual = c(
           "TOTAL",
           "South Africa",
-          'United States of America',
+          'UNITED STATES',
           'South Korea',
           'United Kingdom'
         ) %>% str_to_upper()
@@ -103,7 +104,7 @@ parse_housing_excel <-
       mutate(nameCountry = ifelse(nameCountryActual %>% is.na(),nameCountry, nameCountryActual)) %>%
       select(-nameCountryActual) %>%
       left_join(
-        countrycode::countrycode_data %>%
+        countrycode::codelist %>%
           as_data_frame() %>%
           select(nameCountry = country.name.en, idISO3c = iso3c, nameContinent = continent) %>%
           mutate(nameCountry = nameCountry %>% str_replace("Republic of Korea", "South Korea"),
@@ -132,7 +133,7 @@ parse_housing_excel <-
       select(-c(nameQuarter, dateEnd))
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     unlink(tf)
     unlink(td)
@@ -151,21 +152,22 @@ parse_housing_excel <-
 #' @export
 #' @import countrycode readxl stringr dplyr purrr dplyr lubridate tidyr
 #' @examples
-get_data_dallas_fed_international_housing <-
+#' dallas_fed_international_housing()
+dallas_fed_international_housing <-
   function(indicies = NULL ,
            nest_data = FALSE, return_message = TRUE) {
 
     df_url <-
-      get_data_dallas_fed_housing_urls() %>%
+      .dallas_fed_housing_urls() %>%
       slice(1)
 
-    parse_housing_excel_safe <-
-      purrr::possibly(parse_housing_excel, data_frame())
+    .parse_housing_excel_safe <-
+      purrr::possibly(.parse_housing_excel, data_frame())
 
     data <-
       df_url$urlData %>%
-      map_df(function(x){
-        parse_housing_excel_safe(url = x, return_message = return_message)
+      future_map_dfr(function(url){
+        .parse_housing_excel_safe(url = url, return_message = return_message)
       })
 
     df_index <-

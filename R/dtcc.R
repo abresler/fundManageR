@@ -1,6 +1,6 @@
 # utilities ---------------------------------------------------------------
 
-get_dtcc_name_df <-
+.get_dtcc_name_df <-
   function() {
     dtcc_name_df <-
       data_frame(
@@ -170,11 +170,11 @@ get_dtcc_name_df <-
     return(dtcc_name_df)
   }
 
-resolve_dtcc_name_df <-
+.resolve_dtcc_name_df <-
   function(data) {
     options(scipen = 9999999)
     name_df <-
-      get_dtcc_name_df() %>%
+      .get_dtcc_name_df() %>%
       mutate(idRow = 1:n())
 
     rf_names <-
@@ -229,14 +229,14 @@ resolve_dtcc_name_df <-
         data %>%
         mutate(
           isNotionalEstimate = amountNotionalRounded1 %>% str_detect('\\+'),
-          amountNotionalRounded1 = amountNotionalRounded1 %>% readr::parse_number()
+          amountNotionalRounded1 = amountNotionalRounded1 %>% as.character() %>% readr::parse_number()
         )
       if ('amountNotionalRounded2' %in% names(data)) {
         data <-
           data %>%
           mutate(
             isNotionalEstimate2 = amountNotionalRounded2 %>% str_detect('\\+'),
-            amountNotionalRounded2 = amountNotionalRounded2 %>% readr::parse_number()
+            amountNotionalRounded2 = amountNotionalRounded2 %>% as.character() %>% readr::parse_number()
           )
       }
     }
@@ -261,7 +261,7 @@ resolve_dtcc_name_df <-
       mutate_at(data %>% select(matches("^name|^description|^idDay|^type")) %>% names(),
                 funs(. %>% str_to_upper())) %>%
       mutate_at(data %>% select(matches("^price|amountOptionPremium")) %>% names(),
-                funs(. %>% readr::parse_number())) %>%
+                funs(. %>% as.character() %>% readr::parse_number())) %>%
       mutate_at(
         data %>% select(
           matches("^dateOptionLockPeriod|dateOptionExpiration|^date")
@@ -292,12 +292,12 @@ resolve_dtcc_name_df <-
 
 # https://rtdata.dtcc.com/gtr/dashboard.do
 
-parse_most_recent_dtcc_url <-
+.parse_most_recent_dtcc_url <-
   function(url = "https://kgc0418-tdw-data-0.s3.amazonaws.com/gtr/static/gtr/html/tracker.html") {
 
   }
 
-generate_dtcc_dump_urls <-
+.generate_dtcc_dump_urls <-
   function(date = "2016-01-07",
            assets = NULL) {
     if (assets %>% is_null()) {
@@ -349,7 +349,7 @@ generate_dtcc_dump_urls <-
     return(url_df)
   }
 
-parse_for_underlying_asset <-
+.parse_for_underlying_asset <-
   function(data) {
     if ('nameUnderylingAsset1' %in% names(data)) {
       data <-
@@ -397,7 +397,7 @@ parse_for_underlying_asset <-
 
         desc_df <-
           1:nrow(description_df) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             row_number <-
               description_df$idRow[[x]]
 
@@ -537,7 +537,7 @@ parse_for_underlying_asset <-
     }
   }
 
-resolve_taxonomy <-
+.resolve_taxonomy <-
   function(data) {
     has_taxonomy <-
       'descriptionTaxonomy' %in% names(data)
@@ -551,7 +551,7 @@ resolve_taxonomy <-
 
       df_taxonomies <-
         1:nrow(df_taxonomy) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           tax <-
             df_taxonomy$descriptionTaxonomy[[x]]
           levels <-
@@ -671,7 +671,7 @@ resolve_taxonomy <-
     }
   }
 
-download_dtcc_url <-
+.download_dtcc_url <-
   function(url = "https://kgc0418-tdw-data-0.s3.amazonaws.com/slices/CUMULATIVE_CREDITS_2017_01_06.zip",
            return_message = TRUE) {
     tmp <-
@@ -712,7 +712,7 @@ download_dtcc_url <-
 
     data <-
       data %>%
-      resolve_dtcc_name_df() %>%
+      .resolve_dtcc_name_df() %>%
       mutate(nameAsset = type_item,
              dateData = date_data) %>%
       select(nameAsset,
@@ -721,18 +721,18 @@ download_dtcc_url <-
 
     data <-
       data %>%
-      parse_for_underlying_asset() %>%
-      resolve_taxonomy()
+      .parse_for_underlying_asset() %>%
+      .resolve_taxonomy()
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(data)
   }
 
-get_data_dtcc_assets_days <-
+.get_data_dtcc_assets_days <-
   function(assets = NULL,
            start_date = "2017-01-21",
            end_date = Sys.Date(),
@@ -751,17 +751,17 @@ get_data_dtcc_assets_days <-
 
     df_date <-
       days %>%
-      map_df(function(x) {
-        generate_dtcc_dump_urls(date = x, assets = assets)
+      future_map_dfr(function(x) {
+        .generate_dtcc_dump_urls(date = x, assets = assets)
       })
 
-    download_dtcc_url_safe <-
-      purrr::possibly(download_dtcc_url, data_frame())
+    .download_dtcc_url_safe <-
+      purrr::possibly(.download_dtcc_url, data_frame())
 
     all_df <-
       1:nrow(df_date) %>%
-      map_df(function(x) {
-        download_dtcc_url_safe(url = df_date$urlData[[x]], return_message = TRUE)
+      future_map_dfr(function(x) {
+        .download_dtcc_url_safe(url = df_date$urlData[[x]], return_message = TRUE)
       })
 
     if (return_message) {
@@ -774,7 +774,7 @@ get_data_dtcc_assets_days <-
         all_df$dateData %>% max(na.rm = T)
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -788,7 +788,7 @@ get_data_dtcc_assets_days <-
 # most_recent -------------------------------------------------------------
 
 # https://kgc0418-tdw-data-0.s3.amazonaws.com/gtr/static/gtr/html/tracker.html
-get_dtcc_recent_schema_df <-
+.get_dtcc_recent_schema_df <-
   function() {
     data_frame(
       idCSS = c(
@@ -827,11 +827,11 @@ get_dtcc_recent_schema_df <-
     )
   }
 
-parse_most_recent_url <-
+.parse_most_recent_url <-
   function(url =  "https://kgc0418-tdw-data-0.s3.amazonaws.com/prices/COMMODITIES_SWAPS_PRICES.HTML",
            return_message = TRUE) {
     css_df <-
-      get_dtcc_recent_schema_df()
+      .get_dtcc_recent_schema_df()
 
     page <-
       "https://kgc0418-tdw-data-0.s3.amazonaws.com/gtr/static/gtr/html/tracker.html" %>%
@@ -858,7 +858,7 @@ parse_most_recent_url <-
 
     df <-
       df %>%
-      resolve_dtcc_name_df() %>%
+      .resolve_dtcc_name_df() %>%
       mutate(urlData = url,
              datetimeData = Sys.time()) %>%
       inner_join(css_df %>% select(urlData, nameAsset)) %>%
@@ -868,7 +868,7 @@ parse_most_recent_url <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df)
@@ -902,18 +902,18 @@ parse_most_recent_url <-
 #' @import rvest httr dplyr stringr tidyr purrr
 #' @examples
 #' \dontrun{
-#' get_data_dtcc_most_recent_trades(assets = NULL, nest_data = FALSE)
-#' get_data_dtcc_most_recent_trades(assets = c('credits', 'equities', 'rates'))
+#' dtcc_recent_trades(assets = NULL, nest_data = FALSE)
+#' dtcc_recent_trades(assets = c('credits', 'equities', 'rates'))
 #' }
 
-get_data_dtcc_most_recent_trades <-
+dtcc_recent_trades <-
   function(assets = NULL,
            nest_data = TRUE,
            return_message = TRUE) {
     assets <-
       assets %>% str_to_lower()
     css_df <-
-      get_dtcc_recent_schema_df()
+      .get_dtcc_recent_schema_df()
 
     if (!assets %>% is_null()) {
       assets_options <-
@@ -932,12 +932,12 @@ get_data_dtcc_most_recent_trades <-
         filter(nameAsset %in% assets)
     }
 
-    parse_most_recent_url_safe <-
-      purrr::possibly(parse_most_recent_url, data_frame())
+    .parse_most_recent_url_safe <-
+      purrr::possibly(.parse_most_recent_url, data_frame())
     all_data <-
       css_df$urlData %>%
-      map_df(function(x) {
-        parse_most_recent_url(url = x, return_message = return_message)
+      future_map_dfr(function(x) {
+        .parse_most_recent_url(url = x, return_message = return_message)
       }) %>%
       select(which(colMeans(is.na(.)) < 1)) %>%
       suppressMessages() %>%
@@ -945,14 +945,14 @@ get_data_dtcc_most_recent_trades <-
 
     all_data <-
       all_data %>%
-      parse_for_underlying_asset() %>%
+      .parse_for_underlying_asset() %>%
       suppressWarnings() %>%
       select(which(colMeans(is.na(.)) < 1))
 
     if ('amountLevelOption' %in% names(all_data)) {
       all_data <-
         all_data %>%
-        mutate(amountLevelOption = amountLevelOption %>% readr::parse_number())
+        mutate(amountLevelOption = amountLevelOption %>% as.character() %>% readr::parse_number())
     }
 
     if (return_message) {
@@ -963,7 +963,7 @@ get_data_dtcc_most_recent_trades <-
         Sys.time()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
 
@@ -980,7 +980,7 @@ get_data_dtcc_most_recent_trades <-
 
 # today -------------------------------------------------------------------
 
-get_c_url_data <-
+.get_c_url_data <-
   function(c_url =  "curl 'https://rtdata.dtcc.com/gtr/dailySearch.do?action=dailySearchNextPage&dailySearchCurrentPage=10&dailySearchHasMore=yes&dailySearchMaxDailyNumber=49369457&displayType=c' -H 'DNT: 1' -H 'Accept-Encoding: gzip, deflate, sdch, br' -H 'Accept-Language: en-US,en;q=0.8' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.59 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8' -H 'Cookie: JSESSIONID_TDW01_Cluster=0000w-S0Gm-OK-9X7LvjnOgRFHE:1a9spvpvu' -H 'Connection: keep-alive' --compressed") {
     clean_url <-
       c_url %>%
@@ -1014,7 +1014,7 @@ get_c_url_data <-
     return(dtcc_df)
   }
 
-get_data_today <-
+.get_data_today <-
   function(dtcc_url = "https://rtdata.dtcc.com/gtr/dailySearch.do?action=dailySearchNextPage&dailySearchCurrentPage=1&dailySearchHasMore=yes&dailySearchMaxDailyNumber=993694579&displayType=c") {
     dtcc_url <-
       list(
@@ -1023,16 +1023,16 @@ get_data_today <-
         "' -H 'DNT: 1' -H 'Accept-Encoding: gzip, deflate, sdch, br' -H 'Accept-Language: en-US,en;q=0.8' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.59 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8' -H 'Cookie: JSESSIONID_TDW01_Cluster=0000w-S0Gm-OK-9X7LvjnOgRFHE:1a9spvpvu' -H 'Connection: keep-alive' --compressed"
       ) %>%
       purrr::invoke(paste0, .)
-    get_c_url_data_safe <-
-      purrr::possibly(get_c_url_data, data_frame())
+    .get_c_url_data_safe <-
+      purrr::possibly(.get_c_url_data, data_frame())
     data <-
       dtcc_url %>%
-      get_c_url_data_safe()
+      .get_c_url_data_safe()
 
     return(data)
   }
 
-get_data_dtcc_today <-
+.get_data_dtcc_today <-
   function(assets = NULL,
            nest_data = TRUE,
            return_message = TRUE) {
@@ -1063,8 +1063,8 @@ get_data_dtcc_today <-
                  urlData = urls) %>%
       mutate(nameAsset = nameAsset %>% str_to_upper())
 
-    get_data_today_safe <-
-      purrr::possibly(get_data_today, data_frame())
+    .get_data_today_safe <-
+      purrr::possibly(.get_data_today, data_frame())
 
     if (!assets %>% is_null() | assets %>% length() > 0) {
       assets <-
@@ -1091,8 +1091,8 @@ get_data_dtcc_today <-
     all_data <-
       urls %>%
       sort(decreasing = T) %>%
-      map_df(function(x) {
-        get_data_today(dtcc_url = x) %>%
+      future_map_dfr(function(x) {
+        .get_data_today(dtcc_url = x) %>%
           mutate(urlData = x)
       }) %>%
       mutate(dateData = Sys.Date()) %>%
@@ -1105,9 +1105,9 @@ get_data_dtcc_today <-
 
     all_data <-
       all_data %>%
-      resolve_dtcc_name_df() %>%
-      parse_for_underlying_asset() %>%
-      resolve_taxonomy() %>%
+      .resolve_dtcc_name_df() %>%
+      .parse_for_underlying_asset() %>%
+      .resolve_taxonomy() %>%
       mutate(dateData = Sys.Date()) %>%
       left_join(df_types %>% select(-urlData)) %>%
       suppressWarnings() %>%
@@ -1135,7 +1135,7 @@ get_data_dtcc_today <-
         Sys.Date()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     if (nest_data) {
       all_data <-
@@ -1163,7 +1163,7 @@ get_data_dtcc_today <-
 #' \item \code{FOREX}: Foreign Exchange
 #' \item \code{RATES}: Interest Rates
 #' }
-#' @note Use \code{\link{get_data_dtcc_most_recent_trades}} for most recent trades
+#' @note Use \code{\link{dtcc_recent_trades}} for most recent trades
 #' @references \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
 #' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset and action
 #' where \code{nest_data} is \code{FALSE} a data_frame
@@ -1182,12 +1182,12 @@ get_data_dtcc_today <-
 #' @import curl dplyr purrr readr lubridate stringr tidyr
 #' @examples
 #' \dontrun{
-#' get_data_dtcc_trades()
-#' get_data_dtcc_trades(start_date = "2017-01-16")
-#' get_data_dtcc_trades(assets = c('credits', 'equities'), include_today = TRUE, start_date = '2017-01-10', end_date = Sys.Date(), nest_data = FALSE)
+#' dtcc_trades()
+#' dtcc_trades(start_date = "2018-10-21", end_date = "2018-10-22")
+#' dtcc_trades(assets = c('credits', 'equities'), include_today = TRUE, start_date = '2017-01-10', end_date = Sys.Date(), nest_data = FALSE)
 #' }
 
-get_data_dtcc_trades <-
+dtcc_trades <-
   function(assets = NULL,
            include_today = FALSE,
            start_date = NULL,
@@ -1204,13 +1204,13 @@ get_data_dtcc_trades <-
 
     if (include_today) {
       today <-
-        get_data_dtcc_today(assets = assets,
+        .get_data_dtcc_today(assets = assets,
                             nest_data = FALSE,
                             return_message = return_message)
       if (today %>% nrow() > 0) {
         today <-
           today %>%
-          resolve_dtcc_name_df() %>%
+          .resolve_dtcc_name_df() %>%
           select(which(colMeans(is.na(.)) < 1))
 
         today <-
@@ -1236,7 +1236,7 @@ get_data_dtcc_trades <-
       }
 
       data <-
-        get_data_dtcc_assets_days(
+        .get_data_dtcc_assets_days(
           assets = assets,
           start_date = start_date,
           end_date = end_date,
@@ -1246,7 +1246,7 @@ get_data_dtcc_trades <-
 
       data <-
         data %>%
-        resolve_dtcc_name_df() %>%
+        .resolve_dtcc_name_df() %>%
         mutate_at(data %>% select(
           matches(
             "^dateTime|idDisseminationOriginal|^date|^priceNotation"

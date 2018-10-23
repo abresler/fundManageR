@@ -28,10 +28,10 @@
 #'
 #' @examples
 #' #' \dontrun{
-#' get_data_irei_entitites(filter_type = NULL)
-#' get_data_irei_entities(filter_type = c("Investment Managers", "Tax-exempt Funds"))
+#' irei_entitites(filter_type = NULL)
+#' irei_entities(filter_type = c("Investment Managers", "Tax-exempt Funds"))
 #' }
-get_data_irei_entitites <- function(filter_type = NULL, return_message = TRUE) {
+irei_entitites <- function(filter_type = NULL, return_message = TRUE) {
   page <-
     "https://irei.com/industry-links/" %>%
     read_html()
@@ -133,7 +133,7 @@ get_data_irei_entitites <- function(filter_type = NULL, return_message = TRUE) {
       data$typeFirm %>% unique() %>% str_c(collapse = ', ')
 
     glue::glue("Acquired {firm_count} firms from the {segments} sectors of the institutional real estate jungle") %>%
-      message()
+      cat(fill = T)
 
   }
   data

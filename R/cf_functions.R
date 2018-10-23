@@ -223,7 +223,7 @@ calculate_residual_valuation_cap_rates <-
 
     scenario_df <-
       1:nrow(scenario_matrix) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         cap_rate_valuation(
           cap_rate = scenario_matrix$cap_rate[[x]],
           net_operating_income = scenario_matrix$noi[[x]],
@@ -302,7 +302,7 @@ calculate_residual_valuation_ebitda_multiples <-
 
     scenario_df <-
       1:nrow(scenario_matrix) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         ebtida_multiple_value(
           ebitda_multiple = scenario_matrix$ebitda_multiple[[x]],
           ebitda = scenario_matrix$ebitda[[x]],
@@ -401,7 +401,7 @@ calculate_valuation_post_money <-
 
     scenario_df <-
       1:nrow(scenario_matrix) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         post_money_valuation(
           pre_money_valuation = scenario_matrix$pre_money_valuation[[x]],
           percent_sold = scenario_matrix$percent_sold[[x]]
@@ -602,7 +602,7 @@ get_data_monthly_periods <-
 
     all_periods <-
       periods %>%
-      purrr::map(function(x) {
+      future_map(function(x) {
         get_end_of_period(period = x)
       }) %>%
       compact %>%
@@ -1066,7 +1066,7 @@ calculate_leverage_metric <-
           ' years\n'
         )
 
-      metric_message %>% message()
+      metric_message %>% cat(fill = T)
     }
 
     return(data)
@@ -1164,7 +1164,7 @@ calculate_leverage_metrics <-
 
     all_data <-
       1:nrow(variable_matrix) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         calculate_leverage_metric(
           purchase_price = variable_matrix$purchase_price[[x]],
           capitalized_acquisition_costs = variable_matrix$capitalized_acquisition_costs[[x]],

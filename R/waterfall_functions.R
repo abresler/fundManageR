@@ -181,7 +181,7 @@ calculate_irr_periods <-
           '\nCapital Multiple of ',
           multipleCapital
         ) %>%
-        message()
+        cat(fill = T)
     }
 
     if (!return_wide) {
@@ -528,7 +528,7 @@ parse_promote_structure <-
     hurdle_promote <-
       promote_structure %>%
       str_split(pattern = hit_words %>% paste0(collapse = "|")) %>%
-      map(parse_number) %>%
+      future_map(parse_number) %>%
       flatten_dbl()
 
     if (typeHurdle == 'multiple') {
@@ -587,7 +587,7 @@ tidy_promote_structure <-
 
     promote_data <-
       1:length(promote_structures) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_promote_structure_safe(promote_structure = promote_structures[x]) %>%
           mutate(tierWaterfall = x) %>%
           dplyr::select(tierWaterfall, everything())
@@ -715,7 +715,7 @@ get_waterfall_tier_df <-
     if (tiers %>% length > 1) {
       other_tiers <-
         tiers[tiers > 1] %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           data_frame(
             tierWaterfall = rep(x),
             bbAccruedPref = 0,
@@ -1727,7 +1727,7 @@ calculate_cash_flow_waterfall_partnership <-
         suppressMessages()
 
       1:nrow(data) %>%
-        map(function(x) {
+        future_map(function(x) {
           table_data <-
             data$dataTable[[x]]
           df_name <-

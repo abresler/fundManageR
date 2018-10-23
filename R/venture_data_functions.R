@@ -17,8 +17,8 @@
 #' @family venture capital
 #' @family entity search
 #' @examples
-#' get_data_ycombinator_alumni(nest_data = FALSE)
-get_data_ycombinator_alumni <-
+#' ycombinator_alumni(nest_data = FALSE)
+ycombinator_alumni <-
   function(nest_data = FALSE,
            return_message = TRUE) {
     url <-
@@ -104,7 +104,7 @@ get_data_ycombinator_alumni <-
           json_data$yearYC %>% max(),
           random_company_message
         ) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -132,8 +132,8 @@ get_data_ycombinator_alumni <-
 #' @importFrom readr parse_number
 #' @family venture capital
 #' @examples
-#' get_data_cb_unicorns(return_message = TRUE)
-get_data_cb_unicorns <-
+#' cb_unicorns(return_message = TRUE)
+cb_unicorns <-
   function(return_message = TRUE) {
     page <-
       "https://www.cbinsights.com/research-unicorn-companies" %>%
@@ -198,7 +198,7 @@ get_data_cb_unicorns <-
            ' unicorns with a total private market valuation of $',
            unicorn_df$amountValuationBillions %>% sum %>% formattable::currency(),
            ' Billion') %>%
-        message()
+        cat(fill = T)
     }
     return(unicorn_df)
   }

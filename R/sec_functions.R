@@ -5,7 +5,7 @@
 #'
 #' This function returns information on every \href{https://en.wikipedia.org/wiki/Central_Index_Key}{Central Index Key}
 #' registered entity.  Data about CIK filing entity can be discovered
-#' using the \code{\link{get_data_sec_filer}} function inputing the CIK.
+#' using the \code{\link{sec_filer}} function inputing the CIK.
 #'
 #' @param return_message \code{TRUE} return a message after data import
 #'
@@ -17,8 +17,8 @@
 #' @family entity search
 #' @family fund data
 #' @examples
-#' get_data_sec_ciks(return_message = TRUE)
-get_data_sec_ciks <-
+#' sec_ciks(return_message = TRUE)
+sec_ciks <-
   function(return_message = TRUE) {
     url <-
       'https://www.sec.gov/edgar/NYU/cik.coleft.c'
@@ -60,7 +60,7 @@ get_data_sec_ciks <-
           cik_data %>% nrow %>% formattable::comma(digits = 0),
           ' entities with registered CIK codes'
         ) %>%
-        message()
+        cat(fill = T)
     }
 
     return(cik_data)
@@ -88,7 +88,7 @@ get_foia_url_df <-
 
     url_df <-
       slugs %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         items <-
           x %>%
           str_replace_all('/foia/logs/foia-log-fy|.csv', '') %>%
@@ -198,7 +198,7 @@ parse_foia_url_df <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(data)
@@ -223,10 +223,10 @@ parse_foia_url_df <-
 #' @family SEC
 #' @examples
 #' \dontrun{
-#' get_data_sec_foia_requests(search_years = 2006:2017, nest_data = TRUE,
+#' sec_foia_requests(search_years = 2006:2017, nest_data = TRUE,
 #' return_message = TRUE)
 #' }
-get_data_sec_foia_requests <-
+sec_foia_requests <-
   function(search_years = 2006:2016,
            nest_data = TRUE,
            return_message = TRUE) {
@@ -248,7 +248,7 @@ get_data_sec_foia_requests <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_foia_url_df_safe(url = x, return_message = TRUE)
       }) %>%
       arrange(desc(dateRequest))
@@ -270,7 +270,7 @@ get_data_sec_foia_requests <-
         url_df$yearData %>% unique() %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -425,7 +425,7 @@ parse_sec_cusip_url <-
            return_message) {
     list("Be patient ocr'ing ", url, ' may take a while') %>%
       purrr::invoke(paste0, .) %>%
-      message()
+      cat(fill = T)
 
     if (!table_area %>% is.na()) {
       table_area <-
@@ -474,7 +474,7 @@ parse_sec_cusip_url <-
 
     all_data <-
       1:length(tables) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         tables[[x]] %>%
           as_data_frame() %>%
           mutate_all(str_trim)
@@ -559,7 +559,7 @@ parse_sec_cusip_url <-
         datetime_file
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(all_data)
@@ -597,11 +597,11 @@ parse_sec_cusip_url <-
 #'
 #' @examples
 #' \dontrun{
-#' get_data_sec_cusips(only_most_recent = FALSE, years = c(2016, 2010),
+#' sec_cusips(only_most_recent = FALSE, years = c(2016, 2010),
 #' quarters = c(4),
 #' return_message = TRUE)
 #' }
-get_data_sec_cusips <-
+sec_cusips <-
   function(only_most_recent = FALSE,
            years = 1996:2016,
            quarters = NULL,
@@ -648,7 +648,7 @@ get_data_sec_cusips <-
 
     all_data <-
       1:nrow(urls_df) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_sec_cusip_url_safe(
           url = urls_df$urlSEC[[x]],
           return_message = return_message,
@@ -670,7 +670,7 @@ get_data_sec_cusips <-
           all_data %>% dplyr::select(idCUSIP) %>% distinct() %>% nrow() %>% formattable::comma(digits = 0),
           ' securities with cusips codes'
         ) %>%
-        message()
+        cat(fill = T)
 
     }
 
@@ -776,7 +776,7 @@ parse_closed_end_fund_url <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df)
@@ -802,9 +802,9 @@ parse_closed_end_fund_url <-
 #' @family fund data
 #' @examples
 #' \dontrun{
-#' get_data_sec_closed_end_funds(years = 2015:2017)
+#' sec_closed_end_funds(years = 2015:2017)
 #' }
-get_data_sec_closed_end_funds <-
+sec_closed_end_funds <-
   function(only_most_recent = FALSE,
            years = 2014:2017,
            nest_data = TRUE,
@@ -842,7 +842,7 @@ get_data_sec_closed_end_funds <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_closed_end_fund_url_safe(url = x, return_message = TRUE)
       })
 
@@ -860,7 +860,7 @@ get_data_sec_closed_end_funds <-
         ' Closed End Funds'
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -897,9 +897,9 @@ get_data_sec_closed_end_funds <-
 #' @family entity search
 #' @family fund search
 #' @examples
-#' get_data_sec_investment_companies(nest_data = TRUE, return_message = TRUE)
+#' sec_investment_companies(nest_data = TRUE, return_message = TRUE)
 
-get_data_sec_investment_companies <-
+sec_investment_companies <-
   function(nest_data = TRUE,
            return_message = TRUE) {
     df <-
@@ -977,7 +977,7 @@ get_data_sec_investment_companies <-
         ' SEC registered investment funds'
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -1109,7 +1109,7 @@ parse_mmf_url <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df)
@@ -1139,10 +1139,10 @@ parse_mmf_url <-
 #'
 #' @examples
 #' \dontrun{
-#' get_data_sec_money_market_funds(only_most_recent = TRUE, nest_data = FALSE)
-#' get_data_sec_money_market_funds(only_most_recent = FALSE, years = 2013:2016)
+#' sec_money_market_funds(only_most_recent = TRUE, nest_data = FALSE)
+#' sec_money_market_funds(only_most_recent = FALSE, years = 2013:2016)
 #' }
-get_data_sec_money_market_funds <-
+sec_money_market_funds <-
   function(only_most_recent = TRUE,
            years = NULL,
            months = NULL,
@@ -1197,7 +1197,7 @@ get_data_sec_money_market_funds <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_mmf_url_safe(url = x, return_message = return_message)
       })
 
@@ -1231,7 +1231,7 @@ get_data_sec_money_market_funds <-
         " money market funds"
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -1286,7 +1286,7 @@ parse_bankruptcy_url <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df)
@@ -1307,9 +1307,9 @@ parse_bankruptcy_url <-
 #' @family entity search
 #' @examples
 #' \dontrun{
-#' get_data_sec_bankruptcies(nest_data = FALSE, return_message = TRUE)
+#' sec_bankruptcies(nest_data = FALSE, return_message = TRUE)
 #' }
-get_data_sec_bankruptcies <-
+sec_bankruptcies <-
   function(nest_data = TRUE,
            return_message = TRUE) {
     page <-
@@ -1340,7 +1340,7 @@ get_data_sec_bankruptcies <-
 
     all_data <-
       url_df$urlData %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_bankruptcy_url_safe(url = x, return_message = return_message)
       })
 
@@ -1369,7 +1369,7 @@ get_data_sec_bankruptcies <-
         ' in Liabilities'
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -1458,7 +1458,7 @@ parse_brokers_url <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df)
@@ -1484,10 +1484,10 @@ parse_brokers_url <-
 #' @family entity search
 #' @family broker dealers
 #' \dontrun{
-#' get_data_sec_broker_dealers(only_most_recent = TRUE)
-#' get_data_sec_broker_dealers(only_most_recent = FALSE, years = 2016:2017, nest_data = FALSE)
+#' sec_broker_dealers(only_most_recent = TRUE)
+#' sec_broker_dealers(only_most_recent = FALSE, years = 2016:2017, nest_data = FALSE)
 #' }
-get_data_sec_broker_dealers <-
+sec_broker_dealers <-
   function(only_most_recent = TRUE,
            years = NULL,
            months = NULL,
@@ -1542,7 +1542,7 @@ get_data_sec_broker_dealers <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_brokers_url_safe(url = x, return_message = return_message)
       })
 
@@ -1564,7 +1564,7 @@ get_data_sec_broker_dealers <-
         all_data$dateData %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -1599,7 +1599,7 @@ parse_municpal_dealer_url <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df)
@@ -1658,10 +1658,10 @@ get_muni_advisor_urls <-
 #' @family entity search
 #' @examples
 #' \dontrun{
-#' get_data_sec_municipal_advisors(only_most_recent = TRUE, nest_data = FALSE)
-#' get_data_sec_municipal_advisors(only_most_recent = FALSE, years = 2015:2017, nest_data = TRUE)
+#' sec_municipal_advisors(only_most_recent = TRUE, nest_data = FALSE)
+#' sec_municipal_advisors(only_most_recent = FALSE, years = 2015:2017, nest_data = TRUE)
 #' }
-get_data_sec_municipal_advisors <-
+sec_municipal_advisors <-
   function(only_most_recent = TRUE,
            years = NULL,
            months = NULL,
@@ -1716,7 +1716,7 @@ get_data_sec_municipal_advisors <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_municpal_dealer_url_safe(url = x, return_message = return_message)
       })
 
@@ -1738,7 +1738,7 @@ get_data_sec_municipal_advisors <-
         all_data$dateData %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -1801,7 +1801,7 @@ parse_fail_to_deliver_url <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df)
@@ -1879,10 +1879,10 @@ get_fail_to_deliver_urls <-
 #' @family public company data
 #' @examples
 #' \dontrun{
-#' get_data_sec_failed_to_deliver_securities(nest_data = TRUE)
-#' get_data_sec_failed_to_deliver_securities(years = 2004:2016, nest_data = TRUE)
+#' sec_failed_to_deliver_securities(nest_data = TRUE)
+#' sec_failed_to_deliver_securities(years = 2004:2016, nest_data = TRUE)
 #' }
-get_data_sec_failed_to_deliver_securities <-
+sec_failed_to_deliver_securities <-
   function(only_most_recent = TRUE,
            years = 2016,
            months = NULL,
@@ -1937,7 +1937,7 @@ get_data_sec_failed_to_deliver_securities <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_fail_to_deliver_url_safe(url = x, return_message = return_message)
       })
 
@@ -1959,7 +1959,7 @@ get_data_sec_failed_to_deliver_securities <-
         all_data$dateData %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -2079,7 +2079,7 @@ parse_market_structure_url <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df)
@@ -2106,10 +2106,10 @@ parse_market_structure_url <-
 #' @family public company data
 #' @examples
 #' \dontrun{
-#' get_data_sec_securities_metrics_by_exchange(only_most_recent = TRUE)
-#' get_data_sec_securities_metrics_by_exchange(years = 2016)
+#' sec_securities_metrics_by_exchange(only_most_recent = TRUE)
+#' sec_securities_metrics_by_exchange(years = 2016)
 #' }
-get_data_sec_securities_metrics_by_exchange <-
+sec_securities_metrics_by_exchange <-
   function(only_most_recent = FALSE,
            years = 2016,
            months = NULL,
@@ -2177,7 +2177,7 @@ get_data_sec_securities_metrics_by_exchange <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_market_structure_url_safe(url = x, return_message = return_message)
       })
 
@@ -2204,7 +2204,7 @@ get_data_sec_securities_metrics_by_exchange <-
         all_data$dateData %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -2710,7 +2710,7 @@ parse_xbrl_url <-
            " filers for ",
            period_data) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(all_data)
@@ -2752,9 +2752,9 @@ parse_xbrl_url <-
 #' @family entity search
 #' @examples
 #' \dontrun{
-#' get_data_sec_xbrl_periods(only_most_recent = TRUE, only_all = TRUE, assign_to_environment = TRUE, return_message = TRUE)
+#' sec_xbrl_periods(only_most_recent = TRUE, only_all = TRUE, assign_to_environment = TRUE, return_message = TRUE)
 #' }
-get_data_sec_xbrl_periods <-
+sec_xbrl_periods <-
   function(only_most_recent = TRUE,
            years = NULL,
            quarters = NULL,
@@ -2797,7 +2797,7 @@ get_data_sec_xbrl_periods <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_xbrl_url_safe(url = x,
                             only_all = only_all,
                             return_message = return_message)

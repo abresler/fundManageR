@@ -38,8 +38,8 @@ Other calculation: \code{\link{calculate_cash_flow_dates}},
   \code{\link{calculate_share_proceeds}},
   \code{\link{tidy_promote_structure}}
 
-Other venture capital: \code{\link{get_data_cb_unicorns}},
-  \code{\link{get_data_ycombinator_alumni}}
+Other venture capital: \code{\link{cb_unicorns}},
+  \code{\link{ycombinator_alumni}}
 }
 \concept{calculation}
 \concept{venture capital}

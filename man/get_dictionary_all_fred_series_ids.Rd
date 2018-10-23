@@ -23,7 +23,7 @@ a \code{data_frame}
 \description{
 This function imports dictionaries for all possible FRED
 series.  You can us this data to find series to search in the
-\code{\link{get_data_fred_symbols}} function.
+\code{\link{fred_symbols}} function.
 }
 \details{
 This dictionary was indexed on January 22, 2017, please be aware
@@ -34,12 +34,12 @@ that there may be new series added to FRED since then.
 get_dictionary_all_fred_series_ids(fred_file = NULL, return_message  = TRUE)
 }
 \seealso{
-Other dictionary: \code{\link{get_data_location_codes}},
-  \code{\link{get_data_sec_rules}},
-  \code{\link{get_data_sic_naics_codes}},
-  \code{\link{get_dictionary_sec_filing_codes}},
-  \code{\link{get_dictionary_sec_form_codes}},
-  \code{\link{get_dictionary_sic_codes}}
+Other dictionary: \code{\link{data_location_codes}},
+  \code{\link{data_sec_rules}},
+  \code{\link{data_sic_naics_codes}},
+  \code{\link{dictionary_sec_filing_codes}},
+  \code{\link{dictionary_sec_form_codes}},
+  \code{\link{dictionary_sic_codes}}
 }
 \concept{FRED}
 \concept{dictionary}

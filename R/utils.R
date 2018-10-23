@@ -37,11 +37,11 @@ get_class_df <-
   function(data) {
     class_data <-
       data %>%
-      map(class)
+      future_map(class)
 
     class_df <-
       1:length(class_data) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         data_frame(nameColumn = names(data)[[x]],
                    typeColumn = class_data[[x]] %>% .[length(.)])
       })
@@ -123,7 +123,7 @@ tidy_column_formats <-
       data %>% select(dplyr::matches("^date")) %>% ncol() > 0
 
     if (has_dates) {
-      data %>% select(dplyr::matches("^date")) %>% map(class)
+      data %>% select(dplyr::matches("^date")) %>% future_map(class)
     }
     if (drop_na_columns ) {
       data <-
@@ -258,7 +258,7 @@ tidy_column_relations <-
     if (has_lists) {
       df_list <-
         1:nrow(df_lists) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           column <-
             df_lists$nameColumn[x]
           if (column == 'dataInsiderCompaniesOwned') {
@@ -273,7 +273,7 @@ tidy_column_relations <-
             select(idRow, one_of(c(column_keys, column)))
           col_length_df <-
             1:nrow(df) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               value <-
                 df[[column]][[x]]
 

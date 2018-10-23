@@ -157,7 +157,7 @@ get_data_market_events <-
       glue::glue(
         "Returned {nrow(data)} events from {min(data$dateEvent)} to {max(data$dateEvent)}"
       ) %>%
-        message()
+        cat(fill = T)
     }
     gc()
 
@@ -377,7 +377,7 @@ parse_region_security_url <-
       arrange(idTicker)
 
     if (return_message) {
-      glue::glue("Acquired {nrow(data)} listed securities in {idRegion %>% str_to_title()}") %>% message()
+      glue::glue("Acquired {nrow(data)} listed securities in {idRegion %>% str_to_title()}") %>% cat(fill = T)
     }
 
     data
@@ -515,7 +515,7 @@ parse_metric_dictionary_url <-
 
     df_fields <-
       1:length(data$fieldMembers) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         field <-
           data$fieldMembers[[x]]
         if (field %>% is_null()) {
@@ -536,7 +536,7 @@ parse_metric_dictionary_url <-
       })
 
     if (return_message) {
-      glue::glue("Acquired {nrow(data)} searchable metrics for {idRegion} securities") %>% message()
+      glue::glue("Acquired {nrow(data)} searchable metrics for {idRegion} securities") %>% cat(fill = T)
     }
 
     data %>%
@@ -747,7 +747,7 @@ parse_tradeview_metric_url <-
         data$idTicker %>% unique() %>% length() %>% formattable::comma(digits = 0)
       glue::glue(
         "Acquired {nrow(data) %>% formattable::comma(digits = 0)} listed metrics for {tickers} securities in {idRegion %>% str_to_title()}"
-      ) %>% message()
+      ) %>% cat(fill = T)
     }
 
     gc()
@@ -843,7 +843,7 @@ get_tradeview_regions_metrics <-
            return_message = TRUE) {
     options(scipen = 99999)
     glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
-      message()
+      cat(fill = T)
 
     urls <-
       glue::glue("https://scanner.tradingview.com/{regions}/scan")
@@ -861,7 +861,7 @@ get_tradeview_regions_metrics <-
 
     data <-
       1:length(urls) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_tradeview_metric_url(url = urls[x], data_query = data_query)
       }) %>%
       mutate(countItem = countItem %>% as.integer())
@@ -959,7 +959,7 @@ parse_trading_view_news_url <-
 
     if (return_message) {
       glue::glue("Acquiring Tradingview news for {ticker}") %>%
-        message()
+        cat(fill = T)
     }
 
     data <-

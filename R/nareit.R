@@ -86,7 +86,7 @@
 
       all_data <-
         1:length(tables) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           tables[[x]] %>%
             as_data_frame() %>%
             mutate(idTable = x)
@@ -294,7 +294,7 @@
           year_data
         ) %>%
           purrr::invoke(paste0, .) %>%
-          message()
+          cat(fill = T)
       }
 
       df <<-
@@ -305,7 +305,7 @@
       data_frame()
     }
     url %>%
-      map(function(x) {
+      future_map(function(x) {
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
@@ -327,8 +327,8 @@
 #' @family index constituents
 #' @import purrr stringr dplyr rvest formattable lubridate tidyr readr curl tabulizer
 #' @examples
-#' get_data_nareit_constituent_years(years = 1991:2016, resolve_names = TRUE, nest_data = TRUE, return_message = TRUE)
-get_data_nareit_constituent_years <-
+#' nareit_constituent_years(years = 1991:2016, resolve_names = TRUE, nest_data = TRUE, return_message = TRUE)
+nareit_constituent_years <-
   function(years = 2010:2016,
            resolve_names = TRUE,
            nest_data = TRUE,
@@ -349,8 +349,8 @@ get_data_nareit_constituent_years <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
-        x %>% message()
+      future_map_dfr(function(x) {
+        x %>% cat(fill = T)
         .parse_nareit_constituent_url_safe(url = x, return_message = return_message)
       }) %>%
       suppressWarnings()
@@ -489,7 +489,7 @@ get_data_nareit_constituent_years <-
         all_data$dateFile %>% max(na.rm = TRUE)
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     if (nest_data) {
       all_data <-
@@ -619,7 +619,7 @@ get_data_nareit_constituent_years <-
 
       if (return_message) {
         glue::glue("Parsing {url}") %>%
-          message()
+          cat(fill = T)
       }
       .parse_nareit_page.safe <-
         purrr::possibly(.parse_nareit_page, data_frame())
@@ -912,7 +912,7 @@ get_data_nareit_constituent_years <-
       states <- page %>% html_nodes(".reit-icon__chevron-right")
       df_properties <-
         1:length(states) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           nameState <- states[x] %>% html_text()
           state_slug <-
             states[x] %>% html_attr("href") %>% substr(1, 3)
@@ -968,7 +968,7 @@ get_data_nareit_constituent_years <-
 
       if (return_message) {
         glue::glue("Parsing {url}") %>%
-          message()
+          cat(fill = T)
       }
       .parse_nareit_entity_page.safe <-
         purrr::possibly(.parse_nareit_entity_page, data_frame())
@@ -1017,10 +1017,10 @@ get_data_nareit_constituent_years <-
 #' @import purrr stringr dplyr rvest lubridate tidyr readr
 #' @examples
 #' \dontrun{
-#' get_data_nareit_entities(get_data_nareit_entities = TRUE, return_message = TRUE)
+#' nareit_entities(parse_member_data = TRUE, return_message = TRUE)
 #' }
 
-get_data_nareit_entities <-
+nareit_entities <-
   function(parse_member_data = TRUE, return_message = T) {
     page_count_nodes <- ".pager__item--last a"
     base_url <-
@@ -1147,8 +1147,8 @@ get_data_nareit_entities <-
 #' @family NAREIT
 #' @family property data
 #' @examples
-#' get_data_nareit_notable_properties()
-get_data_nareit_notable_properties <-
+#' nareit_notable_properties()
+nareit_notable_properties <-
   function() {
     json_data <-
       "http://app.reitsacrossamerica.com/properties/notable" %>%
@@ -1264,7 +1264,7 @@ get_data_nareit_notable_properties <-
         slugState
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     df_hq
@@ -1329,7 +1329,7 @@ get_data_nareit_notable_properties <-
         slugState
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df_long)
@@ -1390,9 +1390,9 @@ get_data_nareit_notable_properties <-
 #' @family property data
 #' @examples
 #' \dontrun{
-#' get_data_nareit_property_msa(nest_data = TRUE, return_message = TRUE)
+#' nareit_property_msa(nest_data = TRUE, return_message = TRUE)
 #' }
-get_data_nareit_property_msa <-
+nareit_property_msa <-
   function(nest_data = TRUE,
            return_message = TRUE) {
     json_data <-
@@ -1453,7 +1453,7 @@ get_data_nareit_property_msa <-
         ' MSAs'
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -1484,9 +1484,9 @@ get_data_nareit_property_msa <-
 #' @family property data
 #' @examples
 #' \dontrun{
-#' get_data_nareit_state_info(include_reit_hq = TRUE, include_reit_holdings = TRUE, nest_data = TRUE, return_message = TRUE)
+#' nareit_state_info(include_reit_hq = TRUE, include_reit_holdings = TRUE, nest_data = TRUE, return_message = TRUE)
 #' }
-get_data_nareit_state_info <-
+nareit_state_info <-
   function(include_reit_hq = TRUE,
            include_reit_holdings = TRUE,
            nest_data = TRUE,
@@ -1564,7 +1564,7 @@ get_data_nareit_state_info <-
 
       df_hqs <-
         url_states %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           .parse_json_hq_safe(url = x,
                              return_message = return_message)
         })
@@ -1597,7 +1597,7 @@ get_data_nareit_state_info <-
 
       holdings_df <-
         url_states %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           .parse_json_holdings_safe(url = x,
                                    return_message = return_message)
         })
@@ -1645,9 +1645,9 @@ get_data_nareit_state_info <-
 #' @family index values
 #' @examples
 #' \dontrun{
-#' get_data_nareit_monthly_returns(return_wide = FALSE)
+#' nareit_monthly_returns(return_wide = FALSE)
 #' }
-get_data_nareit_monthly_returns <-
+nareit_monthly_returns <-
   function(return_wide = TRUE,
            return_message = TRUE) {
     url <-
@@ -1745,7 +1745,7 @@ get_data_nareit_monthly_returns <-
         data$dateData %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (!return_wide) {
@@ -1773,9 +1773,9 @@ get_data_nareit_monthly_returns <-
 #' @family index values
 #' @examples
 #' \dontrun{
-#' get_data_nareit_annual_subsector_returns(return_wide = TRUE, return_message = TRUE)
+#' nareit_annual_subsector_returns(return_wide = TRUE, return_message = TRUE)
 #' }
-get_data_nareit_annual_subsector_returns <-
+nareit_annual_subsector_returns <-
   function(return_wide = TRUE,
            return_message = TRUE) {
     url <-
@@ -1856,7 +1856,7 @@ get_data_nareit_annual_subsector_returns <-
         data$dateData %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (!return_wide) {
@@ -2065,7 +2065,7 @@ get_data_nareit_annual_subsector_returns <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     data
@@ -2092,10 +2092,10 @@ get_data_nareit_annual_subsector_returns <-
 #' @family capital raises
 #' @examples
 #' \dontrun{
-#' get_data_nareit_capital_raises(capital_type = NULL, nest_data = FALSE, return_message = TRUE)
+#' nareit_capital_raises(capital_type = NULL, nest_data = FALSE, return_message = TRUE)
 #' }
 #'
-get_data_nareit_capital_raises <-
+nareit_capital_raises <-
   function(capital_type = NULL,
            nest_data = TRUE,
            return_message = TRUE) {
@@ -2120,7 +2120,7 @@ get_data_nareit_capital_raises <-
 
     all_data <-
       1:nrow(url_df) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         .parse_nareit_offering_url_safe(
           url = url_df$urlData[[x]],
           sheet = url_df$indexSheet[[x]],
@@ -2152,7 +2152,7 @@ get_data_nareit_capital_raises <-
         all_data$dateOffering %>% max(na.rm = TRUE)
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     if (nest_data) {
       all_data <-
@@ -2180,9 +2180,9 @@ get_data_nareit_capital_raises <-
 #' @family transaction data
 #' @examples
 #' \dontrun{
-#' get_data_nareit_mergers_acquisitions(nest_data = FALSE, return_message = TRUE)
+#' nareit_mergers_acquisitions(nest_data = FALSE, return_message = TRUE)
 #' }
-get_data_nareit_mergers_acquisitions <-
+nareit_mergers_acquisitions <-
   function(pages = 32:33,
            nest_data = FALSE,
            return_message = TRUE) {
@@ -2203,7 +2203,7 @@ get_data_nareit_mergers_acquisitions <-
 
     all_data <-
       1:length(tables) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         tables[[x]] %>%
           as_data_frame()
       }) %>%
@@ -2481,7 +2481,7 @@ get_data_nareit_mergers_acquisitions <-
         all_data$dateAnnounced %>% max(na.rm = T)
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -2512,9 +2512,9 @@ get_data_nareit_mergers_acquisitions <-
 #' @family NAREIT
 #' @examples
 #' \dontrun{
-#' get_data_nareit_industry_tracker(return_message = TRUE, return_wide = TRUE)
+#' nareit_industry_tracker(return_message = TRUE, return_wide = TRUE)
 #' }
-get_data_nareit_industry_tracker <-
+nareit_industry_tracker <-
   function(nest_data = FALSE,
            return_wide = TRUE,
            return_message = TRUE) {
@@ -2678,7 +2678,7 @@ get_data_nareit_industry_tracker <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -2699,7 +2699,7 @@ get_data_nareit_industry_tracker <-
   function(url, return_message = TRUE) {
 
     if (return_message) {
-      glue::glue("Parsing {url}") %>% message()
+      glue::glue("Parsing {url}") %>% cat(fill = T)
     }
 
     page <-
@@ -2723,7 +2723,7 @@ get_data_nareit_industry_tracker <-
 
     df <-
       1:length(fund_nodes) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         fund_node <- fund_nodes[[x]]
         categoryFund  <-
           fund_node %>% html_nodes(".category") %>% html_text() %>% str_trim()
@@ -2886,7 +2886,7 @@ get_data_nareit_industry_tracker <-
         if (return_message) {
           list("Parsed: ", res$url) %>%
             purrr::reduce(paste0) %>%
-            message()
+            cat(fill = T)
         }
         rm(page)
 
@@ -2924,10 +2924,10 @@ get_data_nareit_industry_tracker <-
 #' @family fund data
 #' @examples
 #' \dontrun{
-#' get_data_reit_funds(parse_fund_details = TRUE, return_message = TRUE))
+#' reit_funds(parse_fund_details = TRUE, return_message = TRUE))
 #' }
 
-get_data_reit_funds <-
+reit_funds <-
   function(parse_fund_details = TRUE,
            return_message = TRUE) {
 
@@ -2941,7 +2941,7 @@ get_data_reit_funds <-
 
     df_table <-
       urls %>%
-      map_df(function(url){
+      future_map_dfr(function(url){
         .parse_fund_reit_page_safe(url = url, return_message = return_message)
       })
 
@@ -2956,8 +2956,8 @@ get_data_reit_funds <-
 
       detail_df <-
         urls %>%
-        map_df(function(x) {
-          x %>% message()
+        future_map_dfr(function(x) {
+          x %>% cat(fill = T)
           .parse_reit_fund_info_page_safe(urls = x, return_message = return_message)
         })
 
@@ -2990,7 +2990,7 @@ get_data_reit_funds <-
         ' REIT funds'
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df_table)

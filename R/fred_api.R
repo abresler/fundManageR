@@ -181,7 +181,7 @@ get_fred_page_count <-
 
     df_items <-
       1:item_count %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         table_no <-
           df_css_nodes %>%
           filter(idRow == x) %>%
@@ -238,7 +238,7 @@ get_fred_page_count <-
       select(numberPage, everything())
 
     if (return_message) {
-      glue::glue("Parsed {url}") %>% message()
+      glue::glue("Parsed {url}") %>% cat(fill = T)
     }
 
     df_items <-
@@ -293,7 +293,7 @@ get_fred_page_count <-
   function(search_term = "China Debt",
            return_message = TRUE) {
     if (return_message) {
-      glue::glue("Searching for for {search_term}\n") %>% message()
+      glue::glue("Searching for for {search_term}\n") %>% cat(fill = T)
     }
     term_slug <- search_term %>% URLencode()
     search_url <-
@@ -308,7 +308,7 @@ get_fred_page_count <-
       purrr::possibly(.parse_fred_ft_html, data_frame())
     df_data <-
       1:nrow(df_urls) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         .parse_fred_ft_html(
           url = df_urls$urlPage[[x]],
           page_no = df_urls$numberPage[[x]],
@@ -323,13 +323,13 @@ get_fred_page_count <-
       suppressMessages()
 
     if (return_message) {
-      glue::glue("Found {nrow(all_data)} FRED series for {search_term}") %>% message()
+      glue::glue("Found {nrow(all_data)} FRED series for {search_term}") %>% cat(fill = T)
     }
 
     all_data
   }
 
-.get_data_fred_terms_ids_html <-
+.fred_terms_ids_html <-
   function(search_terms = c("China Debt", "China Investment"),
            return_message = TRUE) {
     .parse_fred_html_search_term_safe <-
@@ -337,7 +337,7 @@ get_fred_page_count <-
 
     all_data <-
       search_terms %>%
-      map_df(function(search_term) {
+      future_map_dfr(function(search_term) {
         .parse_fred_html_search_term(search_term = search_term,
                                      return_message = return_message)
       })
@@ -379,7 +379,7 @@ parse_fred_page <-
                  )))
     df_items <-
       1:item_count %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         table_no <-
           df_css_nodes %>%
           filter(idRow == x) %>%
@@ -438,12 +438,12 @@ parse_fred_page <-
       select(idPage, everything())
 
     if (return_message) {
-      glue::glue("Parsed {url}") %>% message()
+      glue::glue("Parsed {url}") %>% cat(fill = T)
     }
     df_items
   }
 
-get_data_all_fred_series_ids <-
+all_fred_series_ids <-
   function(return_message = TRUE,
            nest_data = TRUE,
            sleep = NULL) {
@@ -456,7 +456,7 @@ get_data_all_fred_series_ids <-
 
     df_fred_ids <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_fred_page_safe(url = x, return_message = return_message)
       })
 
@@ -485,7 +485,7 @@ curl_url <-
 #'
 #' This function imports dictionaries for all possible FRED
 #' series.  You can us this data to find series to search in the
-#' \code{\link{get_data_fred_symbols}} function.
+#' \code{\link{fred_symbols}} function.
 #'
 #' This dictionary was indexed on January 22, 2017, please be aware
 #' that there may be new series added to FRED since then.
@@ -622,7 +622,7 @@ parse_fred_search <-
                  everything())
 
         if (return_message) {
-          glue::glue("Found {nrow(data)} FRED series for {search_term}") %>% message()
+          glue::glue("Found {nrow(data)} FRED series for {search_term}") %>% cat(fill = T)
 
         }
         rm(res)
@@ -637,7 +637,7 @@ parse_fred_search <-
       cat(sprintf("Fail: %s (%s)\n", res$url, msg))
     }
     urls %>%
-      map(function(x) {
+      future_map(function(x) {
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
@@ -645,7 +645,7 @@ parse_fred_search <-
     df
   }
 
-.get_data_fred_terms_ids_json <-
+.fred_terms_ids_json <-
   function(search_terms = c("China", "Property"),
            return_message = TRUE) {
     terms <-
@@ -679,8 +679,8 @@ parse_fred_search <-
 #' @export
 #' @import dplyr lubridate tidyr purrr jsonlite curl rvest glue stringr
 #' @examples
-#' get_data_fred_terms_ids(search_terms = c("China Debt", "China Housing"))
-get_data_fred_terms_ids <-
+#' fred_terms_ids(search_terms = c("China Debt", "China Housing"))
+fred_terms_ids <-
   function(search_terms = NULL,
            use_json_api = FALSE,
            return_message = TRUE) {
@@ -689,19 +689,19 @@ get_data_fred_terms_ids <-
     }
 
     if (use_json_api) {
-      .get_data_fred_terms_ids_json_safe <-
-        purrr::possibly(.get_data_fred_terms_ids_json, data_frame())
+      .fred_terms_ids_json_safe <-
+        purrr::possibly(.fred_terms_ids_json, data_frame())
       all_data <-
-        .get_data_fred_terms_ids_json_safe(search_terms = search_terms, return_message = return_message)
+        .fred_terms_ids_json_safe(search_terms = search_terms, return_message = return_message)
       return(all_data)
 
     }
 
-    .get_data_fred_terms_ids_html_safe <-
-      purrr::possibly(.get_data_fred_terms_ids_html, data_frame())
+    .fred_terms_ids_html_safe <-
+      purrr::possibly(.fred_terms_ids_html, data_frame())
 
     all_data <-
-      .get_data_fred_terms_ids_html_safe(search_terms = search_terms, return_message = return_message)
+      .fred_terms_ids_html_safe(search_terms = search_terms, return_message = return_message)
 
     all_data
   }
@@ -710,7 +710,7 @@ get_data_fred_terms_ids <-
   function(tag = "interest rate",
            return_message = TRUE) {
     if (return_message) {
-      glue::glue("Searching for for tag {tag}\n") %>% message()
+      glue::glue("Searching for for tag {tag}\n") %>% cat(fill = T)
     }
     term_slug <- tag %>% URLencode()
     search_url <-
@@ -725,7 +725,7 @@ get_data_fred_terms_ids <-
       purrr::possibly(.parse_fred_ft_html, data_frame())
     df_data <-
       1:nrow(df_urls) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         .parse_fred_ft_html(
           url = df_urls$urlPage[[x]],
           page_no = df_urls$numberPage[[x]],
@@ -740,7 +740,7 @@ get_data_fred_terms_ids <-
       suppressMessages()
 
     if (return_message) {
-      glue::glue("Found {nrow(all_data)} FRED series for {tag}") %>% message()
+      glue::glue("Found {nrow(all_data)} FRED series for {tag}") %>% cat(fill = T)
     }
 
     all_data
@@ -756,8 +756,8 @@ get_data_fred_terms_ids <-
 #' @export
 #' @import dplyr purrr glue rvest curl stringr tidyr
 #' @examples
-#' get_data_fred_tags(tags = c("spread", "swaps"))
-get_data_fred_tags <-
+#' fred_tags(tags = c("spread", "swaps"))
+fred_tags <-
   function(tags = NULL,
            return_message = T,
            nest_data = F) {
@@ -770,7 +770,7 @@ get_data_fred_tags <-
 
     all_data <-
       tags %>%
-      map_df(function(tag){
+      future_map_dfr(function(tag){
         .get_fred_tag_safe(tag = tag, return_message = return_message)
       })
 
@@ -898,12 +898,12 @@ generate_fred_symbol_url <-
         )
       )
 
-    if (transformation %>% is_null()) {
+    if (transformation %>% purrr::is_null()) {
       slug_transformation <-
         ''
     }
 
-    if (!transformation %>% is_null()) {
+    if (!transformation %>% purrr::is_null()) {
       search_transformation <-
         transformation %>%
         str_to_lower()
@@ -1013,23 +1013,25 @@ parse_json_fred <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     return(df_data)
   }
 
 
-get_data_fred_symbol <-
+fred_symbol <-
   function(symbol = 'DGS2',
            transformation = NULL,
            convert_date_time = TRUE,
            include_metadata = TRUE,
+           widen_data = F,
            return_message = TRUE) {
-    if (symbol %>% is_null()) {
+    if (symbol %>% purrr::is_null()) {
       stop("Please enter a FRED series ID")
     }
     url <-
       generate_fred_symbol_url(symbol = symbol, transformation = transformation)
+
     parse_json_fred_safe <-
       purrr::possibly(parse_json_fred, data_frame())
 
@@ -1039,6 +1041,9 @@ get_data_fred_symbol <-
         convert_date_time = convert_date_time,
         return_message = return_message
       )
+
+
+
 
     if (data %>% nrow() == 0) {
       stop(list("No data for ", symbol) %>% purrr::reduce(paste0),
@@ -1069,6 +1074,13 @@ get_data_fred_symbol <-
         suppressMessages()
     }
 
+    if (widen_data) {
+      data <-
+        data %>%
+        spread(idSymbol, value)
+    }
+
+
     data <-
       df_meta %>%
       mutate(dataFRED = list(df_data))
@@ -1083,7 +1095,7 @@ get_data_fred_symbol <-
         df_data$dateData %>% min(na.rm = T),
         ' to ',
         df_data$dateData %>% max(na.rm = T)
-      ) %>% purrr::reduce(paste0) %>% message()
+      ) %>% purrr::reduce(paste0) %>% cat(fill = T)
     }
 
 
@@ -1102,25 +1114,27 @@ get_data_fred_symbol <-
 #' @param return_message if \code{TRUE} return message
 #' @param nest_data \code{TRUE} return nested data frame
 #' @param include_metadata if \code{TRUE} returns meta data from time series
+#' @param widen_data if \code{TRUE} widens data
 #'
 #' @return a \code{data_frame}
 #' @export
 #' @import dplyr lubridate tidyr purrr jsonlite
 #' @family index values
 #' @examples
-#' get_data_fred_symbols(symbols = c('DGS30','DGS10','DGS2'),
+#' fred_symbols(symbols = c('DGS30','DGS10','DGS2'),
 #' return_wide = TRUE, nest_data = FALSE)
 #'
-#' get_data_fred_symbols(
+#' fred_symbols(
 #' symbols = c("CPIAUCSL", "A191RL1Q225SBEA", "UNRATE"),
 #' convert_date_time = TRUE,
 #' nest_data = TRUE,
 #' include_metadata = TRUE
 #' )
 #'
-get_data_fred_symbols <-
+fred_symbols <-
   function(symbols = c('DGS2', "DGS10", "DGS30"),
            transformations = c("default"),
+           widen_data = F,
            convert_date_time = TRUE,
            nest_data = TRUE,
            include_metadata = TRUE,
@@ -1130,20 +1144,24 @@ get_data_fred_symbols <-
                   transform = transformations,
                   stringsAsFactors = FALSE) %>%
       as_data_frame()
-    get_data_fred_symbol_safe <-
-      purrr::possibly(get_data_fred_symbol, data_frame)
+
+    fred_symbol_safe <-
+      purrr::possibly(fred_symbol, data_frame())
 
     all_data <-
       1:nrow(df_options) %>%
-      map_df(function(x) {
-        get_data_fred_symbol_safe(
+      future_map_dfr(function(x) {
+        fred_symbol_safe(
           symbol = df_options$symbol[[x]],
           transformation = df_options$transform[[x]],
           convert_date_time = convert_date_time,
           include_metadata = include_metadata,
+          widen_data = widen_data,
           return_message = return_message
         )
       })
+
+
 
     if (!nest_data) {
       all_data <-
@@ -1251,7 +1269,7 @@ get_data_fred_symbols <-
 
       if (return_message) {
         glue::glue("Parsing {url}") %>%
-          message()
+          cat(fill = T)
       }
       .parse_fred_description_url_safe <-
         purrr::possibly(.parse_fred_description_url, data_frame())
@@ -1268,7 +1286,7 @@ get_data_fred_symbols <-
       data_frame()
     }
     urls %>%
-      map(function(x) {
+      future_map(function(x) {
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
@@ -1285,8 +1303,8 @@ get_data_fred_symbols <-
 #' @export
 #'
 #' @examples
-#' get_data_fred_symbols_descriptions(symbols = c("DGS2", "DGS10"))
-get_data_fred_symbols_descriptions <-
+#' fred_symbols_descriptions(symbols = c("DGS2", "DGS10"))
+fred_symbols_descriptions <-
   function(symbols = c("DGS2", "DGS10"),
            include_tags = FALSE,
            return_message = TRUE) {
@@ -1591,19 +1609,19 @@ visualize_fred_time_series <-
            interactive = FALSE) {
     if (use_random) {
       if (!'df_fred_symbols' %>% exists()) {
-        "Asssigning FRED symbols to your environment as df_fred_symbols" %>% message()
+        "Asssigning FRED symbols to your environment as df_fred_symbols" %>% cat(fill = T)
         assign(
           x = 'df_fred_symbols',
           value = eval(get_dictionary_all_fred_series_ids()),
           envir = .GlobalEnv
         )
       }
-      "\nBuckle your seatbelts we are plotting one random time series from the nearly 400,000 available on FRED" %>% message()
+      "\nBuckle your seatbelts we are plotting one random time series from the nearly 400,000 available on FRED" %>% cat(fill = T)
       series_id <- df_fred_symbols %>% sample_n(1) %>% .$idSeries
     }
 
     fred_df <-
-      get_data_fred_symbol(
+      fred_symbol(
         symbol = series_id,
         transformation = fred_data_transformation,
         nest_data = FALSE,

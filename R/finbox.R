@@ -2140,7 +2140,7 @@ clean_names <-
     if (data %>% tibble::has_name('idIndicies')) {
       df_indicies <-
         1:length(data$idIndicies) %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           if (data$idIndicies[x] %>% flatten_chr() %>% length() == 0) {
             return(data_frame(idRow = x, nameIndicies = NA))
           }
@@ -2160,7 +2160,7 @@ clean_names <-
     if (data %>% tibble::has_name('idBenchmarks')) {
       df_benchmarks <-
         1:length(data$idBenchmarks) %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           if (data$idBenchmarks[x] %>% flatten_chr() %>% length() == 0) {
             return(data_frame(idRow = x, idTickersBenchmark = NA))
           }
@@ -2244,7 +2244,7 @@ get_dictionary_finbox_companies <-
 
     if (return_message) {
       glue::glue("Acquired {nrow(data)} searchable companies from finbox.io") %>%
-        message()
+        cat(fill = T)
     }
     gc()
     data
@@ -2276,7 +2276,7 @@ get_dictionary_finbox_metrics <-
 
     df_periods <-
       1:length(data$data$periods) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         null_value <- data$data$periods[[x]] %>% purrr::is_null()
         if (null_value) {
           return(data_frame())
@@ -2479,7 +2479,7 @@ parse_ticker_json_data <-
 
 
     df_classes <-
-      data %>% map_df(class) %>%
+      data %>% future_map_dfr(class) %>%
       tidyr::gather(namePart, classPart) %>%
       mutate(idColumn = 1:n())
 
@@ -2494,7 +2494,7 @@ parse_ticker_json_data <-
 
     df_description <-
       1:length(char_cols) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         nameFinbox <- char_cols[x]
         value <-
           data[nameFinbox] %>% flatten_chr()
@@ -2553,7 +2553,7 @@ parse_ticker_json_data <-
 
     df_lists <-
       1:length(list_cols) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         nameData <-
           list_cols[[x]]
 
@@ -2581,7 +2581,7 @@ parse_ticker_json_data <-
         if (nameData == 'fair_value') {
           list_dfs <-
             1:length(list_parts) %>%
-            map(function(x) {
+            future_map(function(x) {
               list_name <-
                 list_parts[[x]]
 
@@ -2596,7 +2596,7 @@ parse_ticker_json_data <-
 
                 df_models <-
                   c('low', 'mid', 'high') %>%
-                  map(function(x){
+                  future_map(function(x){
                     df_row <-
                       df_list[x] %>% flatten_df() %>%
                       purrr::set_names(c('priceModel', 'pctUpside'))
@@ -2689,13 +2689,13 @@ parse_ticker_json_data <-
         if (nameData == 'stats') {
           list_dfs <-
             1:length(list_parts) %>%
-            map(function(x) {
+            future_map(function(x) {
               df_list <-
                 list_data[[list_parts[x]]] %>% as_data_frame()
 
               all_data <-
                 df_list %>% names() %>%
-                map(function(x){
+                future_map(function(x){
                   df_list[x] %>% pull() %>% flatten_df() %>%
                     flatten_df() %>%
                     gather(typeParty, value) %>%
@@ -2781,7 +2781,7 @@ parse_ticker_json_data <-
 
     dfs <-
       1:length(df_cols) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         nameData <-
           df_cols[[x]]
 
@@ -2838,7 +2838,7 @@ get_data_tickers_finbox <-
 
     all_data <-
       tickers %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         get_ticker_information_safe(ticker = x)
       }) %>%
       suppressMessages() %>%

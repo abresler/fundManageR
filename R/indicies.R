@@ -13,8 +13,8 @@
 #' @family index constituents
 #' @import dplyr purrr tidyr stringr formattable rvest
 #' @examples
-#' get_data_sp500_constituents(return_message = TRUE)
-get_data_sp500_constituents <-
+#' sp500_constituents(return_message = TRUE)
+sp500_constituents <-
   function(return_message = TRUE) {
     page <-
       "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies" %>%
@@ -62,7 +62,7 @@ get_data_sp500_constituents <-
     if (return_message) {
       list("Returned S&P 500 constituents as of ", Sys.Date()) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(df)
@@ -80,7 +80,7 @@ get_data_sp500_constituents <-
 #'
 #' Returns all MSCI indicies.  This function
 #' can be used to find indicies to search with
-#' \code{\link{get_data_msci_indicies_constituents}}
+#' \code{\link{msci_indicies_constituents}}
 #' to specify indicies to extract constituents.
 #'
 #' @return \code{data_frame}
@@ -88,8 +88,8 @@ get_data_sp500_constituents <-
 #' @family MSCI
 #' @import dplyr purrr formattable tidyr stringr jsonlite
 #' @examples
-#' get_data_msci_indicies()
-get_data_msci_indicies <-
+#' msci_indicies()
+msci_indicies <-
   function() {
     index_name_df <-
       "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=" %>%
@@ -116,7 +116,7 @@ get_data_msci_indicies <-
 
   }
 
-parse_msci_json_constituent_url <- function(url = "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=701268",
+.parse_msci_json_constituent_url <- function(url = "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=701268",
                                             return_message = TRUE) {
   df <-
     data_frame()
@@ -140,7 +140,7 @@ parse_msci_json_constituent_url <- function(url = "https://www.msci.com/c/portal
         as.numeric()
       list("Parsed Index ID: ", index_id) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
 
@@ -179,22 +179,22 @@ parse_msci_json_constituent_url <- function(url = "https://www.msci.com/c/portal
 #' @examples
 #' library(stringr)
 #' df_msci_indicies <-
-#' get_data_msci_indicies()
+#' msci_indicies()
 #' ## Get all technology indicies and their constituents
 #' tech_indicies <-
 #' df_msci_indicies %>%
 #' filter(nameIndex %>% str_detect('TECH')) %>%
 #' .$nameIndex
-#' get_data_msci_indicies_constituents(indicies = tech_indicies, nest_data = TRUE, return_message  = TRUE)
+#' msci_indicies_constituents(indicies = tech_indicies, nest_data = TRUE, return_message  = TRUE)
 
-#' get_data_msci_indicies_constituents(indicies = "NORTH AMERICA", nest_data = FALSE, return_message = TRUE)#'
-#' get_data_msci_indicies_constituents(indicies = NULL, nest_data = TRUE, return_message = TRUE)
-get_data_msci_indicies_constituents <-
+#' msci_indicies_constituents(indicies = "NORTH AMERICA", nest_data = FALSE, return_message = TRUE)#'
+#' msci_indicies_constituents(indicies = NULL, nest_data = TRUE, return_message = TRUE)
+msci_indicies_constituents <-
   function(indicies = NULL,
            nest_data = TRUE,
            return_message = TRUE) {
     index_df <-
-      get_data_msci_indicies()
+      msci_indicies()
 
     if (!indicies %>% is_null()) {
       index_options <-
@@ -213,13 +213,13 @@ get_data_msci_indicies_constituents <-
 
     }
 
-    parse_msci_json_constituent_url_safe <-
-      purrr::possibly(parse_msci_json_constituent_url, data_frame())
+    .parse_msci_json_constituent_url_safe <-
+      purrr::possibly(.parse_msci_json_constituent_url, data_frame())
 
     const_df <-
       index_df$urlIndexConstituents %>%
-      map_df(function(x) {
-        parse_msci_json_constituent_url_safe(url = x, return_message = return_message)
+      future_map_dfr(function(x) {
+        .parse_msci_json_constituent_url_safe(url = x, return_message = return_message)
       })
 
     const_df <-
@@ -258,7 +258,7 @@ get_data_msci_indicies_constituents <-
         ' MSCI indicies'
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(const_df)
@@ -280,8 +280,8 @@ get_data_msci_indicies_constituents <-
 #' @family real-time data
 #' @import jsonlite dplyr purrr stringr lubridate
 #' @examples
-#' get_data_msci_realtime_index_values()
-get_data_msci_realtime_index_values <-
+#' msci_realtime_index_values()
+msci_realtime_index_values <-
   function(return_wide = TRUE,
            return_message = TRUE) {
     raw <-
@@ -334,7 +334,7 @@ get_data_msci_realtime_index_values <-
     if (return_message) {
       list("Got MSCI Index values as of ", Sys.time()) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     if (!return_wide) {
       index_data <-

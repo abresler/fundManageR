@@ -65,7 +65,7 @@ tidy_column_formats <-
       data %>% dplyr::select(dplyr::matches("^date")) %>% ncol() > 0
 
     if (has_dates) {
-      data %>% dplyr::select(dplyr::matches("^date")) %>% map(class)
+      data %>% dplyr::select(dplyr::matches("^date")) %>% future_map(class)
     }
     if (drop_na_columns ) {
       data <-
@@ -179,7 +179,7 @@ find_target_filings <-
 
 # dictionaries ------------------------------------------------------------
 
-get_filer_type_df <-
+filer_type_df <-
   function() {
     data_frame(
       idTypeFilerOwner = c(
@@ -206,7 +206,7 @@ get_filer_type_df <-
       mutate_all(str_to_upper)
   }
 
-get_general_name_df <-
+general_name_df <-
   function() {
     general_name_df <-
       data_frame(
@@ -408,7 +408,7 @@ get_general_name_df <-
     return(general_name_df)
   }
 
-get_private_name_df <-
+private_name_df <-
   function() {
     data_frame(
       nameRF = c(
@@ -482,8 +482,8 @@ get_private_name_df <-
 #' @export
 #' @import dplyr
 #' @examples
-#' get_dictionary_form_d_categories()
-get_dictionary_form_d_categories <-
+#' dictionary_form_d_categories()
+dictionary_form_d_categories <-
   function() {
     category_df <-
       dplyr::data_frame(
@@ -603,7 +603,7 @@ get_dictionary_form_d_categories <-
     return(category_df)
   }
 
-get_insider_code_df <-
+insider_code_df <-
   function() {
     insider_df <-
       data_frame(
@@ -690,8 +690,8 @@ get_insider_code_df <-
 #' @family dictionary
 #'
 #' @examples
-#' get_dictionary_sec_filing_codes()
-get_dictionary_sec_filing_codes <-
+#' dictionary_sec_filing_codes()
+dictionary_sec_filing_codes <-
   function() {
     data_frame(
       idFormType = c(
@@ -775,8 +775,8 @@ get_dictionary_sec_filing_codes <-
 #' @family dictionary
 #'
 #' @examples
-#' get_dictionary_sec_form_codes()
-get_dictionary_sec_form_codes <-
+#' dictionary_sec_form_codes()
+dictionary_sec_form_codes <-
   function() {
     data_frame(
       idForm = c(
@@ -818,7 +818,7 @@ get_dictionary_sec_form_codes <-
     )
   }
 
-get_company_type_df <-
+company_type_df <-
   function() {
     data_frame(
       idCompanyType = c(
@@ -866,8 +866,8 @@ get_company_type_df <-
 #' @import dplyr stringr
 #'
 #' @examples
-#' get_dictionary_sec_rules()
-get_dictionary_sec_rules <-
+#' dictionary_sec_rules()
+dictionary_sec_rules <-
   function() {
     data_frame(
       idRule = c(
@@ -1064,14 +1064,14 @@ print_message <-
          ' ',
          table_name) %>%
       purrr::invoke(paste0, .) %>%
-      message()
+      cat(fill = T)
   }
 
 resolve_name_df <-
   function(data) {
     name_df <-
-      get_general_name_df() %>%
-      bind_rows(get_private_name_df()) %>%
+      general_name_df() %>%
+      bind_rows(private_name_df()) %>%
       distinct() %>%
       mutate(idRow = 1:n())
 
@@ -1163,8 +1163,8 @@ resolve_name_df <-
 #' @importFrom tidyr separate
 #' @family dictionary
 #' @examples
-#' get_data_sic_naics_codes(filter_duplicates = TRUE)
-get_data_sic_naics_codes <-
+#' data_sic_naics_codes(filter_duplicates = TRUE)
+data_sic_naics_codes <-
   function(filter_duplicates = TRUE) {
     sic <-
       "http://rankandfiled.com/static/export/sic_naics.csv" %>%
@@ -1217,8 +1217,8 @@ get_data_sic_naics_codes <-
 #' @examples
 #' @family dictionary
 #' @family SEC
-#' get_data_sec_rules()
-get_data_sec_rules <-
+#' data_sec_rules()
+data_sec_rules <-
   function() {
     codes <-
       "http://rankandfiled.com/static/export/file_numbers.csv" %>%
@@ -1242,8 +1242,8 @@ get_data_sec_rules <-
 #' @importFrom readr read_csv
 #' @family dictionary
 #' @examples
-#' get_data_location_codes()
-get_data_location_codes <-
+#' data_location_codes()
+data_location_codes <-
   function() {
     countries <-
       "http://rankandfiled.com/static/export/edgar_state_country.csv" %>%
@@ -1267,8 +1267,8 @@ get_data_location_codes <-
 #' @family SEC
 #' @family Rank and Filed
 #' @examples
-#' get_data_rf_leis()
-get_data_rf_leis <-
+#' data_rf_leis()
+data_rf_leis <-
   function(return_message = TRUE) {
     leis <-
       "http://rankandfiled.com/static/export/cik_lei.csv" %>%
@@ -1287,7 +1287,7 @@ get_data_rf_leis <-
         leis %>% nrow() %>% formattable::comma(digits = 0),
         " United States legal entities"
       ) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(leis)
   }
@@ -1304,8 +1304,8 @@ get_data_rf_leis <-
 #' @importFrom  tidyr separate
 #' @importFrom readr read_csv
 #' @importFrom formattable comma
-#' @examples get_data_us_tickers(return_message = TRUE)
-get_data_rf_us_tickers <-
+#' @examples data_us_tickers(return_message = TRUE)
+data_rf_us_tickers <-
   function(return_message = TRUE) {
     data <-
       "http://rankandfiled.com/static/export/cik_ticker.csv" %>%
@@ -1363,7 +1363,7 @@ get_data_rf_us_tickers <-
       suppressMessages()
 
     countries <-
-      get_data_location_codes()
+      data_location_codes()
 
 
     data <-
@@ -1396,7 +1396,7 @@ get_data_rf_us_tickers <-
     data <-
       data %>%
       left_join(
-        get_data_sic_naics_codes(filter_duplicates = TRUE) %>%
+        data_sic_naics_codes(filter_duplicates = TRUE) %>%
           dplyr::select(idSIC, classificationSIC) %>%
           mutate(idRow = 1:n()) %>%
           group_by(idSIC) %>%
@@ -1422,7 +1422,7 @@ get_data_rf_us_tickers <-
         data %>% nrow() %>% formattable::comma(digits = 0),
         " United States publicly traded companies"
       ) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(data)
   }
@@ -1449,8 +1449,8 @@ get_data_rf_us_tickers <-
 #' @family Rank and Filed
 #' @family securities search
 #' @examples
-#' get_data_mmf_owned_debt_securities(return_message = TRUE)
-get_data_mmf_owned_debt_securities <-
+#' mmf_owned_debt_securities(return_message = TRUE)
+mmf_owned_debt_securities <-
   function(return_message = TRUE) {
     debt <-
       "http://rankandfiled.com/static/export/mmf_cusips.csv" %>%
@@ -1506,8 +1506,8 @@ get_data_mmf_owned_debt_securities <-
 #' @family Rank and Filed
 #' @family securities search
 #' @examples
-#' get_data_sec_13F_companies()
-get_data_rf_sec_13F_companies <-
+#' sec_13F_companies()
+rf_sec_13F_companies <-
   function(return_message = TRUE) {
     data <-
       "http://rankandfiled.com/static/export/13f_cusips.csv" %>%
@@ -1558,9 +1558,9 @@ get_data_rf_sec_13F_companies <-
 #' @family Rank and Filed
 #' @family securities transaction
 #' @examples
-#' get_data_recent_insider_trades(nest_data = TRUE)
+#' recent_insider_trades(nest_data = TRUE)
 
-get_data_recent_insider_trades <-
+recent_insider_trades <-
   function(nest_data = FALSE,
            return_message = TRUE) {
     options(scipen = 9999)
@@ -1584,7 +1584,7 @@ get_data_recent_insider_trades <-
 
     all_data <-
       1:(json_data$result %>% length()) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         table <-
           json_data$result[[x]]
 
@@ -1705,7 +1705,7 @@ get_data_recent_insider_trades <-
     if (return_message) {
       list("You got ", all_data %>% nrow() %>% formattable::comma(digits = 0), ' Insider Transactions from the last 7 days') %>%
         purrr::reduce(paste0) %>%
-        message()
+        cat(fill = T)
     }
 
     all_data <-
@@ -1736,8 +1736,8 @@ get_data_recent_insider_trades <-
 #' @family Rank and Fild
 #'
 #' @examples
-#' get_data_sec_securities_filing_counts()
-get_data_sec_securities_filing_counts <-
+#' sec_securities_filing_counts()
+sec_securities_filing_counts <-
   function(return_message = TRUE) {
     data_frame(
       idForm = c('D', 'W', 'S-1', 'S-3', 'S-4'),
@@ -1772,7 +1772,7 @@ get_data_sec_securities_filing_counts <-
         filing_count_data$yearFiling %>% max
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(filing_count_data)
@@ -1782,12 +1782,12 @@ get_data_sec_securities_filing_counts <-
 generate_securities_urls <-
   function() {
     count_df <-
-      get_data_sec_securities_filing_counts(return_message = FALSE) %>%
+      sec_securities_filing_counts(return_message = FALSE) %>%
       mutate(lengthOut = ceiling(countFilings/50) + 1)
 
     url_df <-
       1:nrow(count_df) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         row_df <-
           count_df %>%
           slice(x)
@@ -1853,7 +1853,7 @@ parse_securities_url <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% message()
+          purrr::invoke(paste0, .) %>% cat(fill = T)
       }
 
       return(data)
@@ -1886,12 +1886,12 @@ parse_securities_url <-
 #' #' \dontrun{
 #'
 #' ## All Securities Filings
-#' get_data_securities_offerings(year_forms = NULL, forms = NULL, return_message = TRUE, nest_data = TRUE)
+#' securities_offerings(year_forms = NULL, forms = NULL, return_message = TRUE, nest_data = TRUE)
 #'
 #' ## IPOs since 1999
-#' get_data_securities_offerings(year_forms = 1999:2017, forms = "S-1", return_message = TRUE, nest_data = FALSE)
+#' securities_offerings(year_forms = 1999:2017, forms = "S-1", return_message = TRUE, nest_data = FALSE)
 #' }
-get_data_securities_offerings <-
+securities_offerings <-
   function(year_forms = NULL,
            forms = NULL,
            nest_data = FALSE,
@@ -1921,7 +1921,7 @@ get_data_securities_offerings <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_securities_url_safe(
           url = x,
           column_names = c('idCIK', 'nameIssuer', 'idTicker', 'idForm'),
@@ -1960,7 +1960,7 @@ get_data_securities_offerings <-
         all_data$dateFiling %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -2058,7 +2058,7 @@ parse_rf_search_name <-
     return(data)
   }
 
-get_data_sec_entity <-
+sec_entity <-
   function(entity_name = "Rockwood Capital",
            return_message = TRUE) {
     json_url <-
@@ -2105,7 +2105,7 @@ get_data_sec_entity <-
         ' SEC registered entities matching the name ',
         entity_name
       ) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(data)
@@ -2129,8 +2129,8 @@ get_data_sec_entity <-
 #' @family Rank and Filed
 #' @family entity search
 #' @examples
-#' get_data_sec_filing_entities(entity_names = c('Rockwood Capital', 'Vornado', 'Two Sigma'))
-get_data_sec_filing_entities <-
+#' sec_filing_entities(entity_names = c('Rockwood Capital', 'Vornado', 'Two Sigma'))
+sec_filing_entities <-
   function(entity_names = c('Rockwood Capital', 'Vornado', 'Two Sigma'),
            return_message = TRUE) {
     no_entry <-
@@ -2141,13 +2141,13 @@ get_data_sec_filing_entities <-
       stop("Please enter a search name")
     }
 
-    get_data_sec_entity_safe <-
-      purrr::possibly(get_data_sec_entity, NULL)
+    sec_entity_safe <-
+      purrr::possibly(sec_entity, NULL)
 
     all_data <-
       entity_names %>%
-      map_df(function(x) {
-        get_data_sec_entity_safe(entity_name = x, return_message = return_message)
+      future_map_dfr(function(x) {
+        sec_entity_safe(entity_name = x, return_message = return_message)
       })
 
     has_double_entities <-
@@ -2164,7 +2164,7 @@ get_data_sec_filing_entities <-
 
       entites_df <-
         1:nrow(all_data) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           entity <-
             all_data$nameEntity[[x]]
 
@@ -2214,7 +2214,7 @@ get_data_sec_filing_entities <-
 #' This function returns data for SEC Form D's by
 #' specified industry
 #'
-#' \code{get_data_sec_form_ds()} queries all SEC filed form-d's since 2009 and returns the associated data.
+#' \code{sec_form_ds()} queries all SEC filed form-d's since 2009 and returns the associated data.
 #' the default parameters search every industry and year which you
 #' can change by modifying the parameters
 #'
@@ -2247,10 +2247,10 @@ get_data_sec_filing_entities <-
 #'
 #' @examples
 #' \dontrun{
-#' get_data_sec_form_ds()
-#' get_data_sec_form_ds(form_years = 2016:2017, industries = c("Real Estate", "Technology", "Other"))
+#' sec_form_ds()
+#' sec_form_ds(form_years = 2016:2017, industries = c("Real Estate", "Technology", "Other"))
 #' }
-get_data_sec_form_ds <-
+sec_form_ds <-
   function(industries = NULL,
            form_years = NULL,
            months = NULL,
@@ -2377,7 +2377,7 @@ get_data_sec_form_ds <-
 
     all_data <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_securities_url_safe(
           url = x,
           column_names = c(
@@ -2429,7 +2429,7 @@ get_data_sec_form_ds <-
         all_data$dateFiling %>% max()
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     if (nest_data) {
@@ -2593,7 +2593,7 @@ parse_json_general_filing <-
     if ('detailsOwns' %in% names(data)) {
       detail_df <-
         1:length(data$detailsOwns) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           detail_value <-
             data$detailsOwns[[x]]
 
@@ -2679,7 +2679,7 @@ parse_json_general_filing <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(data)
@@ -2751,7 +2751,7 @@ parse_json_filings <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(json_data)
@@ -2776,7 +2776,7 @@ parse_json_private <-
       mutate(date = date %>% lubridate::ymd())
 
     offering_history_class_df <-
-      json_data$offering_history %>% map_df(class) %>%
+      json_data$offering_history %>% future_map_dfr(class) %>%
       gather(column, type) %>%
       mutate(idName = 1:n())
 
@@ -2837,7 +2837,7 @@ parse_json_private <-
     if (has_relations) {
       relation_df <-
         1:(json_data$offering_history$amended %>% length()) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           if (!json_data$offering_history$`_related_people`[[x]] %>% purrr::is_null()) {
             relation_data <-
               json_data$offering_history$`_related_people`[[x]] %>% mutate(
@@ -2860,7 +2860,7 @@ parse_json_private <-
 
       relation_df <-
         1:nrow(relation_df) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           person_title <-
             relation_df$nameRelation[[x]] %>%
             str_split('\\&') %>%
@@ -2913,7 +2913,7 @@ parse_json_private <-
     if (has_brokers) {
       broker_df <-
         1:(json_data$offering_history$amended %>% length()) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           empty_value <-
             json_data$offering_history$`_brokers`[[x]] %>% is_null()
           if (empty_value) {
@@ -2932,7 +2932,7 @@ parse_json_private <-
 
       broker_df <-
         1:nrow(broker_df) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           broker_crd <-
             broker_df$nameBrokerCRD[[x]] %>%
             str_split('\\|') %>%
@@ -3054,7 +3054,7 @@ parse_json_private <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(offering_data)
   }
@@ -3091,7 +3091,7 @@ parse_json_fundraising <-
 
     company_name_df <-
       1:length(fundraising_df$nameCompanies) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         company_name_data <-
           fundraising_df$nameCompanies[[x]]
 
@@ -3132,7 +3132,7 @@ parse_json_fundraising <-
 
     offering_value_df <-
       1:length(fundraising_df$offeringsValues) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         offering_value_data <-
           fundraising_df$offeringsValues[[x]]
 
@@ -3190,7 +3190,7 @@ parse_json_fundraising <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(fundraising_df)
   }
@@ -3228,7 +3228,7 @@ parse_json_traders <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df)
@@ -3282,7 +3282,7 @@ parse_json_clevel <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(clevel_df)
@@ -3326,7 +3326,7 @@ parse_json_mda <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(data)
@@ -3389,7 +3389,7 @@ parse_json_owners <-
       if ('detailsOwner' %in% names(filing_df)) {
         detail_df <-
           1:length(filing_df$detailsOwner) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             detail_value <-
               filing_df$detailsOwner[[x]]
 
@@ -3476,7 +3476,7 @@ parse_json_owners <-
     if (has_companies) {
       company_df <-
         1:nrow(general_df) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           has_no_data <-
             json_data$insiders$companies[[x]] %>%
             nrow() == 0
@@ -3556,7 +3556,7 @@ parse_json_owners <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     general_df <-
@@ -3672,7 +3672,7 @@ parse_json_public_filers <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(filing_df)
   }
@@ -3797,7 +3797,7 @@ parse_json_subsidiaries <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(data)
   }
@@ -3865,7 +3865,7 @@ parse_cik_filings <-
 
     all_filings <-
       filing_urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_json_public_filers_safe(url = x, return_message = return_message)
       }) %>%
       distinct() %>%
@@ -3894,7 +3894,7 @@ parse_cik_filings <-
 
       report_df <-
         1:nrow(report_df) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           is_none <-
             report_df$typeReport[[x]] == 'None'
 
@@ -3955,7 +3955,7 @@ parse_cik_filings <-
         entity
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     all_filings <-
       all_filings %>%
@@ -4363,7 +4363,7 @@ parse_cik_data <-
            nameEntity,
            "\n") %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     all_data <-
@@ -4431,7 +4431,7 @@ parse_cik_data <-
 #'
 #' @examples
 #' \dontrun{
-#' get_data_sec_filer(entity_names = 'HLT Holdco', tickers = c('FB'),
+#' sec_filer(entity_names = 'HLT Holdco', tickers = c('FB'),
 #' nest_data = TRUE, parse_subsidiaries = TRUE, parse_all_filing_url_data = TRUE,
 #' parse_13F = TRUE, assign_to_environment = TRUE,
 #' return_message = TRUE)
@@ -4443,7 +4443,7 @@ parse_cik_data <-
 #' #XBRL Example
 #'
 #'}
-get_data_sec_filer <-
+sec_filer <-
   function(entity_names = NULL,
            tickers = NULL,
            ciks = NULL,
@@ -4484,12 +4484,12 @@ get_data_sec_filer <-
       c()
 
     if (has_entities) {
-      get_data_sec_filing_entities_safe <-
-        purrr::possibly(get_data_sec_filing_entities, data_frame())
+      sec_filing_entities_safe <-
+        purrr::possibly(sec_filing_entities, data_frame())
 
       search_df <-
         entity_names %>%
-        get_data_sec_filing_entities_safe(return_message = return_message)
+        sec_filing_entities_safe(return_message = return_message)
 
       has_rows <-
         search_df %>% nrow() > 0
@@ -4517,7 +4517,7 @@ get_data_sec_filer <-
       all_data <-
         all_ciks %>%
         sort() %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           parse_cik_data_safe(
             tables = tables,
             nest_data = nest_data,
@@ -4544,7 +4544,7 @@ get_data_sec_filer <-
       if (table_exists) {
         all_ticker_data <-
           tickers %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             parse_ticker_data(
               ticker = x,
               nest_data = nest_data,
@@ -4560,7 +4560,7 @@ get_data_sec_filer <-
       } else {
         all_data <-
           tickers %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             parse_ticker_data_safe(ticker = x,
                                    tables = tables,
                                    return_message = return_message)
@@ -4611,7 +4611,7 @@ get_data_sec_filer <-
     if (missing_ciks) {
       list("Missing ", all_ciks[!all_ciks %in% all_data$idCIK] %>% paste(collapse = ', ')) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     all_data <-
@@ -4698,7 +4698,7 @@ get_data_sec_filer <-
               sub_url_df %>%
               arrange(dateFiling) %>%
               .$urlSEC %>%
-              map_df(function(x) {
+              future_map_dfr(function(x) {
                 parse_sec_subsidiary_url_safe(url = x, return_message = return_message)
               }) %>%
               suppressWarnings()
@@ -4854,7 +4854,7 @@ get_data_sec_filer <-
         walk(function(x) {
           df_name <-
             table_name_df %>% slice(x) %>% .$nameDF
-          df_name %>% message()
+          df_name %>% cat(fill = T)
           df_data <-
             all_data %>%
             filter(nameTable == table_name_df$nameTable[[x]]) %>%
@@ -5009,7 +5009,7 @@ parse_json_general_insider <-
       .[['insider']]
 
     general_cols <-
-      data %>% map_df(class) %>%
+      data %>% future_map_dfr(class) %>%
       gather(item, value) %>%
       filter(!value %>% str_detect(c('list', 'data.frame'))) %>%
       .$item %>%
@@ -5046,7 +5046,7 @@ parse_json_general_insider <-
       if ('detailsOwns' %in% names(filing_df)) {
         detail_df <-
           1:length(filing_df$detailsOwns) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             detail_value <-
               filing_df$detailsOwns[[x]]
 
@@ -5167,7 +5167,7 @@ parse_json_general_insider <-
       if ('status_history' %in% names(companies_df)) {
         status_df <-
           1:length(companies_df$status_history) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             df <-
               companies_df$status_history[[x]] %>%
               as_data_frame() %>%
@@ -5268,7 +5268,7 @@ parse_json_general_insider <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(general_df)
@@ -5380,7 +5380,7 @@ parse_insider_trade_json_url <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(trade_df)
@@ -5424,7 +5424,7 @@ parse_insider_trades <-
 
     all_data <-
       trade_urls %>%
-      purrr::map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_insider_trade_json_url(url = x, return_message = return_message)
       }) %>%
       distinct()
@@ -5440,7 +5440,7 @@ parse_insider_trades <-
 
     owned_company_df <-
       company_urls_general %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_json_general_filing(url = x,
                                   return_message = TRUE,
                                   nest_data = nest_data)
@@ -5484,7 +5484,7 @@ parse_insider_trades <-
         insider
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     return(all_data)
   }
@@ -5522,7 +5522,7 @@ parse_insider_filings <-
 
     all_filings <-
       filing_urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_json_public_filers_safe(url = x, return_message = return_message)
       }) %>%
       distinct() %>%
@@ -5533,7 +5533,7 @@ parse_insider_filings <-
     if (return_message) {
       list("Parsed ", all_filings %>% nrow(), ' SEC Filings for ', insider) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(all_filings)
@@ -5563,7 +5563,7 @@ parse_json_fund_general <-
       jsonlite::fromJSON()
 
     general_cols <-
-      json_data %>% map_df(class) %>%
+      json_data %>% future_map_dfr(class) %>%
       gather(item, value) %>%
       filter(!value %in% (c('list', 'data.frame'))) %>%
       .$item %>%
@@ -5645,7 +5645,7 @@ parse_json_fund_general <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(general_df)
@@ -5704,7 +5704,7 @@ parse_for_tables_rf <-
       df_all_filing_urls <-
         search_df$urlSECFilingDirectory %>%
         unique() %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           parse_sec_filing_index(urls = x)
         })
 
@@ -5730,10 +5730,10 @@ parse_for_tables_rf <-
         urls <-
           df_all_filing_urls$urlTextFilingFull %>%
           unique()
-        get_data_sec_complete_filings_safe <-
-          purrr::possibly(get_data_sec_complete_filings, data_frame())
+        sec_complete_filings_safe <-
+          purrr::possibly(sec_complete_filings, data_frame())
         all_text_df <-
-          get_data_sec_complete_filings(urls = urls)
+          sec_complete_filings(urls = urls)
 
         all_tables <-
           all_tables %>%
@@ -5846,7 +5846,7 @@ parse_filing_stream <-
     options(scipen = 9999)
 
     filing_class_df <-
-      json_data$filings %>% map_df(class) %>%
+      json_data$filings %>% future_map_dfr(class) %>%
       gather(column, type) %>%
       mutate(idName = 1:n())
 
@@ -5932,7 +5932,7 @@ parse_filing_stream <-
 
         owns_df <-
           1:nrow(filer_df) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             owns <-
               filer_df$detailsOwns[[x]] %>%
               str_split("\\|") %>%
@@ -6018,7 +6018,7 @@ parse_filing_stream <-
 
       offering_df <-
         1:nrow(general_df) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           offering <-
             json_data$filings$offerings[[x]]
 
@@ -6100,7 +6100,7 @@ parse_filing_stream <-
 
       trade_df <-
         1:nrow(general_df) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           trades <-
             json_data$filings$trades[[x]]
 
@@ -6210,13 +6210,13 @@ parse_filing_stream <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(general_df)
   }
 
 
-get_data_sec_filing_stream <-
+sec_filing_stream <-
   function(filers = 'All',
            filing_name = 'Registrations',
            nest_data = TRUE,
@@ -6244,7 +6244,7 @@ get_data_sec_filing_stream <-
 
       data <-
         urls %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           parse_filing_stream_safe(url = x, nest_data = nest_data)
         }) %>%
         distinct() %>%
@@ -6400,7 +6400,7 @@ get_data_sec_filing_stream <-
            filing_name,
            ' Form Type\n') %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     return(data)
   }
@@ -6439,10 +6439,10 @@ get_data_sec_filing_stream <-
 #'
 #' @examples
 #' \dontrun{
-#' get_data_sec_filing_streams(filers = 'All', filing_names = 'Annual Reports')
+#' sec_filing_streams(filers = 'All', filing_names = 'Annual Reports')
 #' }
 #'
-get_data_sec_filing_streams_rf <-
+sec_filing_streams_rf <-
   function(filers = c('All', 'Corporate Insider', 'Companies', 'Investment Company'),
            filing_names = c(
              'All',
@@ -6470,13 +6470,13 @@ get_data_sec_filing_streams_rf <-
       ) %>%
       as_data_frame()
 
-    get_data_sec_filing_stream_safe <-
-      purrr::possibly(get_data_sec_filing_stream, NULL)
+    sec_filing_stream_safe <-
+      purrr::possibly(sec_filing_stream, NULL)
 
     all_data <-
       1:nrow(type_df) %>%
-      map_df(function(x) {
-        get_data_sec_filing_stream_safe(
+      future_map_dfr(function(x) {
+        sec_filing_stream_safe(
           filers = type_df$nameFiler[[x]],
           filing_name = type_df$nameFiling[[x]],
           nest_data = nest_data,
@@ -6528,7 +6528,7 @@ parse_json_public_general <-
       .[[1]]
 
     general_class_df <-
-      json_data %>% map_df(class) %>%
+      json_data %>% future_map_dfr(class) %>%
       gather(column, type) %>%
       mutate(idName = 1:n())
 
@@ -6653,7 +6653,7 @@ parse_json_public_general <-
 
         owns_df <-
           1:nrow(filer_df) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             owns <-
               filer_df$detailsOwns[[x]] %>%
               str_split("\\|") %>%
@@ -6755,7 +6755,7 @@ parse_json_public_general <-
     if ('detailsOwns' %in% names(general_df)) {
       detail_df <-
         1:length(general_df$detailsOwns) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           detail_value <-
             general_df$detailsOwns[[x]]
 
@@ -6838,7 +6838,7 @@ parse_json_public_general <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(general_df)
@@ -6986,7 +6986,7 @@ parse_json_trades <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(trade_df)
   }
@@ -7023,7 +7023,7 @@ parse_trades <-
 
     all_trades <-
       trade_urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_json_trades_safe(url = x, return_message = return_message)
       }) %>%
       distinct() %>%
@@ -7073,7 +7073,7 @@ parse_trades <-
     if (return_message) {
       list("Parsed ", all_trades %>% nrow(), ' trades for ', entity) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(all_trades)
@@ -7106,7 +7106,7 @@ parse_public_filings <-
 
     all_filings <-
       filing_urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_json_public_filers_safe(url = x, return_message = return_message)
       }) %>%
       distinct() %>%
@@ -7131,7 +7131,7 @@ parse_public_filings <-
     if (return_message) {
       list("Parsed ", all_filings %>% nrow(), ' SEC Filings for ', entity) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
     return(all_filings)
   }
@@ -7218,7 +7218,7 @@ parse_ticker_data <-
     if (return_message) {
       list("Acquired all data for ", all_data$nameEntity %>% unique()) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
   }
@@ -7245,10 +7245,10 @@ parse_ticker_data <-
 #' @family entity search
 #' @examples
 #' \dontrun{
-#' get_data_us_public_companies(merge_type = NULL)
+#' us_public_companies(merge_type = NULL)
 #'
 #' }
-get_data_us_public_companies <-
+us_public_companies <-
   function(merge_type = NULL,
            return_message = TRUE) {
     no_merge <-
@@ -7346,7 +7346,7 @@ get_data_us_public_companies <-
       suppressMessages()
 
     countries <-
-      get_data_location_codes()
+      location_codes()
 
     company_data <-
       company_data %>%
@@ -7396,7 +7396,7 @@ get_data_us_public_companies <-
 
     dup_general_df <-
       dup_count_df$idTicker %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_company_general(ticker = x)
       }) %>%
       arrange(idTicker)
@@ -7424,7 +7424,7 @@ get_data_us_public_companies <-
       general_data <-
         company_data$idTicker %>%
         unique() %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           parse_company_general(ticker = x, return_message = return_message)
         }) %>%
         suppressWarnings()
@@ -7460,7 +7460,7 @@ get_data_us_public_companies <-
           company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)
         ) %>%
           purrr::invoke(paste0, .) %>%
-          message()
+          cat(fill = T)
       }
 
       return(company_data)
@@ -7468,7 +7468,7 @@ get_data_us_public_companies <-
 
     if (is_match) {
       all_tickers <-
-        get_data_rf_us_tickers()
+        rf_us_tickers()
 
       company_data <-
         company_data %>%
@@ -7507,7 +7507,7 @@ get_data_us_public_companies <-
         purrr::possibly(parse_company_general, data_frame)
       dup_general_df <-
         dup_tickers %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           parse_company_general(ticker = x)
         }) %>%
         arrange(idTicker) %>%
@@ -7560,7 +7560,7 @@ get_data_us_public_companies <-
 
       dup_general_df <-
         dup_tickers %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           parse_company_general(ticker = x)
         }) %>%
         arrange(idTicker) %>%
@@ -7613,7 +7613,7 @@ get_data_us_public_companies <-
           company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)
         ) %>%
           purrr::invoke(paste0, .) %>%
-          message()
+          cat(fill = T)
       }
 
       company_data <-
@@ -8124,7 +8124,7 @@ parse_page_subsidiary_table_html <-
 
     all_data <-
       numbers %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         css_selector <-
           paste0('td:nth-child(', x, ')')
         has_length <-
@@ -8220,7 +8220,7 @@ parse_page_subsidiary_table_html <-
     if (off_one) {
       df <-
         all_data$item %>% unique() %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           has_data <-
             all_data %>%
             filter(item == x) %>%
@@ -8256,7 +8256,7 @@ parse_page_subsidiary_table_html <-
           html_table(fill = T)
         df <-
           1:length(tables) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             table_df <-
               tables[[x]] %>%
               data.frame(stringsAsFactors = FALSE) %>%
@@ -8467,7 +8467,7 @@ parse_sec_subsidiary_url_html <-
 
         if (return_message) {
           list("Parsed: ", url) %>%
-            purrr::invoke(paste0, .) %>% message()
+            purrr::invoke(paste0, .) %>% cat(fill = T)
         }
 
         return(df)
@@ -8523,7 +8523,7 @@ parse_sec_subsidiary_url_html <-
           select(-matches("idSubsidiary"))
         if (return_message) {
           list("Parsed: ", url) %>%
-            purrr::invoke(paste0, .) %>% message()
+            purrr::invoke(paste0, .) %>% cat(fill = T)
         }
 
         return(df)
@@ -8538,7 +8538,7 @@ parse_sec_subsidiary_url_html <-
     if (is_font_table) {
       all_data <-
         1:10 %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           css_selector <-
             paste0('td:nth-child(', x, ')')
           has_length <-
@@ -8662,7 +8662,7 @@ parse_sec_subsidiary_url_html <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% message()
+          purrr::invoke(paste0, .) %>% cat(fill = T)
       }
 
       return(all_data)
@@ -8683,7 +8683,7 @@ parse_sec_subsidiary_url_html <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df %>% select(-matches("idSubsidiary")))
@@ -8719,7 +8719,7 @@ parse_sec_subsidiary_url_text <-
 
     df <-
       1:length(data) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         item <-
           data[[x]]
 
@@ -8782,7 +8782,7 @@ parse_sec_subsidiary_url_text <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df)
@@ -8827,7 +8827,7 @@ parse_full_form_names <-
   function(sec_names) {
     df_names <-
       1:length(sec_names) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         sec_name <-
           sec_names[[x]]
 
@@ -9027,7 +9027,7 @@ parse_xml_tables <-
 
     data <-
       1:length(tables) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         table <-
           tables[[x]]
 
@@ -9071,13 +9071,13 @@ parse_xml_tables <-
         }
         if (xml_nodes %>% length() > 100) {
           list("Be patient there are ", xml_nodes %>% length() %>% formattable::comma(digits = 0), ' nodes to parse') %>%
-            purrr::reduce(paste0) %>% message()
+            purrr::reduce(paste0) %>% cat(fill = T)
         }
         value_list <-
           xml_nodes %>% as_list()
 
         value_list <-
-          value_list[value_list %>% map(length) %>% flatten_dbl() > 0]
+          value_list[value_list %>% future_map(length) %>% flatten_dbl() > 0]
 
         json_data <-
           value_list %>%
@@ -9116,7 +9116,7 @@ parse_xml_tables <-
             flatten()
 
           json_data <-
-            json_data[json_data %>% map(function(x){data.frame(x, stringsAsFactors = F)} %>% nrow()) > 0]
+            json_data[json_data %>% future_map(function(x){data.frame(x, stringsAsFactors = F)} %>% nrow()) > 0]
         }
 
         json_data <-
@@ -9263,7 +9263,7 @@ parse_sec_form <-
 
     data <-
       1:length(tables) %>%
-      map(function(x) {
+      future_map(function(x) {
         table <-
           tables[[x]]
         table_name <-
@@ -9334,7 +9334,7 @@ parse_sec_form <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     rm(df_metadata)
@@ -9356,7 +9356,7 @@ parse_form_data <-
       all_data <-
         df_search$urlSECFiling %>%
         unique() %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           parse_xbrl_filer_url(url = x, return_message = return_message)
         })
       all_data <-
@@ -9390,7 +9390,7 @@ parse_form_data <-
     all_data <-
       df_search$urlSECFiling %>%
       unique() %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_sec_form(url = x, return_message = return_message)
       })
 
@@ -9596,7 +9596,7 @@ parse_xbrl_filer_url <-
     tf %>% unlink()
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     return(data)
   }
@@ -10818,7 +10818,7 @@ sec_form_title_df <-
       )
     )}
 
-get_filer_type_df <-
+filer_type_df <-
   function() {
     data_frame(
       idTypeFilerOwner = c(
@@ -10855,8 +10855,8 @@ get_filer_type_df <-
 #' @export
 #' @import dplyr
 #' @examples
-#' get_dictionary_form_d_categories()
-get_dictionary_form_d_categories <-
+#' dictionary_form_d_categories()
+dictionary_form_d_categories <-
   function() {
     category_df <-
       dplyr::data_frame(
@@ -10976,7 +10976,7 @@ get_dictionary_form_d_categories <-
     return(category_df)
   }
 
-get_insider_code_df <-
+insider_code_df <-
   function() {
     insider_df <-
       data_frame(
@@ -11063,8 +11063,8 @@ get_insider_code_df <-
 #' @family dictionary
 #'
 #' @examples
-#' get_dictionary_sec_filing_codes()
-get_dictionary_sec_filing_codes <-
+#' dictionary_sec_filing_codes()
+dictionary_sec_filing_codes <-
   function() {
     data_frame(
       idFormType = c(
@@ -11148,8 +11148,8 @@ get_dictionary_sec_filing_codes <-
 #' @family dictionary
 #'
 #' @examples
-#' get_dictionary_sec_form_codes()
-get_dictionary_sec_form_codes <-
+#' dictionary_sec_form_codes()
+dictionary_sec_form_codes <-
   function() {
     data_frame(
       idForm = c(
@@ -11191,7 +11191,7 @@ get_dictionary_sec_form_codes <-
     )
   }
 
-get_company_type_df <-
+company_type_df <-
   function() {
     data_frame(
       idCompanyType = c(
@@ -11239,8 +11239,8 @@ get_company_type_df <-
 #' @import dplyr stringr
 #'
 #' @examples
-#' get_dictionary_sec_rules()
-get_dictionary_sec_rules <-
+#' dictionary_sec_rules()
+dictionary_sec_rules <-
   function() {
     data_frame(
       idRule = c(
@@ -11310,7 +11310,7 @@ parse_full_form_names <-
   function(sec_names) {
     df_names <-
       1:length(sec_names) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         sec_name <-
           sec_names[[x]]
 
@@ -11512,7 +11512,7 @@ parse_xml_tables <-
 
     data <-
       1:length(tables) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         table <-
           tables[[x]]
 
@@ -11558,14 +11558,14 @@ parse_xml_tables <-
         }
         if (xml_nodes %>% length() > 100) {
           list("Be patient there are ", xml_nodes %>% length() %>% formattable::comma(digits = 0), ' nodes to parse') %>%
-            purrr::reduce(paste0) %>% message()
+            purrr::reduce(paste0) %>% cat(fill = T)
         }
         value_list <-
           xml_nodes %>%
           as_list()
 
         value_list <-
-          value_list[value_list %>% map(length) %>% flatten_dbl() > 0]
+          value_list[value_list %>% future_map(length) %>% flatten_dbl() > 0]
 
         json_data <-
           value_list %>%
@@ -11604,7 +11604,7 @@ parse_xml_tables <-
             flatten()
 
           json_data <-
-            json_data[json_data %>% map(function(x){data.frame(x, stringsAsFactors = F)} %>% nrow()) > 0]
+            json_data[json_data %>% future_map(function(x){data.frame(x, stringsAsFactors = F)} %>% nrow()) > 0]
         }
 
         json_data <-
@@ -11751,7 +11751,7 @@ parse_sec_form <-
 
     data <-
       1:length(tables) %>%
-      map(function(x) {
+      future_map(function(x) {
         table <-
           tables[[x]]
         table_name <-
@@ -11840,7 +11840,7 @@ parse_form_data <-
       all_data <-
         df_search$urlSECFiling %>%
         unique() %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           parse_xbrl_filer_url(url = x, return_message = return_message)
         })
       all_data <-
@@ -11866,7 +11866,7 @@ parse_form_data <-
         df_search %>% select(urlSECFiling, urlSECFilingDirectory)
       df_13f_urls <-
         1:nrow(urls_df) %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
 
           row_df <-
             urls_df %>% slice(x)
@@ -11895,7 +11895,7 @@ parse_form_data <-
 
       df_13fs <-
         1:length(slugs) %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           slug <-
             slugs[[x]]
           df_period <-
@@ -11975,7 +11975,7 @@ parse_form_data <-
     all_data <-
       df_search$urlSECFiling %>%
       unique() %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_sec_form_safe(url = x, return_message = return_message)
       })
 
@@ -12035,7 +12035,7 @@ parse_sec_filing_index <-
       data_frame()
     success <- function(res) {
       if (return_message) {
-        list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% message()
+        list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% cat(fill = T)
       }
       page <-
         res$content %>%
@@ -12250,17 +12250,17 @@ parse_sec_filing_index <-
     df
   }
 
-get_all_filings <- function(urls, return_message = TRUE)  {
+all_filings <- function(urls, return_message = TRUE)  {
   df_filings <-
     urls %>%
-    map_df(function(x){
+    future_map_dfr(function(x){
       parse_sec_filing_index(urls = x, return_message = return_message)
     })
 
   return(df_filings)
 }
 
-get_all_filing_urls <-
+all_filing_urls <-
   function(data, nest_data = TRUE,
            return_message = TRUE) {
     if (!'urlSECFilingDirectory' %in% names(data)) {
@@ -12270,7 +12270,7 @@ get_all_filing_urls <-
       df_accession <-
         data$urlSECFilingDirectory %>%
         unique() %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           urlSECFilingDirectory <-
             x
 
@@ -12302,7 +12302,7 @@ get_all_filing_urls <-
       data$urlSECFilingDirectory
 
     df_all_filings <-
-      get_all_filings(urls = urls, return_message = return_message)
+      all_filings(urls = urls, return_message = return_message)
 
     df_all_filings <-
       df_all_filings %>%
@@ -12319,7 +12319,7 @@ get_all_filing_urls <-
   }
 
 # Text Form ---------------------------------------------------------------
-get_header_names <-
+header_names <-
   function() {
     data_frame(
       nameSEC = c(
@@ -12381,13 +12381,13 @@ get_header_names <-
     )
   }
 
-get_section_names <-
+section_names <-
   function() {
     data_frame(nameSectionSEC = c(NA, "SUBJECT COMPANY", "FILED BY", 'ISSUER', 'REPORTING-OWNER'),
                nameSectionActual = c('', '', 'FilingEntity', 'Issuer', 'ownerReporting')
     )
   }
-get_parent_names <-
+parent_names <-
   function() {
     data_frame(nameParentSEC = c(NA, "COMPANY DATA", "FILING VALUES", "BUSINESS ADDRESS", "MAIL ADDRESS",
                                  "FORMER COMPANY"),
@@ -12446,12 +12446,12 @@ parse_text_headers <- function(text_blob){
     suppressMessages()
 
   df_parents <-
-    get_parent_names()
+    parent_names()
 
   df_names <-
-    get_header_names()
+    header_names()
   df_sections <-
-    get_section_names()
+    section_names()
 
   has_missing_names <-
     data$nameSEC[!data$nameSEC %in% df_names$nameSEC] %>% length() > 0
@@ -12459,7 +12459,7 @@ parse_text_headers <- function(text_blob){
   if (has_missing_names) {
     df_missing <-
       data$nameSEC[!data$nameSEC %in% df_names$nameSEC] %>% unique() %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         parts <-
           x %>% str_replace_all('\\-', ' ') %>%
           str_split('\\ ') %>% flatten_chr()
@@ -12595,7 +12595,7 @@ parse_text_filing <-
   }
 
 
-get_data_sec_complete_filings <-
+sec_complete_filings <-
   function(urls = c("https://www.sec.gov/Archives/edgar/data/732712/000119312517030264/0001193125-17-030264.txt", "https://www.sec.gov/Archives/edgar/data/732712/000161159317000024/0001611593-17-000024.txt", "https://www.sec.gov/Archives/edgar/data/1629703/000161159317000025/0001611593-17-000025.txt", "https://www.sec.gov/Archives/edgar/data/1284999/000161159317000014/0001611593-17-000014.txt"),
            return_message =  TRUE) {
     df <-
@@ -12604,7 +12604,7 @@ get_data_sec_complete_filings <-
       url <-
         res$url
       if (return_message) {
-        list("Parsing: ", url, "\n") %>% purrr::reduce(paste0) %>% message()
+        list("Parsing: ", url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = T)
       }
 
       data <-
@@ -14016,7 +14016,7 @@ sec_form_title_df <-
       )
     )}
 
-get_filer_type_df <-
+filer_type_df <-
   function() {
     data_frame(
       idTypeFilerOwner = c(
@@ -14053,8 +14053,8 @@ get_filer_type_df <-
 #' @export
 #' @import dplyr
 #' @examples
-#' get_dictionary_form_d_categories()
-get_dictionary_form_d_categories <-
+#' dictionary_form_d_categories()
+dictionary_form_d_categories <-
   function() {
     category_df <-
       dplyr::data_frame(
@@ -14174,7 +14174,7 @@ get_dictionary_form_d_categories <-
     return(category_df)
   }
 
-get_insider_code_df <-
+insider_code_df <-
   function() {
     insider_df <-
       data_frame(
@@ -14261,8 +14261,8 @@ get_insider_code_df <-
 #' @family dictionary
 #'
 #' @examples
-#' get_dictionary_sec_filing_codes()
-get_dictionary_sec_filing_codes <-
+#' dictionary_sec_filing_codes()
+dictionary_sec_filing_codes <-
   function() {
     data_frame(
       idFormType = c(
@@ -14346,8 +14346,8 @@ get_dictionary_sec_filing_codes <-
 #' @family dictionary
 #'
 #' @examples
-#' get_dictionary_sec_form_codes()
-get_dictionary_sec_form_codes <-
+#' dictionary_sec_form_codes()
+dictionary_sec_form_codes <-
   function() {
     data_frame(
       idForm = c(
@@ -14389,7 +14389,7 @@ get_dictionary_sec_form_codes <-
     )
   }
 
-get_company_type_df <-
+company_type_df <-
   function() {
     data_frame(
       idCompanyType = c(
@@ -14437,8 +14437,8 @@ get_company_type_df <-
 #' @import dplyr stringr
 #'
 #' @examples
-#' get_dictionary_sec_rules()
-get_dictionary_sec_rules <-
+#' dictionary_sec_rules()
+dictionary_sec_rules <-
   function() {
     data_frame(
       idRule = c(
@@ -14513,7 +14513,7 @@ get_dictionary_sec_rules <-
 #' @import jsonlite dplyr purrr stringr dplyr
 #' @family SEC EDGAR
 #' @examples
-get_data_edgar_tickers <-
+edgar_tickers <-
   function() {
     json_data <-
       "https://www.sec.gov/data/company_tickers.json" %>%
@@ -14521,7 +14521,7 @@ get_data_edgar_tickers <-
 
     all_companies <-
       1:length(json_data) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         json_data[[x]] %>%
           flatten_df()
       }) %>%
@@ -14541,7 +14541,7 @@ get_data_edgar_tickers <-
 
 # EDGAR Counts ------------------------------------------------------------
 
-get_cik_filing_count <-
+cik_filing_count <-
   function(cik = 886982,
            return_message = TRUE) {
     code_cik  <-
@@ -14587,7 +14587,7 @@ get_cik_filing_count <-
     if (return_message) {
       list("CIK: ", cik, " has ", filings %>% formattable::comma(digits = 0), ' Filings') %>%
         purrr::reduce(paste0) %>%
-        message()
+        cat(fill = T)
     }
     df
   }
@@ -14601,7 +14601,7 @@ get_cik_filing_count <-
 #' @export
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
 #' @examples
-get_sic_filing_count <-
+sic_filing_count <-
   function(sic = 800,
            return_message = TRUE) {
     code_sic  <-
@@ -14647,7 +14647,7 @@ get_sic_filing_count <-
     if (return_message) {
       list("SIC: ", sic, " has ", filings %>% formattable::comma(digits = 0), ' Filings') %>%
         purrr::reduce(paste0) %>%
-        message()
+        cat(fill = T)
     }
     return(df)
   }
@@ -14701,9 +14701,9 @@ resolve_form_columns <-
 #'
 #'
 #' @examples
-#' get_dictionary_sic_codes()
+#' dictionary_sic_codes()
 
-get_dictionary_sic_codes <-
+dictionary_sic_codes <-
   function() {
     page <-
       "https://www.sec.gov/info/edgar/siccodes.htm" %>%
@@ -14711,7 +14711,7 @@ get_dictionary_sic_codes <-
 
     data <-
       c(1, 2, 4) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         css_node <-
           list("tr~ tr+ tr td:nth-child(", x, ')') %>%
           purrr::reduce(paste0)
@@ -14767,7 +14767,7 @@ get_dictionary_sic_codes <-
 #' @export
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
 #' @examples
-get_dictionary_sec_forms <-
+dictionary_sec_forms <-
   function() {
     page <-
       "https://www.sec.gov/forms" %>%
@@ -14827,7 +14827,7 @@ get_dictionary_sec_forms <-
       str_to_upper() %>%
       str_replace_all('\\TOPIC(S):','') %>%
       str_split('\\:') %>%
-      purrr::map(function(x){
+      future_map(function(x){
         x %>% str_split('\\:') %>% purrr::flatten_chr() %>% .[[2]]
       }) %>%
       purrr::flatten_chr()
@@ -14943,7 +14943,7 @@ parse_for_tables <-
       df_all_filings <-
         search_df$urlSECFilingDirectory %>%
         unique() %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           parse_sec_filing_index(urls = x)
         })
 
@@ -15000,10 +15000,10 @@ parse_for_tables <-
         urls <-
           all_data$urlTextFilingFull %>%
           unique()
-        get_data_sec_complete_filings_safe <-
-          purrr::possibly(get_data_sec_complete_filings, data_frame())
+        sec_complete_filings_safe <-
+          purrr::possibly(sec_complete_filings, data_frame())
         all_text_df <-
-          get_data_sec_complete_filings(urls = urls)
+          sec_complete_filings(urls = urls)
 
         all_tables <-
           all_tables %>%
@@ -15166,7 +15166,7 @@ generate_ft_search_urls <-
       list("https://searchwww.sec.gov/EDGARFSClient/jsp/EDGAR_MainAccess.jsp?search_text=", term, "&sort=Date&startDoc=", times,"&numResults=100&isAdv=true&formType=1&fromDate=mm/dd/yyyy&toDate=mm/dd/yyyy&stemming=true") %>%
       purrr::reduce(paste0)
     if (return_message) {
-      list("Found SEC free text urls for ", search_term) %>% purrr::reduce(paste0) %>% message()
+      list("Found SEC free text urls for ", search_term) %>% purrr::reduce(paste0) %>% cat(fill = T)
     }
     data_frame(termSearch = search_term, urlSECSearch = urls)
   }
@@ -15177,7 +15177,7 @@ parse_ft_filing_page <-
       data_frame()
     success <- function(res) {
       if (return_message) {
-        list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% message()
+        list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% cat(fill = T)
       }
       page <-
         res$content %>%
@@ -15274,8 +15274,9 @@ parse_ft_filing_page <-
 #' @return
 #' @export
 #' @examples
+#' edgar_ft_terms(search_terms = c('"Jared Kushner"', '"EJF Capital"', '"Blackstone Real Estate"'))
 
-get_data_edgar_ft_terms <-
+edgar_ft_terms <-
   function(search_terms = c('"Jared Kushner"', '"EJF Capital"', '"Blackstone Real Estate"'),
            include_counts = TRUE,
            nest_data = FALSE,
@@ -15285,7 +15286,7 @@ get_data_edgar_ft_terms <-
 
     df_urls <-
       search_terms %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         generate_ft_search_urls_safe(search_term = x)
       })
 
@@ -15302,7 +15303,7 @@ get_data_edgar_ft_terms <-
         all_data %>%
         pull(idCIKFiler) %>%
         unique() %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           get_cik_filing_count(cik = x)
         })
 
@@ -15326,7 +15327,7 @@ get_data_edgar_ft_terms <-
         "\nSEC free text search filing mentions in the last 4 years:\n",
         results %>% paste0(collapse = '\n')
       ) %>%
-        purrr::reduce(paste0) %>% message()
+        purrr::reduce(paste0) %>% cat(fill = T)
     }
 
     if (nest_data) {
@@ -15403,7 +15404,7 @@ parse_boolean_search_page <-
       data_frame()
     success <- function(res){
       if (return_message) {
-        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% message()
+        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = T)
       }
       page <-
         res$content %>%
@@ -15435,7 +15436,7 @@ parse_boolean_search_page <-
       if (stems %>% length() > 0 ) {
         data <-
           1:length(stems) %>%
-          map_df(function(x){
+          future_map_dfr(function(x){
             stem <-
               stems[[x]]
 
@@ -15679,7 +15680,7 @@ generate_search_term_urls <-
          search_message, ' to parse'
     ) %>%
       purrr::reduce(paste0) %>%
-      message()
+      cat(fill = T)
 
 
     page_count <-
@@ -15709,7 +15710,7 @@ generate_search_term_urls <-
     return(df_urls)
   }
 
-get_data_sec_search_term <-
+sec_search_term <-
   function(search_term = "Boston Properties",
            parameter = NULL,
            year_start = NULL,
@@ -15744,7 +15745,7 @@ get_data_sec_search_term <-
         '\n'
       ) %>%
         purrr::reduce(paste0) %>%
-        message()
+        cat(fill = T)
     }
 
     return(all_data)
@@ -15773,7 +15774,7 @@ get_data_sec_search_term <-
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi XBRL jsonlite
 #' @importFrom jsonlite fromJSON
 #' @examples
-get_data_edgar_search_terms <-
+edgar_search_terms <-
   function(search_terms = NULL,
            parameter = NULL,
            year_start = NULL,
@@ -15791,13 +15792,13 @@ get_data_edgar_search_terms <-
            nest_data = TRUE,
            return_message = TRUE) {
 
-    get_data_sec_search_term_safe <-
-      purrr::possibly(get_data_sec_search_term, data_frame())
+    sec_search_term_safe <-
+      purrr::possibly(sec_search_term, data_frame())
 
     all_data <-
       search_terms %>%
-      map_df(function(x) {
-        get_data_sec_search_term_safe(
+      future_map_dfr(function(x) {
+        sec_search_term_safe(
           search_term = x,
           parameter = parameter,
           year_start = year_start,
@@ -15974,7 +15975,7 @@ parse_most_recent_filing_form_page <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
 
@@ -16023,7 +16024,7 @@ parse_most_recent_stream <-
 
     df_descriptions <-
       1:length(filing_descriptions) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         description <-
           filing_descriptions[[x]] %>%
           str_to_upper()
@@ -16096,7 +16097,7 @@ parse_most_recent_stream <-
 
     df_filers <-
       1:length(filer_description) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         filer <-
           filer_description[[x]] %>%
           str_to_upper()
@@ -16174,7 +16175,7 @@ parse_most_recent_stream <-
 
     df_films <-
       1:length(file_film) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         parts <-
           file_film[[x]] %>% str_split('\n') %>% flatten_chr()
         data_frame(
@@ -16217,7 +16218,7 @@ parse_most_recent_stream <-
 
     if(return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
     data <-
       data %>%
@@ -16290,7 +16291,7 @@ get_most_recent_filing_urls <-
     if (still_none)  {
       df_end <-
         urls %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           guess_page_ongoing(url = x, override = TRUE)
         })
       df_end <-
@@ -16342,7 +16343,7 @@ get_most_recent_filing_urls <-
   }
 
 
-get_data_sec_filing_most_recent <-
+sec_filing_most_recent <-
   function(filing_type = NULL, return_message = TRUE) {
     get_most_recent_filing_urls_safe <-
       purrr::possibly(get_most_recent_filing_urls, data_frame())
@@ -16362,7 +16363,7 @@ get_data_sec_filing_most_recent <-
 
     all_data <-
       url_df$urlPageFiling %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         parse_most_recent_stream_safe(url = x, return_message = return_message)
       }) %>%
       mutate(idFormName = filing_name) %>%
@@ -16372,7 +16373,7 @@ get_data_sec_filing_most_recent <-
       list("\nReturned ", all_data %>% nrow() %>% formattable::comma(digits = 0),
            ' of the most recent filings from ', filing_type, ' forms\n') %>%
         purrr::reduce(paste0) %>%
-        message()
+        cat(fill = T)
     }
     return(all_data)
   }
@@ -16388,7 +16389,7 @@ get_data_sec_filing_most_recent <-
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
 #' @examples
-get_data_edgar_filings_most_recent <-
+edgar_filings_most_recent <-
   function(forms = c("All", "10-D", "10-K"),
            table_name_initial = "Recent Filings",
            parse_all_filings = TRUE,
@@ -16402,13 +16403,13 @@ get_data_edgar_filings_most_recent <-
            assign_to_environment =  TRUE,
            nest_data = FALSE,
            return_message = TRUE) {
-    get_data_sec_filing_most_recent_safe <-
-      purrr::possibly(get_data_sec_filing_most_recent, data_frame())
+    sec_filing_most_recent_safe <-
+      purrr::possibly(sec_filing_most_recent, data_frame())
 
     all_data <-
       forms %>%
-      map_df(function(x) {
-        get_data_sec_filing_most_recent_safe(filing_type = x,
+      future_map_dfr(function(x) {
+        sec_filing_most_recent_safe(filing_type = x,
                                              return_message = return_message)
       }) %>%
       select(matches("dateFiling"), idCIK, nameEntity, idForm, everything())
@@ -16524,7 +16525,7 @@ parse_quarter_urls <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df_urls)
@@ -16645,7 +16646,7 @@ parse_index_filing_page <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% message()
+          purrr::invoke(paste0, .) %>% cat(fill = T)
       }
       return(df)
     }
@@ -16720,7 +16721,7 @@ parse_index_filing_page <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% message()
+          purrr::invoke(paste0, .) %>% cat(fill = T)
       }
 
       return(df)
@@ -16773,7 +16774,7 @@ parse_index_filing_page <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df)
@@ -16799,13 +16800,13 @@ get_years_page_urls <-
 
     df_urls <-
       urls %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         get_year_index_urls(url = x)
       })
 
     all_url_df <-
       df_urls$urlQuarter %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_quarter_urls(url = x,
                            index_type = index_type,
                            return_message = return_message)
@@ -16847,13 +16848,13 @@ get_years_page_urls <-
 #' @family filing search
 #' @examples
 #' \dontrun{
-#' get_data_edgar_filing_streams(start_date = "2016-01-01",
+#' edgar_filing_streams(start_date = "2016-01-01",
 #' end_date = Sys.Date(), only_most_recent_data = FALSE, index_type = 'master',
 #' nest_data = TRUE,
 #' return_message = TRUE)
 #' }
 
-get_data_edgar_filing_streams <-
+edgar_filing_streams <-
   function(start_date = "2017-02-15",
            end_date = Sys.Date(),
            only_most_recent_data = FALSE,
@@ -16921,7 +16922,7 @@ get_data_edgar_filing_streams <-
 
     all_data <-
       1:length(urls) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_index_filing_page_safe(url = urls[[x]], return_message = return_message)
       })
 
@@ -16948,7 +16949,7 @@ get_data_edgar_filing_streams <-
         all_data$dateIndex %>% max(na.rm = TRUE)
       ) %>%
         purrr::reduce(paste0) %>%
-        message()
+        cat(fill = T)
     }
 
     all_data <-
@@ -17034,7 +17035,7 @@ parse_search_page <-
       data_frame()
     success <- function(res){
       if (return_message) {
-        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% message()
+        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = T)
       }
       page <-
         res$content %>%
@@ -17147,7 +17148,7 @@ parse_search_page_length <-
     if (still_none)  {
       df_end <-
         urls %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           guess_page_ongoing(url = x, override = TRUE)
         })
       df_end <-
@@ -17182,14 +17183,14 @@ parse_search_page_length <-
     return(df_filing_urls)
   }
 
-get_entity_ciks <-
+entity_ciks <-
   function(search_term = "BREA", return_message = TRUE) {
     url_df <-
       parse_search_page_length(search_term = search_term)
 
     data <-
       url_df$urlCIKPageFiling %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_search_page(url = x, return_message = FALSE)
       }) %>%
       mutate(nameSearch = search_term) %>%
@@ -17199,7 +17200,7 @@ get_entity_ciks <-
       list("Returned ", nrow(data) %>% formattable::comma(digits = 0),
            ' SEC registered entities for the term ', search_term) %>%
         purrr::reduce(paste0) %>%
-        message()
+        cat(fill = T)
     }
 
     return(data)
@@ -17216,18 +17217,18 @@ get_entity_ciks <-
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
 #' @examples
-get_data_edgar_entities_cik <-
+edgar_entities_cik <-
   function(search_names = c("Rockwood", "BREA", 'EJF'),
            nest_data = FALSE,
            return_message = TRUE) {
 
-    get_data_sec_entity_safe <-
-      purrr::possibly(get_entity_ciks, data_frame())
+    sec_entity_safe <-
+      purrr::possibly(entity_ciks, data_frame())
 
     all_data <-
       search_names %>%
-      map_df(function(x) {
-        get_data_sec_entity_safe(search_term = x, return_message = return_message)
+      future_map_dfr(function(x) {
+        sec_entity_safe(search_term = x, return_message = return_message)
       }) %>%
       select(which(colMeans(is.na(.)) < 1)) %>%
       mutate(nameEntity = nameEntityLegal %>% str_to_upper() %>% str_replace_all('\\.|\\,', '') %>% str_trim())
@@ -17405,11 +17406,11 @@ parse_company_pages <-
     df
   }
 
-get_data_sec_ticker_info <-
+sec_ticker_info <-
   function(ticker = "VNO",
            return_message = TRUE) {
     if (return_message) {
-      glue::glue("Acquiring company information for {ticker}") %>% message()
+      glue::glue("Acquiring company information for {ticker}") %>% cat(fill = T)
     }
     parse_company_pages_safe <-
       purrr::possibly(parse_company_pages, data_frame())
@@ -17437,21 +17438,21 @@ get_data_sec_ticker_info <-
 #' @import curl glue dplyr purrr stringr rvest xml2
 #'
 #' @examples
-#' get_data_sec_tickers_info(tickers = c("BXP", "AVB", "AAPL"))
-get_data_sec_tickers_info <-
+#' sec_tickers_info(tickers = c("BXP", "AVB", "AAPL"))
+sec_tickers_info <-
   function(tickers = c("VNO", "NVDA", "FB"),
            return_message = TRUE) {
     all_data <-
       tickers %>%
-      map_df(function(x) {
-        get_data_sec_ticker_info(ticker = x, return_message = return_message)
+      future_map_dfr(function(x) {
+        sec_ticker_info(ticker = x, return_message = return_message)
       })
 
     all_data
   }
 
 # page_guess --------------------------------------------------------------
-get_sec_filer_name_page_df <-
+sec_filer_name_page_df <-
   function(){
     data_frame(
       nameSEC = c("dateFiled", "filingHREF", "formName", "type", "XBRLREF"),
@@ -17521,7 +17522,7 @@ guess_page_ongoing <-
 # FIler Parsing -----------------------------------------------------------
 
 
-get_cik_filer_page_urls <-
+cik_filer_page_urls <-
   function(cik = 1184765, pages_out = 20) {
     start_pages <-
       seq(0, by = 100, length.out = pages_out)
@@ -17558,7 +17559,7 @@ get_cik_filer_page_urls <-
     if (still_none)  {
       df_end <-
         urls %>%
-        map_df(function(x){
+        future_map_dfr(function(x){
           guess_page_ongoing(url = x, override = TRUE)
         })
       df_end <-
@@ -17602,7 +17603,7 @@ parse_cik_filer_page <-
 
     df_page_items <-
       1:length(filing_count) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         xml_node <-
           xml_nodes %>%
           xml_contents() %>%
@@ -17624,7 +17625,7 @@ parse_cik_filer_page <-
           value = values
         ))
       }) %>%
-      left_join(get_sec_filer_name_page_df()) %>%
+      left_join(sec_filer_name_page_df()) %>%
       suppressWarnings() %>%
       suppressMessages() %>%
       select(-nameSEC)
@@ -17641,12 +17642,12 @@ parse_cik_filer_page <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df_page_items)
   }
-get_df_general_name_df <-
+df_general_name_df <-
   function() {
     data_frame(nameSEC = c("CIK", "CIKHREF", "Location", "SIC", "SICDescription", "SICHREF",
                            "businessAddresscity", "businessAddressphoneNumber", "businessAddressstate",
@@ -17684,11 +17685,11 @@ parse_cik_filer_general_info <-
       xml_name()
 
     df_names <-
-      get_df_general_name_df()
+      df_general_name_df()
 
     df_general <-
       1:length(items) %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
 
         xml_node <-
           xml_nodes %>%
@@ -17913,10 +17914,10 @@ parse_cik_filer_general_info <-
   }
 
 
-get_cik_filer_filings <-
+cik_filer_filings <-
   function(cik = 899689) {
     df_urls <-
-      get_cik_filer_page_urls(cik = cik) %>%
+      cik_filer_page_urls(cik = cik) %>%
       suppressWarnings() %>%
       suppressMessages()
 
@@ -17925,7 +17926,7 @@ get_cik_filer_filings <-
 
     df_filings <-
       df_urls$urlCIKPageFiling %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_cik_filer_page_safe(url = x)
       }) %>%
       mutate(idCIK = cik) %>%
@@ -17963,7 +17964,7 @@ get_cik_filer_filings <-
 # SIC Search --------------------------------------------------------------
 
 
-get_sic_filer_page_urls <-
+sic_filer_page_urls <-
   function(sic = 6798, pages_out = 20) {
     start_pages <-
       seq(0, by = 100, length.out = pages_out)
@@ -18020,22 +18021,22 @@ get_sic_filer_page_urls <-
     return(df_sic_urls)
   }
 
-get_data_sic_code_filer <-
+sic_code_filer <-
   function(sic = 6798,
            return_message = TRUE) {
 
-    get_sic_filer_page_urls_safe <-
-      purrr::possibly(get_sic_filer_page_urls, data_frame())
+    sic_filer_page_urls_safe <-
+      purrr::possibly(sic_filer_page_urls, data_frame())
 
     url_df <-
-      get_sic_filer_page_urls_safe(sic = sic)
+      sic_filer_page_urls_safe(sic = sic)
 
     parse_search_page_safe <-
       purrr::possibly(parse_search_page, data_frame())
 
     all_data <-
       url_df$urlSICPageFiling %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         parse_search_page_safe(url = x, return_message = return_message)
       }) %>%
       mutate(idSIC = sic) %>%
@@ -18047,7 +18048,7 @@ get_data_sic_code_filer <-
       list('\nReturned ', all_data %>% nrow() %>% formattable::comma(digits = 0),
            ' SEC registered entities for SIC industry code ', sic,'\n') %>%
         purrr::reduce(paste0) %>%
-        message()
+        cat(fill = T)
     }
     return(all_data)
   }
@@ -18064,7 +18065,7 @@ get_data_sic_code_filer <-
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
 #' @examples
-get_data_edgar_sic_filers <-
+edgar_sic_filers <-
   function(sic_codes = c(3949, 3690, 3711),
            merge_names = TRUE,
            return_message = TRUE,
@@ -18074,18 +18075,18 @@ get_data_edgar_sic_filers <-
       stop("Please enter SIC codes to search")
     }
 
-    get_data_sic_code_filer_safe <-
-      purrr::possibly(get_data_sic_code_filer, data_frame())
+    sic_code_filer_safe <-
+      purrr::possibly(sic_code_filer, data_frame())
 
     all_data <-
       sic_codes %>%
-      map_df(function(x){
-        get_data_sic_code_filer_safe(sic = x, return_message = return_message)
+      future_map_dfr(function(x){
+        sic_code_filer_safe(sic = x, return_message = return_message)
       })
 
     if (merge_names) {
       if (!'dataSICCodes' %>% exists()) {
-        assign(x = 'dataSICCodes', value = eval(get_dictionary_sic_codes()),
+        assign(x = 'dataSICCodes', value = eval(dictionary_sic_codes()),
                envir = .GlobalEnv)
       }
 
@@ -18112,7 +18113,7 @@ parse_sec_url_for_cik <-
       as.numeric()
   }
 
-get_loc_df <-
+loc_df <-
   function() {
     data_frame(
       nameLocation = c(
@@ -18455,7 +18456,7 @@ get_loc_df <-
 parse_page_sub_multi_item_html <-
   function(page) {
     locations <-
-      get_loc_df() %>%
+      loc_df() %>%
       .$nameLocation
     subsidiaries <-
       page %>%
@@ -18589,12 +18590,12 @@ parse_page_subsidiary_table_html <-
       flatten_chr()
 
     locations <-
-      get_loc_df() %>%
+      loc_df() %>%
       .$nameLocation
 
     all_data <-
       numbers %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         css_selector <-
           paste0('td:nth-child(', x, ')')
         has_length <-
@@ -18690,7 +18691,7 @@ parse_page_subsidiary_table_html <-
     if (off_one) {
       df <-
         all_data$item %>% unique() %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           has_data <-
             all_data %>%
             filter(item == x) %>%
@@ -18726,7 +18727,7 @@ parse_page_subsidiary_table_html <-
           html_table(fill = T)
         df <-
           1:length(tables) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             table_df <-
               tables[[x]] %>%
               data.frame(stringsAsFactors = FALSE) %>%
@@ -18897,7 +18898,7 @@ parse_sec_subsidiary_url_html <-
       html_nodes(paste0('td:nth-child(', 1, ')')) %>%
       length() == 0
     locations <-
-      get_loc_df() %>%
+      loc_df() %>%
       .$nameLocation
 
     if (is_zero) {
@@ -18937,7 +18938,7 @@ parse_sec_subsidiary_url_html <-
 
         if (return_message) {
           list("Parsed: ", url) %>%
-            purrr::invoke(paste0, .) %>% message()
+            purrr::invoke(paste0, .) %>% cat(fill = T)
         }
 
         return(df)
@@ -18993,7 +18994,7 @@ parse_sec_subsidiary_url_html <-
           select(-matches("idSubsidiary"))
         if (return_message) {
           list("Parsed: ", url) %>%
-            purrr::invoke(paste0, .) %>% message()
+            purrr::invoke(paste0, .) %>% cat(fill = T)
         }
 
         return(df)
@@ -19008,7 +19009,7 @@ parse_sec_subsidiary_url_html <-
     if (is_font_table) {
       all_data <-
         1:10 %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           css_selector <-
             paste0('td:nth-child(', x, ')')
           has_length <-
@@ -19132,7 +19133,7 @@ parse_sec_subsidiary_url_html <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% message()
+          purrr::invoke(paste0, .) %>% cat(fill = T)
       }
 
       return(all_data)
@@ -19153,7 +19154,7 @@ parse_sec_subsidiary_url_html <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df %>% select(-matches("idSubsidiary")))
@@ -19189,7 +19190,7 @@ parse_sec_subsidiary_url_text <-
 
     df <-
       1:length(data) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         item <-
           data[[x]]
 
@@ -19252,7 +19253,7 @@ parse_sec_subsidiary_url_text <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% message()
+        purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
     return(df)

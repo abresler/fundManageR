@@ -63,14 +63,14 @@
 #' @export
 #' @import rvest xml2 dplyr readr purrr
 #' @examples
-#' get_data_us_inflation(base_year = 1913)
-get_data_us_inflation <-
+#' us_inflation(base_year = 1913)
+us_inflation <-
   function(base_year = 1913) {
     if (base_year == 1913) {
-      "Getting US inflation data from 1913" %>% message()
+      "Getting US inflation data from 1913" %>% cat(fill = T)
       data <- .get_1913_inflation()
       return(data)
     }
-      "Getting US inflation data from 1800" %>% message()
+      "Getting US inflation data from 1800" %>% cat(fill = T)
       data <- .get_1800_inflation()
   }

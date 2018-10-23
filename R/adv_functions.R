@@ -1,4 +1,4 @@
-dictionary_finra_names <-
+.dictionary_finra_names <-
   function() {
     data_frame(nameFINRA = c("bc_branch_city", "bc_branch_zip", "bc_firm_name", "bc_branch_state",
                              "bc_firm_id", "bc_branch_id"),
@@ -8,9 +8,9 @@ dictionary_finra_names <-
     )
   }
 
-resolve_finra_names <- function(finra_names) {
+.resolve_finra_names <- function(finra_names) {
   df_finra <-
-    dictionary_finra_names()
+    .dictionary_finra_names()
 
   finra_names %>%
     map_chr(function(id){
@@ -20,7 +20,7 @@ resolve_finra_names <- function(finra_names) {
         nrow() == 0
 
       if (no_name) {
-        glue::glue("Missing {id} in dictionary") %>% message()
+        glue::glue("Missing {id} in dictionary") %>% cat(fill = T)
         return(id)
       }
       df_finra %>%
@@ -33,7 +33,7 @@ resolve_finra_names <- function(finra_names) {
 }
 
 # parsing -----------------------------------------------------------------
-get_html_page <-
+.get_html_page <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=160080') {
     page <-
       url %>% curl::curl() %>% xml2::read_html()
@@ -42,7 +42,7 @@ get_html_page <-
   }
 
 
-check_html_node <-
+.check_html_node <-
   function(page, node_css = '#ctl00_cphMain_landing_p2BrochureLink') {
     if (page %>% html_nodes(css = node_css) %>% length() > 0) {
       node_exists <-
@@ -55,7 +55,7 @@ check_html_node <-
   }
 
 
-get_html_node_text <-
+.get_html_node_text <-
   function(page, node_css = '#ctl00_cphMain_landing_lblActiveOrgName') {
     parse_html_for_text <-
       function(page, node_css = '#ctl00_cphMain_landing_lblActiveOrgName') {
@@ -69,7 +69,7 @@ get_html_node_text <-
 
     node_exists <-
       page %>%
-      check_html_node(node_css = node_css)
+      .check_html_node(node_css = node_css)
 
     if (node_exists) {
       node_text <-
@@ -82,11 +82,11 @@ get_html_node_text <-
   }
 
 
-get_entity_manager_name <-
+.get_entity_manager_name <-
   function(page) {
     manager_name <-
       page %>%
-      get_html_node_text(node_css = '#ctl00_ctl00_cphMainContent_ucADVHeader_lblPrimaryBusinessName')
+      .get_html_node_text(node_css = '#ctl00_ctl00_cphMainContent_ucADVHeader_lblPrimaryBusinessName')
 
     if (manager_name %>% is.na()) {
       manager_name <-
@@ -98,7 +98,7 @@ get_entity_manager_name <-
     return(manager_name)
   }
 
-get_html_node_attributes <-
+.get_html_node_attributes <-
   function(page,
            node_css = '#ctl00_cphMain_landing_p2BrochureLink',
            html_attribute = 'href',
@@ -124,7 +124,7 @@ get_html_node_attributes <-
 
     node_exists <-
       page %>%
-      check_html_node(node_css = node_css)
+      .check_html_node(node_css = node_css)
 
     if (node_exists) {
       node_attribute <-
@@ -143,11 +143,11 @@ get_html_node_attributes <-
   }
 
 
-parse_node_table_to_text <-
+.parse_node_table_to_text <-
   function(page, css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ClientCompensation_ctl00_trIAPDHeader + tr + tr') {
     node_text <-
       page %>%
-      get_html_node_text(node_css = css_node) %>%
+      .get_html_node_text(node_css = css_node) %>%
       str_replace_all('\r|\n|\t', '') %>%
       stri_replace_all_charclass("\\p{WHITE_SPACE}", " ") %>%
       stri_trim_both() %>%
@@ -161,7 +161,7 @@ parse_node_table_to_text <-
   }
 
 
-parse_finra_c_url <-
+.parse_finra_c_url <-
   function(finra_c_url = "curl 'http://brokercheck.finra.org/Search/GenericSearch' -H 'Pragma: no-cache' -H 'Origin: http://brokercheck.finra.org' -H 'Accept-Encoding: gzip, deflate' -H 'Accept-Language: en-US,en;q=0.8' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.80 Safari/537.36' -H 'Content-Type: application/x-www-form-urlencoded' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8' -H 'Cache-Control: no-cache' -H 'Referer: http://brokercheck.finra.org/Search/GenericSearch' -H 'Cookie: __RequestVerificationToken=rSB02up7WU1YiLtAmLvoqbrC4heA7LXKidX0GkSiEjprktiE0qFDfkGKbQkTQVd94ShQynDI5BsmpIJeB4idW39G2QE6hRtgA9M_ejnQoHc1; ASP.NET_SessionId=kjzpjdpm1p0ltmm1xcuafmoz' -H 'Connection: keep-alive' -H 'DNT: 1' --data '__RequestVerificationToken=1jsNCQ-1KyYFIfKZuaJc_-CFqVaBiSi1MQ_WyvUrMKk9bEh1ux4s_te11rbeAEHH23ncmfbN8Ndf9gIQvYb0gGEuSabJ1PKIhKi0_AJac9Q1&GenericSearch.StartRow=1&GenericSearch.PageSize=15&GenericSearch.System=BC&GenericSearch.SearchType=2&GenericSearch.IndividualSearchText=&GenericSearch.EmploymingFirmSearchText=&GenericSearch.FirmSearchText=EJF&GenericSearch.Within=25&GenericSearch.ZipCode=' --compressed") {
     clean_url <-
       finra_c_url %>%
@@ -179,7 +179,7 @@ parse_finra_c_url <-
     return(html_page)
   }
 
-find_text_node <-
+.find_text_node <-
   function(node_text,
            hit_words = "Total Number of Clients",
            off_set = 4,
@@ -218,7 +218,7 @@ find_text_node <-
 
 # munging -----------------------------------------------------------------
 
-munge_fund_names <-
+.munge_fund_names <-
   function(data) {
     options(scipen = 9999)
     funds <-
@@ -295,7 +295,7 @@ munge_fund_names <-
 
   }
 
-select_start_vars <-
+.select_start_vars <-
   function(data) {
     data <-
       data %>%
@@ -304,7 +304,7 @@ select_start_vars <-
   }
 
 
-mutate_adv_data <-
+.mutate_adv_data <-
   function(data) {
     has_dates <-
       data %>% dplyr::select(matches("^date")) %>% names() %>% length() > 0
@@ -381,7 +381,7 @@ mutate_adv_data <-
   }
 
 
-widen_adv_data <-
+.widen_adv_data <-
   function(data) {
     data <-
       data %>%
@@ -411,18 +411,18 @@ widen_adv_data <-
 
     data <-
       data %>%
-      mutate_adv_data() %>%
+      .mutate_adv_data() %>%
       suppressWarnings()
 
     return(data)
   }
 
 
-get_item_name_yes_no_df <-
+.get_item_name_yes_no_df <-
   function(item_name = 'hasCustodyClientCash') {
     item_name_df <-
       1:length(item_name) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         data_frame(nameItem = rep(item_name[x], 2),
                    valueItem = c(T, F)) %>%
           unite(fullnameItem,
@@ -434,11 +434,11 @@ get_item_name_yes_no_df <-
     return(item_name_df)
   }
 
-has_item_check_name <-
+.has_item_check_name <-
   function(item_name = 'hasQuarterlyStatemnt') {
     item_name_df <-
       1:length(item_name) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         data_frame(nameItem = rep(item_name[x], 1),
                    valueItem = T) %>%
           mutate(fullnameItem = nameItem)
@@ -451,7 +451,7 @@ has_item_check_name <-
 
 # new_finra ---------------------------------------------------------------
 
-get_finra_name_df <-
+.get_finra_name_df <-
   function() {
     data_frame(
       nameFINRA = c(
@@ -615,7 +615,7 @@ get_finra_name_df <-
     )
   }
 
-generate_finra_url <-
+.generate_finra_url <-
   function(search_name = "Rockwood Capital",
            is_firm = TRUE) {
     if (is_firm) {
@@ -641,7 +641,7 @@ generate_finra_url <-
     return(url)
   }
 
-parse_broker_json_url <-
+.parse_broker_json_url <-
   function(url = "https://doppler.finra.org/doppler-lookup/api/v1/search/firms/18718/?&wt=json") {
     json_data <-
       url %>%
@@ -660,7 +660,7 @@ parse_broker_json_url <-
 
     class_df <-
       json_dfs %>%
-      map(class) %>%
+      future_map(class) %>%
       as_data_frame() %>%
       gather(nameTable, type) %>%
       mutate(idTable = 1:n())
@@ -692,12 +692,12 @@ parse_broker_json_url <-
       filter(nameTable %in% active_tables)
 
     finra_name_df <-
-      get_finra_name_df() %>%
+      .get_finra_name_df() %>%
       mutate(idRow = 1:n())
 
     all_df <-
       1:nrow(class_df) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         table_no <-
           class_df$idTable[[x]]
 
@@ -708,7 +708,7 @@ parse_broker_json_url <-
           return(data_frame())
         }
         name_df <-
-          get_finra_name_df() %>%
+          .get_finra_name_df() %>%
           mutate(idRow = 1:n())
         name_table <-
           names(json_dfs)[[table_no]]
@@ -724,7 +724,7 @@ parse_broker_json_url <-
 
           class_df_list <-
             df %>%
-            map(class) %>%
+            future_map(class) %>%
             as_data_frame() %>%
             gather(column, type)
 
@@ -807,7 +807,7 @@ parse_broker_json_url <-
               .$column
             list_dfs <-
               list_cols %>%
-              map_df(function(x) {
+              future_map_dfr(function(x) {
                 if (df[[x]] %>% length() == 0) {
                   return(data_frame())
                 }
@@ -938,7 +938,7 @@ parse_broker_json_url <-
     return(all_df)
   }
 
-parse_finra_pdf_brochure <-
+.parse_finra_pdf_brochure <-
   function(url = 'https://files.brokercheck.finra.org/firm/firm_18718.pdf') {
     info <-
       url %>%
@@ -990,7 +990,7 @@ parse_finra_pdf_brochure <-
 
     actual_name_df <-
       1:length(sec_names) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         name_exists <-
           sec_name_df %>%
           dplyr::filter(nameSEC == sec_names[x]) %>% nrow > 0
@@ -1030,7 +1030,7 @@ parse_finra_pdf_brochure <-
 
     pdf_text_df <-
       1:length(pdf_pages) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         page_text <-
           pdf_pages[[x]] %>%
           str_trim()
@@ -1068,7 +1068,7 @@ parse_finra_pdf_brochure <-
 
   }
 
-parse_finra_json_url <-
+.parse_finra_json_url <-
   function(url = "https://doppler.finra.org/doppler-lookup/api/v1/search/firms?hl=true&nrows=99000&query=Blackstone&r=2500&wt=json",
            name_match_threshold = .25,
            ocr_pdfs = TRUE) {
@@ -1084,7 +1084,7 @@ parse_finra_json_url <-
     }
 
     list_cols <-
-      df %>% map(class) %>%
+      df %>% future_map(class) %>%
       as_data_frame() %>%
       gather(column, type) %>%
       filter(type %in% 'list') %>%
@@ -1126,7 +1126,7 @@ parse_finra_json_url <-
       dplyr::select(which(colMeans(is.na(.)) < 1))
 
     name_df <-
-      get_finra_name_df() %>%
+      .get_finra_name_df() %>%
       mutate(idRow = 1:n())
 
     finra_names <-
@@ -1229,7 +1229,7 @@ parse_finra_json_url <-
     if ('addressFiler' %in% names(df_fields)) {
       address_df <-
         1:nrow(df_fields) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           js_data <-
             df_fields$addressFiler[[x]]
           if (js_data %>% is.na()) {
@@ -1259,7 +1259,7 @@ parse_finra_json_url <-
     if ('fields.bc_other_names' %in% names(df)) {
       df_related_entities <-
         1:nrow(df) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           entities <-
             df$fields.bc_other_names[[x]]
 
@@ -1317,13 +1317,13 @@ parse_finra_json_url <-
       has_broker <-
         urls_json %>% length() > 0
       if (has_broker) {
-        parse_broker_json_url_safe <-
-          purrr::possibly(parse_broker_json_url, data_frame())
+        .parse_broker_json_url_safe <-
+          purrr::possibly(.parse_broker_json_url, data_frame())
 
         broker_df <-
           urls_json %>%
-          map_df(function(x) {
-            parse_broker_json_url_safe(url = x)
+          future_map_dfr(function(x) {
+            .parse_broker_json_url_safe(url = x)
           })
 
         df_fields <-
@@ -1349,13 +1349,13 @@ parse_finra_json_url <-
           pdf_urls <-
             df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
             .$urlFINRABrokerPDF
-          parse_finra_pdf_brochure_safe <-
-            purrr::possibly(parse_finra_pdf_brochure, data_frame())
+          .parse_finra_pdf_brochure_safe <-
+            purrr::possibly(.parse_finra_pdf_brochure, data_frame())
           pdf_df <-
             pdf_urls %>%
-            map_df(function(x) {
-              list("PARSING: ", x) %>% purrr::invoke(paste0, .) %>% message()
-              parse_finra_pdf_brochure_safe(url = x) %>%
+            future_map_dfr(function(x) {
+              list("PARSING: ", x) %>% purrr::invoke(paste0, .) %>% cat(fill = T)
+              .parse_finra_pdf_brochure_safe(url = x) %>%
                 mutate(urlFINRABrokerPDF = x)
             })
           df_fields <-
@@ -1398,13 +1398,13 @@ parse_finra_json_url <-
         .$urlFINRABrokerJSON %>%
         unique()
 
-      parse_broker_json_url_safe <-
-        purrr::possibly(parse_broker_json_url, data_frame())
+      .parse_broker_json_url_safe <-
+        purrr::possibly(.parse_broker_json_url, data_frame())
 
       broker_df <-
         urls_json %>%
-        map_df(function(x) {
-          parse_broker_json_url_safe(url = x)
+        future_map_dfr(function(x) {
+          .parse_broker_json_url_safe(url = x)
         })
 
       has_pdfs <-
@@ -1433,13 +1433,13 @@ parse_finra_json_url <-
           pdf_urls <-
             df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
             .$urlFINRABrokerPDF
-          parse_finra_pdf_brochure_safe <-
-            purrr::possibly(parse_finra_pdf_brochure, data_frame())
+          .parse_finra_pdf_brochure_safe <-
+            purrr::possibly(.parse_finra_pdf_brochure, data_frame())
           pdf_df <-
             pdf_urls %>%
-            map_df(function(x) {
-              list("PARSING: ", x) %>% purrr::invoke(paste0, .) %>% message()
-              parse_finra_pdf_brochure_safe(url = x) %>%
+            future_map_dfr(function(x) {
+              list("PARSING: ", x) %>% purrr::invoke(paste0, .) %>% cat(fill = T)
+              .parse_finra_pdf_brochure_safe(url = x) %>%
                 mutate(urlFINRABrokerPDF = x)
             })
           df_fields <-
@@ -1489,13 +1489,13 @@ parse_finra_json_url <-
 
       df_emps <-
         employers %>%
-        map_df(function(employer){
+        future_map_dfr(function(employer){
         df_emp <-
           employer %>%
           jsonlite::fromJSON(simplifyDataFrame = T) %>%
           dplyr::as_data_frame()
 
-        actual_names <- resolve_finra_names(finra_names = names(df_emp))
+        actual_names <- .resolve_finra_names(finra_names = names(df_emp))
         df_emp %>%
           purrr::set_names(actual_names) %>%
           mutate(descriptionEmployer = employer)
@@ -1569,7 +1569,7 @@ parse_finra_json_url <-
   }
 
 
-get_data_finra_entity <-
+.finra_entity <-
   function(search_name = "Rockwood Capital",
            is_firm = TRUE,
            ocr_pdf = TRUE,
@@ -1580,21 +1580,21 @@ get_data_finra_entity <-
     }
     url_df <-
       search_name %>%
-      map_df(
+      future_map_dfr(
         function(x) {
           url <-
-            generate_finra_url(is_firm = is_firm, search_name = x)
+            .generate_finra_url(is_firm = is_firm, search_name = x)
 
           data_frame(nameSearch = x, urlJSON = url)
       })
 
-    parse_finra_json_url_safe <-
-      possibly(parse_finra_json_url, data_frame())
+    .parse_finra_json_url_safe <-
+      possibly(.parse_finra_json_url, data_frame())
 
     all_data <-
       url_df$urlJSON %>%
-      map_df(function(x) {
-        parse_finra_json_url(url = x,
+      future_map_dfr(function(x) {
+        .parse_finra_json_url(url = x,
                              ocr_pdf = ocr_pdf,
                              name_match_threshold = score_threshold)
       }) %>%
@@ -1610,7 +1610,7 @@ get_data_finra_entity <-
         search_name
       ) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(all_data)
@@ -1630,17 +1630,17 @@ get_data_finra_entity <-
 #' @param return_message return a message upon parsing \code{TRUE, FALS}
 #' @import jsonlite dplyr tidyr purrr stringr pdftools stringi magrittr
 #' @return a \code{data frame}
-#' @note Use \code{\link{get_data_finra_people}} for registered people
+#' @note Use \code{\link{finra_people}} for registered people
 #' @references \href{http://www.finra.org/}{FINRA}
 #' @export
 #' @family FINRA
 #' @family IAPD
 #' @family entity search
 #' @examples
-#' get_data_finra_entities(entity_names = c("EJF", "Blackstone", "Next Play", "Simple Capital"), score_threshold = .25,
+#' finra_entities(entity_names = c("EJF", "Blackstone", "Next Play", "Simple Capital"), score_threshold = .25,
 #' ocr_pdf = TRUE)
 
-get_data_finra_entities <-
+finra_entities <-
   function(entity_names = NULL,
            ocr_pdf = TRUE,
            score_threshold = .20,
@@ -1655,13 +1655,13 @@ get_data_finra_entities <-
         stringsAsFactors = FALSE
       ) %>%
       as_data_frame()
-    get_data_finra_entity_safe <-
-      purrr::possibly(get_data_finra_entity, data_frame())
+    .finra_entity_safe <-
+      purrr::possibly(.finra_entity, data_frame())
 
     all_data <-
       1:nrow(search_df) %>%
-      map_df(function(x) {
-        get_data_finra_entity_safe(
+      future_map_dfr(function(x) {
+        .finra_entity_safe(
           search_name = search_df$nameSearch[[x]],
           ocr_pdf = ocr_pdf,
           score_threshold = score_threshold,
@@ -1705,15 +1705,15 @@ get_data_finra_entities <-
 #' @param return_message return a message upon parsing \code{TRUE, FALS}
 #' @import jsonlite dplyr tidyr purrr stringr pdftools stringi
 #' @return a \code{data frame}
-#' @note Use \code{\link{get_data_finra_people()}} for registered people
+#' @note Use \code{\link{finra_people()}} for registered people
 #' @references \href{http://www.finra.org/}{FINRA}
 #' @export
 #' @family FINRA
 #' @family IAPD
 #' @family person search
 #' @examples
-#' get_data_finra_people(search_name = 'Llyod Blankfein', ocr_pdf = TRUE)
-get_data_finra_people <-
+#' finra_people(search_name = 'Llyod Blankfein', ocr_pdf = TRUE)
+finra_people <-
   function(search_name = NULL,
            ocr_pdf = TRUE,
            return_message = TRUE) {
@@ -1727,13 +1727,13 @@ get_data_finra_people <-
         stringsAsFactors = FALSE
       ) %>%
       as_data_frame()
-    get_data_finra_entity_safe <-
-      purrr::possibly(get_data_finra_entity, data_frame())
+    .finra_entity_safe <-
+      purrr::possibly(.finra_entity, data_frame())
 
     all_data <-
       1:nrow(search_df) %>%
-      map_df(function(x) {
-        get_data_finra_entity_safe(
+      future_map_dfr(function(x) {
+        .finra_entity_safe(
           search_name = search_df$nameSearch[[x]],
           is_firm = search_df$isFirm[[x]],
           ocr_pdf = ocr_pdf,
@@ -1773,38 +1773,38 @@ get_data_finra_people <-
 
 # sec_adv_data ------------------------------------------------------------
 
-parse_sec_manager_pdf_url <-
+.parse_sec_manager_pdf_url <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/Part2Brochures.aspx?ORG_PK=135952') {
     page <-
       url %>%
-      get_html_page
+      .get_html_page
 
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     nameEntityBrochure <-
       page %>%
-      get_html_node_text(node_css = 'td:nth-child(1) a') %>%
+      .get_html_node_text(node_css = 'td:nth-child(1) a') %>%
       str_trim()
 
     dateBrochureSubmitted <-
       page %>%
-      get_html_node_text(node_css = 'td:nth-child(2)') %>%
+      .get_html_node_text(node_css = 'td:nth-child(2)') %>%
       str_trim() %>%
       lubridate::mdy() %>%
       suppressWarnings()
 
     dateLastConfirmed <-
       page %>%
-      get_html_node_text(node_css = 'td:nth-child(3)') %>%
+      .get_html_node_text(node_css = 'td:nth-child(3)') %>%
       str_trim() %>%
       lubridate::mdy() %>%
       suppressWarnings()
 
     urlPDFManagerADVBrochure <-
       page %>%
-      get_html_node_attributes(node_css = 'td:nth-child(1) a',
+      .get_html_node_attributes(node_css = 'td:nth-child(1) a',
                                html_attribute = 'href',
                                base_url = 'http://www.adviserinfo.sec.gov')
 
@@ -1837,7 +1837,7 @@ parse_sec_manager_pdf_url <-
   }
 
 
-get_url_crd <-
+.get_url_crd <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=135952') {
     idCRD <-
       url %>%
@@ -1849,7 +1849,7 @@ get_url_crd <-
   }
 
 
-get_manager_sec_page <-
+.get_manager_sec_page <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=156663') {
     httr::set_config(httr::config(ssl_verifypeer = 0L))
     page_status <-
@@ -1859,7 +1859,7 @@ get_manager_sec_page <-
     if (page_status$url == 'http://www.adviserinfo.sec.gov/IAPD/SearchNoResult.aspx') {
       idCRD <-
         url %>%
-        get_url_crd()
+        .get_url_crd()
 
       manager_df <-
         data_frame(idCRD,
@@ -1868,15 +1868,15 @@ get_manager_sec_page <-
     } else {
       page <-
         url %>%
-        get_html_page()
+        .get_html_page()
 
       name_entity_manager <-
         page %>%
-        get_html_node_text(node_css = '#ctl00_cphMain_landing_lblActiveOrgName')
+        .get_html_node_text(node_css = '#ctl00_cphMain_landing_lblActiveOrgName')
 
       idCRDSEC <-
         page %>%
-        get_html_node_text(node_css = '#ctl00_cphMain_landing_lblActiveOrgCrd') %>%
+        .get_html_node_text(node_css = '#ctl00_cphMain_landing_lblActiveOrgCrd') %>%
         str_replace_all('\\(|\\)|CRD# |SEC#', '')
 
       get_all_status_data <-
@@ -1913,8 +1913,8 @@ get_manager_sec_page <-
                   mutate(nameEntityManager = name_entity_manager,
                          countItem = 1:n()) %>%
                   dplyr::select(nameEntityManager, everything()) %>%
-                  widen_adv_data() %>%
-                  mutate_adv_data()
+                  .widen_adv_data() %>%
+                  .mutate_adv_data()
 
               } else {
                 table_df <-
@@ -1948,8 +1948,8 @@ get_manager_sec_page <-
                   dplyr::select(nameEntityManager, everything()) %>%
                   mutate(countItem = 1:n()) %>%
                   arrange(countItem) %>%
-                  widen_adv_data() %>%
-                  mutate_adv_data()
+                  .widen_adv_data() %>%
+                  .mutate_adv_data()
 
               } else {
                 table_df <-
@@ -1987,8 +1987,8 @@ get_manager_sec_page <-
                   mutate(nameEntityManager = name_entity_manager,
                          countItem = 1:n()) %>%
                   dplyr::select(nameEntityManager, everything()) %>%
-                  widen_adv_data() %>%
-                  mutate_adv_data()
+                  .widen_adv_data() %>%
+                  .mutate_adv_data()
 
               } else {
                 table_df <-
@@ -2021,7 +2021,7 @@ get_manager_sec_page <-
 
       urlManagerADV <-
         page %>%
-        get_html_node_attributes(
+        .get_html_node_attributes(
           node_css = '#aspnetForm > div.container-fluid > div > nav > ul > li:nth-child(7) > a',
           html_attribute = 'href',
           base_url = 'http://www.adviserinfo.sec.gov'
@@ -2043,12 +2043,12 @@ get_manager_sec_page <-
 
       brochure_exists <-
         page %>%
-        check_html_node(node_css = '#ctl00_cphMain_landing_p2BrochureLink')
+        .check_html_node(node_css = '#ctl00_cphMain_landing_p2BrochureLink')
 
       if (brochure_exists) {
         urlPDFManager <-
           page %>%
-          get_html_node_attributes(
+          .get_html_node_attributes(
             node_css = '#aspnetForm > div.container-fluid > div > nav > ul > li:nth-child(8) > a',
             html_attribute = 'href',
             base_url = 'http://www.adviserinfo.sec.gov'
@@ -2057,7 +2057,7 @@ get_manager_sec_page <-
         if (!'nameEntityManager' %in% names(manager_df)) {
           nameEntityManager <-
             page %>%
-            get_entity_manager_name()
+            .get_entity_manager_name()
           manager_df <-
             manager_df %>%
             mutate(nameEntityManager)
@@ -2067,7 +2067,7 @@ get_manager_sec_page <-
         manager_df <-
           manager_df %>%
           left_join(urlPDFManager %>%
-                      parse_sec_manager_pdf_url()) %>%
+                      .parse_sec_manager_pdf_url()) %>%
           suppressMessages()
       }
       manager_df <-
@@ -2085,7 +2085,7 @@ get_manager_sec_page <-
 #' on any Investment Adviser Public Disclosure [IAPD]
 #' filing manager.  This function can be used to discover
 #' managers to power the
-#' \code{\link{get_data_adv_managers_filing()}} function.
+#' \code{\link{adv_managers_filing()}} function.
 #'
 #' @param entity_names vector of entities to search
 #' @param score_threshold matching score threshold for the search name
@@ -2100,10 +2100,10 @@ get_manager_sec_page <-
 #' @family fund data
 #' @family entity search
 #' @examples
-#' get_data_adv_managers_metadata(entity_names = c('Divco', 'EJF'), score_threshold = .2)
-#' get_data_adv_managers_metadata(entity_names = "Blackstone", score_threshold = NULL)
-#' get_data_adv_managers_metadata(crd_ids = 173787)
-get_data_adv_managers_metadata <-
+#' adv_managers_metadata(entity_names = c('Divco', 'EJF'), score_threshold = .2)
+#' adv_managers_metadata(entity_names = "Blackstone", score_threshold = NULL)
+#' adv_managers_metadata(crd_ids = 173787)
+adv_managers_metadata <-
   function(entity_names =  NULL,
            crd_ids = NULL,
            score_threshold = .2,
@@ -2121,7 +2121,7 @@ get_data_adv_managers_metadata <-
     if (!entity_names %>% is_null()) {
       finra_data <-
         entity_names %>%
-        get_data_finra_entities(
+        finra_entities(
           ocr_pdf = FALSE,
           score_threshold = score_threshold,
           return_message = return_message
@@ -2147,12 +2147,12 @@ get_data_adv_managers_metadata <-
         c(crd_urls)
     }
 
-    get_manager_sec_page_safe <-
-      possibly(get_manager_sec_page, NULL)
+    .get_manager_sec_page_safe <-
+      possibly(.get_manager_sec_page, NULL)
 
     sec_summary_data <-
       adv_urls %>%
-      map_df(get_manager_sec_page_safe) %>%
+      future_map_dfr(.get_manager_sec_page_safe) %>%
       suppressWarnings() %>%
       filter(!idCRD %>% is.na()) %>%
       mutate_if(is.character,
@@ -2161,11 +2161,11 @@ get_data_adv_managers_metadata <-
     return(sec_summary_data)
   }
 
-get_manager_sec_adv_actual_url <-
+.get_manager_sec_adv_actual_url <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=146629') {
     page <-
       url %>%
-      GET
+      GET()
 
     actual_url <-
       page$url
@@ -2173,7 +2173,7 @@ get_manager_sec_adv_actual_url <-
   }
 
 
-get_url_primary_key <-
+.get_url_primary_key <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/sections/iapd_AdvIdentifyingInfoSection.aspx?ORG_PK=146629&FLNG_PK=01285F220008018901086F5100319405056C8CC0') {
     url_primary_key <-
       url %>%
@@ -2184,10 +2184,9 @@ get_url_primary_key <-
   }
 
 
-get_sec_sitemap_df <-
+.get_sec_sitemap_df <-
   function() {
-    sitemap_df <-
-      data_frame(
+    data_frame(
         nameSection = c(
           'Registration',
           "Part 1A Item 11 Disclosure Information",
@@ -2257,26 +2256,26 @@ get_sec_sitemap_df <-
             "data_signaturepage"
           ),
         nameFunction = c(
-          "get_manager_sec_page_safe",
+          ".get_manager_sec_page_safe",
           NA,
-          "get_section_drp_safe",
-          "get_section_1_data_safe",
-          "get_section_2_data_safe",
-          "get_section_3_data_safe",
-          "get_section_4_data_safe",
-          "get_section_5_data_safe",
-          "get_section_6_data_safe",
-          "get_section_7a_data_safe",
-          "get_section_7b_data_safe",
-          "get_section_8_data_safe",
-          "get_section_9_data_safe",
-          "get_section_10_data_safe",
-          "get_section_11_data_safe",
-          "get_section_12_data_safe",
-          "get_schedule_a_data_safe",
-          "get_schedule_b_data_safe",
-          "get_schedule_d_data_safe",
-          "get_manager_signatory_data_safe"
+          ".get_section_drp_safe",
+          ".get_section_1_data_safe",
+          ".get_section_2_data_safe",
+          ".get_section_3_data_safe",
+          ".get_section_4_data_safe",
+          ".get_section_5_data_safe",
+          ".get_section_6_data_safe",
+          ".get_section_7a_data_safe",
+          ".get_section_7b_data_safe",
+          ".get_section_8_data_safe",
+          ".get_section_9_data_safe",
+          ".get_section_10_data_safe",
+          ".get_section_11_data_safe",
+          ".get_section_12_data_safe",
+          ".get_schedule_a_data_safe",
+          ".get_schedule_b_data_safe",
+          ".get_schedule_d_data_safe",
+          ".get_manager_signatory_data_safe"
         ),
         nameSectionActual = c(
           "Registration",
@@ -2302,7 +2301,6 @@ get_sec_sitemap_df <-
         )
 
       )
-    return(sitemap_df)
   }
 
 
@@ -2312,9 +2310,9 @@ get_sec_sitemap_df <-
 #' @export
 #' @import dplyr
 #' @examples
-get_data_sec_adv_manager_sitemap <-
+sec_adv_manager_sitemap <-
   function() {
-    sitemap_df <-
+    sitefuture_map_dfr <-
       data_frame(
         idSection =
           c(
@@ -2385,11 +2383,11 @@ get_data_sec_adv_manager_sitemap <-
         )
 
       )
-    return(sitemap_df)
+    return(sitefuture_map_dfr)
   }
 
 
-get_location_name_df <-
+.get_location_name_df <-
   function() {
     location_name_df <-
       data_frame(
@@ -2413,15 +2411,15 @@ get_location_name_df <-
     return(location_name_df)
   }
 
-get_sitemap_urls <-
-  function(site_map_df, section_name = 'section7BPrivateFundReporting') {
+.get_sitemap_urls <-
+  function(site_future_map_dfr, section_name = 'section7BPrivateFundReporting') {
     urls_exist <-
-      site_map_df %>%
+      site_future_map_dfr %>%
       dplyr::filter(idSection %in% section_name) %>%
       .$urlADVSection %>% length() > 0
     if (urls_exist) {
       urls <-
-        site_map_df %>%
+        site_future_map_dfr %>%
         dplyr::filter(idSection %in% section_name) %>%
         .$urlADVSection
       return(urls)
@@ -2429,12 +2427,12 @@ get_sitemap_urls <-
   }
 
 
-parse_adv_manager_sitemap_df <-
+.parse_adv_manager_sitemap_df <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=135952',
            return_wide = F) {
     idCRD <-
       url %>%
-      get_url_crd()
+      .get_url_crd()
 
     if (idCRD %>% is.na()) {
       idCRD <-
@@ -2451,15 +2449,15 @@ parse_adv_manager_sitemap_df <-
 
     actual_url <-
       url %>%
-      get_manager_sec_adv_actual_url()
+      .get_manager_sec_adv_actual_url()
 
     url_primary_key <-
       actual_url %>%
-      get_url_primary_key()
+      .get_url_primary_key()
 
     page <-
       actual_url %>%
-      get_html_page()
+      .get_html_page()
 
     base_url <-
       actual_url %>%
@@ -2469,7 +2467,7 @@ parse_adv_manager_sitemap_df <-
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     if (name_entity_manager %>% is.na()) {
       name_entity_manager <-
@@ -2480,12 +2478,12 @@ parse_adv_manager_sitemap_df <-
 
     items <-
       page %>%
-      get_html_node_text('.sidebar a[href^=".."]') %>%
+      .get_html_node_text('.sidebar a[href^=".."]') %>%
       str_trim()
 
     values <-
       page %>%
-      get_html_node_attributes(node_css = '.sidebar a[href^=".."]',
+      .get_html_node_attributes(node_css = '.sidebar a[href^=".."]',
                                'href') %>%
       str_trim() %>%
       str_replace('../', '') %>%
@@ -2493,7 +2491,7 @@ parse_adv_manager_sitemap_df <-
              .) %>%
       unique()
 
-    adv_sitemap_df <-
+    adv_sitefuture_map_dfr <-
       data_frame(
         idCRD,
         nameSection = 'Registration',
@@ -2505,7 +2503,7 @@ parse_adv_manager_sitemap_df <-
       bind_rows(data_frame(idCRD,
                            nameSection = items,
                            urlADVSection = values)) %>%
-      left_join(get_sec_sitemap_df()) %>%
+      left_join(.get_sec_sitemap_df()) %>%
       distinct() %>%
       dplyr::filter(!nameFunction %>% is.na()) %>%
       dplyr::select(-nameSection) %>%
@@ -2519,22 +2517,22 @@ parse_adv_manager_sitemap_df <-
       suppressMessages()
 
     if (return_wide) {
-      adv_sitemap_df <-
-        adv_sitemap_df %>%
+      adv_sitefuture_map_dfr <-
+        adv_sitefuture_map_dfr %>%
         spread(idSection, urlADVSection)
 
     }
-    return(adv_sitemap_df)
+    return(adv_sitefuture_map_dfr)
   }
 
-get_managers_adv_sitemap_adv <-
+.get_managers_adv_sitemap_adv <-
   function(idCRDs = c(162351),
            score_threshold = .2,
            entity_names =  NULL) {
-    get_data_adv_managers_metadata_safe <-
-      possibly(get_data_adv_managers_metadata, NULL)
-    parse_adv_manager_sitemap_df_safe <-
-      possibly(parse_adv_manager_sitemap_df, NULL)
+    adv_managers_metadata_safe <-
+      possibly(adv_managers_metadata, NULL)
+    .parse_adv_manager_sitemap_df_safe <-
+      possibly(.parse_adv_manager_sitemap_df, NULL)
 
     if (!purrr::is_null(idCRDs)) {
       urls <-
@@ -2544,8 +2542,8 @@ get_managers_adv_sitemap_adv <-
     if (!purrr::is_null(entity_names)) {
       manager_data <-
         entity_names %>%
-        map_df(function(x) {
-          get_data_adv_managers_metadata_safe(
+        future_map_dfr(function(x) {
+          adv_managers_metadata_safe(
             crd_ids = idCRDs,
             score_threshold = score_threshold,
             entity_names = x,
@@ -2570,22 +2568,22 @@ get_managers_adv_sitemap_adv <-
 
     if ('urls' %>% exists() & entity_names %>% is_null()) {
       manager_data <-
-        get_data_adv_managers_metadata_safe(crd_ids = idCRDs, entity_names = NULL)
+        adv_managers_metadata_safe(crd_ids = idCRDs, entity_names = NULL)
 
       name_entity_manager <-
         manager_data$nameEntityManager
     }
-    parse_adv_manager_sitemap_df_safe <-
-      purrr::possibly(parse_adv_manager_sitemap_df, data_frame())
-    sitemap_dfs <-
+    .parse_adv_manager_sitemap_df_safe <-
+      purrr::possibly(.parse_adv_manager_sitemap_df, data_frame())
+    sitefuture_map_dfrs <-
       urls %>%
       unique() %>%
-      map_df(function(x) {
-        parse_adv_manager_sitemap_df_safe(url = x, return_wide = F)
+      future_map_dfr(function(x) {
+        .parse_adv_manager_sitemap_df_safe(url = x, return_wide = F)
       })
     if (manager_data %>% nrow() > 0) {
-    sitemap_dfs <-
-      sitemap_dfs %>%
+    sitefuture_map_dfrs <-
+      sitefuture_map_dfrs %>%
       dplyr::filter(!nameEntityManager %>% is.na()) %>%
       left_join(manager_data %>% dplyr::select(idCRD, nameEntityManager)) %>%
       dplyr::select(
@@ -2600,11 +2598,11 @@ get_managers_adv_sitemap_adv <-
       suppressMessages()
     }
 
-    return(sitemap_dfs)
+    return(sitefuture_map_dfrs)
   }
 
 
-get_type_manager_entity_owner_df <-
+.get_type_manager_entity_owner_df <-
   function() {
     type_df <-
       data_frame(
@@ -2615,7 +2613,7 @@ get_type_manager_entity_owner_df <-
     return(type_df)
   }
 
-get_range_entity_owner_df <-
+.get_range_entity_owner_df <-
   function() {
     range_df <-
       data_frame(
@@ -2633,7 +2631,7 @@ get_range_entity_owner_df <-
     return(range_df)
   }
 
-parse_manager_owner_name <-
+.parse_manager_owner_name <-
   function(x = "GRAY, ROBERT, LAWRENCE") {
     count_commas <-
       x %>% str_count('\\, ')
@@ -2705,7 +2703,7 @@ parse_manager_owner_name <-
     return(name_df)
   }
 
-get_pk_url_crd <-
+.get_pk_url_crd <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvPrivateFundReportingSection.aspx?ORG_PK=162351&FLNG_PK=052DAAB400080184043CE66005E35E29056C8CC0') {
     idCRD <-
       url %>%
@@ -2717,17 +2715,17 @@ get_pk_url_crd <-
   }
 
 
-get_sitemap_filter_url <-
-  function(site_map_df, filter_name = 'sectionScheduleA') {
+.get_sitemap_filter_url <-
+  function(site_future_map_dfr, filter_name = 'sectionScheduleA') {
     urls <-
-      site_map_df %>%
+      site_future_map_dfr %>%
       dplyr::filter(idSection == filter_name) %>%
       .$urlADVSection
     return(urls)
   }
 
 # private fund data -------------------------------------------------------
-get_check_box_value_df <-
+.get_check_box_value_df <-
   function() {
     node_check_df <-
       data_frame(
@@ -2743,7 +2741,7 @@ get_check_box_value_df <-
     return(node_check_df)
   }
 
-get_form_check_box_df <-
+.get_form_check_box_df <-
   function(modify = T) {
     form_value_df <-
       data_frame(
@@ -2860,7 +2858,7 @@ get_form_check_box_df <-
 
 
 
-get_fund_table_html <-
+.get_fund_table_html <-
   function(page = page,
            table_number = 1,
            table_css_node_df = table_css_node_df) {
@@ -2876,13 +2874,13 @@ get_fund_table_html <-
     return(table_html)
   }
 
-get_table_check_box_df <-
+.get_table_check_box_df <-
   function(page = page,
            table_number = 1,
            table_css_node_df,
            only_radio = T) {
     node_table <-
-      get_fund_table_html(
+      .get_fund_table_html(
         page = page,
         table_number = table_number,
         table_css_node_df = table_css_node_df
@@ -2904,20 +2902,20 @@ get_table_check_box_df <-
       data_frame(nodeName = table_checked_nodes) %>%
       mutate(idTable = table_number,
              idImageNode = 1:n()) %>%
-      left_join(get_check_box_value_df()) %>%
+      left_join(.get_check_box_value_df()) %>%
       suppressMessages() %>%
       dplyr::select(idTable, idImageNode, nodeName, isNodeChecked)
     return(check_box_df)
   }
 
-get_tables_check_boxes_df <-
+.get_tables_check_boxes_df <-
   function(page = page,
            table_number = 1,
            table_css_node_df = table_css_node_df) {
     tables_check_boxes_df <-
       table_css_node_df$numberTable %>%
-      map_df(function(x) {
-        get_table_check_box_df(
+      future_map_dfr(function(x) {
+        .get_table_check_box_df(
           page = page,
           table_number = x,
           table_css_node_df = table_css_node_df
@@ -2926,16 +2924,16 @@ get_tables_check_boxes_df <-
     return(tables_check_boxes_df)
   }
 
-get_table_check_box_data <-
+.get_table_check_box_data <-
   function(page = page,
            table_number = 1,
            table_css_node_df,
            only_radio = T) {
     form_value_df <-
-      get_form_check_box_df(modify = T)
+      .get_form_check_box_df(modify = T)
 
     check_box_df <-
-      get_table_check_box_df(
+      .get_table_check_box_df(
         page = page,
         table_number = table_number,
         table_css_node_df = table_css_node_df,
@@ -3005,12 +3003,12 @@ get_table_check_box_data <-
     return(response_df)
   }
 
-parse_table_node_df <-
+.parse_table_node_df <-
   function(page = page,
            table_number = 1,
            table_css_node_df = table_css_node_df) {
     base_table_html <-
-      get_fund_table_html(
+      .get_fund_table_html(
         page = page,
         table_number = table_number,
         table_css_node_df = table_css_node_df
@@ -3030,7 +3028,7 @@ parse_table_node_df <-
 
     table_node_df <-
       1:length(table_data_nodes) %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         data_nodes <-
           table_data_nodes[[x]] %>%
           str_split('  ') %>%
@@ -3155,7 +3153,7 @@ parse_table_node_df <-
     return(table_node_df)
   }
 
-extract_node_data <-
+.extract_node_data <-
   function(table_node_df,
            variable_name = 'pctFundNonUSCitizens',
            section_letter = "16b",
@@ -3383,7 +3381,7 @@ extract_node_data <-
     return(node_df)
   }
 
-get_section_matrix_df <-
+.get_section_matrix_df <-
   function() {
     section_matrix_df <-
       data_frame(
@@ -3466,7 +3464,7 @@ get_section_matrix_df <-
     return(section_matrix_df)
   }
 
-parse_funds_tables <-
+.parse_funds_tables <-
   function(page,
            table_css_node_df = table_css_node_df,
            section_matrix_df = section_matrix_df,
@@ -3477,26 +3475,26 @@ parse_funds_tables <-
                table_css_node_df = table_css_node_df,
                section_matrix_df = section_matrix_df) {
         table_node_df <-
-          parse_table_node_df(
+          .parse_table_node_df(
             page = page,
             table_number = table_number,
             table_css_node_df = table_css_node_df
           )
 
       response_df <-
-          get_table_check_box_data(
+          .get_table_check_box_data(
             page = page,
             table_number = table_number,
             table_css_node_df = table_css_node_df,
             only_radio = T
           )
 
-      extract_node_data_safe <-
-        purrr::possibly(extract_node_data, data_frame())
+      .extract_node_data_safe <-
+        purrr::possibly(.extract_node_data, data_frame())
       fund_table_data <-
         1:nrow(section_matrix_df) %>%
-        map_df(function(x) {
-          extract_node_data(
+        future_map_dfr(function(x) {
+          .extract_node_data(
             table_node_df = table_node_df,
             variable_name = section_matrix_df$variableName[x],
             section_letter = section_matrix_df$sectionLetter[x],
@@ -3556,7 +3554,7 @@ parse_funds_tables <-
 
     all_table_data <-
       table_numbers %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         parse_fund_table_safe(
           page = page,
           table_number = x,
@@ -3570,11 +3568,11 @@ parse_funds_tables <-
 
 
 # form_sections -----------------------------------------------------------
-get_section_1_data <-
+.get_section_1_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/sections/iapd_AdvIdentifyingInfoSection.aspx?ORG_PK=165609&FLNG_PK=011CBE92000801870387C7310019743D056C8CC0') {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     get_node_item_df <- function() {
       node_item_df <-
@@ -3586,7 +3584,7 @@ get_section_1_data <-
           'isOfficeOpenOther',
           'isPrivateResidence2'
         ) %>%
-        has_item_check_name() %>%
+        .has_item_check_name() %>%
         bind_rows(
           c(
             'hasMultipleWebsites',
@@ -3595,21 +3593,21 @@ get_section_1_data <-
             'hasCIKNumber',
             'hasAssetsOver1B'
           ) %>%
-            get_item_name_yes_no_df()
+            .get_item_name_yes_no_df()
         )
       return(node_item_df)
     }
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
-    find_text_node_safe <-
-      possibly(find_text_node, NULL)
+    .find_text_node_safe <-
+      possibly(.find_text_node, NULL)
 
     parse_node_df <-
       function(page) {
@@ -3621,7 +3619,7 @@ get_section_1_data <-
 
         node_df <-
           data_frame(nodeName = check_nodes) %>%
-          left_join(get_check_box_value_df()) %>%
+          left_join(.get_check_box_value_df()) %>%
           bind_cols(get_node_item_df()) %>%
           mutate(valueItem = T) %>%
           dplyr::filter(isNodeChecked == T) %>%
@@ -3642,7 +3640,7 @@ get_section_1_data <-
       function(page) {
         node_text <-
           page %>%
-          parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_IdentInfoPHSection_ctl00_trIAPDHeader + tr +tr td td')
+          .parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_IdentInfoPHSection_ctl00_trIAPDHeader + tr +tr td td')
 
         business_name_df <-
           data_frame(
@@ -3680,12 +3678,12 @@ get_section_1_data <-
 
         business_data_df <-
           1:nrow(business_name_df) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             data_frame(
               nameItem =
                 business_name_df$nameItem[[x]],
               value =
-                find_text_node_safe(
+                .find_text_node_safe(
                   node_text = node_text,
                   hit_words = business_name_df$hit_words[[x]],
                   off_set = business_name_df$off_set[[x]],
@@ -3762,7 +3760,7 @@ get_section_1_data <-
       mutate(idCRD, nameEntityManager = name_entity_manager) %>%
       left_join(page %>%
                   parse_node_df() %>% mutate(idCRD, nameEntityManager = name_entity_manager)) %>%
-      select_start_vars() %>%
+      .select_start_vars() %>%
       suppressMessages()
 
     section_data <-
@@ -3775,11 +3773,11 @@ get_section_1_data <-
     return(section_data)
   }
 
-get_section_2_data <-
+.get_section_2_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSecRegistrationSection.aspx?ORG_PK=135952&FLNG_PK=00D23FD4000801840427FED005E328A5056C8CC0') {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
 
     get_node_item_df <- function() {
@@ -3799,7 +3797,7 @@ get_section_2_data <-
           "hasSECOrderProhibitingRegistration",
           "isAdviserSECIneligible"
         ) %>%
-        has_item_check_name()
+        .has_item_check_name()
 
       state_exists <-
         page %>%
@@ -3870,7 +3868,7 @@ get_section_2_data <-
           'stateRegistered'
         state_df <-
           1:length(states) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             data_frame(nameItem = item_name,
                        valueItem = states[x]) %>%
               unite(fullnameItem,
@@ -3890,11 +3888,11 @@ get_section_2_data <-
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     parse_node_df <-
       function(page) {
@@ -3919,7 +3917,7 @@ get_section_2_data <-
             )
           node_df <-
             data_frame(nodeName = check_nodes) %>%
-            left_join(get_check_box_value_df()) %>%
+            left_join(.get_check_box_value_df()) %>%
             mutate(isNodeChecked = if_else(nodeName %>% str_detect('Checkbox not checked'), F, T)) %>%
             bind_cols(node_item_df) %>%
             mutate(valueItem = T) %>%
@@ -3980,7 +3978,7 @@ get_section_2_data <-
 
           node_df <-
             data_frame(nodeName = check_nodes) %>%
-            left_join(get_check_box_value_df()) %>%
+            left_join(.get_check_box_value_df()) %>%
             tidyr::replace_na(list(isNodeChecked = F)) %>%
             mutate(isNodeChecked = if_else(nodeName %>% str_detect('Checkbox not checked'), F, T)) %>%
             bind_cols(node_item_df) %>%
@@ -4011,31 +4009,31 @@ get_section_2_data <-
           node_df %>%
           spread(item, valueItem) %>%
           dplyr::select(one_of(col_order)) %>%
-          mutate_adv_data()
+          .mutate_adv_data()
         return(node_df)
       }
 
     section_data <-
       page %>% parse_node_df() %>%
       mutate(idCRD, nameEntityManager = name_entity_manager) %>%
-      select_start_vars()
+      .select_start_vars()
 
     return(section_data)
   }
 
-get_section_3_data <-
+.get_section_3_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFormOfOrgSection.aspx?ORG_PK=162771&FLNG_PK=05F0FE9C0008018504231CD005F25E65056C8CC0') {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     parse_organizational_form_data <-
       function(page) {
@@ -4062,7 +4060,7 @@ get_section_3_data <-
             ),
             nodeName = boxes
           ) %>%
-          left_join(get_check_box_value_df()) %>%
+          left_join(.get_check_box_value_df()) %>%
           dplyr::filter(isNodeChecked == T) %>%
           suppressMessages() %>%
           .$typeEntityManager
@@ -4093,35 +4091,35 @@ get_section_3_data <-
       page %>%
       parse_organizational_form_data() %>%
       mutate(idCRD, nameEntityManager = name_entity_manager) %>%
-      select_start_vars()
+      .select_start_vars()
 
     return(section_data)
 
   }
 
 
-get_section_4_data <-
+.get_section_4_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSuccessionsSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     get_node_item_df <-
       function() {
         node_item_df <-
           'isSucceedingRIABusiness' %>%
-          get_item_name_yes_no_df()
+          .get_item_name_yes_no_df()
         return(node_item_df)
       }
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     parse_node_df <-
       function(page) {
@@ -4133,7 +4131,7 @@ get_section_4_data <-
 
         node_df <-
           data_frame(nodeName = check_nodes) %>%
-          left_join(get_check_box_value_df()) %>%
+          left_join(.get_check_box_value_df()) %>%
           bind_cols(get_node_item_df()) %>%
           dplyr::filter(isNodeChecked == T) %>%
           dplyr::select(nameItem, valueItem) %>%
@@ -4154,13 +4152,13 @@ get_section_4_data <-
           if (node_df$isSucceedingRIABusiness == T) {
             node_text <-
               page %>%
-              parse_node_table_to_text(
+              .parse_node_table_to_text(
                 '#ctl00_ctl00_cphMainContent_cphAdvFormContent_SuccessionPHSection_ctl00_trIAPDHeader+ tr td'
               )
 
             dateSuccession <-
               node_text %>%
-              find_text_node(
+              .find_text_node(
                 hit_words = "Date of Succession",
                 off_set = 0,
                 is_numeric_node = F
@@ -4176,12 +4174,12 @@ get_section_4_data <-
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     section_data <-
       page %>% parse_node_df() %>%
       mutate(idCRD, nameEntityManager = name_entity_manager) %>%
-      select_start_vars()
+      .select_start_vars()
 
     if (!return_wide) {
       section_data <-
@@ -4192,38 +4190,38 @@ get_section_4_data <-
     return(section_data)
   }
 
-get_section_5_data <-
+.get_section_5_data <-
   function(url = 'https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=162351&FLNG_PK=03EEBAB20008018D044A53E10076F3C9056C8CC0') {
     section_name <-
       'section5AdvisoryBusinessInformation'
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
-    if (!'sitemap_df' %>% exists()) {
-      sitemap_df <-
-        parse_adv_manager_sitemap_df(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=' %>%
+    if (!'sitefuture_map_dfr' %>% exists()) {
+      sitefuture_map_dfr <-
+        .parse_adv_manager_sitemap_df(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=' %>%
                                        paste0(idCRD))
     }
 
     is_new_iapd <- page %>% html_nodes('.QueryHeaderLabel') %>% html_text() %>% str_detect(" Amount of Regulatory Assets") %>% sum(na.rm = T) > 0
 
     section_exists <-
-      section_name %in% sitemap_df$idSection
+      section_name %in% sitefuture_map_dfr$idSection
 
     if (!section_exists) {
       stop(section_name %>% paste0(" does not exists for ", idCRD))
     }
 
-    get_section_5_node_name_df <-
+    .get_section_5_node_name_df <-
       function() {
         name_df <-
           data_frame(
@@ -4823,7 +4821,7 @@ get_section_5_data <-
       }
 
     section_exists <-
-      'section5AdvisoryBusinessInformation' %in% sitemap_df$idSection
+      'section5AdvisoryBusinessInformation' %in% sitefuture_map_dfr$idSection
 
     if (!section_exists) {
       stop("Company structure data does not exists for " %>% paste0(idCRD))
@@ -4841,13 +4839,13 @@ get_section_5_data <-
 
             client_summary_image_df <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(.get_check_box_value_df()) %>%
               suppressMessages()
 
             if (!is_new_iapd) {
             client_summary_image_df <-
               client_summary_image_df %>%
-              bind_cols(get_section_5_node_name_df()) %>%
+              bind_cols(.get_section_5_node_name_df()) %>%
               dplyr::select(nameItem,
                             fullnameItem,
                             nameItem,
@@ -4878,17 +4876,17 @@ get_section_5_data <-
             return(client_summary_df)
           }
 
-        find_text_node_safe <-
-          possibly(find_text_node, NULL)
+        .find_text_node_safe <-
+          possibly(.find_text_node, NULL)
 
         name_entity_manager <-
           page %>%
-          get_entity_manager_name()
+          .get_entity_manager_name()
 
         ##
         node_text <-
           page %>%
-          parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ClientCompensation_ctl00_trIAPDHeader + tr + tr')
+          .parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ClientCompensation_ctl00_trIAPDHeader + tr + tr')
 
         employee_node_df <-
           data_frame(
@@ -4918,12 +4916,12 @@ get_section_5_data <-
 
         employee_count_df <-
           1:nrow(employee_node_df) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             data_frame(
               nameItem =
                 employee_node_df$nameItem[[x]],
               value =
-                find_text_node_safe(
+                .find_text_node_safe(
                   node_text = node_text,
                   hit_words = employee_node_df$hit_words[[x]],
                   off_set = employee_node_df$off_set[[x]],
@@ -4939,7 +4937,7 @@ get_section_5_data <-
 
         node_text <-
           page %>%
-          parse_node_table_to_text(
+          .parse_node_table_to_text(
             '#ctl00_ctl00_cphMainContent_cphAdvFormContent_AssetsUnderMgnmt_ctl00_trIAPDHeader + tr table td tr td'
           )
 
@@ -4973,9 +4971,9 @@ get_section_5_data <-
         if (has_aum_df) {
           aum_value_df <-
             1:nrow(aum_value_name_df) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               has_value <-
-                find_text_node_safe(
+                .find_text_node_safe(
                   node_text = node_text,
                   hit_words = aum_value_name_df$hit_words[[x]],
                   off_set = aum_value_name_df$off_set[[x]],
@@ -4984,7 +4982,7 @@ get_section_5_data <-
 
               if (has_value) {
                 val <-
-                  find_text_node_safe(
+                  .find_text_node_safe(
                     node_text = node_text,
                     hit_words = aum_value_name_df$hit_words[[x]],
                     off_set = aum_value_name_df$off_set[[x]],
@@ -5027,7 +5025,7 @@ get_section_5_data <-
           suppressMessages()
         node_text <-
           page %>%
-          parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ClientCompensation_ctl00_trIAPDHeader + tr + tr')
+          .parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ClientCompensation_ctl00_trIAPDHeader + tr + tr')
         if (node_text[grepl("[[:upper:]]+$", node_text)] %>% unique() %>%
             length() == 1) {
           other_value <-
@@ -5077,7 +5075,7 @@ get_section_5_data <-
       page %>%
       parse_company_structure_page() %>%
       mutate(nameEntityManager = name_entity_manager) %>%
-      select_start_vars()
+      .select_start_vars()
 
     if ('countAccountsNonDiscretionary' %in% names(section_5_data)) {
       section_5_data <-
@@ -5089,17 +5087,17 @@ get_section_5_data <-
   }
 
 
-get_section_6_data <-
+.get_section_6_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvOtherBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     get_node_item_df <-
       function() {
@@ -5109,7 +5107,7 @@ get_section_6_data <-
             'typeBusinessActiveNonListedActivity',
             'hasProductNonInvestmentAdvice'
           ) %>%
-          get_item_name_yes_no_df()
+          .get_item_name_yes_no_df()
         return(node_item_df)
       }
 
@@ -5128,7 +5126,7 @@ get_section_6_data <-
 
             node_df <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>%
               dplyr::select(nameItem, valueItem) %>%
@@ -5149,7 +5147,7 @@ get_section_6_data <-
 
         name_entity_manager <-
           page %>%
-          get_entity_manager_name()
+          .get_entity_manager_name()
 
         section_data <-
           page %>%
@@ -5163,23 +5161,23 @@ get_section_6_data <-
       page %>%
       parse_section_6(return_wide = return_wide) %>%
       mutate(idCRD) %>%
-      select_start_vars()
+      .select_start_vars()
     return(section_data)
   }
 
-get_section_7a_data <-
+.get_section_7a_data <-
   function(url = 'https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFinancialAffiliationsSection.aspx?ORG_PK=145652&FLNG_PK=01A04E4200080189047A8BA1003A6639056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     get_node_item_df <-
       function() {
@@ -5218,7 +5216,7 @@ get_section_7a_data <-
               str_trim()
             has_nodes <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               mutate(valueItem = T) %>%
               suppressMessages() %>%
@@ -5228,7 +5226,7 @@ get_section_7a_data <-
             if (has_nodes) {
               affiliation_df <-
                 data_frame(nodeName = check_nodes) %>%
-                left_join(get_check_box_value_df()) %>%
+                left_join(.get_check_box_value_df()) %>%
                 bind_cols(get_node_item_df()) %>%
                 mutate(valueItem = T) %>%
                 dplyr::filter(isNodeChecked == T) %>%
@@ -5269,24 +5267,24 @@ get_section_7a_data <-
     return(section_data)
   }
 
-get_section_7b_data <-
+.get_section_7b_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvPrivateFundReportingSection.aspx?ORG_PK=162351&FLNG_PK=052DAAB400080184043CE66005E35E29056C8CC0',
            return_wide = F,
            return_message = T) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     parse_private_fund_data <-
       function(page, return_wide, return_message = T) {
         name_entity_manager <-
           page %>%
-          get_entity_manager_name()
+          .get_entity_manager_name()
 
         main <-
           page %>%
@@ -5324,10 +5322,10 @@ get_section_7b_data <-
             )
 
           section_matrix_df <-
-            get_section_matrix_df()
+            .get_section_matrix_df()
 
           all_data <-
-            parse_funds_tables(
+            .parse_funds_tables(
               page = page,
               return_message = return_message,
               table_css_node_df = table_css_node_df,
@@ -5344,15 +5342,15 @@ get_section_7b_data <-
               all_data$amountFundGrossAUM %>% sum(na.rm = T) %>% formattable::currency()
 
             glue::glue("Parsed {name_entity_manager} they have {fund_count} fund vehicles
-                       and {total_aum} in private fund AUM") %>% message()
+                       and {total_aum} in private fund AUM") %>% cat(fill = T)
           }
 
           if (return_wide) {
             all_data <-
               all_data %>%
               dplyr::rename(countItem = numberFund) %>%
-              widen_adv_data() %>%
-              mutate_adv_data()
+              .widen_adv_data() %>%
+              .mutate_adv_data()
 
           }
         } else {
@@ -5372,23 +5370,23 @@ get_section_7b_data <-
     section_data <-
       section_data %>%
       mutate(idCRD) %>%
-      select_start_vars() %>%
-      munge_fund_names()
+      .select_start_vars() %>%
+      .munge_fund_names()
 
     return(section_data)
   }
 
-get_section_8_data <-
+.get_section_8_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvClientTransSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     get_node_item_df <-
       function() {
@@ -5412,7 +5410,7 @@ get_section_8_data <-
             "hasCompensationForClientReferrals",
             "isCompensatedForClientReferrals"
           ) %>%
-          get_item_name_yes_no_df()
+          .get_item_name_yes_no_df()
         return(node_item_df)
       }
 
@@ -5420,7 +5418,7 @@ get_section_8_data <-
       function(page, return_wide)  {
         name_entity_manager <-
           page %>%
-          get_entity_manager_name()
+          .get_entity_manager_name()
         parse_section_8_nodes <-
           function(page, return_wide) {
             check_nodes <-
@@ -5431,7 +5429,7 @@ get_section_8_data <-
 
             section_data <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>%
               mutate(nameEntityManager = name_entity_manager) %>%
@@ -5466,20 +5464,20 @@ get_section_8_data <-
     return(section_data)
   }
 
-get_section_9_data <-
+.get_section_9_data <-
   function(url = 'https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvCustodySection.aspx?ORG_PK=134600&FLNG_PK=04189D5A00080188013572C10022C501056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     get_node_item_df <-
       function() {
@@ -5558,7 +5556,7 @@ get_section_9_data <-
 
             node_df <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               mutate(value = T) %>%
               dplyr::filter(isNodeChecked == T) %>%
@@ -5592,7 +5590,7 @@ get_section_9_data <-
 
     node_text <-
       page %>%
-      parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_CustodyPH_ctl00_trIAPDHeader + tr + tr')
+      .parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_CustodyPH_ctl00_trIAPDHeader + tr + tr')
 
     has_nodes <-
       node_text %>% str_count('\\$') %>% sum() > 0
@@ -5620,13 +5618,13 @@ get_section_9_data <-
           off_set = c(4, 6, 5, 7, 2, 1),
           is_numeric_node = c(TRUE, TRUE, TRUE, TRUE, TRUE, F)
         )
-      find_text_node_safe <-
-        possibly(find_text_node, NULL)
+      .find_text_node_safe <-
+        possibly(.find_text_node, NULL)
       custody_value_df <-
         1:nrow(custody_name_df) %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           value_exists <-
-            find_text_node_safe(
+            .find_text_node_safe(
               node_text = node_text,
               hit_words = custody_name_df$hit_words[[x]],
               off_set = custody_name_df$off_set[[x]],
@@ -5635,7 +5633,7 @@ get_section_9_data <-
 
           if (value_exists) {
             value <-
-              find_text_node_safe(
+              .find_text_node_safe(
                 node_text = node_text,
                 hit_words = custody_name_df$hit_words[[x]],
                 off_set = custody_name_df$off_set[[x]],
@@ -5657,7 +5655,7 @@ get_section_9_data <-
         dplyr::filter(!value %>% is.na()) %>%
         spread(nameItem, value) %>%
         mutate(nameEntityManager = name_entity_manager) %>%
-        mutate_adv_data() %>%
+        .mutate_adv_data() %>%
         dplyr::select(nameEntityManager, everything()) %>%
         suppressWarnings()
 
@@ -5672,21 +5670,21 @@ get_section_9_data <-
     return(section_data)
   }
 
-get_section_10_data <-
+.get_section_10_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvControlPersonsSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0') {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     get_node_item_df <-
       function() {
         node_item_df <-
           c('hasControlPersonUnnamed') %>%
-          get_item_name_yes_no_df()
+          .get_item_name_yes_no_df()
         return(node_item_df)
       }
 
@@ -5702,7 +5700,7 @@ get_section_10_data <-
 
             section_data <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>%
               dplyr::select(nameItem, valueItem) %>%
@@ -5721,7 +5719,7 @@ get_section_10_data <-
 
         name_entity_manager <-
           page %>%
-          get_entity_manager_name()
+          .get_entity_manager_name()
 
         section_data <-
           page %>%
@@ -5746,16 +5744,16 @@ get_section_10_data <-
     return(section_data)
   }
 
-get_section_11_data <-
+.get_section_11_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvDisciplinarySection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     get_node_item_df <-
       function() {
@@ -5787,7 +5785,7 @@ get_section_11_data <-
             "hasDomesticForeignCourtDismissedActionSettlementPursuant",
             "isDomesticForeignCourtSubjectToProceeding"
           ) %>%
-          get_item_name_yes_no_df()
+          .get_item_name_yes_no_df()
         return(node_item_df)
       }
 
@@ -5795,7 +5793,7 @@ get_section_11_data <-
       function(page, return_wide)  {
         name_entity_manager <-
           page %>%
-          get_entity_manager_name()
+          .get_entity_manager_name()
 
         parse_section_nodes <-
           function(page) {
@@ -5807,7 +5805,7 @@ get_section_11_data <-
 
             section_data <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>%
               mutate(nameEntityManager = name_entity_manager) %>%
@@ -5844,15 +5842,15 @@ get_section_11_data <-
     return(section_data)
   }
 
-get_section_12_data <-
+.get_section_12_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSmallBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0') {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     get_node_item_df <-
       function() {
@@ -5864,7 +5862,7 @@ get_section_12_data <-
             'isControlledByAssetManagerAssetsOver25mFiscalYearEnd',
             'isControlledByAssetManagerAssetsOver5mFiscalYearEnd'
           ) %>%
-          get_item_name_yes_no_df()
+          .get_item_name_yes_no_df()
         return(node_item_df)
       }
 
@@ -5874,7 +5872,7 @@ get_section_12_data <-
           function(page) {
             name_entity_manager <-
               page %>%
-              get_entity_manager_name()
+              .get_entity_manager_name()
 
             check_nodes <-
               page %>%
@@ -5884,7 +5882,7 @@ get_section_12_data <-
 
             has_nodes <-
               data_frame(nodeName = check_nodes) %>%
-              left_join(get_check_box_value_df()) %>%
+              left_join(.get_check_box_value_df()) %>%
               suppressMessages() %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>% nrow > 0
@@ -5893,7 +5891,7 @@ get_section_12_data <-
             if (has_nodes) {
               section_data <-
                 data_frame(nodeName = check_nodes) %>%
-                left_join(get_check_box_value_df()) %>%
+                left_join(.get_check_box_value_df()) %>%
                 bind_cols(get_node_item_df()) %>%
                 dplyr::filter(isNodeChecked == T) %>%
                 dplyr::select(nameItem, valueItem) %>%
@@ -5948,22 +5946,22 @@ get_section_12_data <-
     return(section_data)
   }
 
-get_schedule_a_data <-
+.get_schedule_a_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleASection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
            return_wide = F) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     parse_section <-
       function(page)  {
         name_entity_manager <-
           page %>%
-          get_entity_manager_name()
+          .get_entity_manager_name()
 
         table_exists <-
           page %>% html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleAPHSection_ctl00_ownersGrid') %>%
@@ -5999,8 +5997,8 @@ get_schedule_a_data <-
               isPublicReportingEntity = if_else(isPublicReportingEntity == "Y", TRUE, FALSE),
               dateEntityManagerOwnerPurchased = '01/' %>% paste0(monthYearEntityManagerOwnerPurchased) %>% lubridate::dmy() %>% as.Date
             ) %>%
-            left_join(get_type_manager_entity_owner_df()) %>%
-            left_join(get_range_entity_owner_df()) %>%
+            left_join(.get_type_manager_entity_owner_df()) %>%
+            left_join(.get_range_entity_owner_df()) %>%
             dplyr::select(-monthYearEntityManagerOwnerPurchased) %>%
             suppressMessages()
           has_individual_owners <-
@@ -6013,7 +6011,7 @@ get_schedule_a_data <-
 
             individual_data <-
               individual_data$nameEntityManagerOwner %>%
-              map_df(parse_manager_owner_name) %>%
+              future_map_dfr(.parse_manager_owner_name) %>%
               right_join(individual_data) %>%
               suppressMessages() %>%
               mutate(
@@ -6159,21 +6157,21 @@ get_schedule_a_data <-
     return(section_data %>% distinct())
   }
 
-get_schedule_b_data <-
+.get_schedule_b_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleBSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0',
            return_wide = F) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     parse_section <-
       function(page)  {
         name_entity_manager <-
           page %>%
-          get_entity_manager_name()
+          .get_entity_manager_name()
 
         table_exists <-
           page %>% html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleBPHSection_ctl00_ownersGrid') %>%
@@ -6211,7 +6209,7 @@ get_schedule_b_data <-
               dateEntityManagerOwnerOwnerPurchased = '01/' %>% paste0(monthYearEntityManagerOwnerOwnerPurchased) %>% lubridate::dmy() %>% as.Date
             ) %>%
             left_join(
-              get_type_manager_entity_owner_df() %>%
+              .get_type_manager_entity_owner_df() %>%
                 dplyr::rename(
                   idTypeEntityManagerOwnerOwner = idTypeEntityManagerOwner,
                   typeEntityManagerOwnerOwner = typeEntityManagerOwner,
@@ -6219,7 +6217,7 @@ get_schedule_b_data <-
                 )
             ) %>%
             left_join(
-              get_range_entity_owner_df() %>% dplyr::rename(
+              .get_range_entity_owner_df() %>% dplyr::rename(
                 idRangeManagerEntityOwnerOwnership = idRangeManagerEntityOwnership,
                 rangeManagerEntityOwnerOwnership = rangeManagerEntityOwnership
               )
@@ -6252,7 +6250,7 @@ get_schedule_b_data <-
 
               individual_data <-
                 individual_data$nameEntityManagerOwnerOwner %>%
-                map_df(parse_manager_owner_name) %>%
+                future_map_dfr(.parse_manager_owner_name) %>%
                 dplyr::rename(
                   nameEntityManagerOwnerOwner = nameEntityManagerOwner,
                   nameCommonEntityOwnerOwnerManager = nameCommonEntityOwnerManager,
@@ -6298,7 +6296,7 @@ get_schedule_b_data <-
 
               individual_data <-
                 individual_data$nameEntityManagerOwnerOwner %>%
-                map_df(parse_manager_owner_name) %>%
+                future_map_dfr(.parse_manager_owner_name) %>%
                 dplyr::rename(
                   nameEntityManagerOwnerOwner = nameEntityManagerOwner,
                   nameCommonEntityOwnerOwnerManager = nameCommonEntityOwnerManager,
@@ -6453,20 +6451,20 @@ get_schedule_b_data <-
     return(section_data %>% distinct())
   }
 
-get_schedule_d_data <-
+.get_schedule_d_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleDSection.aspx?ORG_PK=284340&FLNG_PK=0573726A0008018802C736510026C985056C8CC0',
            join_data = F,
            return_wide = F) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
-      page %>% get_entity_manager_name()
+      page %>% .get_entity_manager_name()
 
     parse_schedule_d <-
       function(page, join_data, return_wide)  {
@@ -6491,7 +6489,7 @@ get_schedule_d_data <-
 
         all_table_node_df <-
           1:length(table_nodes) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             raw_nodes <-
               table_nodes[[x]] %>%
               html_text(trim = T) %>%
@@ -6520,7 +6518,7 @@ get_schedule_d_data <-
 
             end_table_df <-
               1:length(table_nodes) %>%
-              map_df(function(x) {
+              future_map_dfr(function(x) {
                 raw_nodes <-
                   table_nodes[[x]] %>%
                   html_text(trim = T) %>%
@@ -6559,7 +6557,7 @@ get_schedule_d_data <-
 
             location_df <-
               1:(end_table_no) %>%
-              map_df(function(x) {
+              future_map_dfr(function(x) {
                 raw_nodes <-
                   table_nodes[[x]] %>%
                   html_text(trim = T) %>%
@@ -6590,7 +6588,7 @@ get_schedule_d_data <-
               dplyr::filter(itemvalueNode %>% str_detect('\\:'))
             name_entity_manager <-
               page %>%
-              get_entity_manager_name()
+              .get_entity_manager_name()
             has_other_locations <-
               location_df %>% nrow > 0
             if (has_other_locations) {
@@ -6604,14 +6602,14 @@ get_schedule_d_data <-
               }
               all_locations <-
                 location_df$idTable %>% unique() %>%
-                map_df(function(x) {
+                future_map_dfr(function(x) {
                   addressOfficeSecondary <-
                     location_df %>%
                     dplyr::filter(idTable == x)
 
                   addressOfficeSecondary %>%
                     separate(itemvalueNode, c('itemNode', 'valueNode'), '\\:') %>%
-                    left_join(get_location_name_df()) %>%
+                    left_join(.get_location_name_df()) %>%
                     dplyr::select(idTable, nameNode, valueNode) %>%
                     mutate(
                       valueNode = valueNode %>% str_trim() %>% str_to_upper(),
@@ -6652,7 +6650,7 @@ get_schedule_d_data <-
               if (return_wide) {
                 all_locations <-
                   all_locations %>%
-                  widen_adv_data()
+                  .widen_adv_data()
               }
             } else {
               all_locations <-
@@ -6665,11 +6663,11 @@ get_schedule_d_data <-
           function(page) {
             nodes <-
               page %>%
-              get_html_node_text('.PrintHistRed') %>%
+              .get_html_node_text('.PrintHistRed') %>%
               str_to_lower
 
             name_entity_manager <-
-              page %>% get_entity_manager_name()
+              page %>% .get_entity_manager_name()
 
             if (nodes %>% grep('http', .) %>% length() > 0) {
               urlManager <-
@@ -6687,7 +6685,7 @@ get_schedule_d_data <-
 
               url_df <-
                 url_df %>%
-                widen_adv_data()
+                .widen_adv_data()
             } else {
               url_df <-
                 url_df <-
@@ -6700,7 +6698,7 @@ get_schedule_d_data <-
           function(page, return_wide) {
             name_entity_manager <-
               page %>%
-              get_entity_manager_name()
+              .get_entity_manager_name()
 
             page_input_ids <-
               page %>%
@@ -6724,7 +6722,7 @@ get_schedule_d_data <-
 
               related_advisor_df <-
                 related_adviser_node_df$idTable %>%
-                map_df(function(x) {
+                future_map_dfr(function(x) {
                   table_nodes <-
                     page %>%
                     html_nodes(css = related_adviser_node_df$cssNode[x]) %>%
@@ -6815,23 +6813,23 @@ get_schedule_d_data <-
                             'isRelatedPersonClientCustodian',
                             'isRelatedPersonNotOperationIndependent'
                           ) %>%
-                            get_item_name_yes_no_df(),
+                            .get_item_name_yes_no_df(),
                           'isPrivateResidence' %>%
-                            has_item_check_name(),
+                            .has_item_check_name(),
                           c(
                             'isRelatedPersonExemptInvestmentAdviser',
                             'isRelatedPersonForeignEntityRegistered',
                             'hasRelatedPersonSharedSupervisedPerson',
                             'hasRelatedPersonSharedAddress'
                           ) %>%
-                            get_item_name_yes_no_df()
+                            .get_item_name_yes_no_df()
                         )
                       )
 
                     box_df <-
                       data_frame(nodeName = check_nodes) %>%
                       mutate(idTable = x) %>%
-                      left_join(get_check_box_value_df()) %>%
+                      left_join(.get_check_box_value_df()) %>%
                       bind_cols(node_df) %>%
                       dplyr::filter(isNodeChecked == T) %>%
                       dplyr::select(idTable, nameItem, valueItem) %>%
@@ -6866,8 +6864,8 @@ get_schedule_d_data <-
               if (return_wide) {
                 related_advisor_df <-
                   related_advisor_df %>%
-                  widen_adv_data() %>%
-                  mutate_adv_data()
+                  .widen_adv_data() %>%
+                  .mutate_adv_data()
               }
             } else {
               related_advisor_df <-
@@ -6888,7 +6886,7 @@ get_schedule_d_data <-
 
               record_df <-
                 c(-1, 5, 7, 10, 12, 14, 16, 18, 19, 20, 21) %>%
-                map_df(function(x) {
+                future_map_dfr(function(x) {
                   has_value <-
                     all_table_node_df$nodeText[node_locations - x] %>% length() >
                     0
@@ -6973,7 +6971,7 @@ get_schedule_d_data <-
               if (return_wide) {
                 record_df <-
                   record_df %>%
-                  widen_adv_data()
+                  .widen_adv_data()
 
               }
 
@@ -6996,10 +6994,10 @@ get_schedule_d_data <-
           function(page, return_wide) {
             nodes <-
               page %>%
-              get_html_node_text('.PrintHistRed')
+              .get_html_node_text('.PrintHistRed')
 
             name_entity_manager <-
-              page %>% get_entity_manager_name()
+              page %>% .get_entity_manager_name()
 
             if (nodes[nodes %>% str_detect('INDIRECTLY CONTROLS')] %>% length() > 0) {
               node_locations <-
@@ -7007,7 +7005,7 @@ get_schedule_d_data <-
 
               control_person_df <-
                 8:0 %>%
-                map_df(function(x) {
+                future_map_dfr(function(x) {
                   data_frame(value = nodes[node_locations - x],
                              idNode = x)
                 }) %>%
@@ -7077,7 +7075,7 @@ get_schedule_d_data <-
               if ('nameControlPerson' %in% names(control_person_df)) {
                 name_df <-
                   control_person_df$nameControlPerson %>%
-                  map_df(parse_manager_owner_name)
+                  future_map_dfr(.parse_manager_owner_name)
 
                 names(name_df) <-
                   names(name_df) %>%
@@ -7208,7 +7206,7 @@ get_schedule_d_data <-
               if (return_wide) {
                 other_node_text_df <-
                   other_node_text_df %>%
-                  widen_adv_data()
+                  .widen_adv_data()
               }
             } else {
               other_node_text_df <-
@@ -7344,35 +7342,35 @@ get_schedule_d_data <-
     return(section_data)
   }
 
-get_manager_signatory_data <-
+.get_manager_signatory_data <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSignatureSection.aspx?ORG_PK=160489&FLNG_PK=02FF0ECC00080185033F257005F016CD056C8CC0') {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     parse_signature_page <-
       function(page) {
         is_old <-
           (page %>%
-             get_html_node_text('.PrintHistRed') %>% is.na == T) %>% as.numeric() %>% sum() >= 1
+             .get_html_node_text('.PrintHistRed') %>% is.na == T) %>% as.numeric() %>% sum() >= 1
         if (is_old) {
           nodes <-
             page %>%
-            get_html_node_text('font') %>%
+            .get_html_node_text('font') %>%
             unique() %>%
             .[1:3]
         } else {
           nodes <-
             page %>%
-            get_html_node_text('.PrintHistRed') %>%
+            .get_html_node_text('.PrintHistRed') %>%
             str_replace_all('&', 'AND') %>%
             unique()
         }
@@ -7412,20 +7410,20 @@ get_manager_signatory_data <-
     return(signature_df)
   }
 
-get_section_drp <-
+.get_section_drp <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvDrpSection.aspx?ORG_PK=103863&FLNG_PK=05CBF6920008018902B1D9910035D515056C8CC0',
            return_wide = F) {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     clean_adv_drp_data <-
       function(data, widen_data = F) {
@@ -7446,12 +7444,12 @@ get_section_drp <-
             mutate(countItem = 1:n()) %>%
             ungroup() %>%
             spread(item, value) %>%
-            mutate_adv_data()
+            .mutate_adv_data()
 
           if (widen_data) {
             data <-
               data %>%
-              widen_adv_data
+              .widen_adv_data
           }
         }
         return(data)
@@ -7518,7 +7516,7 @@ get_section_drp <-
         if (is_date) {
           values <-
             1:length(values) %>%
-            map(function(x) {
+            future_map(function(x) {
               date_values <-
                 values[[x]] %>%
                 str_split('\\: ') %>%
@@ -7646,7 +7644,7 @@ get_section_drp <-
 
           all_table_node_df <-
             1:length(table_nodes) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               raw_nodes <-
                 table_nodes[[x]] %>%
                 str_replace_all('\r|\n|\t', '') %>%
@@ -7756,7 +7754,7 @@ get_section_drp <-
 
           all_drp_data <-
             1:nrow(drp_name_df) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               parse_drp_table_data_safe(
                 all_table_node_df = all_table_node_df,
                 item_name = drp_name_df$nameItem[x],
@@ -7775,7 +7773,7 @@ get_section_drp <-
             arrange(countItem) %>%
             dplyr::filter(!countItem %>% is.na()) %>%
             spread(nameItem, value) %>%
-            mutate_adv_data() %>%
+            .mutate_adv_data() %>%
             dplyr::select(c(
               nameEntityManager,
               countItem,
@@ -7806,7 +7804,7 @@ get_section_drp <-
 
           all_table_node_df <-
             1:length(table_nodes) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               raw_nodes <-
                 table_nodes[[x]] %>%
                 str_replace_all('\r|\n|\t', '') %>%
@@ -7996,7 +7994,7 @@ get_section_drp <-
 
           all_drp_data <-
             1:nrow(drp_name_df) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               parse_drp_table_data_safe(
                 all_table_node_df = all_table_node_df,
                 item_name = drp_name_df$nameItem[x],
@@ -8015,7 +8013,7 @@ get_section_drp <-
             dplyr::filter(!countItem %>% is.na()) %>%
             arrange(countItem) %>%
             spread(nameItem, value) %>%
-            mutate_adv_data() %>%
+            .mutate_adv_data() %>%
             dplyr::select(c(nameEntityManager,
                             countItem,
                             everything())) %>%
@@ -8044,7 +8042,7 @@ get_section_drp <-
 
           all_table_node_df <-
             1:length(table_nodes) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               raw_nodes <-
                 table_nodes[[x]] %>%
                 str_replace_all('\r|\n|\t', '') %>%
@@ -8234,7 +8232,7 @@ get_section_drp <-
 
           all_drp_data <-
             1:nrow(drp_name_df) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               parse_drp_table_data_safe(
                 all_table_node_df = all_table_node_df,
                 item_name = drp_name_df$nameItem[x],
@@ -8256,7 +8254,7 @@ get_section_drp <-
             dplyr::filter(!countItem %>% is.na()) %>%
             arrange(countItem) %>%
             spread(nameItem, value) %>%
-            mutate_adv_data() %>%
+            .mutate_adv_data() %>%
             dplyr::select(c(nameEntityManager,
                             countItem,
                             everything())) %>%
@@ -8328,7 +8326,7 @@ get_section_drp <-
 
   }
 
-get_crd_sections_data <-
+.get_crd_sections_data <-
   function(id_crd = 162351,
            all_sections = TRUE,
            score_threshold = .2,
@@ -8344,8 +8342,8 @@ get_crd_sections_data <-
              "Manager Signatories"
            ),
            flatten_tables = TRUE) {
-    sitemap_df <-
-      get_managers_adv_sitemap_adv(idCRDs = id_crd, score_threshold = score_threshold) %>%
+    sitefuture_map_dfr <-
+      .get_managers_adv_sitemap_adv(idCRDs = id_crd, score_threshold = score_threshold) %>%
       distinct() %>%
       dplyr::filter(!idSection %>% str_detect('section12SmallBusiness')) %>%
       suppressWarnings() %>%
@@ -8356,89 +8354,89 @@ get_crd_sections_data <-
 
     if (all_sections) {
       section_names <-
-        sitemap_df$nameSectionActual
+        sitefuture_map_dfr$nameSectionActual
     }
 
     if (section_null &
         !all_sections) {
       stop("You must select a section, possibilties for this search are:\n" %>%
              paste0(paste0(
-               sitemap_df$nameSectionActual, collapse = '\n'
+               sitefuture_map_dfr$nameSectionActual, collapse = '\n'
              )))
     }
 
     get_adv_sections <-
-      function(sitemap_df, all_sections) {
-        get_manager_sec_page_safe <-
-          possibly(get_manager_sec_page, data_frame())
-        get_section_drp_safe <-
-          possibly(get_section_drp, data_frame())
-        get_section_1_data_safe <-
-          possibly(get_section_1_data, data_frame())
-        get_section_2_data_safe <-
-          possibly(get_section_2_data, data_frame())
-        get_section_3_data_safe <-
-          possibly(get_section_3_data, data_frame())
-        get_section_4_data_safe <-
-          possibly(get_section_4_data, data_frame())
-        get_section_5_data_safe <-
-          possibly(get_section_5_data, data_frame())
-        get_section_6_data_safe <-
-          possibly(get_section_6_data, data_frame())
-        get_section_7a_data_safe <-
-          possibly(get_section_7a_data, data_frame())
-        get_section_7b_data_safe <-
-          possibly(get_section_7b_data, data_frame())
-        get_section_8_data_safe <-
-          possibly(get_section_8_data, data_frame())
-        get_section_9_data_safe <-
-          possibly(get_section_9_data, data_frame())
-        get_section_10_data_safe <-
-          possibly(get_section_10_data, data_frame())
-        get_section_11_data_safe <-
-          possibly(get_section_11_data, data_frame())
-        get_section_12_data_safe <-
-          possibly(get_section_12_data, data_frame())
-        get_schedule_a_data_safe <-
-          possibly(get_schedule_a_data, data_frame())
-        get_schedule_b_data_safe <-
-          possibly(get_schedule_b_data, data_frame())
-        get_schedule_d_data_safe <-
-          possibly(get_schedule_d_data, data_frame())
-        get_manager_signatory_data_safe <-
-          possibly(get_manager_signatory_data, data_frame())
+      function(sitefuture_map_dfr, all_sections) {
+        .get_manager_sec_page_safe <-
+          possibly(.get_manager_sec_page, data_frame())
+        .get_section_drp_safe <-
+          possibly(.get_section_drp, data_frame())
+        .get_section_1_data_safe <-
+          possibly(.get_section_1_data, data_frame())
+        .get_section_2_data_safe <-
+          possibly(.get_section_2_data, data_frame())
+        .get_section_3_data_safe <-
+          possibly(.get_section_3_data, data_frame())
+        .get_section_4_data_safe <-
+          possibly(.get_section_4_data, data_frame())
+        .get_section_5_data_safe <-
+          possibly(.get_section_5_data, data_frame())
+        .get_section_6_data_safe <-
+          possibly(.get_section_6_data, data_frame())
+        .get_section_7a_data_safe <-
+          possibly(.get_section_7a_data, data_frame())
+        .get_section_7b_data_safe <-
+          possibly(.get_section_7b_data, data_frame())
+        .get_section_8_data_safe <-
+          possibly(.get_section_8_data, data_frame())
+        .get_section_9_data_safe <-
+          possibly(.get_section_9_data, data_frame())
+        .get_section_10_data_safe <-
+          possibly(.get_section_10_data, data_frame())
+        .get_section_11_data_safe <-
+          possibly(.get_section_11_data, data_frame())
+        .get_section_12_data_safe <-
+          possibly(.get_section_12_data, data_frame())
+        .get_schedule_a_data_safe <-
+          possibly(.get_schedule_a_data, data_frame())
+        .get_schedule_b_data_safe <-
+          possibly(.get_schedule_b_data, data_frame())
+        .get_schedule_d_data_safe <-
+          possibly(.get_schedule_d_data, data_frame())
+        .get_manager_signatory_data_safe <-
+          possibly(.get_manager_signatory_data, data_frame())
 
         if (!all_sections) {
           no_rows <-
-            sitemap_df %>%
+            sitefuture_map_dfr %>%
             dplyr::filter(nameSectionActual %in% section_names) %>% nrow == 0
 
           if (no_rows) {
             stop(
               "Sorry tables can only be:\n",
-              sitemap_df$nameSectionActual %>% paste0(collapse = '\n')
+              sitefuture_map_dfr$nameSectionActual %>% paste0(collapse = '\n')
             )
           }
 
-          sitemap_df <-
-            sitemap_df %>%
+          sitefuture_map_dfr <-
+            sitefuture_map_dfr %>%
             dplyr::filter(nameSectionActual %in% section_names)
         }
 
         all_data <-
-          1:nrow(sitemap_df) %>%
-          map_df(function(x) {
+          1:nrow(sitefuture_map_dfr) %>%
+          future_map_dfr(function(x) {
             f <-
-              sitemap_df$nameFunction[[x]] %>% lazyeval::as_name() %>% eval()
+              sitefuture_map_dfr$nameFunction[[x]] %>% lazyeval::as_name() %>% eval()
             url <-
-              sitemap_df$urlADVSection[[x]]
+              sitefuture_map_dfr$urlADVSection[[x]]
             df_name <-
-              sitemap_df$nameData[[x]] %>%
+              sitefuture_map_dfr$nameData[[x]] %>%
               str_to_title() %>%
               paste0('data', .)
             nameADVPage <-
-              sitemap_df$nameSectionActual[[x]]
-            paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% message()
+              sitefuture_map_dfr$nameSectionActual[[x]]
+            paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% cat(fill = T)
             g <-
               f %>%
               list(quote(url)) %>%
@@ -8458,7 +8456,7 @@ get_crd_sections_data <-
       possibly(get_adv_sections, data_frame())
 
     all_data <-
-      get_adv_sections_safe(sitemap_df = sitemap_df, all_sections = all_sections) %>%
+      get_adv_sections_safe(sitefuture_map_dfr = sitefuture_map_dfr, all_sections = all_sections) %>%
       suppressWarnings()
 
     all_data <-
@@ -8517,12 +8515,12 @@ get_crd_sections_data <-
             '\nThey have ',
             total_aum,
             ' in Total Assets Under Management'
-          ) %>% message()
+          ) %>% cat(fill = T)
       }
     }  else {
       "Parsed " %>%
         paste0(name_entity_manager) %>%
-        message()
+        cat(fill = T)
 
     }
 
@@ -8557,7 +8555,7 @@ get_crd_sections_data <-
 
           widened_data <-
             1:nrow(widen_data) %>%
-            map_df(function(x) {
+            future_map_dfr(function(x) {
               data <-
                 widen_data %>%
                 select_nesting_vars() %>%
@@ -8591,7 +8589,7 @@ get_crd_sections_data <-
             widened_data %>%
             spread(item, value) %>%
             dplyr::select(one_of(col_order)) %>%
-            mutate_adv_data()
+            .mutate_adv_data()
           return(data)
         }
 
@@ -8620,7 +8618,7 @@ get_crd_sections_data <-
   }
 
 
-get_search_crd_ids <-
+.get_search_crd_ids <-
   function(entity_names = c('EJF Capital', '137 Ventures'),
            crd_ids = NULL) {
     if (entity_names %>% is_null() & (crd_ids %>% is_null())) {
@@ -8631,12 +8629,12 @@ get_search_crd_ids <-
       data_frame(idCRD = NA)
 
     if (!entity_names %>% is_null()) {
-      get_data_finra_entities_safe <-
-        purrr::possibly(get_data_finra_entities, data_frame())
+      finra_entities_safe <-
+        purrr::possibly(finra_entities, data_frame())
       search_name_df <-
         entity_names %>%
-        map_df(function(x) {
-          get_data_finra_entities(
+        future_map_dfr(function(x) {
+          finra_entities(
             entity_names = x,
             return_message = FALSE,
             ocr_pdf = FALSE
@@ -8668,7 +8666,7 @@ get_search_crd_ids <-
     return(crds)
   }
 
-return_selected_adv_tables <-
+.return_selected_adv_tables <-
   function(data,
            all_sections,
            table_names,
@@ -8700,7 +8698,7 @@ return_selected_adv_tables <-
           data_selected %>%
           dplyr::select(dataTable) %>%
           unnest() %>%
-          map(class) %>%
+          future_map(class) %>%
           as_data_frame() %>%
           gather(column, valueCol) %>%
           .$valueCol %>% str_count('list') %>% sum() >= 1
@@ -8716,7 +8714,7 @@ return_selected_adv_tables <-
             unnest()
 
           section_df <-
-            get_sec_sitemap_df() %>%
+            .get_sec_sitemap_df() %>%
             dplyr::select(nameSectionActual, idSection) %>%
             bind_rows(
               data_frame(nameSectionActual = 'Manager Description',
@@ -8755,10 +8753,10 @@ return_selected_adv_tables <-
               arrange(idCRD, nameItem, countItemManager)
           }
 
-          assign(x = df_name, eval(data_selected %>% mutate_adv_data()), envir = .GlobalEnv)
+          assign(x = df_name, eval(data_selected %>% .mutate_adv_data()), envir = .GlobalEnv)
           section_df %>%
             dplyr::filter(nameSectionActual == table_name) %>%
-            .$idSection %>% message()
+            .$idSection %>% cat(fill = T)
         }
         if (has_nested_list) {
           has_no_count_col <-
@@ -8803,7 +8801,7 @@ return_selected_adv_tables <-
               dplyr::select(idCRD, idTable, nameTable, dataTable)
 
             1:length(table_names) %>%
-              map(function(x) {
+              future_map(function(x) {
                 table_names[x] %>% message
                 table_data <-
                   data_selected %>%
@@ -8849,7 +8847,7 @@ return_selected_adv_tables <-
 
                 df_name <-
                   table_names[x]
-                assign(x = df_name, eval(table_data %>% mutate_adv_data()), envir = .GlobalEnv)
+                assign(x = df_name, eval(table_data %>% .mutate_adv_data()), envir = .GlobalEnv)
               })
           }
         }
@@ -8859,7 +8857,7 @@ return_selected_adv_tables <-
     return_selected_adv_table_safe <-
       possibly(return_selected_adv_table, NULL)
     table_names %>%
-      map(function(x) {
+      walk(function(x) {
         return_selected_adv_table_safe(data = data,
                                        table_name = x,
                                        gather_data = gather_data)
@@ -8904,11 +8902,11 @@ return_selected_adv_tables <-
 #' @family entity search
 #' @family fund data
 #' @examples
-#' get_data_adv_managers_filings(entity_names = c('Blackstone Real Estate'), crd_ids = NULL,
+#' adv_managers_filings(entity_names = c('Blackstone Real Estate'), crd_ids = NULL,
 #'  all_sections = TRUE,  section_names = NULL,
 #'  flatten_tables = TRUE, gather_data = FALSE,
 #'  assign_to_environment = TRUE)
-get_data_adv_managers_filings <-
+adv_managers_filings <-
   function(entity_names = NULL,
            crd_ids = NULL,
            all_sections = TRUE,
@@ -8939,29 +8937,29 @@ get_data_adv_managers_filings <-
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
-    get_search_crd_ids_safe <-
-      possibly(get_search_crd_ids, data_frame())
+    .get_search_crd_ids_safe <-
+      possibly(.get_search_crd_ids, data_frame())
 
     crds <-
-      get_search_crd_ids_safe(entity_names = entity_names,
+      .get_search_crd_ids_safe(entity_names = entity_names,
                               crd_ids = crd_ids)
 
-    get_crd_sections_data_safe <-
-      possibly(get_crd_sections_data, data_frame())
+    .get_crd_sections_data_safe <-
+      possibly(.get_crd_sections_data, data_frame())
 
     all_data <-
       1:length(crds) %>%
-      map_df(function(x) {
-        get_crd_sections_data_safe(
+      future_map_dfr(function(x) {
+        .get_crd_sections_data_safe(
           id_crd = crds[x],
           all_sections = all_sections,
           section_names = section_names,
           flatten_tables = flatten_tables
         )
-      })
+      }, .progress = T)
 
-    return_selected_adv_tables_safe <-
-      possibly(return_selected_adv_tables, data_frame())
+    .return_selected_adv_tables_safe <-
+      possibly(.return_selected_adv_tables, data_frame())
 
     only_1 <-
       section_names %>% length() == 1 & assign_to_environment
@@ -8971,7 +8969,7 @@ get_data_adv_managers_filings <-
 
     if (assign_all) {
       all_data %>%
-        return_selected_adv_tables_safe(all_sections = TRUE,
+        .return_selected_adv_tables_safe(all_sections = TRUE,
                                         gather_data = gather_data)
 
     }
@@ -9045,7 +9043,7 @@ get_data_adv_managers_filings <-
         ) %>%
         suppressWarnings()
 
-      assign(x = table_name, eval(data %>% mutate_adv_data()),  envir = .GlobalEnv)
+      assign(x = table_name, eval(data %>% .mutate_adv_data()),  envir = .GlobalEnv)
     }
 
 # gc()
@@ -9056,25 +9054,25 @@ return(all_data)
 
 # pdf ---------------------------------------------------------------------
 
-parse_manager_brochure_data <-
+.parse_manager_brochure_data <-
   function(url = 'https://adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=156663') {
     idCRD <-
       url %>%
-      get_pk_url_crd()
+      .get_pk_url_crd()
 
     page <-
       url %>%
-      get_html_page()
+      .get_html_page()
 
     name_entity_manager <-
       page %>%
-      get_entity_manager_name()
+      .get_entity_manager_name()
 
     brochure_exists <-
       page %>%
-      check_html_node(node_css = '#ctl00_cphMain_landing_p2BrochureLink')
+      .check_html_node(node_css = '#ctl00_cphMain_landing_p2BrochureLink')
 
-    parse_sec_manager_pdf_url <-
+    .parse_sec_manager_pdf_url <-
       function(page) {
         brochure_url <-
           page %>%
@@ -9085,7 +9083,7 @@ parse_manager_brochure_data <-
 
         brochure_page <-
           brochure_url %>%
-          get_html_page()
+          .get_html_page()
 
         has_brochure <-
           brochure_page %>%
@@ -9104,7 +9102,7 @@ parse_manager_brochure_data <-
         return(url_brochure_pdf)
       }
     pdf_urls <-
-      page %>% parse_sec_manager_pdf_url()
+      page %>% .parse_sec_manager_pdf_url()
     no_brochure <-
       pdf_urls %>% is.na() %>% as.numeric %>% sum() >= 1
 
@@ -9169,7 +9167,7 @@ parse_manager_brochure_data <-
 
         actual_name_df <-
           1:length(sec_names) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             name_exists <-
               sec_name_df %>%
               dplyr::filter(nameSEC == sec_names[x]) %>% nrow > 0
@@ -9218,7 +9216,7 @@ parse_manager_brochure_data <-
 
         pdf_text_df <-
           1:length(pdf_pages) %>%
-          map_df(function(x) {
+          future_map_dfr(function(x) {
             page_text <-
               pdf_pages[[x]] %>%
               str_trim()
@@ -9285,11 +9283,11 @@ parse_manager_brochure_data <-
     if (brochure_exists) {
       urlPDFManagerADVBrochure <-
         page %>%
-        parse_sec_manager_pdf_url()
+        .parse_sec_manager_pdf_url()
 
       brochure_data <-
         urlPDFManagerADVBrochure %>%
-        map_df(function(x) {
+        future_map_dfr(function(x) {
           parse_pdf_brochure(url = x)
         }) %>%
         mutate(nameEntityManager = name_entity_manager, idCRD)
@@ -9306,17 +9304,17 @@ parse_manager_brochure_data <-
 
     brochure_data <-
       brochure_data %>%
-      select_start_vars()
+      .select_start_vars()
 
     return(brochure_data)
 
   }
 
-get_manager_brochure_data <-
+.get_manager_brochure_data <-
   function(id_crd = 156663,
            split_pages = TRUE) {
     url <-
-      get_managers_adv_sitemap_adv(idCRDs = id_crd) %>%
+      .get_managers_adv_sitemap_adv(idCRDs = id_crd) %>%
       distinct() %>%
       dplyr::filter(nameSectionActual == 'Registration') %>%
       .$urlADVSection %>%
@@ -9326,7 +9324,7 @@ get_manager_brochure_data <-
 
     pdf_data <-
       url %>%
-      parse_manager_brochure_data()
+      .parse_manager_brochure_data()
 
     if ('textBrochure' %in% names(pdf_data)) {
       if (split_pages) {
@@ -9354,8 +9352,8 @@ get_manager_brochure_data <-
 #' @export
 #' @import curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble pdftools tidyr jsonlite
 #' @examples
-#' get_data_adv_managers_brochures(entity_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE, nest_data = TRUE)
-get_data_adv_managers_brochures <-
+#' adv_managers_brochures(entity_names = c('137 Ventures', 'Divco'), crd_ids = 156663, split_pages = TRUE, nest_data = TRUE)
+adv_managers_brochures <-
   function(entity_names = NULL,
            crd_ids = NULL,
            split_pages = TRUE,
@@ -9365,25 +9363,26 @@ get_data_adv_managers_brochures <-
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
-    get_search_crd_ids_safe <-
-      possibly(get_search_crd_ids, data_frame())
+    .get_search_crd_ids_safe <-
+      possibly(.get_search_crd_ids, data_frame())
 
     crds <-
-      get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
+      .get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
 
-    get_manager_brochure_data_safe <-
-      possibly(get_manager_brochure_data, data_frame())
+    .get_manager_brochure_data_safe <-
+      possibly(.get_manager_brochure_data, data_frame())
 
     all_data <-
      crds %>%
-      map_df(function(crd) {
+      future_map_dfr(function(crd) {
         manager_pdf <-
-          get_manager_brochure_data_safe(id_crd = as.numeric(crd), split_pages = split_pages)
+          .get_manager_brochure_data_safe(id_crd = as.numeric(crd), split_pages = split_pages)
 
         if (nrow(manager_pdf) >= 1) {
           manager <- manager_pdf$nameEntityManager %>% unique()
           date_file <- manager_pdf$datetimeCreated %>% unique()
-          glue::glue("Acquired ADV brochure for {manager} filed on {date_file}") %>% message()
+          glue::glue("Acquired ADV brochure for {manager} filed on {date_file}") %>%
+            cat(fill = T)
         }
 
         manager_pdf
@@ -9413,7 +9412,7 @@ get_data_adv_managers_brochures <-
 #' @export
 #' @import rvest stringr dplyr tibble httr stringr lubridate purrr
 #' @examples
-get_data_adv_period_urls <-
+adv_period_urls <-
   function() {
     httr::set_config(httr::config(ssl_verifypeer = 0L))
     page <-
@@ -9448,7 +9447,7 @@ get_data_adv_period_urls <-
 
     df_dates <-
       bases %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
 
         date <-
           x %>% str_split("\\-|\\_|\\.zip") %>% flatten_chr() %>% .[[1]] %>%
@@ -9489,7 +9488,7 @@ get_data_adv_period_urls <-
           nrow() == 0
 
         if (no_name) {
-          glue::glue("Missing {name} in dictionary") %>% message()
+          glue::glue("Missing {name} in dictionary") %>% cat(fill = T)
           return(name)
         }
         df_actual_names %>%
@@ -10057,7 +10056,7 @@ parse_sec_adv_data_url <-
         adv_data %>%
           dplyr::select(-matches("country")) %>%
           dplyr::select(matches("^count[A-Z]")) %>%
-          map(class) %>%
+          future_map(class) %>%
           as_data_frame() %>%
           gather(column, class) %>%
           dplyr::filter(class == 'character') %>% nrow() > 0
@@ -10068,7 +10067,7 @@ parse_sec_adv_data_url <-
         adv_data %>%
         dplyr::select(-matches("country")) %>%
         dplyr::select(matches("^count[A-Z]")) %>%
-        map(class) %>%
+        future_map(class) %>%
         as_data_frame() %>%
         gather(column, class) %>%
         dplyr::filter(class == 'character') %>%
@@ -10177,7 +10176,7 @@ parse_sec_adv_data_url <-
     }
 
     if (return_message) {
-      glue::glue("Parsed {url}") %>% message()
+      glue::glue("Parsed {url}") %>% cat(fill = T)
     }
 
     adv_data <-
@@ -10209,7 +10208,7 @@ parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.z
 
     page_url <- res$url
 
-      glue::glue("parsing {page_url}") %>% message()
+      glue::glue("parsing {page_url}") %>% cat(fill = T)
 
     data <-
       page_url %>%
@@ -10226,7 +10225,7 @@ parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.z
 
 
   urls %>%
-    map(function(x) {
+    future_map(function(x) {
       curl_fetch_multi(url = x, success, failure)
     })
   multi_run()
@@ -10255,11 +10254,11 @@ parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.z
 #' @family fund data
 #' @examples
 #' \dontrun{
-#' get_data_adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"), all_periods = FALSE, is_exempt = c(FALSE,TRUE), only_most_recent = FALSE, nest_data = FALSE)
+#' adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"), all_periods = FALSE, is_exempt = c(FALSE,TRUE), only_most_recent = FALSE, nest_data = FALSE)
 #'
-#' get_data_adv_managers_periods_summaries(only_most_recent = TRUE)
+#' adv_managers_periods_summaries(only_most_recent = TRUE)
 #' }
-get_data_adv_managers_periods_summaries <-
+adv_managers_periods_summaries <-
   function(periods = c("2006-06"),
            all_periods = FALSE,
            only_most_recent = FALSE,
@@ -10268,7 +10267,7 @@ get_data_adv_managers_periods_summaries <-
            return_message = TRUE) {
     if (!'sec_adv_url_df' %>% exists()) {
       sec_adv_url_df <-
-        get_data_adv_period_urls()
+        adv_period_urls()
 
       assign(x = 'sec_url_df', eval(sec_adv_url_df),  envir = .GlobalEnv)
     }
@@ -10438,7 +10437,7 @@ get_data_adv_managers_periods_summaries <-
 #' This function returns abbreviated ADV data for
 #' all filing managers for the most recent period.
 #'
-#' For multiple periods and all information see \code{\link{get_data_adv_managers_periods_summaries}}
+#' For multiple periods and all information see \code{\link{adv_managers_periods_summaries}}
 #'
 #' @param file_directory directory you want to save your data into, if none specified a temporary file will be created
 #' @param folder_name older you want the data to be downloaded into
@@ -10453,10 +10452,10 @@ get_data_adv_managers_periods_summaries <-
 #' @family fund data
 #' @examples
 #' \dontrun{
-#' get_data_adv_managers_current_period_summary(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasFelonyPleaConviction", "hasFelonyCharge", "hasMisdemeanorPleaConviction"))
+#' adv_managers_current_period_summary(select_names = c("dateDataADV", "isExempt", "idRegionSEC", "idCRD", "idSEC", "typeRegulationSEC", "nameEntityManager", "nameEntityManagerLegal", 'addressOfficePrimary', "addressStreet1OfficePrimary", "addressStreet2OfficePrimary", "cityOfficePrimary", "stateOfficePrimary", "countryOfficePrimary", "zipOfficePrimary", "phoneOfficePrimary", "statusSEC", "dateStatusSEC", "dateADVLatest", "urlManager", "isForeignRegisteredEntity", "stateDateJurisdictionNotice", "idCIK", "hasAUMGreater1B", "idLEI", "hasAUMGreater100M", "typeEntity", "countryEntityOrganized", "countEmployeesTotal", "countEmployeesInvestmentAdvisory", "amountAUMTotal", "amountAUMDiscretionary", "amountAUMNonDiscretionary", "countAccountsDiscretionary", "countAccountsNonDiscretionary", "countAccountsTotal", "isManagerSecuritiesPortfolio", "hasFeeAUM", "hasFeeHourlyCharge", "hasFeeSubscription", "hasFeeFixed", "hasFeeCommission", "hasFeePerformance", "hasFeeOther", "typeFeeOther", "isBrokerDealer", "isBrokerDealerRepresentative", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBrokerDealerAgent", "isInsuranceBrokerAgent", "isBank", "isTrustCompany", "isRegisteredMunicipalAdviser", "isRegisteredSecuritySwapDealer", "isRegistredSecuritySwapParticipant", "isAccountingFirm", "isLawFirm", "isOtherFinancialProductSalesperson", "typeOtherFinancialProductSalesperson", "countEmployeesBrokerDealer", "countEmployeesStateRegisteredInvestmentAdviser", "countEmployeesStateRegisteredInvestmentAdviserMultipleEntities", "countEmployeesLicensedInsuranceAgents", "countEmployeesSolicitAdvisoryClients", "hasFelonyPleaConviction", "hasFelonyCharge", "hasMisdemeanorPleaConviction"))
 #' }
 
-get_data_adv_managers_current_period_summary <-
+adv_managers_current_period_summary <-
   function(select_names = c(
     "dateDataADV",
     "isExempt",
@@ -10528,11 +10527,11 @@ get_data_adv_managers_current_period_summary <-
     "hasMisdemeanorPleaConviction"
   ),
   return_message = TRUE) {
-    get_data_adv_managers_periods_summaries_safe <-
-      purrr::possibly(get_data_adv_managers_periods_summaries, data_frame())
+    adv_managers_periods_summaries_safe <-
+      purrr::possibly(adv_managers_periods_summaries, data_frame())
 
     all_data <-
-      get_data_adv_managers_periods_summaries(only_most_recent = TRUE,
+      adv_managers_periods_summaries(only_most_recent = TRUE,
                                               include_exempt  = c(TRUE, FALSE))
 
     all_data <-
@@ -10595,7 +10594,7 @@ extract_fee_references <- function(data, word_threshhold = 5,
         setence_df$nameEntityManager %>% paste0('Manager: ',., '\n', fee_text)
       }) %>%
       paste0(collapse = '\n') %>%
-      message()
+      cat(fill = T)
   }
 
   possible_fees %>%

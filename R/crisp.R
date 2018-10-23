@@ -10,8 +10,8 @@
 #' @import rvest dplyr tidyr stringr lubridate readr
 #' @family CRSP
 #' @examples
-#' get_data_crsp_files()
-get_data_crsp_files <-
+#' crsp_files()
+crsp_files <-
   function(include_summary_files = TRUE) {
   page <-
     "http://www.crsp.com/indexes-pages/returns-and-constituents" %>%
@@ -62,7 +62,7 @@ get_data_crsp_files <-
 
   }
 
-parse_crsp_index_url <-
+.parse_crsp_index_url <-
   function(url = "http://www.crsp.com/files/CRSP-US-Total-Market.xlsx", return_message = TRUE) {
     index_name <-
       url %>%
@@ -125,7 +125,7 @@ parse_crsp_index_url <-
     if (return_message) {
       list("Parsed: ", url) %>%
         purrr::invoke(paste0, .) %>%
-        message()
+        cat(fill = T)
     }
 
     return(data)
@@ -147,18 +147,18 @@ parse_crsp_index_url <-
 #' @family index constituents
 #'
 #' @examples
-#' get_data_crsp_indicies_constituents(nest_data = FALSE, return_message = TRUE)
-get_data_crsp_indicies_constituents <-
+#' crsp_indicies_constituents(nest_data = FALSE, return_message = TRUE)
+crsp_indicies_constituents <-
   function(nest_data = TRUE, return_message = TRUE) {
     url_df <-
-      get_data_crsp_files() %>%
+      crsp_files() %>%
       filter(isSummaryFile == FALSE)
-    parse_crsp_index_url_safe <-
-      purrr::possibly(parse_crsp_index_url, data_frame())
+    .parse_crsp_index_url_safe <-
+      purrr::possibly(.parse_crsp_index_url, data_frame())
     all_data <-
       url_df$urlData %>%
-      map_df(function(x){
-        parse_crsp_index_url(url = x, return_message = return_message)
+      future_map_dfr(function(x){
+        .parse_crsp_index_url(url = x, return_message = return_message)
       })
 
     if (nest_data) {
@@ -185,20 +185,20 @@ get_data_crsp_indicies_constituents <-
 #' @family CRSP
 #' @family index values
 #' @examples
-#' get_data_crsp_indicies_returns(return_wide = FALSE,
+#' crsp_indicies_returns(return_wide = FALSE,
 #' nest_data = FALSE, return_message = TRUE)
-get_data_crsp_indicies_returns <-
+crsp_indicies_returns <-
   function(return_wide = FALSE,
            nest_data = TRUE, return_message = TRUE) {
     url_df <-
-      get_data_crsp_files() %>%
+      crsp_files() %>%
       filter(isSummaryFile == TRUE)
-    parse_crsp_index_url_safe <-
-      purrr::possibly(parse_crsp_index_url, data_frame())
+    .parse_crsp_index_url_safe <-
+      purrr::possibly(.parse_crsp_index_url, data_frame())
     all_data <-
       url_df$urlData %>%
-      map_df(function(x){
-        parse_crsp_index_url(url = x, return_message = return_message)
+      future_map_dfr(function(x){
+        .parse_crsp_index_url(url = x, return_message = return_message)
       }) %>%
       select(-nameFile) %>%
       select(periodData, nameIndex, pctReturns, everything())

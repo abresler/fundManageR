@@ -83,7 +83,7 @@ get_data_tickers_trades <-
 
     all_data <-
       tickers %>%
-      map_df(function(x){
+      future_map_dfr(function(x){
         get_data_ticker_trade_safe(ticker = x, return_message = return_message)
       })
 
@@ -126,7 +126,7 @@ get_data_company_ticker <-
   if (return_message) {
     list("Found ", nrow(data) %>% formattable::comma(digits = 0), ' ticker(s) matching ', company) %>%
       purrr::reduce(paste0) %>%
-      message()
+      cat(fill = T)
   }
   return(data)
 }
@@ -150,7 +150,7 @@ get_data_companies_tickers <-
 
     all_data <-
       companies %>%
-      map_df(function(x) {
+      future_map_dfr(function(x) {
         get_data_company_ticker_safe(company = x)
       })
 
