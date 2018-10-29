@@ -69,7 +69,7 @@ ycombinator_alumni <-
 
     data <-
       data %>%
-      mutate_at(data %>% dplyr::select(matches("name")) %>% names(),
+      mutate_at(data %>% dplyr::select(dplyr::matches("name")) %>% names(),
                 funs(. %>% str_to_upper())) %>%
       mutate_at(.vars = "urlCompany",
                 funs(ifelse(. == '', NA, .))) %>%
