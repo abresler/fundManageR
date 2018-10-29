@@ -473,7 +473,7 @@ parse_sec_cusip_url <-
     }
 
     all_data <-
-      1:length(tables) %>%
+      seq_along(tables) %>%
       future_map_dfr(function(x) {
         tables[[x]] %>%
           as_data_frame() %>%

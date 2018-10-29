@@ -85,7 +85,7 @@
         tabulizer::extract_tables(1:df_metadata$pages)
 
       all_data <-
-        1:length(tables) %>%
+        seq_along(tables) %>%
         future_map_dfr(function(x) {
           tables[[x]] %>%
             as_data_frame() %>%
@@ -664,7 +664,7 @@ nareit_constituent_years <-
 
     item <-  c("nameCompany", "idTicker")
     df_metadata <-
-      data_frame(item = item[1:length(company_ticker)], value = company_ticker) %>%
+      data_frame(item = item[seq_along(company_ticker)], value = company_ticker) %>%
       spread(item, value)
 
     description <-
@@ -697,7 +697,7 @@ nareit_constituent_years <-
 
     if (returns %>% length() > 0) {
       items <- c("pctReturnMonth", "pctReturnDay")
-      df_ret <- data_frame(item = items[1:length(returns)],
+      df_ret <- data_frame(item = items[seq_along(returns)],
                            value = returns) %>%
         spread(item, value)
       if (df_ret %>% tibble::has_name("pctReturnMonth")) {
@@ -911,7 +911,7 @@ nareit_constituent_years <-
     if (has_properties) {
       states <- page %>% html_nodes(".reit-icon__chevron-right")
       df_properties <-
-        1:length(states) %>%
+        seq_along(states) %>%
         future_map_dfr(function(x) {
           nameState <- states[x] %>% html_text()
           state_slug <-
@@ -2202,7 +2202,7 @@ nareit_mergers_acquisitions <-
       tabulizer::extract_tables(pages = pages)
 
     all_data <-
-      1:length(tables) %>%
+      seq_along(tables) %>%
       future_map_dfr(function(x) {
         tables[[x]] %>%
           as_data_frame()
@@ -2722,7 +2722,7 @@ nareit_industry_tracker <-
     fund_nodes <-  page %>% html_nodes('.fund')
 
     df <-
-      1:length(fund_nodes) %>%
+      seq_along(fund_nodes) %>%
       future_map_dfr(function(x) {
         fund_node <- fund_nodes[[x]]
         categoryFund  <-

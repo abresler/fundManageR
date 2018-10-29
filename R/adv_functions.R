@@ -421,7 +421,7 @@
 .get_item_name_yes_no_df <-
   function(item_name = 'hasCustodyClientCash') {
     item_name_df <-
-      1:length(item_name) %>%
+      seq_along(item_name) %>%
       future_map_dfr(function(x) {
         data_frame(nameItem = rep(item_name[x], 2),
                    valueItem = c(T, F)) %>%
@@ -437,7 +437,7 @@
 .has_item_check_name <-
   function(item_name = 'hasQuarterlyStatemnt') {
     item_name_df <-
-      1:length(item_name) %>%
+      seq_along(item_name) %>%
       future_map_dfr(function(x) {
         data_frame(nameItem = rep(item_name[x], 1),
                    valueItem = T) %>%
@@ -989,7 +989,7 @@
       names(df_info)
 
     actual_name_df <-
-      1:length(sec_names) %>%
+      seq_along(sec_names) %>%
       future_map_dfr(function(x) {
         name_exists <-
           sec_name_df %>%
@@ -1029,7 +1029,7 @@
       str_split('\n')
 
     pdf_text_df <-
-      1:length(pdf_pages) %>%
+      seq_along(pdf_pages) %>%
       future_map_dfr(function(x) {
         page_text <-
           pdf_pages[[x]] %>%
@@ -3027,7 +3027,7 @@ sec_adv_manager_sitemap <-
       table_data_nodes[!table_data_nodes == '']
 
     table_node_df <-
-      1:length(table_data_nodes) %>%
+      seq_along(table_data_nodes) %>%
       future_map_dfr(function(x) {
         data_nodes <-
           table_data_nodes[[x]] %>%
@@ -3867,7 +3867,7 @@ sec_adv_manager_sitemap <-
         item_name <-
           'stateRegistered'
         state_df <-
-          1:length(states) %>%
+          seq_along(states) %>%
           future_map_dfr(function(x) {
             data_frame(nameItem = item_name,
                        valueItem = states[x]) %>%
@@ -6488,7 +6488,7 @@ sec_adv_manager_sitemap <-
           html_nodes('.flatBorderTable tr td .PaperFormTableData')
 
         all_table_node_df <-
-          1:length(table_nodes) %>%
+          seq_along(table_nodes) %>%
           future_map_dfr(function(x) {
             raw_nodes <-
               table_nodes[[x]] %>%
@@ -6517,7 +6517,7 @@ sec_adv_manager_sitemap <-
               html_nodes('.flatBorderTable tr td .PaperFormTableData')
 
             end_table_df <-
-              1:length(table_nodes) %>%
+              seq_along(table_nodes) %>%
               future_map_dfr(function(x) {
                 raw_nodes <-
                   table_nodes[[x]] %>%
@@ -7515,7 +7515,7 @@ sec_adv_manager_sitemap <-
 
         if (is_date) {
           values <-
-            1:length(values) %>%
+            seq_along(values) %>%
             future_map(function(x) {
               date_values <-
                 values[[x]] %>%
@@ -7547,7 +7547,7 @@ sec_adv_manager_sitemap <-
 
         if (is_employment_firm) {
           values <-
-            1:length(values) %>%
+            seq_along(values) %>%
             map_chr(function(x) {
               emp_length <-
                 values[x] %>%
@@ -7643,7 +7643,7 @@ sec_adv_manager_sitemap <-
             html_text()
 
           all_table_node_df <-
-            1:length(table_nodes) %>%
+            seq_along(table_nodes) %>%
             future_map_dfr(function(x) {
               raw_nodes <-
                 table_nodes[[x]] %>%
@@ -7803,7 +7803,7 @@ sec_adv_manager_sitemap <-
             html_text()
 
           all_table_node_df <-
-            1:length(table_nodes) %>%
+            seq_along(table_nodes) %>%
             future_map_dfr(function(x) {
               raw_nodes <-
                 table_nodes[[x]] %>%
@@ -8041,7 +8041,7 @@ sec_adv_manager_sitemap <-
 
 
           all_table_node_df <-
-            1:length(table_nodes) %>%
+            seq_along(table_nodes) %>%
             future_map_dfr(function(x) {
               raw_nodes <-
                 table_nodes[[x]] %>%
@@ -8800,7 +8800,7 @@ sec_adv_manager_sitemap <-
               suppressMessages() %>%
               dplyr::select(idCRD, idTable, nameTable, dataTable)
 
-            1:length(table_names) %>%
+            seq_along(table_names) %>%
               future_map(function(x) {
                 table_names[x] %>% message
                 table_data <-
@@ -8948,7 +8948,7 @@ adv_managers_filings <-
       possibly(.get_crd_sections_data, data_frame())
 
     all_data <-
-      1:length(crds) %>%
+      seq_along(crds) %>%
       future_map_dfr(function(x) {
         .get_crd_sections_data_safe(
           id_crd = crds[x],
@@ -9166,7 +9166,7 @@ return(all_data)
           names(info)
 
         actual_name_df <-
-          1:length(sec_names) %>%
+          seq_along(sec_names) %>%
           future_map_dfr(function(x) {
             name_exists <-
               sec_name_df %>%
@@ -9215,7 +9215,7 @@ return(all_data)
           str_split('\n')
 
         pdf_text_df <-
-          1:length(pdf_pages) %>%
+          seq_along(pdf_pages) %>%
           future_map_dfr(function(x) {
             page_text <-
               pdf_pages[[x]] %>%
@@ -10072,7 +10072,7 @@ parse_sec_adv_data_url <-
         gather(column, class) %>%
         dplyr::filter(class == 'character') %>%
         .$column
-      for (x in 1:length(change_to_range_cols)) {
+      for (x in seq_along(change_to_range_cols)) {
         name_loc <-
           change_to_range_cols[x] %>% grep(names(adv_data)) %>% min
 

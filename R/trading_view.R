@@ -514,7 +514,7 @@ parse_metric_dictionary_url <-
 
 
     df_fields <-
-      1:length(data$fieldMembers) %>%
+      seq_along(data$fieldMembers) %>%
       future_map_dfr(function(x) {
         field <-
           data$fieldMembers[[x]]
@@ -860,7 +860,7 @@ get_tradeview_regions_metrics <-
       )
 
     data <-
-      1:length(urls) %>%
+      seq_along(urls) %>%
       future_map_dfr(function(x) {
         parse_tradeview_metric_url(url = urls[x], data_query = data_query)
       }) %>%

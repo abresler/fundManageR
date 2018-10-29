@@ -40,7 +40,7 @@ get_class_df <-
       future_map(class)
 
     class_df <-
-      1:length(class_data) %>%
+      seq_along(class_data) %>%
       future_map_dfr(function(x) {
         data_frame(nameColumn = names(data)[[x]],
                    typeColumn = class_data[[x]] %>% .[length(.)])

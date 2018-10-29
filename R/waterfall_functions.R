@@ -586,7 +586,7 @@ tidy_promote_structure <-
       purrr::possibly(parse_promote_structure, data_frame())
 
     promote_data <-
-      1:length(promote_structures) %>%
+      seq_along(promote_structures) %>%
       future_map_dfr(function(x) {
         parse_promote_structure_safe(promote_structure = promote_structures[x]) %>%
           mutate(tierWaterfall = x) %>%
@@ -882,7 +882,7 @@ calculate_cash_flow_waterfall <-
     waterfall_df <-
       data_frame()
 
-    for (x in 1:length(waterfall_periods)) {
+    for (x in seq_along(waterfall_periods)) {
       period <-
         waterfall_periods[x]
 

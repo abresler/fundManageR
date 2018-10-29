@@ -577,7 +577,7 @@
               )
 
             df_long <-
-              data_frame(value = tax_items, item = items[1:length(tax_items)]) %>%
+              data_frame(value = tax_items, item = items[seq_along(tax_items)]) %>%
               mutate(descriptionTaxonomy = tax)
 
             col_order <-
@@ -600,7 +600,7 @@
               )
 
             df_long <-
-              data_frame(value = tax_items, item = items[1:length(tax_items)]) %>%
+              data_frame(value = tax_items, item = items[seq_along(tax_items)]) %>%
               mutate(descriptionTaxonomy = tax)
 
             col_order <-
@@ -623,7 +623,7 @@
               )
 
             df_long <-
-              data_frame(value = tax_items, item = items[1:length(tax_items)]) %>%
+              data_frame(value = tax_items, item = items[seq_along(tax_items)]) %>%
               mutate(descriptionTaxonomy = tax)
 
             col_order <-
@@ -645,7 +645,7 @@
               )
 
             df_long <-
-              data_frame(value = tax_items, item = items[1:length(tax_items)]) %>%
+              data_frame(value = tax_items, item = items[seq_along(tax_items)]) %>%
               mutate(descriptionTaxonomy = tax)
 
             col_order <-

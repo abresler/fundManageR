@@ -2592,7 +2592,7 @@ parse_json_general_filing <-
 
     if ('detailsOwns' %in% names(data)) {
       detail_df <-
-        1:length(data$detailsOwns) %>%
+        seq_along(data$detailsOwns) %>%
         future_map_dfr(function(x) {
           detail_value <-
             data$detailsOwns[[x]]
@@ -3090,7 +3090,7 @@ parse_json_fundraising <-
       suppressWarnings()
 
     company_name_df <-
-      1:length(fundraising_df$nameCompanies) %>%
+      seq_along(fundraising_df$nameCompanies) %>%
       future_map_dfr(function(x) {
         company_name_data <-
           fundraising_df$nameCompanies[[x]]
@@ -3131,7 +3131,7 @@ parse_json_fundraising <-
 
 
     offering_value_df <-
-      1:length(fundraising_df$offeringsValues) %>%
+      seq_along(fundraising_df$offeringsValues) %>%
       future_map_dfr(function(x) {
         offering_value_data <-
           fundraising_df$offeringsValues[[x]]
@@ -3388,7 +3388,7 @@ parse_json_owners <-
         paste0('Owner')
       if ('detailsOwner' %in% names(filing_df)) {
         detail_df <-
-          1:length(filing_df$detailsOwner) %>%
+          seq_along(filing_df$detailsOwner) %>%
           future_map_dfr(function(x) {
             detail_value <-
               filing_df$detailsOwner[[x]]
@@ -4873,7 +4873,7 @@ sec_filer <-
             df_data_names <-
               names(df_data)[names(df_data) %>% str_detect('data')]
 
-            for (x in 1:length(df_data_names)) {
+            for (x in seq_along(df_data_names)) {
               df_data_name <-
                 df_data_names[[x]]
               table <-
@@ -5045,7 +5045,7 @@ parse_json_general_insider <-
 
       if ('detailsOwns' %in% names(filing_df)) {
         detail_df <-
-          1:length(filing_df$detailsOwns) %>%
+          seq_along(filing_df$detailsOwns) %>%
           future_map_dfr(function(x) {
             detail_value <-
               filing_df$detailsOwns[[x]]
@@ -5166,7 +5166,7 @@ parse_json_general_insider <-
 
       if ('status_history' %in% names(companies_df)) {
         status_df <-
-          1:length(companies_df$status_history) %>%
+          seq_along(companies_df$status_history) %>%
           future_map_dfr(function(x) {
             df <-
               companies_df$status_history[[x]] %>%
@@ -6754,7 +6754,7 @@ parse_json_public_general <-
 
     if ('detailsOwns' %in% names(general_df)) {
       detail_df <-
-        1:length(general_df$detailsOwns) %>%
+        seq_along(general_df$detailsOwns) %>%
         future_map_dfr(function(x) {
           detail_value <-
             general_df$detailsOwns[[x]]
@@ -8011,7 +8011,7 @@ parse_page_sub_multi_item_html <-
       filter(!value %>% str_detect("\\([(1-9)]\\)")) %>%
       mutate(pctSubsidiaryOwned = value %>% as.numeric()) %>%
       filter(!pctSubsidiaryOwned %>% is.na()) %>%
-      slice(1:length(subsidiaries)) %>%
+      slice(seq_along(subsidiaries)) %>%
       .$pctSubsidiaryOwned / 100 %>%
       suppressWarnings() %>%
       suppressMessages()
@@ -8255,7 +8255,7 @@ parse_page_subsidiary_table_html <-
           page %>%
           html_table(fill = T)
         df <-
-          1:length(tables) %>%
+          seq_along(tables) %>%
           future_map_dfr(function(x) {
             table_df <-
               tables[[x]] %>%
@@ -8718,7 +8718,7 @@ parse_sec_subsidiary_url_text <-
       data[data %>% nchar() > 3]
 
     df <-
-      1:length(data) %>%
+      seq_along(data) %>%
       future_map_dfr(function(x) {
         item <-
           data[[x]]
@@ -8826,7 +8826,7 @@ parse_sec_subsidiary_url  <-
 parse_full_form_names <-
   function(sec_names) {
     df_names <-
-      1:length(sec_names) %>%
+      seq_along(sec_names) %>%
       future_map_dfr(function(x) {
         sec_name <-
           sec_names[[x]]
@@ -9026,7 +9026,7 @@ parse_xml_tables <-
       unique()
 
     data <-
-      1:length(tables) %>%
+      seq_along(tables) %>%
       future_map_dfr(function(x){
         table <-
           tables[[x]]
@@ -9102,7 +9102,7 @@ parse_xml_tables <-
         }
         if ('summaryInfo' %in% names(json_data)) {
           json_data <-
-            1:length(json_data) %>% map(
+            seq_along(json_data) %>% map(
               function(x){
                 js_d <- json_data[x]
                 if ('summaryInfo' %in% names(js_d)) {
@@ -9262,7 +9262,7 @@ parse_sec_form <-
       unique()
 
     data <-
-      1:length(tables) %>%
+      seq_along(tables) %>%
       future_map(function(x) {
         table <-
           tables[[x]]
@@ -11309,7 +11309,7 @@ dictionary_sec_rules <-
 parse_full_form_names <-
   function(sec_names) {
     df_names <-
-      1:length(sec_names) %>%
+      seq_along(sec_names) %>%
       future_map_dfr(function(x) {
         sec_name <-
           sec_names[[x]]
@@ -11511,7 +11511,7 @@ parse_xml_tables <-
       unique()
 
     data <-
-      1:length(tables) %>%
+      seq_along(tables) %>%
       future_map_dfr(function(x){
         table <-
           tables[[x]]
@@ -11590,7 +11590,7 @@ parse_xml_tables <-
         }
         if ('summaryInfo' %in% names(json_data)) {
           json_data <-
-            1:length(json_data) %>% map(
+            seq_along(json_data) %>% map(
               function(x){
                 js_d <- json_data[x]
                 if ('summaryInfo' %in% names(js_d)) {
@@ -11750,7 +11750,7 @@ parse_sec_form <-
       unique()
 
     data <-
-      1:length(tables) %>%
+      seq_along(tables) %>%
       future_map(function(x) {
         table <-
           tables[[x]]
@@ -11894,7 +11894,7 @@ parse_form_data <-
         df_13f_urls$slugAccession %>% unique()
 
       df_13fs <-
-        1:length(slugs) %>%
+        seq_along(slugs) %>%
         future_map_dfr(function(x){
           slug <-
             slugs[[x]]
@@ -12175,7 +12175,7 @@ parse_sec_filing_index <-
           NA
 
         types_form <-
-          types_form[1:length(files)]
+          types_form[seq_along(files)]
 
         files[files == ''] <-
           NA
@@ -14520,7 +14520,7 @@ edgar_tickers <-
       jsonlite::fromJSON(simplifyDataFrame = TRUE)
 
     all_companies <-
-      1:length(json_data) %>%
+      seq_along(json_data) %>%
       future_map_dfr(function(x) {
         json_data[[x]] %>%
           flatten_df()
@@ -15229,10 +15229,10 @@ parse_ft_filing_page <-
 
       data <-
         data_frame(
-          dateFiling = dates[1:length(ciks)],
+          dateFiling = dates[seq_along(ciks)],
           idCIKFiler = ciks,
           nameFilerFilingExhibit = search_items,
-          descriptionText = text[1:length(ciks)],
+          descriptionText = text[seq_along(ciks)],
           urlSECFiling = urlFiling
         ) %>%
         tidyr::separate(nameFilerFilingExhibit, sep = '\\ FOR ',
@@ -15435,7 +15435,7 @@ parse_boolean_search_page <-
 
       if (stems %>% length() > 0 ) {
         data <-
-          1:length(stems) %>%
+          seq_along(stems) %>%
           future_map_dfr(function(x){
             stem <-
               stems[[x]]
@@ -16023,7 +16023,7 @@ parse_most_recent_stream <-
       str_trim()
 
     df_descriptions <-
-      1:length(filing_descriptions) %>%
+      seq_along(filing_descriptions) %>%
       future_map_dfr(function(x){
         description <-
           filing_descriptions[[x]] %>%
@@ -16096,7 +16096,7 @@ parse_most_recent_stream <-
       html_text()
 
     df_filers <-
-      1:length(filer_description) %>%
+      seq_along(filer_description) %>%
       future_map_dfr(function(x){
         filer <-
           filer_description[[x]] %>%
@@ -16174,7 +16174,7 @@ parse_most_recent_stream <-
       html_text()
 
     df_films <-
-      1:length(file_film) %>%
+      seq_along(file_film) %>%
       future_map_dfr(function(x){
         parts <-
           file_film[[x]] %>% str_split('\n') %>% flatten_chr()
@@ -16921,7 +16921,7 @@ edgar_filing_streams <-
       purrr::possibly(parse_index_filing_page, data_frame())
 
     all_data <-
-      1:length(urls) %>%
+      seq_along(urls) %>%
       future_map_dfr(function(x) {
         parse_index_filing_page_safe(url = urls[[x]], return_message = return_message)
       })
@@ -17602,7 +17602,7 @@ parse_cik_filer_page <-
       xml_name()
 
     df_page_items <-
-      1:length(filing_count) %>%
+      seq_along(filing_count) %>%
       future_map_dfr(function(x) {
         xml_node <-
           xml_nodes %>%
@@ -17688,7 +17688,7 @@ parse_cik_filer_general_info <-
       df_general_name_df()
 
     df_general <-
-      1:length(items) %>%
+      seq_along(items) %>%
       future_map_dfr(function(x){
 
         xml_node <-
@@ -17736,7 +17736,7 @@ parse_cik_filer_general_info <-
           df <-
             data_frame(
               countItem = x,
-              itemParent = item_parent[1:length(item)],
+              itemParent = item_parent[seq_along(item)],
               nameSEC = items,
               value = values
             ) %>%
@@ -17809,7 +17809,7 @@ parse_cik_filer_general_info <-
               df <-
                 data_frame(
                   countItem = x,
-                  itemParent = item_parent[1:length(item)],
+                  itemParent = item_parent[seq_along(item)],
                   nameSEC = items,
                   value = values
                 ) %>%
@@ -18487,7 +18487,7 @@ parse_page_sub_multi_item_html <-
       filter(!value %>% str_detect("\\([(1-9)]\\)")) %>%
       mutate(pctSubsidiaryOwned = value %>% as.numeric()) %>%
       filter(!pctSubsidiaryOwned %>% is.na()) %>%
-      slice(1:length(subsidiaries)) %>%
+      slice(seq_along(subsidiaries)) %>%
       .$pctSubsidiaryOwned / 100 %>%
       suppressWarnings() %>%
       suppressMessages()
@@ -18726,7 +18726,7 @@ parse_page_subsidiary_table_html <-
           page %>%
           html_table(fill = T)
         df <-
-          1:length(tables) %>%
+          seq_along(tables) %>%
           future_map_dfr(function(x) {
             table_df <-
               tables[[x]] %>%
@@ -19189,7 +19189,7 @@ parse_sec_subsidiary_url_text <-
       data[data %>% nchar() > 3]
 
     df <-
-      1:length(data) %>%
+      seq_along(data) %>%
       future_map_dfr(function(x) {
         item <-
           data[[x]]

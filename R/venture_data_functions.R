@@ -21,11 +21,8 @@
 ycombinator_alumni <-
   function(nest_data = FALSE,
            return_message = TRUE) {
-    url <-
-      'https://api.ycombinator.com/companies/export.json'
-
-    json_data <-
-      url %>%
+    data <-
+      "https://api.ycombinator.com/companies/export.json" %>%
       fromJSON(simplifyDataFrame = T, flatten = T) %>%
       as_data_frame() %>%
       set_names(
@@ -35,39 +32,44 @@ ycombinator_alumni <-
           'batchYC',
           'verticalCompany',
           'descriptionCompany',
-          'isCompanyDead'
+          'isDeadCompany',
+          "hasFF",
+          "hasFFAll"
         )
       )
 
 
-    json_data <-
-      json_data %>%
-      mutate(
-        yearYC = batchYC %>% readr::parse_number(),
-        idSeasonYC = batchYC %>% substr(1, 1),
-        descriptionCompany = ifelse(descriptionCompany == '', NA, descriptionCompany)
-      ) %>%
+    data <-
+      data %>%
+      mutate(yearYC = batchYC %>% readr::parse_number(),
+             idSeasonYC = batchYC %>% substr(1, 1),) %>%
+      mutate_if(is.character,
+                funs(ifelse(. == "", NA, .))) %>%
       left_join(data_frame(
         idSeasonYC = c('w', 's'),
         nameSeasonYC = c('Winter', 'Summer')
       )) %>%
-      mutate(description = descriptionCompany %>% str_to_upper(),
-             isCompanyAcquired = description %>% str_detect("ACQUIRED|WE SOLD|SOLD TO")) %>%
+      mutate(
+        description = descriptionCompany %>% str_to_upper(),
+        isAcquiredCompany = description %>% str_detect("ACQUIRED|WE SOLD|SOLD TO")
+      ) %>%
       dplyr::select(-description) %>%
       dplyr::select(-idSeasonYC) %>%
-      dplyr::select(nameCompany,
-                    isCompanyDead,
-                    isCompanyAcquired,
-                    batchYC,
-                    yearYC,
-                    nameSeasonYC,
-                    everything()) %>%
+      dplyr::select(
+        nameCompany,
+        isDeadCompany,
+        isAcquiredCompany,
+        batchYC,
+        yearYC,
+        nameSeasonYC,
+        everything()
+      ) %>%
       suppressMessages() %>%
       arrange(desc(yearYC), nameSeasonYC)
 
-    json_data <-
-      json_data %>%
-      mutate_at(json_data %>% dplyr::select(matches("name")) %>% names(),
+    data <-
+      data %>%
+      mutate_at(data %>% dplyr::select(matches("name")) %>% names(),
                 funs(. %>% str_to_upper())) %>%
       mutate_at(.vars = "urlCompany",
                 funs(ifelse(. == '', NA, .))) %>%
@@ -77,7 +79,7 @@ ycombinator_alumni <-
 
     if (return_message)  {
       random_company <-
-        json_data %>%
+        data %>%
         dplyr::filter(!descriptionCompany %>% is.na) %>%
         sample_n(1)
 
@@ -97,23 +99,23 @@ ycombinator_alumni <-
 
       "You returned " %>%
         paste0(
-          json_data %>% nrow() %>% formattable::comma(digits = 0),
+          data %>% nrow() %>% formattable::comma(digits = 0),
           ' YCombinator Companies from ',
-          json_data$yearYC %>% min(),
+          data$yearYC %>% min(),
           ' to ',
-          json_data$yearYC %>% max(),
+          data$yearYC %>% max(),
           random_company_message
         ) %>%
         cat(fill = T)
     }
 
     if (nest_data) {
-      json_data <-
-        json_data %>%
+      data <-
+        data %>%
         nest(-batchYC, .key = dataClass)
     }
     gc()
-    json_data
+    data
   }
 
 

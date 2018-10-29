@@ -2139,7 +2139,7 @@ clean_names <-
 
     if (data %>% tibble::has_name('idIndicies')) {
       df_indicies <-
-        1:length(data$idIndicies) %>%
+        seq_along(data$idIndicies) %>%
         future_map_dfr(function(x){
           if (data$idIndicies[x] %>% flatten_chr() %>% length() == 0) {
             return(data_frame(idRow = x, nameIndicies = NA))
@@ -2159,7 +2159,7 @@ clean_names <-
 
     if (data %>% tibble::has_name('idBenchmarks')) {
       df_benchmarks <-
-        1:length(data$idBenchmarks) %>%
+        seq_along(data$idBenchmarks) %>%
         future_map_dfr(function(x){
           if (data$idBenchmarks[x] %>% flatten_chr() %>% length() == 0) {
             return(data_frame(idRow = x, idTickersBenchmark = NA))
@@ -2275,7 +2275,7 @@ get_dictionary_finbox_metrics <-
       mutate(idRow = 1:n())
 
     df_periods <-
-      1:length(data$data$periods) %>%
+      seq_along(data$data$periods) %>%
       future_map_dfr(function(x) {
         null_value <- data$data$periods[[x]] %>% purrr::is_null()
         if (null_value) {
@@ -2493,7 +2493,7 @@ parse_ticker_json_data <-
       pull(namePart)
 
     df_description <-
-      1:length(char_cols) %>%
+      seq_along(char_cols) %>%
       future_map_dfr(function(x) {
         nameFinbox <- char_cols[x]
         value <-
@@ -2552,7 +2552,7 @@ parse_ticker_json_data <-
       pull(namePart)
 
     df_lists <-
-      1:length(list_cols) %>%
+      seq_along(list_cols) %>%
       future_map_dfr(function(x){
         nameData <-
           list_cols[[x]]
@@ -2580,7 +2580,7 @@ parse_ticker_json_data <-
 
         if (nameData == 'fair_value') {
           list_dfs <-
-            1:length(list_parts) %>%
+            seq_along(list_parts) %>%
             future_map(function(x) {
               list_name <-
                 list_parts[[x]]
@@ -2688,7 +2688,7 @@ parse_ticker_json_data <-
 
         if (nameData == 'stats') {
           list_dfs <-
-            1:length(list_parts) %>%
+            seq_along(list_parts) %>%
             future_map(function(x) {
               df_list <-
                 list_data[[list_parts[x]]] %>% as_data_frame()
@@ -2780,7 +2780,7 @@ parse_ticker_json_data <-
       pull(namePart)
 
     dfs <-
-      1:length(df_cols) %>%
+      seq_along(df_cols) %>%
       future_map_dfr(function(x){
         nameData <-
           df_cols[[x]]
@@ -2848,7 +2848,7 @@ get_data_tickers_finbox <-
       tables <-
         all_data$nameTable %>% unique()
 
-      1:length(tables) %>%
+      seq_along(tables) %>%
         walk(function(x){
           df <-
             all_data %>%
