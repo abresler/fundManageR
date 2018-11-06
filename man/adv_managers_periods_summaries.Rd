@@ -4,7 +4,7 @@
 \alias{adv_managers_periods_summaries}
 \title{ADV managers periods data}
 \usage{
-adv_managers_periods_summaries(periods = c("2006-06"),
+adv_managers_periods_summaries(periods = c("2018-06"),
   all_periods = FALSE, only_most_recent = FALSE,
   include_exempt = TRUE, nest_data = FALSE, return_message = TRUE)
 }
