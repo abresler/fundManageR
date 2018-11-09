@@ -100,7 +100,7 @@
       if (data_cols == 5) {
         all_data <-
           all_data %>%
-          select(-matches("idTable")) %>%
+          select(-dplyr::matches("idTable")) %>%
           purrr::set_names(c('nameCompany',
                              'idTicker',
                              'typeInvestment',
@@ -279,7 +279,7 @@
 
         all_data <-
           all_data %>%
-          select(-matches("urlData")) %>%
+          select(-dplyr::matches("urlData")) %>%
           mutate(urlData = url) %>%
           mutate(dateFile = date_data,
                  yearData = year_data) %>%
@@ -1211,7 +1211,7 @@ nareit_notable_properties <-
       mutate_at(
         df %>%
           keep(is_character) %>%
-          select(-matches("url")) %>% names(),
+          select(-dplyr::matches("url")) %>% names(),
         funs(. %>% str_to_upper())
       )
 
@@ -1240,7 +1240,7 @@ nareit_notable_properties <-
     df_hq <-
       json_data$reits$reit %>%
       as_data_frame() %>%
-      select(-matches("slug_url")) %>%
+      select(-dplyr::matches("slug_url")) %>%
       purrr::set_names(c(
         'idSNL',
         'nameCompany',
@@ -1292,7 +1292,7 @@ nareit_notable_properties <-
     df_holdings <-
       json_data$companies$company %>%
       as_data_frame() %>%
-      select(-matches("slug_url")) %>%
+      select(-dplyr::matches("slug_url")) %>%
       purrr::set_names(c('idSNL', 'nameCompany', 'urlCompany'))
 
     df_holdings <-
@@ -1364,7 +1364,7 @@ nareit_notable_properties <-
 
     df <-
       df %>%
-      mutate_at(df %>% select(matches('idState|count|amount')) %>% names(),
+      mutate_at(df %>% select(dplyr::matches('idState|count|amount')) %>% names(),
                 funs(. %>% as.numeric())) %>%
       mutate(amountValuationOwnedProperties = amountValuationOwnedProperties * 1000000 %>% formattable::currency(digits = 0)) %>%
       select(idState:countHeadquarters,
@@ -1402,7 +1402,7 @@ nareit_property_msa <-
     df_property <-
       json_data$features$properties %>%
       as_data_frame() %>%
-      select(-matches("_string")) %>%
+      select(-dplyr::matches("_string")) %>%
       select(-type)
 
     df_property <-
@@ -1498,7 +1498,7 @@ nareit_state_info <-
     df_property <-
       json_data$features$properties %>%
       as_data_frame() %>%
-      select(-matches("_string")) %>%
+      select(-dplyr::matches("_string")) %>%
       select(-type) %>%
       purrr::set_names(c('amountValuationOwnedProperties',
                          "slugState",
@@ -1617,7 +1617,7 @@ nareit_state_info <-
 
     df_property <-
       df_property %>%
-      mutate_at(df_property %>% select(matches("count")) %>% names(),
+      mutate_at(df_property %>% select(dplyr::matches("count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0))) %>%
       arrange(desc(slugState))
 
@@ -1730,9 +1730,9 @@ nareit_monthly_returns <-
 
     data <-
       data %>%
-      mutate_at(.vars = data %>% select(matches("^index")) %>% names(),
+      mutate_at(.vars = data %>% select(dplyr::matches("^index")) %>% names(),
                 funs(. %>% formattable::comma(digits = 5))) %>%
-      mutate_at(.vars = data %>% select(matches("^pct")) %>% names(),
+      mutate_at(.vars = data %>% select(dplyr::matches("^pct")) %>% names(),
                 funs((. / 100) %>% formattable::percent(digits = 4))) %>%
       mutate(urlData = url) %>%
       suppressWarnings()
@@ -1844,7 +1844,7 @@ nareit_annual_subsector_returns <-
 
     data <-
       data %>%
-      mutate_at(.vars = data %>% select(matches("^pct")) %>% names(),
+      mutate_at(.vars = data %>% select(dplyr::matches("^pct")) %>% names(),
                 funs((. / 100) %>% formattable::percent(digits = 4))) %>%
       mutate(urlData = url)
 
@@ -2016,10 +2016,10 @@ nareit_annual_subsector_returns <-
 
     data <-
       data %>%
-      mutate_at(data %>% select(matches("^countShares|^amountProceeds")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^countShares|^amountProceeds")) %>% names(),
                 funs(. %>% as.numeric() * 1000000)) %>%
       mutate_at(
-        data %>% select(matches("^price")) %>% names(),
+        data %>% select(dplyr::matches("^price")) %>% names(),
         funs(. %>% as.character() %>% readr::parse_number())
       ) %>%
       mutate(urlData = url) %>%
@@ -2027,7 +2027,7 @@ nareit_annual_subsector_returns <-
 
     data <-
       data %>%
-      mutate_at(data %>% select(matches(
+      mutate_at(data %>% select(dplyr::matches(
         "nameUnderwriter|descriptionOffering"
       )) %>% names(),
       funs(ifelse(. == '', NA, .))) %>%
@@ -2134,11 +2134,11 @@ nareit_capital_raises <-
       left_join(url_df %>% select(urlData, typeCapital)) %>%
       select(typeCapital, everything()) %>%
       arrange(dateOffering) %>%
-      mutate_at(all_data %>% select(matches("amount")) %>% names(),
+      mutate_at(all_data %>% select(dplyr::matches("amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(all_data %>% select(matches("count")) %>% names(),
+      mutate_at(all_data %>% select(dplyr::matches("count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0))) %>%
-      mutate_at(all_data %>% select(matches("price")) %>% names(),
+      mutate_at(all_data %>% select(dplyr::matches("price")) %>% names(),
                 funs(. %>% formattable::comma(digits = 3))) %>%
       filter(!dateOffering %>% is.na()) %>%
       suppressMessages()
@@ -2233,7 +2233,7 @@ nareit_mergers_acquisitions <-
           dateComplete =  ifelse(V4 == '', V12, V9) %>% lubridate::dmy(),
           statusTransaction = ifelse(V4 == '', V13, V10)
         ) %>%
-        select(-matches("^V")) %>%
+        select(-dplyr::matches("^V")) %>%
         suppressWarnings()
     } else {
       all_data <-
@@ -2661,9 +2661,9 @@ nareit_industry_tracker <-
 
     data <-
       data %>%
-      mutate_at(data %>% select(matches("amount")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(data %>% select(matches("pct")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("pct")) %>% names(),
                 funs(. %>% formattable::percent(digits = 3))) %>%
       mutate(urlData = url)
 
@@ -2963,7 +2963,7 @@ reit_funds <-
 
       detail_df <-
         detail_df %>%
-        mutate_at(detail_df %>% select(matches("pct")) %>% names(),
+        mutate_at(detail_df %>% select(dplyr::matches("pct")) %>% names(),
                   funs(. / 100))
 
       df_table <-
@@ -2973,15 +2973,15 @@ reit_funds <-
 
       df_table <-
         df_table %>%
-        mutate_at(df_table %>% select(matches("amount")) %>% names(),
+        mutate_at(df_table %>% select(dplyr::matches("amount")) %>% names(),
                   funs(. %>% formattable::currency())) %>%
-        mutate_at(df_table %>% select(matches("pct")) %>% names(),
+        mutate_at(df_table %>% select(dplyr::matches("pct")) %>% names(),
                   funs(. %>% formattable::percent()))
     }
 
     df_table <-
       df_table %>%
-      select(-matches("idRow"))
+      select(-dplyr::matches("idRow"))
 
     if (return_message) {
       list(

@@ -222,7 +222,7 @@
       purrr::set_names(actual_names)
 
     has_notional <-
-      data %>% select(matches("amountNotionalRounded1")) %>% names() %>% length() > 0
+      data %>% select(dplyr::matches("amountNotionalRounded1")) %>% names() %>% length() > 0
 
     if (has_notional) {
       data <-
@@ -243,11 +243,11 @@
 
     data <-
       data %>%
-      mutate_at(data %>% select(matches("isCleared")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("isCleared")) %>% names(),
                 funs(ifelse(. == "C", TRUE, FALSE))) %>%
-      mutate_at(data %>% select(matches("^has|^is")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^has|^is")) %>% names(),
                 funs(ifelse(. == "Y", TRUE, FALSE))) %>%
-      mutate_at(data %>% select(matches("nameUnderylingAsset|^code|^type")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("nameUnderylingAsset|^code|^type")) %>% names(),
                 funs(ifelse(. == '', NA, .)))
 
     if ('amountLevelOption' %in% names(data)) {
@@ -258,21 +258,21 @@
 
     data <-
       data %>%
-      mutate_at(data %>% select(matches("^name|^description|^idDay|^type")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^name|^description|^idDay|^type")) %>% names(),
                 funs(. %>% str_to_upper())) %>%
-      mutate_at(data %>% select(matches("^price|amountOptionPremium")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^price|amountOptionPremium")) %>% names(),
                 funs(. %>% as.character() %>% readr::parse_number())) %>%
       mutate_at(
         data %>% select(
-          matches("^dateOptionLockPeriod|dateOptionExpiration|^date")
-        ) %>% select(-matches("dateTime|dateMaturity|dateExercise")) %>% names(),
+          dplyr::matches("^dateOptionLockPeriod|dateOptionExpiration|^date")
+        ) %>% select(-dplyr::matches("dateTime|dateMaturity|dateExercise")) %>% names(),
         funs(. %>% lubridate::ymd())
       ) %>%
-      mutate_at(data %>% select(matches("dateMaturity|dateExercise")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("dateMaturity|dateExercise")) %>% names(),
                 funs(. %>% lubridate::mdy())) %>%
-      mutate_at(data %>% select(matches("^dateTime")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^dateTime")) %>% names(),
                 funs(. %>% lubridate::ymd_hms())) %>%
-      mutate_at(data %>% select(matches("^details|idDisseminationOriginal")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^details|idDisseminationOriginal")) %>% names(),
                 funs(. %>% as.character()))
 
     if ('amountLevelOption' %in% names(data)) {
@@ -1005,7 +1005,7 @@ dtcc_recent_trades <-
     dtcc_df <-
       dtcc_df %>%
       mutate_at(dtcc_df %>% select(
-        matches(
+        dplyr::matches(
           "PRICE_NOTATION2|PRICE_NOTATION3|OPTION_EXPIRATION_DATE|OPTION_LOCK_PERIOD|OPTION_PREMIUM|ADDITIONAL_PRICE_NOTATION|ROUNDED_NOTIONAL_AMOUNT_1|ROUNDED_NOTIONAL_AMOUNT_2|OPTION_STRIKE_PRICE|ORIGINAL_DISSEMINATION_ID"
         )
       ) %>% names(),
@@ -1118,7 +1118,7 @@ dtcc_recent_trades <-
     all_data <-
       all_data %>%
       mutate_at(
-        all_data %>% select(matches("^priceNotation")) %>% names(),
+        all_data %>% select(dplyr::matches("^priceNotation")) %>% names(),
         funs(. %>% as.character() %>% readr::parse_number())
       )
     if ('isCleared' %in% names(all_data)) {
@@ -1215,11 +1215,11 @@ dtcc_trades <-
 
         today <-
           today %>%
-          mutate_at(today %>% select(matches(
+          mutate_at(today %>% select(dplyr::matches(
             "dateTime|idDisseminationOriginal|^date"
           )) %>% names(),
           funs(. %>% as.character())) %>%
-          mutate_at(today %>% select(matches("^amount|priceOptionStrike")) %>% names(),
+          mutate_at(today %>% select(dplyr::matches("^amount|priceOptionStrike")) %>% names(),
                     funs(. %>% as.numeric())) %>%
           suppressWarnings()
 
@@ -1248,7 +1248,7 @@ dtcc_trades <-
         data %>%
         .resolve_dtcc_name_df() %>%
         mutate_at(data %>% select(
-          matches(
+          dplyr::matches(
             "^dateTime|idDisseminationOriginal|^date|^priceNotation"
           )
         ) %>% names(),
@@ -1257,7 +1257,7 @@ dtcc_trades <-
       data <-
         data %>%
         mutate_at(
-          data %>% select(matches("^priceNotation")) %>% names(),
+          data %>% select(dplyr::matches("^priceNotation")) %>% names(),
           funs(. %>% as.character() %>% readr::parse_number())
         )
 
@@ -1272,13 +1272,13 @@ dtcc_trades <-
 
     all_data <-
       all_data %>%
-      mutate_at(all_data %>% select(matches("^dateTime[A-Z]")) %>% names(),
+      mutate_at(all_data %>% select(dplyr::matches("^dateTime[A-Z]")) %>% names(),
                 funs(. %>% lubridate::ymd_hms())) %>%
       mutate_at(
-        all_data %>% select(matches("^date[A-Z]")) %>% select(-matches("^dateTime")) %>% names(),
+        all_data %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("^dateTime")) %>% names(),
         funs(. %>% lubridate::ymd())
       ) %>%
-      mutate_at(all_data %>% select(matches("^idDissemination")) %>% names(),
+      mutate_at(all_data %>% select(dplyr::matches("^idDissemination")) %>% names(),
                 funs(. %>% as.character() %>% as.integer())) %>%
       suppressMessages() %>%
       suppressWarnings()

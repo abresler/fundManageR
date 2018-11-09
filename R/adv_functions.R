@@ -315,7 +315,7 @@
                   funs(. %>% lubridate::ymd()))
     }
     has_counts <-
-      data %>% dplyr::select(dplyr::matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>% dplyr::select(-matches("country")) %>%
+      data %>% dplyr::select(dplyr::matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>% dplyr::select(-dplyr::matches("country")) %>%
       names %>% length() > 0
 
     if (has_counts) {

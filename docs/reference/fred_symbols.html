@@ -65,7 +65,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fundManageR</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.221</span>
+        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.22103</span>
       </span>
     </div>
 
@@ -150,8 +150,9 @@
     </div>
 
     <pre class="usage"><span class='fu'>fred_symbols</span>(<span class='kw'>symbols</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"DGS2"</span>, <span class='st'>"DGS10"</span>, <span class='st'>"DGS30"</span>),
-  <span class='kw'>transformations</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"default"</span>), <span class='kw'>convert_date_time</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>nest_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>include_metadata</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+  <span class='kw'>transformations</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"default"</span>), <span class='kw'>widen_data</span> <span class='kw'>=</span> <span class='no'>F</span>,
+  <span class='kw'>convert_date_time</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>nest_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>include_metadata</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -163,6 +164,10 @@
     <tr>
       <th>transformations</th>
       <td><p>transformations</p></td>
+    </tr>
+    <tr>
+      <th>widen_data</th>
+      <td><p>if <code>TRUE</code> widens data</p></td>
     </tr>
     <tr>
       <th>convert_date_time</th>

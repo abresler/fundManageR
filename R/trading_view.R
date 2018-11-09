@@ -1,5 +1,5 @@
 
-get_dictionary_tradeview_types <- function() {
+.get_dictionary_tradeview_types <- function() {
   data_frame(
     type = c(
       "All",
@@ -27,7 +27,7 @@ get_dictionary_tradeview_types <- function() {
 }
 # dictionaries ------------------------------------------------------------
 
-get_tradeingview_chart_items <-
+.get_tradeingview_chart_items <-
   function() {
     json_data <-
       "https://pine-facade.tradingview.com/pine-facade/list?filter=standard" %>%
@@ -41,7 +41,7 @@ get_tradeingview_chart_items <-
   }
 
 # events ------------------------------------------------------------------
-parse_result_number <-
+.parse_result_number <-
   function(x) {
     x %>% stringi::stri_trans_general("Latin-ASCII") %>% readr::parse_number()
   }
@@ -52,7 +52,7 @@ parse_result <-
       return(NA)
     }
     result <-
-      x %>% parse_result_number()
+      x %>% .parse_result_number()
     is_pct <-
       x %>% str_detect('%')
 
@@ -97,8 +97,8 @@ parse_result <-
 #' @export
 #' @import dplyr jsonlite purrr anytime glue stringr
 #' @examples
-#' get_data_market_events(retur_message = TRUE)
-get_data_market_events <-
+#' market_events(return_message = TRUE)
+market_events <-
   function(return_message = TRUE) {
     data <-
       "https://chartevents.tradingview.com/chartevents/" %>%
@@ -166,10 +166,6 @@ get_data_market_events <-
 
 
 # search ------------------------------------------------------------------
-"curl 'https://data.tradingview.com/search/?=FOREST&exchange=&type=&hl=true&lang=en&domain=production' -H 'Origin: https://www.tradingview.com' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-US,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.24 Safari/537.36' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: https://www.tradingview.com/chart/pKbLgoMZ/' -H 'Connection: keep-alive' -H 'DNT: 1' --compressed"
-
-
-
 
 # popular -----------------------------------------------------------------
 id_exchanges <- c(
@@ -343,7 +339,7 @@ get_tradeview_term <-
 
 # {https://scanner.tradingview.com/uk/scan}
 
-parse_region_security_url <-
+.parse_region_security_url <-
   function(url = "https://scanner.tradingview.com/america/scan",
            return_message = TRUE) {
     idRegion <-
@@ -383,18 +379,18 @@ parse_region_security_url <-
     data
   }
 
-parse_regions_security_urls <-
+.parse_regions_security_urls <-
   function(urls,
            return_message = TRUE) {
     df <-
       data_frame()
     success <- function(res) {
-      parse_region_security_url_safe <-
-        purrr::possibly(parse_region_security_url, data_frame())
+      .parse_region_security_url_safe <-
+        purrr::possibly(.parse_region_security_url, data_frame())
       page_url <- res$url
       data <-
         page_url %>%
-        parse_region_security_url_safe(return_message = return_message)
+        .parse_region_security_url_safe(return_message = return_message)
 
       df <<-
         df %>%
@@ -444,7 +440,7 @@ parse_regions_security_urls <-
 #' @export
 #'
 #' @examples
-get_data_tradingview_regions_tickers <-
+tradingview_regions_tickers <-
   function(regions = c(
     'america',
     'uk',
@@ -475,7 +471,7 @@ get_data_tradingview_regions_tickers <-
 
     all_data <-
       urls %>%
-      parse_regions_security_urls(return_message = return_message)
+      .parse_regions_security_urls(return_message = return_message)
 
     if (nest_data) {
       all_data <-
@@ -610,7 +606,7 @@ parse_metric_dictionaries_url <-
 #' @export
 #'
 #' @examples
-get_data_regions_tradingview_metrics <-
+tradeview_regions_metrics <-
   function(regions = c(
     'america',
     'uk',
@@ -670,7 +666,7 @@ get_data_regions_tradingview_metrics <-
 #' @export
 #' @import reticulate magrittr glue dplyr
 #' @examples
-generate_trade_view_metric_query <-
+tradeview_metric <-
   function(filter = data_frame(left = 'market_cap_basic',
                                operation = 'nempty'),
            symbols = list(query = list(types = c('stock', 'fund', 'dr'))),
@@ -781,7 +777,7 @@ parse_tradeview_metric_url <-
 #' @param query list of query parameters \itemize{
 #' \item filter - list of query parameters
 #' \item symbols - list of types
-#' \item metrics - vector of parameters see \code{get_data_tradingview_regions_tickers} for options
+#' \item metrics - vector of parameters see \code{tradingview_regions_tickers} for options
 #' \item sort - sort paramters
 #' \item options- sort options
 #' }
@@ -792,7 +788,7 @@ parse_tradeview_metric_url <-
 #' @import reticulate dplyr purrr stringr glue
 #'
 #' @examples
-get_tradeview_regions_metrics <-
+tradeview_regions_metrics <-
   function(regions = c('canada', 'america'),
            query = list(
              filter = data_frame(left = 'market_cap_basic',
@@ -850,7 +846,7 @@ get_tradeview_regions_metrics <-
 
     data_query <-
       query %$%
-      generate_trade_view_metric_query(
+      tradeview_metric(
         filter = filter,
         symbols = symbols,
         metrics = metrics,
@@ -882,7 +878,7 @@ get_tradeview_regions_metrics <-
       filter(!nameTW == 'name')
 
     df_metrics <-
-      get_data_regions_tradingview_metrics(regions = regions[1])
+      tradeview_regions_metrics(regions = regions[1])
 
     data <-
       data %>%
@@ -950,7 +946,7 @@ get_ticker_tradingview_news <-
     data
   }
 
-parse_trading_view_news_url <-
+.parse_trading_view_news_url <-
   function(url = "https://news-headlines.tradingview.com/headlines/yahoo/symbol/FB",
            return_message = TRUE) {
     ticker <-
@@ -988,18 +984,18 @@ parse_trading_view_news_url <-
     data
   }
 
-parse_tradingview_news_urls <-
+.parse_tradingview_news_urls <-
   function(urls,
            return_message = TRUE) {
     df <-
       data_frame()
     success <- function(res) {
-      parse_trading_view_news_url_safe <-
-        purrr::possibly(parse_trading_view_news_url, data_frame())
+      .parse_trading_view_news_url_safe <-
+        purrr::possibly(.parse_trading_view_news_url, data_frame())
       page_url <- res$url
       data <-
         page_url %>%
-        parse_trading_view_news_url_safe(return_message = return_message)
+        .parse_trading_view_news_url_safe(return_message = return_message)
 
       df <<-
         df %>%
@@ -1030,9 +1026,9 @@ parse_tradingview_news_urls <-
 #' @export
 #'
 #' @examples
-#' get_data_tickers_tradingview_news(tickers = c("VNO", "AVB", "PEI"), return_message = TRUE, nest_data = FALSE)
+#' tickers_news(tickers = c("VNO", "AVB", "PEI"), return_message = TRUE, nest_data = FALSE)
 
-get_data_tickers_tradingview_news <-
+tickers_news <-
   function(tickers = c("FB", "AAPL", "NFLX", "GOOG", "VNO", "EQR", "BXP"),
            return_message = TRUE,
            nest_data = FALSE) {
@@ -1041,7 +1037,7 @@ get_data_tickers_tradingview_news <-
 
     all_data <-
       urls %>%
-      parse_tradingview_news_urls(return_message = return_message)
+      .parse_tradingview_news_urls(return_message = return_message)
 
     if (nest_data) {
       all_data <-

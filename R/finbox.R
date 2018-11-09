@@ -2126,14 +2126,14 @@ clean_names <-
   function(data) {
     data <-
       data %>%
-      mutate_at(data %>% dplyr::select(matches("^pct[A-Z]")) %>% names(),
+      mutate_at(data %>% dplyr::select(dplyr::matches("^pct[A-Z]")) %>% names(),
                 funs(. %>% formattable::percent(digits = 2))) %>%
-      mutate_at(data %>% dplyr::select(matches("^ratio[A-Z]")) %>% names(),
+      mutate_at(data %>% dplyr::select(dplyr::matches("^ratio[A-Z]")) %>% names(),
                 funs(. %>% formattable::digits(digits = 5))) %>%
-      mutate_at(data %>% dplyr::select(matches("^price[A-Z]|pershare")) %>% names(),
+      mutate_at(data %>% dplyr::select(dplyr::matches("^price[A-Z]|pershare")) %>% names(),
                 funs(. %>% formattable::currency(digits = 4))) %>%
       mutate_at(
-        data %>% dplyr::select(matches("^amount[A-Z]")) %>% names(),
+        data %>% dplyr::select(dplyr::matches("^amount[A-Z]")) %>% names(),
         funs(. * 1000000 %>% formattable::currency(digits = 0))
       )
 
@@ -2353,7 +2353,7 @@ metrics <-
 #' @export
 #' @import glue purrr curl rvest jsonlite dplyr anytime reticulate lubridate stringr
 #' @examples
-get_data_tickers_metrics <-
+tickers_metrics <-
   function(tickers = c('AAPL', 'NFLX', "FB", "GOOG", "TSLA", "VNO"),
          metrics = c("total_current_assets", "total_net_income_margin", "total_net_income", "pre_tax_income_cagr",
                      "cash_from_operations", "stock_price_open", "operating_income_margin",
@@ -2830,7 +2830,7 @@ parse_ticker_json_data <-
 #' @export
 #' @import glue purrr curl rvest jsonlite dplyr anytime reticulate lubridate stringr
 #' @examples
-get_data_tickers_finbox <-
+finbox_tickers <-
   function(tickers = c("VNO", "BXP"),
            assign_to_environment = TRUE) {
     get_ticker_information_safe <-

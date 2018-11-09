@@ -408,7 +408,7 @@ calculate_cash_flow_dates <-
     if (remove_cumulative_cols) {
       cf_data <-
         cf_data %>%
-        dplyr::select(-matches("cum"))
+        dplyr::select(-dplyr::matches("cum"))
     }
 
     return(cf_data)
@@ -606,10 +606,10 @@ tidy_promote_structure <-
       promote_data <-
         promote_data %>%
         mutate_at(.vars =
-                    promote_data %>% dplyr::select(matches("^pct[A-Z]|ratio[A-Z]")) %>% names,
+                    promote_data %>% dplyr::select(dplyr::matches("^pct[A-Z]|ratio[A-Z]")) %>% names,
                   funs(. %>% as.numeric)) %>%
         mutate_at(.vars =
-                    promote_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
+                    promote_data %>% dplyr::select(dplyr::matches("^pct[A-Z]")) %>% names,
                   funs(. %>% percent))
 
     } else {
@@ -621,13 +621,13 @@ tidy_promote_structure <-
       promote_data <-
         promote_data %>%
         mutate_at(.vars =
-                    promote_data %>% dplyr::select(matches("^pct[A-Z]")) %>% names,
+                    promote_data %>% dplyr::select(dplyr::matches("^pct[A-Z]")) %>% names,
                   funs(. %>% percent)) %>%
         dplyr::select(
           tierWaterfall,
           nameTier,
           typeHurdle,
-          matches("pctPref|ratioCapitalMultiple"),
+          dplyr::matches("pctPref|ratioCapitalMultiple"),
           pctPromote
         )
     }
@@ -1421,7 +1421,7 @@ calculate_cash_flow_waterfall <-
       equity_df$toEquity %>% sum
 
     levelDistributions <-
-      waterfall_df %>% dplyr::select(matches("to")) %>% gather(item, value) %>% .$value %>% sum %>% currency %>% suppressWarnings()
+      waterfall_df %>% dplyr::select(dplyr::matches("to")) %>% gather(item, value) %>% .$value %>% sum %>% currency %>% suppressWarnings()
 
     cash_check <-
       ((cf_data$capitalDistribution %>% sum %>% abs) + (equityDistributions  + levelDistributions)
@@ -1587,8 +1587,8 @@ calculate_cash_flow_waterfall_partnership <-
       dplyr::select(idPeriod,
                     date,
                     tierWaterfall,
-                    matches("equityDraw"),
-                    matches("to")) %>%
+                    dplyr::matches("equityDraw"),
+                    dplyr::matches("to")) %>%
       gather(item, toCF, -c(idPeriod, date, tierWaterfall)) %>%
       dplyr::filter(!toCF == 0) %>%
       mutate(

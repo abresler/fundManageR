@@ -324,11 +324,11 @@ msci_realtime_index_values <-
 
     index_data <-
       index_data %>%
-      mutate_at(index_data %>% select(matches('idIndex|value|pct')) %>% names(),
+      mutate_at(index_data %>% select(dplyr::matches('idIndex|value|pct')) %>% names(),
                 funs(. %>% readr::parse_number())) %>%
-      mutate_at(index_data %>% select(matches('value')) %>% names(),
+      mutate_at(index_data %>% select(dplyr::matches('value')) %>% names(),
                 funs(. %>% formattable::comma())) %>%
-      mutate_at(index_data %>% select(matches('pct')) %>% names(),
+      mutate_at(index_data %>% select(dplyr::matches('pct')) %>% names(),
                 funs((. / 100) %>% formattable::percent(digits = 3)))
 
     if (return_message) {

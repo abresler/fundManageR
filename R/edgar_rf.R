@@ -24,7 +24,7 @@ tidy_column_formats <-
         dplyr::matches(
           "^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]"
         )
-      ) %>% dplyr::select(-matches("nameElement")) %>% names(),
+      ) %>% dplyr::select(-dplyr::matches("nameElement")) %>% names(),
       funs(. %>% str_to_upper())) %>%
       mutate_at(
         data %>% dplyr::select(dplyr::matches("^amount")) %>% names(),
@@ -138,7 +138,7 @@ resolve_names_to_upper <-
       mutate_at(
         data %>%
           keep(is_character) %>%
-          select(-matches("url")) %>% names(),
+          select(-dplyr::matches("url")) %>% names(),
         funs(. %>% str_to_upper())
       )
 
@@ -1016,7 +1016,7 @@ clean_names <-
           data %>%
           mutate_at(
             .vars =
-              data %>% dplyr::select(matches("^name")) %>% names(),
+              data %>% dplyr::select(dplyr::matches("^name")) %>% names(),
             funs(. %>% stringr::str_to_upper())
           )
       } else {
@@ -1024,7 +1024,7 @@ clean_names <-
           data %>%
           mutate_at(
             .vars =
-              data %>% dplyr::select(matches("^name")) %>% names(),
+              data %>% dplyr::select(dplyr::matches("^name")) %>% names(),
             funs(. %>% stringr::str_to_lower())
           )
       }
@@ -1108,7 +1108,7 @@ resolve_name_df <-
         data %>%
         mutate_at(.vars =
                     data %>% select(
-                      matches(
+                      dplyr::matches(
                         "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
                       )
                     ) %>% names,
@@ -1134,7 +1134,7 @@ resolve_name_df <-
       data %>%
       mutate_at(.vars =
                   data %>% select(
-                    matches(
+                    dplyr::matches(
                       "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
                     )
                   ) %>% names,
@@ -1654,15 +1654,15 @@ recent_insider_trades <-
 
         df <-
           df %>%
-          select(-matches("^X[1-9]")) %>%
+          select(-dplyr::matches("^X[1-9]")) %>%
           separate(idTicker,
                    into = c('replace', 'idTicker'),
                    sep = 'c|f') %>%
           select(-replace) %>%
           mutate(idTicker = ifelse(idTicker == '', NA, idTicker)) %>%
-          mutate_at(.vars = df %>% select(matches("^count|^amount|idCIK")) %>% names,
+          mutate_at(.vars = df %>% select(dplyr::matches("^count|^amount|idCIK")) %>% names,
                     funs(. %>% as.numeric())) %>%
-          mutate_at(.vars = df %>% select(matches("^name")) %>% names,
+          mutate_at(.vars = df %>% select(dplyr::matches("^name")) %>% names,
                     funs(. %>% str_to_upper())) %>%
           mutate(idInsiderTable = x) %>%
           suppressWarnings()
@@ -1689,15 +1689,15 @@ recent_insider_trades <-
     all_data <-
       all_data %>%
       mutate_at(
-        .vars = all_data %>% select(matches("amount")) %>% names(),
+        .vars = all_data %>% select(dplyr::matches("amount")) %>% names(),
         funs(. %>% as.numeric %>% formattable::currency(digits = 0))
       ) %>%
       mutate_at(
-        .vars = all_data %>% select(matches("count")) %>% names(),
+        .vars = all_data %>% select(dplyr::matches("count")) %>% names(),
         funs(. %>% as.numeric %>% formattable::comma(digits = 0))
       ) %>%
       mutate_at(
-        .vars = all_data %>% select(matches("name|type")) %>% names(),
+        .vars = all_data %>% select(dplyr::matches("name|type")) %>% names(),
         funs(. %>% stringr::str_to_upper())
       ) %>%
       arrange(nameCompany, nameTable)
@@ -1848,7 +1848,7 @@ parse_securities_url <-
       data <-
         data %>%
         mutate_at(.vars =
-                    data %>% select(matches("^amount|^count|idIndustry")) %>% names(),
+                    data %>% select(dplyr::matches("^amount|^count|idIndustry")) %>% names(),
                   funs(. %>% as.numeric()))
 
       if (return_message) {
@@ -2071,7 +2071,7 @@ sec_entity <-
       json_url %>%
       parse_rf_search_name_safe() %>%
       mutate(nameEntitySearch = entity_name) %>%
-      select(nameEntitySearch, matches("^name"), everything())
+      select(nameEntitySearch, dplyr::matches("^name"), everything())
 
     if (data %>% nrow() == 0) {
       return(data_frame())
@@ -2199,7 +2199,7 @@ sec_filing_entities <-
         all_data %>%
         select(-nameEntity) %>%
         left_join(entites_df) %>%
-        select(nameEntitySearch, matches("nameEntity"), everything()) %>%
+        select(nameEntitySearch, dplyr::matches("nameEntity"), everything()) %>%
         select(-idRow) %>%
         suppressMessages()
     }
@@ -2398,9 +2398,9 @@ sec_form_ds <-
 
     all_data <-
       all_data %>%
-      mutate_at(.vars = all_data %>% select(matches("^amount")) %>% names,
+      mutate_at(.vars = all_data %>% select(dplyr::matches("^amount")) %>% names,
                 funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(.vars = all_data %>% select(matches("^count")) %>% names,
+      mutate_at(.vars = all_data %>% select(dplyr::matches("^count")) %>% names,
                 funs(. %>% formattable::comma(digits = 0))) %>%
       arrange(desc(dateFiling)) %>%
       left_join(category_df) %>%
@@ -2552,13 +2552,13 @@ parse_json_general_filing <-
         data %>%
         mutate(nameEntity = entity_name,
                idTicker = ticker) %>%
-        select(-matches("company"))
+        select(-dplyr::matches("company"))
     }
 
     data <-
       data %>%
-      select(-matches("object")) %>%
-      mutate_at(.vars = data %>% select(matches("idCIK|idIRS")) %>% names(),
+      select(-dplyr::matches("object")) %>%
+      mutate_at(.vars = data %>% select(dplyr::matches("idCIK|idIRS")) %>% names(),
                 as.numeric) %>%
       mutate(urlJSONGeneral = url,
              nameEntity = nameEntity %>% stringr::str_to_upper())
@@ -2581,7 +2581,7 @@ parse_json_general_filing <-
             zipcodeEntity
           ) %>% purrr::invoke(paste0, .)
         ) %>%
-        select(idCIK, matches("nameEntity"), addressEntity, everything())
+        select(idCIK, dplyr::matches("nameEntity"), addressEntity, everything())
     }
 
     if ('detailsOwnedBy' %in% names(data)) {
@@ -2648,7 +2648,7 @@ parse_json_general_filing <-
 
       detail_df <-
         detail_df %>%
-        mutate_at(.vars = detail_df %>% select(matches("date")) %>% names(),
+        mutate_at(.vars = detail_df %>% select(dplyr::matches("date")) %>% names(),
                   funs(. %>% ymd())) %>%
         suppressWarnings()
 
@@ -2672,8 +2672,8 @@ parse_json_general_filing <-
       select(
         nameEntity,
         idCIK,
-        matches("typeCategory"),
-        matches("idtypeCompany"),
+        dplyr::matches("typeCategory"),
+        dplyr::matches("idtypeCompany"),
         everything()
       )
 
@@ -2744,7 +2744,7 @@ parse_json_filings <-
           NA
         )
       ) %>%
-      select(-matches("^X")) %>%
+      select(-dplyr::matches("^X")) %>%
       suppressMessages() %>%
       select(-c(slugSEC, pageSlug)) %>%
       select(idCIK, dateFiling, everything())
@@ -2811,23 +2811,23 @@ parse_json_private <-
 
       offering_data <-
         offering_data %>%
-        mutate_at(.vars = offering_data %>% select(matches("^is")) %>% names,
+        mutate_at(.vars = offering_data %>% select(dplyr::matches("^is")) %>% names,
                   funs(. %>% as.logical())) %>%
-        mutate_at(.vars = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
+        mutate_at(.vars = offering_data %>% select(dplyr::matches("^amount|^count|^idCIK")) %>% names,
                   funs(. %>% as.numeric())) %>%
-        mutate_at(.vars = offering_data %>% select(matches("^date")) %>% names,
+        mutate_at(.vars = offering_data %>% select(dplyr::matches("^date")) %>% names,
                   funs(. %>% lubridate::ymd())) %>%
-        mutate_at(.vars = offering_data %>% select(matches("^amount")) %>% names,
+        mutate_at(.vars = offering_data %>% select(dplyr::matches("^amount")) %>% names,
                   funs(. %>% formattable::currency(digits = 0))) %>%
-        mutate_at(.vars = offering_data %>% select(matches("^count")) %>% names,
+        mutate_at(.vars = offering_data %>% select(dplyr::matches("^count")) %>% names,
                   funs(. %>% formattable::comma(digits = 0))) %>%
         suppressWarnings()
     } else {
       offering_data <-
         offering_data %>%
-        mutate_at(.vars = offering_data %>% select(matches("^amount|^count|^idCIK")) %>% names,
+        mutate_at(.vars = offering_data %>% select(dplyr::matches("^amount|^count|^idCIK")) %>% names,
                   funs(. %>% as.numeric())) %>%
-        mutate_at(.vars = offering_data %>% select(matches("^date")) %>% names,
+        mutate_at(.vars = offering_data %>% select(dplyr::matches("^date")) %>% names,
                   funs(. %>% lubridate::ymd()))
     }
 
@@ -2976,7 +2976,7 @@ parse_json_private <-
 
           df <-
             df %>%
-            mutate_at(df %>% select(matches("idCRD")) %>% names(),
+            mutate_at(df %>% select(dplyr::matches("idCRD")) %>% names(),
                       funs(. %>% as.numeric())) %>%
             resolve_names_to_upper()
 
@@ -3042,11 +3042,11 @@ parse_json_private <-
         typeEntity,
         locationJurisdiction,
         hasOver5FileFilings,
-        matches("nameIndustry"),
-        matches("typeFund"),
-        matches("^is"),
-        matches("^amount"),
-        matches("^count"),
+        dplyr::matches("nameIndustry"),
+        dplyr::matches("typeFund"),
+        dplyr::matches("^is"),
+        dplyr::matches("^amount"),
+        dplyr::matches("^count"),
         everything()
       ) %>%
       resolve_names_to_upper() %>%
@@ -3366,7 +3366,7 @@ parse_json_owners <-
 
       filing_df <-
         filing_df %>%
-        mutate_at(.vars = filing_df %>% select(matches("nameEntity")) %>% names(),
+        mutate_at(.vars = filing_df %>% select(dplyr::matches("nameEntity")) %>% names(),
                   funs(. %>% str_to_upper())) %>%
         resolve_names_to_upper()
 
@@ -3452,7 +3452,7 @@ parse_json_owners <-
 
         detail_df <-
           detail_df %>%
-          mutate_at(.vars = detail_df %>% select(matches("date")) %>% names(),
+          mutate_at(.vars = detail_df %>% select(dplyr::matches("date")) %>% names(),
                     funs(. %>% ymd())) %>%
           suppressWarnings()
 
@@ -3535,21 +3535,21 @@ parse_json_owners <-
       company_df <-
         company_df %>%
         mutate_at(.vars =
-                    company_df %>% select(matches("date")) %>% names(),
+                    company_df %>% select(dplyr::matches("date")) %>% names(),
                   funs(. %>% lubridate::ymd())) %>%
         mutate_at(.vars =
-                    company_df %>% select(matches("idCIK")) %>% names(),
+                    company_df %>% select(dplyr::matches("idCIK")) %>% names(),
                   .funs = as.numeric) %>%
         mutate_at(
           .vars =
-            company_df %>% select(matches("nameCompany")) %>% names(),
+            company_df %>% select(dplyr::matches("nameCompany")) %>% names(),
           .funs = stringr::str_to_upper
         )
 
       general_df <-
         general_df %>%
         mutate(idRow = 1:n()) %>%
-        left_join(company_df %>% select(-matches("idCIKOwned"))) %>%
+        left_join(company_df %>% select(-dplyr::matches("idCIKOwned"))) %>%
         select(-idRow) %>%
         suppressMessages()
     }
@@ -3564,7 +3564,7 @@ parse_json_owners <-
       select(idCIK,
              idCIKOwned,
              nameEntityOwner,
-             matches("nameFiler"),
+             dplyr::matches("nameFiler"),
              everything()) %>%
       resolve_names_to_upper()
 
@@ -3612,7 +3612,7 @@ parse_json_public_filers <-
         ),
         sep = '\\*'
       ) %>%
-      select(-matches("X")) %>%
+      select(-dplyr::matches("X")) %>%
       suppressMessages() %>%
       suppressWarnings()
 
@@ -3745,7 +3745,7 @@ parse_json_subsidiaries <-
         data %>%
         mutate_at(.vars =
                     data %>% select(
-                      matches(
+                      dplyr::matches(
                         "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
                       )
                     ) %>% names,
@@ -3787,7 +3787,7 @@ parse_json_subsidiaries <-
 
     data <-
       data %>%
-      mutate_at(.vars = data %>% select(matches("date")) %>% names(),
+      mutate_at(.vars = data %>% select(dplyr::matches("date")) %>% names(),
                 funs(. %>% lubridate::ymd()))
 
     data <-
@@ -3879,7 +3879,7 @@ parse_cik_filings <-
       all_filings %>%
       mutate(nameEntity = entity) %>%
       select(idCIK, nameEntity, dateFiling,
-             matches("idRF"),
+             dplyr::matches("idRF"),
              everything())
 
     if ('typeReport' %in% names(all_filings)) {
@@ -4249,7 +4249,7 @@ parse_cik_data <-
           owners_df %>%
           left_join(general_df %>% select(idCIK, nameEntity)) %>%
           select(nameEntity, idCIK, everything()) %>%
-          select(-matches("dateiso")) %>%
+          select(-dplyr::matches("dateiso")) %>%
           suppressMessages()
       }
     } else {
@@ -4371,7 +4371,7 @@ parse_cik_data <-
       mutate(countCols = dataTable %>% purrr::map_dbl(ncol)) %>%
       filter(countCols > 1) %>%
       suppressWarnings() %>%
-      select(-matches("countCols"))
+      select(-dplyr::matches("countCols"))
 
     return(all_data)
   }
@@ -4616,7 +4616,7 @@ sec_filer <-
 
     all_data <-
       all_data %>%
-      select(-matches("urlRankAndFiled"))
+      select(-dplyr::matches("urlRankAndFiled"))
 
     has_filings <-
       c('CIK Filings', 'Filings') %in% all_data$nameTable %>% sum() > 0
@@ -4632,13 +4632,13 @@ sec_filer <-
 
         filing_df <-
           filing_df %>%
-          mutate_at(filing_df %>% select(matches("^url")) %>% names(),
+          mutate_at(filing_df %>% select(dplyr::matches("^url")) %>% names(),
                     funs(. %>% str_to_lower()))
 
 
         filing_df <-
           filing_df %>%
-          mutate_at(filing_df %>% select(matches("url^[A-Z]")) %>% names(),
+          mutate_at(filing_df %>% select(dplyr::matches("url^[A-Z]")) %>% names(),
                     funs(. %>% str_replace_all('archives', 'Archives')))
 
         filing_df <-
@@ -4706,7 +4706,7 @@ sec_filer <-
             if (sub_df %>% nrow() > 0) {
               sub_df <-
                 sub_df %>%
-                select(-matches("X|date")) %>%
+                select(-dplyr::matches("X|date")) %>%
                 filter(
                   !nameSubsidiary %in% c(
                     '(I)',
@@ -4858,7 +4858,7 @@ sec_filer <-
           df_data <-
             all_data %>%
             filter(nameTable == table_name_df$nameTable[[x]]) %>%
-            select(matches(c('idCIK|nameEntity|dataTable'))) %>%
+            select(dplyr::matches(c('idCIK|nameEntity|dataTable'))) %>%
             unnest() %>%
             suppressWarnings() %>%
             remove_duplicate_columns()
@@ -4868,7 +4868,7 @@ sec_filer <-
 
           if (has_unnest2) {
             base_names <-
-              df_data %>% remove_duplicate_columns() %>% dplyr::select(-matches("data")) %>% names()
+              df_data %>% remove_duplicate_columns() %>% dplyr::select(-dplyr::matches("data")) %>% names()
 
             df_data_names <-
               names(df_data)[names(df_data) %>% str_detect('data')]
@@ -4891,7 +4891,7 @@ sec_filer <-
                 remove_duplicate_columns() %>%
                 select(which(colMeans(is.na(.)) < 1)) %>%
                 # tidy_column_formats() %>%
-                select(-matches('is_null_col')) %>%
+                select(-dplyr::matches('is_null_col')) %>%
                 distinct()
 
               df_table_name <-
@@ -4909,7 +4909,7 @@ sec_filer <-
                 table <-
                   df_data %>%
                   remove_duplicate_columns() %>%
-                  select(-matches("data")) %>%
+                  select(-dplyr::matches("data")) %>%
                   # tidy_column_formats() %>%
                   select(which(colMeans(is.na(.)) < 1)) %>%
                   distinct()
@@ -4931,7 +4931,7 @@ sec_filer <-
               if (df_name %in% 'dataFilerFilingDirectories') {
                 table <-
                   df_data %>%
-                  select(-matches('data')) %>%
+                  select(-dplyr::matches('data')) %>%
                   filter(!idCIK %>% is.na()) %>%
                   select(which(colMeans(is.na(.)) < 1)) %>%
                   # tidy_column_formats() %>%
@@ -4948,7 +4948,7 @@ sec_filer <-
                 df_data <-
                   df_data %>%
                   remove_duplicate_columns() %>%
-                  # select(matches("data")) %>%
+                  # select(dplyr::matches("data")) %>%
                   unnest()
 
                 select_cols <-
@@ -5107,7 +5107,7 @@ parse_json_general_insider <-
 
         detail_df <-
           detail_df %>%
-          mutate_at(.vars = detail_df %>% select(matches("date")) %>% names(),
+          mutate_at(.vars = detail_df %>% select(dplyr::matches("date")) %>% names(),
                     funs(. %>% ymd())) %>%
           suppressWarnings()
 
@@ -5137,7 +5137,7 @@ parse_json_general_insider <-
 
       company_name_df <-
         companies_df %>%
-        select(-matches("status_history")) %>%
+        select(-dplyr::matches("status_history")) %>%
         gather(item, value, -c(idCIK, nameFiler)) %>%
         group_by(item) %>%
         mutate(countItem = 1:n() - 1) %>%
@@ -5157,7 +5157,7 @@ parse_json_general_insider <-
 
       company_name_df <-
         company_name_df %>%
-        mutate_at(company_name_df %>% select(matches("idCIK")) %>% names(),
+        mutate_at(company_name_df %>% select(dplyr::matches("idCIK")) %>% names(),
                   funs(. %>% as.numeric()))
 
       companies_df <-
@@ -5172,7 +5172,7 @@ parse_json_general_insider <-
               companies_df$status_history[[x]] %>%
               as_data_frame() %>%
               mutate(idRow = x) %>%
-              select(-matches("other|pair_id")) %>%
+              select(-dplyr::matches("other|pair_id")) %>%
               gather(item, value, -idRow) %>%
               left_join(data_frame(
                 item = c('date', 'officer', 'title', 'ten_percent', 'director'),
@@ -5198,16 +5198,16 @@ parse_json_general_insider <-
 
         status_df <-
           status_df %>%
-          mutate_at(status_df %>% select(matches("date")) %>% names(),
+          mutate_at(status_df %>% select(dplyr::matches("date")) %>% names(),
                     funs(. %>% lubridate::ymd())) %>%
-          mutate_at(status_df %>% select(matches("is")) %>% names(),
+          mutate_at(status_df %>% select(dplyr::matches("is")) %>% names(),
                     funs(. %>% as.logical())) %>%
-          mutate_at(status_df %>% select(matches("date")) %>% names(),
+          mutate_at(status_df %>% select(dplyr::matches("date")) %>% names(),
                     funs(. %>% as.character()))
 
         companies_df <-
           companies_df %>%
-          select(-matches("status")) %>%
+          select(-dplyr::matches("status")) %>%
           left_join(status_df) %>%
           suppressWarnings() %>%
           suppressMessages() %>%
@@ -5230,9 +5230,9 @@ parse_json_general_insider <-
 
         companies_df <-
           companies_df %>%
-          mutate_at(status_df %>% select(matches("date")) %>% names(),
+          mutate_at(status_df %>% select(dplyr::matches("date")) %>% names(),
                     funs(. %>% lubridate::ymd())) %>%
-          mutate_at(status_df %>% select(matches("^is|^has")) %>% names(),
+          mutate_at(status_df %>% select(dplyr::matches("^is|^has")) %>% names(),
                     funs(. %>% as.logical()))
 
       } else {
@@ -5344,15 +5344,15 @@ parse_insider_trade_json_url <-
     trade_df <-
       trade_df %>%
       purrr::set_names((trade_df_names)[1:ncol(trade_df)]) %>%
-      select(-matches("X"))
+      select(-dplyr::matches("X"))
 
     trade_df <-
       trade_df %>%
       mutate_at(.vars =
-                  trade_df %>% select(matches("date")) %>% names(),
+                  trade_df %>% select(dplyr::matches("date")) %>% names(),
                 .funs = lubridate::ymd) %>%
       mutate_at(.vars =
-                  trade_df %>% select(matches("idCIK|count|amount|price")) %>% names(),
+                  trade_df %>% select(dplyr::matches("idCIK|count|amount|price")) %>% names(),
                 funs(. %>% as.character() %>% readr::parse_number())) %>%
       left_join(data_frame(
         idInsiderType = c("D", "ND"),
@@ -5448,8 +5448,8 @@ parse_insider_trades <-
 
     owned_df <-
       owned_company_df %>%
-      select(matches('idCIK|nameEntity|idTicker')) %>%
-      select(-matches("idCIKOwnedBy"))
+      select(dplyr::matches('idCIK|nameEntity|idTicker')) %>%
+      select(-dplyr::matches("idCIKOwnedBy"))
 
     names(owned_df) <-
       names(owned_df) %>% paste0('Owns')
@@ -5463,7 +5463,7 @@ parse_insider_trades <-
         nameInsider,
         idCIK,
         nameEntityOwns,
-        matches('idCIKOwns|idTickerOwns'),
+        dplyr::matches('idCIKOwns|idTickerOwns'),
         everything()
       ) %>%
       suppressWarnings() %>%
@@ -5471,9 +5471,9 @@ parse_insider_trades <-
 
     all_data <-
       all_data %>%
-      mutate_at(.vars = all_data %>% select(matches("amount|price")) %>% names(),
+      mutate_at(.vars = all_data %>% select(dplyr::matches("amount|price")) %>% names(),
                 funs(. %>% formattable::currency(digits = 2))) %>%
-      mutate_at(.vars = all_data %>% select(matches("count")) %>% names(),
+      mutate_at(.vars = all_data %>% select(dplyr::matches("count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0)))
 
     if (return_message) {
@@ -5575,7 +5575,7 @@ parse_json_fund_general <-
       dplyr::select(one_of(general_cols)) %>%
       resolve_name_df() %>%
       distinct() %>%
-      select(-matches("descriptionClasses"))
+      select(-dplyr::matches("descriptionClasses"))
 
     has_funds <-
       'funds' %in% names(json_data)
@@ -5614,7 +5614,7 @@ parse_json_fund_general <-
       }
       filer_df <-
         filer_df %>%
-        mutate_at(filer_df %>% select(matches("idRF|idCIK")) %>% names(),
+        mutate_at(filer_df %>% select(dplyr::matches("idRF|idCIK")) %>% names(),
                   funs(. %>% as.numeric()))
 
       merge_cols <-
@@ -5629,7 +5629,7 @@ parse_json_fund_general <-
             dplyr::rename(idCIKFiler = idCIK) %>%
             select(one_of(merge_cols))
         ) %>%
-        select(-matches("^object|idRow")) %>%
+        select(-dplyr::matches("^object|idRow")) %>%
         distinct() %>%
         suppressMessages()
 
@@ -5639,8 +5639,8 @@ parse_json_fund_general <-
       general_df %>%
       select(idCIK,
              nameEntity,
-             matches("name"),
-             matches("id"),
+             dplyr::matches("name"),
+             dplyr::matches("id"),
              everything())
 
     if (return_message) {
@@ -5694,8 +5694,8 @@ parse_for_tables_rf <-
       search_df <-
         filing_df %>%
         select(dateFiling,
-               matches("typeFile"),
-               matches("idForm"),
+               dplyr::matches("typeFile"),
+               dplyr::matches("idForm"),
                urlSECFilingDirectory) %>%
         distinct() %>%
         filter(!urlSECFilingDirectory %>% is.na()) %>%
@@ -5868,15 +5868,15 @@ parse_filing_stream <-
 
     general_df <-
       general_df %>%
-      mutate_at(general_df %>% select(matches("^datetime[A-Z]")) %>% names(),
+      mutate_at(general_df %>% select(dplyr::matches("^datetime[A-Z]")) %>% names(),
                 funs(. %>% lubridate::ymd_hms())) %>%
-      mutate_at(general_df %>% select(matches("dateFiled")) %>% names(),
+      mutate_at(general_df %>% select(dplyr::matches("dateFiled")) %>% names(),
                 funs(. %>% lubridate::ymd())) %>%
-      mutate_at(general_df %>% select(matches("idRF|idCIK")) %>% names(),
+      mutate_at(general_df %>% select(dplyr::matches("idRF|idCIK")) %>% names(),
                 funs(. %>% as.numeric())) %>%
-      mutate_at(general_df %>% select(matches("^is|^has")) %>% names(),
+      mutate_at(general_df %>% select(dplyr::matches("^is|^has")) %>% names(),
                 funs(. %>% as.logical())) %>%
-      mutate_at(general_df %>% select(matches("^description|^type")) %>% names(),
+      mutate_at(general_df %>% select(dplyr::matches("^description|^type")) %>% names(),
                 funs(. %>% stringr::str_to_upper())) %>%
       mutate(urlSEC = ifelse(
         slugSEC == "None",
@@ -5915,9 +5915,9 @@ parse_filing_stream <-
       }
       filer_df <-
         filer_df %>%
-        mutate_at(filer_df %>% select(matches("idRF|idCIK")) %>% names(),
+        mutate_at(filer_df %>% select(dplyr::matches("idRF|idCIK")) %>% names(),
                   funs(. %>% as.numeric())) %>%
-        mutate_at(filer_df %>% select(matches("^name|^industry|^typeFund|^details")) %>% names(),
+        mutate_at(filer_df %>% select(dplyr::matches("^name|^industry|^typeFund|^details")) %>% names(),
                   funs(. %>% stringr::str_to_upper()))
 
       if ('detailsOwnedBy' %in% names(filer_df)) {
@@ -5971,7 +5971,7 @@ parse_filing_stream <-
 
             df <-
               df %>%
-              mutate_at(df %>% select(matches("date")) %>% names(),
+              mutate_at(df %>% select(dplyr::matches("date")) %>% names(),
                         funs(. %>% lubridate::ymd()))
 
             if (nest_data) {
@@ -6002,7 +6002,7 @@ parse_filing_stream <-
               c('idCIKFiler', 'idRow'), names(filer_df)[!names(filer_df) %in% names(general_df)]
             ))
         ) %>%
-        select(-matches("^object|idRow")) %>%
+        select(-dplyr::matches("^object|idRow")) %>%
         distinct() %>%
         suppressMessages()
 
@@ -6055,9 +6055,9 @@ parse_filing_stream <-
 
           offering <-
             offering %>%
-            mutate_at(offering %>% select(matches("^count[A-Z]|^amount")) %>% names(),
+            mutate_at(offering %>% select(dplyr::matches("^count[A-Z]|^amount")) %>% names(),
                       funs(. %>% as.numeric())) %>%
-            mutate_at(offering %>% select(matches("^date")) %>% names(),
+            mutate_at(offering %>% select(dplyr::matches("^date")) %>% names(),
                       funs(. %>% lubridate::ymd()))
 
           if (nest_data) {
@@ -6071,13 +6071,13 @@ parse_filing_stream <-
 
       offering_df <-
         offering_df %>%
-        mutate_at(matches("^nameIndustry"),
+        mutate_at(dplyr::matches("^nameIndustry"),
                   funs(. %>% str_to_upper()))
 
       general_df <-
         general_df %>%
         mutate(idRow = 1:n()) %>%
-        select(-matches("nameIndustry")) %>%
+        select(-dplyr::matches("nameIndustry")) %>%
         left_join(offering_df) %>%
         select(-idRow) %>%
         suppressWarnings() %>%
@@ -6123,7 +6123,7 @@ parse_filing_stream <-
 
           trades <-
             trades %>%
-            mutate_at(.vars = trades %>% select(matches("amount|count")) %>% names,
+            mutate_at(.vars = trades %>% select(dplyr::matches("amount|count")) %>% names,
                       funs(. %>% as.numeric())) %>%
             left_join(get_insider_code_df()) %>%
             suppressWarnings() %>%
@@ -6165,9 +6165,9 @@ parse_filing_stream <-
 
           trades <-
             trades %>%
-            mutate_at(trades %>% select(matches("^count[A-Z]|^amount")) %>% names(),
+            mutate_at(trades %>% select(dplyr::matches("^count[A-Z]|^amount")) %>% names(),
                       funs(. %>% as.numeric())) %>%
-            mutate_at(trades %>% select(matches("^date")) %>% names(),
+            mutate_at(trades %>% select(dplyr::matches("^date")) %>% names(),
                       funs(. %>% lubridate::ymd()))
 
           if (nest_data) {
@@ -6180,15 +6180,15 @@ parse_filing_stream <-
         select(idRow, everything())
 
       names(trade_df)[names(trade_df) %>% str_detect('dateFiling')] <-
-        trade_df %>% select(matches("dateFiling")) %>% names() %>%
+        trade_df %>% select(dplyr::matches("dateFiling")) %>% names() %>%
         str_replace_all("dateFiling", 'dateFilingInsider')
 
 
       general_df <-
         general_df %>%
         mutate(idRow = 1:n()) %>%
-        select(-matches("nameIndustry")) %>%
-        left_join(trade_df %>% select(-matches("idTicker")), by = 'idRow') %>%
+        select(-dplyr::matches("nameIndustry")) %>%
+        left_join(trade_df %>% select(-dplyr::matches("idTicker")), by = 'idRow') %>%
         select(-idRow) %>%
         suppressWarnings() %>%
         suppressMessages()
@@ -6196,15 +6196,15 @@ parse_filing_stream <-
 
     general_df <-
       general_df %>%
-      mutate_at(.vars = general_df %>% select(matches("nameEntity")) %>% names(),
+      mutate_at(.vars = general_df %>% select(dplyr::matches("nameEntity")) %>% names(),
                 funs(. %>% str_to_upper())) %>%
       suppressWarnings() %>%
       ungroup() %>%
-      select(-matches("^object[A-Z]|^slug|dateiso")) %>%
+      select(-dplyr::matches("^object[A-Z]|^slug|dateiso")) %>%
       select(idCIK,
              nameEntity,
-             matches("name"),
-             matches("id"),
+             dplyr::matches("name"),
+             dplyr::matches("id"),
              everything())
 
 
@@ -6251,15 +6251,15 @@ sec_filing_stream <-
         select(
           idRF,
           idCIK,
-          matches("nameEntity"),
-          matches("idTicker"),
-          matches("dateFiled"),
-          matches("datetimeFiled"),
-          matches("^name"),
-          matches("^date"),
-          matches("^id"),
-          matches("^type"),
-          matches("^description"),
+          dplyr::matches("nameEntity"),
+          dplyr::matches("idTicker"),
+          dplyr::matches("dateFiled"),
+          dplyr::matches("datetimeFiled"),
+          dplyr::matches("^name"),
+          dplyr::matches("^date"),
+          dplyr::matches("^id"),
+          dplyr::matches("^type"),
+          dplyr::matches("^description"),
           everything()
         ) %>%
         mutate(
@@ -6376,15 +6376,15 @@ sec_filing_stream <-
         select(
           idRF,
           idCIK,
-          matches("nameEntity"),
-          matches("idTicker"),
-          matches("dateFiled"),
-          matches("datetimeFiled"),
-          matches("^name"),
-          matches("^date"),
-          matches("^id"),
-          matches("^type"),
-          matches("^description"),
+          dplyr::matches("nameEntity"),
+          dplyr::matches("idTicker"),
+          dplyr::matches("dateFiled"),
+          dplyr::matches("datetimeFiled"),
+          dplyr::matches("^name"),
+          dplyr::matches("^date"),
+          dplyr::matches("^id"),
+          dplyr::matches("^type"),
+          dplyr::matches("^description"),
           everything()
         ) %>%
         mutate(
@@ -6492,8 +6492,8 @@ sec_filing_streams_rf <-
 
     all_data <-
       all_data %>%
-      select(-matches("dateiso")) %>%
-      mutate_at(all_data %>% select(matches("^name|^description|^industry|^typeEntity")) %>% names(),
+      select(-dplyr::matches("dateiso")) %>%
+      mutate_at(all_data %>% select(dplyr::matches("^name|^description|^industry|^typeEntity")) %>% names(),
                 funs(. %>% stringr::str_to_upper()))
 
     return(all_data)
@@ -6538,7 +6538,7 @@ parse_json_public_general <-
                   .$idName] %>%
       flatten_df() %>%
       resolve_name_df() %>%
-      select(-matches("idTicker")) %>%
+      select(-dplyr::matches("idTicker")) %>%
       mutate(idTicker = ticker)
 
     has_market <-
@@ -6550,7 +6550,7 @@ parse_json_public_general <-
         bind_cols(json_data$market %>%
                     flatten_df() %>%
                     resolve_name_df() %>%
-                    select(-matches("codeExchange")))
+                    select(-dplyr::matches("codeExchange")))
 
       if ('amountEquityMarketCap' %in% names(general_df)) {
         general_df <-
@@ -6599,7 +6599,7 @@ parse_json_public_general <-
       snap_shot_df <-
         snap_shot_df %>%
         resolve_name_df() %>%
-        select(-matches("amountEquityMarketCap"))
+        select(-dplyr::matches("amountEquityMarketCap"))
 
       if ('digitEBITDA' %in% names(snap_shot_df)) {
         snap_shot_df <-
@@ -6616,9 +6616,9 @@ parse_json_public_general <-
 
       snap_shot_df <-
         snap_shot_df %>%
-        mutate_at(.vars = snap_shot_df %>% select(matches("price|amount")) %>% names,
+        mutate_at(.vars = snap_shot_df %>% select(dplyr::matches("price|amount")) %>% names,
                   funs(. %>% currency(digits = 2))) %>%
-        mutate_at(.vars = snap_shot_df %>% select(matches("amountEBITDA")) %>% names,
+        mutate_at(.vars = snap_shot_df %>% select(dplyr::matches("amountEBITDA")) %>% names,
                   funs(. %>% currency(digits = 0)))
 
       general_df <-
@@ -6692,7 +6692,7 @@ parse_json_public_general <-
 
             df <-
               df %>%
-              mutate_at(df %>% select(matches("date")) %>% names(),
+              mutate_at(df %>% select(dplyr::matches("date")) %>% names(),
                         funs(. %>% lubridate::ymd()))
 
             if (nest_data) {
@@ -6713,17 +6713,17 @@ parse_json_public_general <-
 
       filer_df <-
         filer_df %>%
-        mutate_at(filer_df %>% select(matches("nameEntity")) %>% names(),
+        mutate_at(filer_df %>% select(dplyr::matches("nameEntity")) %>% names(),
                   funs(. %>% stringr::str_to_upper())) %>%
         select(
-          matches("nameEntity"),
-          matches("^id"),
-          matches("industry"),
-          matches("name"),
-          matches("type"),
+          dplyr::matches("nameEntity"),
+          dplyr::matches("^id"),
+          dplyr::matches("industry"),
+          dplyr::matches("name"),
+          dplyr::matches("type"),
           everything()
         ) %>%
-        select(-matches("object"))
+        select(-dplyr::matches("object"))
 
       if ('addressStreet1Entity' %in% names(filer_df)) {
         filer_df <-
@@ -6748,8 +6748,8 @@ parse_json_public_general <-
       general_df <-
         general_df %>%
         bind_cols(filer_df %>% select(one_of(filer_cols))) %>%
-        select(idCIK, matches("nameEntity"), everything()) %>%
-        select(-matches("detailsOwns"))
+        select(idCIK, dplyr::matches("nameEntity"), everything()) %>%
+        select(-dplyr::matches("detailsOwns"))
     }
 
     if ('detailsOwns' %in% names(general_df)) {
@@ -6816,7 +6816,7 @@ parse_json_public_general <-
 
       detail_df <-
         detail_df %>%
-        mutate_at(.vars = detail_df %>% select(matches("date")) %>% names(),
+        mutate_at(.vars = detail_df %>% select(dplyr::matches("date")) %>% names(),
                   funs(. %>% ymd())) %>%
         suppressWarnings()
 
@@ -6857,7 +6857,7 @@ parse_company_general <-
         data %>%
         mutate(nameCompany = nameEntity) %>%
         select(idCIK, idTicker, nameEntity, nameCompany, everything()) %>%
-        select(-matches("dateiso"))
+        select(-dplyr::matches("dateiso"))
     } else {
       df_name <-
         list('http://rankandfiled.com/data/filer/',
@@ -6874,7 +6874,7 @@ parse_company_general <-
         mutate(nameEntity = entity,
                nameCompany = nameEntity) %>%
         select(idCIK, idTicker, nameEntity, nameCompany, everything()) %>%
-        select(-matches("dateiso"))
+        select(-dplyr::matches("dateiso"))
     }
 
     data <-
@@ -6935,15 +6935,15 @@ parse_json_trades <-
         sep = '\\*'
       ) %>%
       suppressWarnings() %>%
-      select(-matches("X"))
+      select(-dplyr::matches("X"))
 
     trade_df <-
       trade_df %>%
       mutate_at(.vars =
-                  trade_df %>% select(matches("date")) %>% names(),
+                  trade_df %>% select(dplyr::matches("date")) %>% names(),
                 .funs = lubridate::ymd) %>%
       mutate_at(.vars =
-                  trade_df %>% select(matches("idCIK|count|amount|price")) %>% names(),
+                  trade_df %>% select(dplyr::matches("idCIK|count|amount|price")) %>% names(),
                 funs(. %>% as.character() %>% readr::parse_number())) %>%
       left_join(data_frame(
         idInsiderType = c("D", "ND"),
@@ -7063,9 +7063,9 @@ parse_trades <-
 
     all_trades <-
       all_trades %>%
-      mutate_at(.vars = all_trades %>% select(matches("count")) %>% names,
+      mutate_at(.vars = all_trades %>% select(dplyr::matches("count")) %>% names,
                 funs(. %>% formattable::comma(digits = 0))) %>%
-      mutate_at(.vars = all_trades %>% select(matches("amount|price")) %>% names,
+      mutate_at(.vars = all_trades %>% select(dplyr::matches("amount|price")) %>% names,
                 funs(. %>% formattable::currency(digits = 2))) %>%
       select(idCIK:countShares, amountTransaction, everything()) %>%
       resolve_names_to_upper()
@@ -7599,11 +7599,11 @@ us_public_companies <-
 
       company_data <-
         company_data %>%
-        mutate_at(company_data %>% select(matches("price")) %>% names(),
+        mutate_at(company_data %>% select(dplyr::matches("price")) %>% names(),
                   funs(. %>% formattable::currency(digits = 2))) %>%
-        mutate_at(company_data %>% select(matches("amount")) %>% names(),
+        mutate_at(company_data %>% select(dplyr::matches("amount")) %>% names(),
                   funs(. %>% formattable::currency(digits = 0))) %>%
-        mutate_at(company_data %>% select(matches("pct")) %>% names(),
+        mutate_at(company_data %>% select(dplyr::matches("pct")) %>% names(),
                   funs(. %>% formattable::percent(digits = 2)))
       if (return_message) {
         list(
@@ -8383,10 +8383,10 @@ parse_page_subsidiary_table_html <-
       tidyr::separate(nameSubsidiary,
                       sep = '\\(',
                       into = c('nameSubsidiary', 'remove')) %>%
-      select(-matches("remove")) %>%
+      select(-dplyr::matches("remove")) %>%
       mutate(nameSubsidiary = nameSubsidiary %>% str_trim()) %>%
       suppressWarnings() %>%
-      select(-matches("idSubsidiary"))
+      select(-dplyr::matches("idSubsidiary"))
 
     if (has_pct) {
       names(df)[names(df) %>% grep(pct_col, .)] <-
@@ -8394,7 +8394,7 @@ parse_page_subsidiary_table_html <-
 
       df <-
         df %>%
-        mutate_at(df %>% select(matches('pct')) %>% names(),
+        mutate_at(df %>% select(dplyr::matches('pct')) %>% names(),
                   funs(. %>% as.numeric() / 100)) %>%
         suppressWarnings()
     }
@@ -8406,7 +8406,7 @@ parse_page_subsidiary_table_html <-
 
     df <-
       df %>%
-      select(-matches("X"))
+      select(-dplyr::matches("X"))
 
     return(df)
   }
@@ -8463,7 +8463,7 @@ parse_sec_subsidiary_url_html <-
           select(-remove) %>%
           mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
           mutate(idCIK = cik, urlSEC = url) %>%
-          select(-matches("idSubsidiary"))
+          select(-dplyr::matches("idSubsidiary"))
 
         if (return_message) {
           list("Parsed: ", url) %>%
@@ -8520,7 +8520,7 @@ parse_sec_subsidiary_url_html <-
                  everything()) %>%
           select(-idRow) %>%
           suppressMessages() %>%
-          select(-matches("idSubsidiary"))
+          select(-dplyr::matches("idSubsidiary"))
         if (return_message) {
           list("Parsed: ", url) %>%
             purrr::invoke(paste0, .) %>% cat(fill = T)
@@ -8658,7 +8658,7 @@ parse_sec_subsidiary_url_html <-
         mutate(idCIK = cik,
                dateSubsidiaryAsOf = NA,
                urlSEC = url) %>%
-        select(-matches("idSubsidiary|^X"))
+        select(-dplyr::matches("idSubsidiary|^X"))
 
       if (return_message) {
         list("Parsed: ", url) %>%
@@ -8678,7 +8678,7 @@ parse_sec_subsidiary_url_html <-
       df %>%
       filter(!nameSubsidiary == '') %>%
       mutate(idCIK = cik, urlSEC = url) %>%
-      select(-matches("idSubsidiary")) %>%
+      select(-dplyr::matches("idSubsidiary")) %>%
       select(idCIK, everything())
 
     if (return_message) {
@@ -8686,7 +8686,7 @@ parse_sec_subsidiary_url_html <-
         purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
-    return(df %>% select(-matches("idSubsidiary")))
+    return(df %>% select(-dplyr::matches("idSubsidiary")))
 
   }
 
@@ -8769,7 +8769,7 @@ parse_sec_subsidiary_url_text <-
         return(table_data)
       }) %>%
       mutate(idCIK = cik, urlSEC = url) %>%
-      select(-matches("idSubsidiary")) %>%
+      select(-dplyr::matches("idSubsidiary")) %>%
       select(idCIK,
              nameSubsidiary,
              locationOrganizationSubsidiary,
@@ -9275,7 +9275,7 @@ parse_sec_form <-
         table_df <-
           data %>%
           filter(nameTable == table) %>%
-          select(matches("countItem"), nameActual, value) %>%
+          select(dplyr::matches("countItem"), nameActual, value) %>%
           select(which(colMeans(is.na(.)) < 1)) %>%
           group_by(nameActual) %>%
           mutate(countItem = 1:n() - 1) %>%
@@ -9361,11 +9361,11 @@ parse_form_data <-
         })
       all_data <-
         all_data %>%
-        select(-matches("idCIK1|nameFiler1")) %>%
+        select(-dplyr::matches("idCIK1|nameFiler1")) %>%
         left_join(df_search %>% select(idForm, idAccession, nameFile, dateFiling, urlSECFiling)) %>%
         select(
-          matches("idCIK"),
-          matches("name[Entity]|name[Filer]"),
+          dplyr::matches("idCIK"),
+          dplyr::matches("name[Entity]|name[Filer]"),
           dateFiling,
           idForm,
           idAccession,
@@ -9396,15 +9396,15 @@ parse_form_data <-
 
     all_data <-
       all_data %>%
-      select(-matches("idCIK1|nameFiler1")) %>%
-      left_join(df_search %>% select(matches("idForm"), matches("idAccession"), matches("nameFile"), matches("dateFiling"), urlSECFiling)) %>%
+      select(-dplyr::matches("idCIK1|nameFiler1")) %>%
+      left_join(df_search %>% select(dplyr::matches("idForm"), dplyr::matches("idAccession"), dplyr::matches("nameFile"), dplyr::matches("dateFiling"), urlSECFiling)) %>%
       select(
-        matches("idCIK"),
-        matches("name[Entity]|name[Filer]"),
+        dplyr::matches("idCIK"),
+        dplyr::matches("name[Entity]|name[Filer]"),
         dateFiling,
-        matches("idForm"),
-        matches("idAccession"),
-        matches("nameFile"),
+        dplyr::matches("idForm"),
+        dplyr::matches("idAccession"),
+        dplyr::matches("nameFile"),
         everything()
       ) %>%
       suppressMessages()
@@ -11763,7 +11763,7 @@ parse_sec_form <-
         table_df <-
           data %>%
           filter(nameTable == table) %>%
-          select(matches("countItem"), nameActual, value) %>%
+          select(dplyr::matches("countItem"), nameActual, value) %>%
           select(which(colMeans(is.na(.)) < 1)) %>%
           group_by(nameActual) %>%
           mutate(countItem = 1:n() - 1) %>%
@@ -11845,15 +11845,15 @@ parse_form_data <-
         })
       all_data <-
         all_data %>%
-        select(-matches("idCIK1|nameFiler1")) %>%
-        left_join(df_search %>% select(matches("idForm"), matches("idAccession"), matches("nameFile"), dateFiling, urlSECFiling)) %>%
+        select(-dplyr::matches("idCIK1|nameFiler1")) %>%
+        left_join(df_search %>% select(dplyr::matches("idForm"), dplyr::matches("idAccession"), dplyr::matches("nameFile"), dateFiling, urlSECFiling)) %>%
         select(
-          matches("idCIK"),
-          matches("name[Entity]|name[Filer]"),
+          dplyr::matches("idCIK"),
+          dplyr::matches("name[Entity]|name[Filer]"),
           dateFiling,
-          matches("idForm"),
-          matches("idAccession"),
-          matches("nameFile"),
+          dplyr::matches("idForm"),
+          dplyr::matches("idAccession"),
+          dplyr::matches("nameFile"),
           everything()
         ) %>%
         suppressMessages()
@@ -11928,8 +11928,8 @@ parse_form_data <-
 
             data <-
               df_primary %>%
-              select(-matches("urlSECFiling")) %>%
-              left_join(df_primary_no %>% select(-matches("urlSECFiling"))) %>%
+              select(-dplyr::matches("urlSECFiling")) %>%
+              left_join(df_primary_no %>% select(-dplyr::matches("urlSECFiling"))) %>%
               mutate(urlSECFilingDirectory = urlSECFilingDirectory) %>%
               suppressMessages()
             return(data)
@@ -11950,9 +11950,9 @@ parse_form_data <-
       df_13fs <-
         df_13fs %>%
         left_join(urls_df) %>%
-        left_join(df_search %>% select(dateFiling, datePeriodReport, datetimeAccepted, urlSECFilingDirectory, matches("urlTextFilingFull"))) %>%
-        select(-matches("slugAcession")) %>%
-        select(matches("idCIKFiler"), matches("nameFilingManager"), everything()) %>%
+        left_join(df_search %>% select(dateFiling, datePeriodReport, datetimeAccepted, urlSECFilingDirectory, dplyr::matches("urlTextFilingFull"))) %>%
+        select(-dplyr::matches("slugAcession")) %>%
+        select(dplyr::matches("idCIKFiler"), dplyr::matches("nameFilingManager"), everything()) %>%
         select(dateFiling, everything()) %>%
         suppressMessages()
 
@@ -11985,15 +11985,15 @@ parse_form_data <-
 
     all_data <-
       all_data %>%
-      select(-matches("idCIK1|nameFiler1")) %>%
-      left_join(df_search %>% select(matches("idForm"), matches("idAccession"), matches("nameFile"), dateFiling, urlSECFiling)) %>%
+      select(-dplyr::matches("idCIK1|nameFiler1")) %>%
+      left_join(df_search %>% select(dplyr::matches("idForm"), dplyr::matches("idAccession"), dplyr::matches("nameFile"), dateFiling, urlSECFiling)) %>%
       select(
-        matches("idCIK"),
-        matches("name[Entity]|name[Filer]"),
+        dplyr::matches("idCIK"),
+        dplyr::matches("name[Entity]|name[Filer]"),
         dateFiling,
-        matches("idForm"),
-        matches("idAccession"),
-        matches("nameFile"),
+        dplyr::matches("idForm"),
+        dplyr::matches("idAccession"),
+        dplyr::matches("nameFile"),
         everything()
       ) %>%
       suppressMessages()
@@ -12002,7 +12002,7 @@ parse_form_data <-
       if('dataComments' %in% names(all_data)) {
         df_comments <-
           all_data %>%
-          select(idCIKFiler, matches("idAccession"), matches("dataComments")) %>%
+          select(idCIKFiler, dplyr::matches("idAccession"), dplyr::matches("dataComments")) %>%
           mutate(isNULL = dataComments %>% map_lgl(is_null)) %>%
           filter(!isNULL) %>%
           distinct() %>%
@@ -12123,14 +12123,14 @@ parse_sec_filing_index <-
 
         df_metadata <-
           df_metadata %>%
-          mutate_at(df_metadata %>% select(matches('count')) %>% names(),
+          mutate_at(df_metadata %>% select(dplyr::matches('count')) %>% names(),
                     funs(. %>% as.numeric())) %>%
           mutate_at(
-            df_metadata %>% select(matches('^date[A-Z]')) %>%  select(-matches("datetime"))  %>% names(),
+            df_metadata %>% select(dplyr::matches('^date[A-Z]')) %>%  select(-dplyr::matches("datetime"))  %>% names(),
             funs(. %>% lubridate::ymd())
           ) %>%
           mutate_at(
-            df_metadata %>% select(matches('^datetime')) %>%  select(-matches("datetime"))  %>% names(),
+            df_metadata %>% select(dplyr::matches('^datetime')) %>%  select(-dplyr::matches("datetime"))  %>% names(),
             funs(. %>% lubridate::ymd_hms())
           )
 
@@ -12224,7 +12224,7 @@ parse_sec_filing_index <-
           data %>%
           left_join(df_metadata) %>%
           mutate(idCIK = cik) %>%
-          select(idCIK, matches("date"), matches("count"), everything()) %>%
+          select(idCIK, dplyr::matches("date"), dplyr::matches("count"), everything()) %>%
           suppressWarnings() %>%
           suppressMessages()
       } else {
@@ -12290,7 +12290,7 @@ all_filing_urls <-
     }
     data <-
       data %>%
-      select(-matches("hasAssetFile|isFormD|is13F|isForm3_4|hasSmallOfferingData")) %>%
+      select(-dplyr::matches("hasAssetFile|isFormD|is13F|isForm3_4|hasSmallOfferingData")) %>%
       filter(typeFile %>% str_detect("htm")) %>%
       group_by(idAccession) %>%
       mutate(countAccension = 1:n()) %>%
@@ -12521,13 +12521,13 @@ parse_text_headers <- function(text_blob){
 
   data <-
     data %>%
-    mutate_at(data %>% select(matches("datetime")) %>% names(),
+    mutate_at(data %>% select(dplyr::matches("datetime")) %>% names(),
               funs(. %>% lubridate::ymd_hms())) %>%
-    mutate_at(data %>% select(matches("^date[A-Z]")) %>% select(-matches("datetime")) %>% names(),
+    mutate_at(data %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
               funs(. %>% lubridate::ymd())) %>%
-    mutate_at(data %>% select(matches("idCIK|count|monthdayFiscalYearEnd")) %>% names(),
+    mutate_at(data %>% select(dplyr::matches("idCIK|count|monthdayFiscalYearEnd")) %>% names(),
               funs(. %>% as.numeric())) %>%
-    mutate_at(data %>% select(matches("name[A-Z]|type[A-Z]|description|class")) %>% names(),
+    mutate_at(data %>% select(dplyr::matches("name[A-Z]|type[A-Z]|description|class")) %>% names(),
               funs(. %>% stringr::str_to_upper()))
 
   if ('nameCodeSIC' %in% names(data)) {
@@ -12588,7 +12588,7 @@ parse_text_filing <-
              hasXML = has_xml) %>%
       suppressWarnings() %>%
       suppressMessages() %>%
-      select(matches("idCIK"), matches("dateFiling"), idAccession, matches("idForm"), matches("nameCompany"), everything())
+      select(dplyr::matches("idCIK"), dplyr::matches("dateFiling"), idAccession, dplyr::matches("idForm"), dplyr::matches("nameCompany"), everything())
 
     return(data)
 
@@ -14661,16 +14661,16 @@ resolve_form_columns <-
       mutate_if(is.character,
                 funs(ifelse(. %in% c('_', "NULL"), NA, .))) %>%
       mutate_at(data %>% select(
-        matches(
+        dplyr::matches(
           "^name|^description|^idDay|^type|^title|^description|^code|^address|^city|^state|^relationship"
         )
       ) %>% names(),
       funs(. %>% str_to_upper())) %>%
       mutate_at(data %>% select(
-        matches("^price|^count|^amount|^value|^idCIK|^yearIncorporation|^idSIC|^pershare|^number|^percent|^term|^pct|^score|^year")
+        dplyr::matches("^price|^count|^amount|^value|^idCIK|^yearIncorporation|^idSIC|^pershare|^number|^percent|^term|^pct|^score|^year")
       ) %>% names(),
       funs(. %>% as.character() %>% readr::parse_number())) %>%
-      mutate_at(data %>% select(matches("^is|^has")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^is|^has")) %>% names(),
                 funs(
                   ifelse(
                     . %in% c('true', 'false'),
@@ -14678,9 +14678,9 @@ resolve_form_columns <-
                     . %>% as.numeric() %>% as.logical()
                   )
                 )) %>%
-      mutate_at(data %>% select(matches("^date")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^date")) %>% names(),
                 funs(. %>% lubridate::ymd())) %>%
-      mutate_at(data %>% select(matches("^amountValueHoldings|^valueSecurities")) %>% names(),
+      mutate_at(data %>% select(dplyr::matches("^amountValueHoldings|^valueSecurities")) %>% names(),
                 funs(. * 1000)) %>%
       suppressWarnings() %>%
       suppressMessages() %>%
@@ -14920,7 +14920,7 @@ parse_for_tables <-
     if (parse_all_filings) {
       all_data <-
         all_data %>%
-        select(-matches(
+        select(-dplyr::matches(
           "hasAssetFile|isFormD|is13F|isForm3_4|hasSmallOfferingData"
         )) %>%
         distinct()
@@ -14935,8 +14935,8 @@ parse_for_tables <-
       search_df <-
         all_data %>%
         select(dateFiling,
-               matches("typeFile"),
-               matches("idForm"),
+               dplyr::matches("typeFile"),
+               dplyr::matches("idForm"),
                urlSECFilingDirectory) %>%
         distinct()
 
@@ -14951,11 +14951,11 @@ parse_for_tables <-
 
       df_all_filings <-
         df_all_filings %>%
-        nest(-c(idCIK, urlSECFilingDirectory, matches("idAccession")), .key = dataFilings)
+        nest(-c(idCIK, urlSECFilingDirectory, dplyr::matches("idAccession")), .key = dataFilings)
 
       all_data <-
         all_data %>%
-        select(-matches("dataFilings")) %>%
+        select(-dplyr::matches("dataFilings")) %>%
         left_join(df_all_filings %>% select(-one_of(c('idCIK', 'idAccession')))) %>%
         mutate(hasNoFilings = dataFilings %>% map_lgl(is_null)) %>%
         suppressMessages()
@@ -14983,7 +14983,7 @@ parse_for_tables <-
 
       all_filings <-
         all_filings %>%
-        select(matches("idCIK|data")) %>%
+        select(dplyr::matches("idCIK|data")) %>%
         unnest() %>%
         distinct()
 
@@ -15107,15 +15107,15 @@ parse_for_tables <-
           df_data <-
             df_data %>%
             mutate_at(.vars =
-                        df_data %>% select(matches("^amount|^price|^value")) %>% names(),
+                        df_data %>% select(dplyr::matches("^amount|^price|^value")) %>% names(),
                       funs(. %>% formattable::currency(digits = 2))) %>%
             mutate_at(
               .vars =
-                df_data %>% select(matches("^count[A-Z]|^number")) %>% select(-matches("country")) %>% names(),
+                df_data %>% select(dplyr::matches("^count[A-Z]|^number")) %>% select(-dplyr::matches("country")) %>% names(),
               funs(. %>% as.numeric() %>%  formattable::comma(digits = 0))
             ) %>%
             mutate_at(
-              .vars = df_data %>% select(matches("^percent|^pct")) %>% select(-matches("country")) %>% names(),
+              .vars = df_data %>% select(dplyr::matches("^percent|^pct")) %>% select(-dplyr::matches("country")) %>% names(),
               funs(. %>% as.numeric() %>% formattable::percent(digits = 0))
             ) %>%
             select(which(colMeans(is.na(.)) < 1)) %>%
@@ -15805,7 +15805,7 @@ edgar_search_terms <-
           year_end = year_end
         )
       }) %>%
-      dplyr::select(-matches("urlSECSearch")) %>%
+      dplyr::select(-dplyr::matches("urlSECSearch")) %>%
       distinct()
 
 
@@ -15858,7 +15858,7 @@ edgar_search_terms <-
           df_data <-
             all_tables %>%
             filter(nameTable == table_name_df$nameTable[[x]]) %>%
-            select(matches(c('idCIK|nameEntity|dataTable'))) %>%
+            select(dplyr::matches(c('idCIK|nameEntity|dataTable'))) %>%
             unnest() %>%
             suppressWarnings()
 
@@ -15867,7 +15867,7 @@ edgar_search_terms <-
 
           if (has_unnest) {
             base_names <-
-              df_data %>% select(-matches("data")) %>% names()
+              df_data %>% select(-dplyr::matches("data")) %>% names()
 
             df_data_names <-
               names(df_data)[names(df_data) %>% str_detect('data')]
@@ -16223,7 +16223,7 @@ parse_most_recent_stream <-
     data <-
       data %>%
       mutate_at(
-        data %>% select_if(is.character) %>% select(-matches("url")) %>% names(),
+        data %>% select_if(is.character) %>% select(-dplyr::matches("url")) %>% names(),
         funs(ifelse(. == '', NA, .) %>% str_to_upper())
       )
     if ('descriptionFileSize' %in% names(data)) {
@@ -16412,11 +16412,11 @@ edgar_filings_most_recent <-
         sec_filing_most_recent_safe(filing_type = x,
                                              return_message = return_message)
       }) %>%
-      select(matches("dateFiling"), idCIK, nameEntity, idForm, everything())
+      select(dplyr::matches("dateFiling"), idCIK, nameEntity, idForm, everything())
 
     all_data <-
       all_data %>%
-      select(-matches("datetimeAccepted|^is[A-Z]|^has[A-Z]|is13FFiling")) %>%
+      select(-dplyr::matches("datetimeAccepted|^is[A-Z]|^has[A-Z]|is13FFiling")) %>%
       parse_for_tables(
         table_name_initial = table_name_initial,
         parse_all_filings = parse_all_filings,
@@ -16935,9 +16935,9 @@ edgar_filing_streams <-
 
     all_data <-
       all_data %>%
-      mutate_at(all_data %>% select(matches("count")) %>% names(),
+      mutate_at(all_data %>% select(dplyr::matches("count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0))) %>%
-      select(-matches("slugAccension"))
+      select(-dplyr::matches("slugAccension"))
 
     if (return_message) {
       list(
@@ -17093,7 +17093,7 @@ parse_search_page <-
         ) %>%
         suppressWarnings() %>%
         suppressMessages() %>%
-        select(-matches("idLocationEntity"))
+        select(-dplyr::matches("idLocationEntity"))
       df <<-
         df %>%
         bind_rows(data)
@@ -17235,7 +17235,7 @@ edgar_entities_cik <-
 
     all_data <-
       all_data %>%
-      select(-matches("idLocationEntity")) %>%
+      select(-dplyr::matches("idLocationEntity")) %>%
       separate(nameEntity,
                sep = '\\ /',
                into = c('nameEntity', 'idLocationEntity')) %>%
@@ -18854,10 +18854,10 @@ parse_page_subsidiary_table_html <-
       tidyr::separate(nameSubsidiary,
                       sep = '\\(',
                       into = c('nameSubsidiary', 'remove')) %>%
-      select(-matches("remove")) %>%
+      select(-dplyr::matches("remove")) %>%
       mutate(nameSubsidiary = nameSubsidiary %>% str_trim()) %>%
       suppressWarnings() %>%
-      select(-matches("idSubsidiary"))
+      select(-dplyr::matches("idSubsidiary"))
 
     if (has_pct) {
       names(df)[names(df) %>% grep(pct_col, .)] <-
@@ -18865,7 +18865,7 @@ parse_page_subsidiary_table_html <-
 
       df <-
         df %>%
-        mutate_at(df %>% select(matches('pct')) %>% names(),
+        mutate_at(df %>% select(dplyr::matches('pct')) %>% names(),
                   funs(. %>% as.numeric() / 100)) %>%
         suppressWarnings()
     }
@@ -18877,7 +18877,7 @@ parse_page_subsidiary_table_html <-
 
     df <-
       df %>%
-      select(-matches("X"))
+      select(-dplyr::matches("X"))
 
     return(df)
   }
@@ -18934,7 +18934,7 @@ parse_sec_subsidiary_url_html <-
           select(-remove) %>%
           mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
           mutate(idCIK = cik, urlSEC = url) %>%
-          select(-matches("idSubsidiary"))
+          select(-dplyr::matches("idSubsidiary"))
 
         if (return_message) {
           list("Parsed: ", url) %>%
@@ -18991,7 +18991,7 @@ parse_sec_subsidiary_url_html <-
                  everything()) %>%
           select(-idRow) %>%
           suppressMessages() %>%
-          select(-matches("idSubsidiary"))
+          select(-dplyr::matches("idSubsidiary"))
         if (return_message) {
           list("Parsed: ", url) %>%
             purrr::invoke(paste0, .) %>% cat(fill = T)
@@ -19129,7 +19129,7 @@ parse_sec_subsidiary_url_html <-
         mutate(idCIK = cik,
                dateSubsidiaryAsOf = NA,
                urlSEC = url) %>%
-        select(-matches("idSubsidiary|^X"))
+        select(-dplyr::matches("idSubsidiary|^X"))
 
       if (return_message) {
         list("Parsed: ", url) %>%
@@ -19149,7 +19149,7 @@ parse_sec_subsidiary_url_html <-
       df %>%
       filter(!nameSubsidiary == '') %>%
       mutate(idCIK = cik, urlSEC = url) %>%
-      select(-matches("idSubsidiary")) %>%
+      select(-dplyr::matches("idSubsidiary")) %>%
       select(idCIK, everything())
 
     if (return_message) {
@@ -19157,7 +19157,7 @@ parse_sec_subsidiary_url_html <-
         purrr::invoke(paste0, .) %>% cat(fill = T)
     }
 
-    return(df %>% select(-matches("idSubsidiary")))
+    return(df %>% select(-dplyr::matches("idSubsidiary")))
 
   }
 
@@ -19240,7 +19240,7 @@ parse_sec_subsidiary_url_text <-
         return(table_data)
       }) %>%
       mutate(idCIK = cik, urlSEC = url) %>%
-      select(-matches("idSubsidiary")) %>%
+      select(-dplyr::matches("idSubsidiary")) %>%
       select(idCIK,
              nameSubsidiary,
              locationOrganizationSubsidiary,

@@ -74,9 +74,9 @@ get_data_ticker_trade <-
 #' @import dplyr curl jsonlite stringr dplyr purrr lubridate
 #'
 #' @examples
-#' get_data_tickers_trades(tickers = c("VNO", "BXP", "FB"))
+#' tickers_trades(tickers = c("VNO", "BXP", "FB"))
 #'
-get_data_tickers_trades <-
+tickers_trades <-
   function(tickers = c("PEI","bxp") , return_message = TRUE) {
     get_data_ticker_trade_safe <-
       purrr::possibly(get_data_ticker_trade, data_frame())
@@ -89,13 +89,13 @@ get_data_tickers_trades <-
 
     all_data <-
       all_data %>%
-      mutate_at(all_data %>% dplyr::select(matches("^price")) %>% names(),
+      mutate_at(all_data %>% dplyr::select(dplyr::matches("^price")) %>% names(),
                 funs(. %>% formattable::currency(digits = 2))) %>%
-      mutate_at(all_data %>% dplyr::select(matches("^pct")) %>% names(),
+      mutate_at(all_data %>% dplyr::select(dplyr::matches("^pct")) %>% names(),
                 funs((. / 100) %>% formattable::percent(digits = 3))) %>%
-      mutate_at(all_data %>% dplyr::select(matches("^count")) %>% names(),
+      mutate_at(all_data %>% dplyr::select(dplyr::matches("^count")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0))) %>%
-      mutate_at(all_data %>% dplyr::select(matches("^amount")) %>% names(),
+      mutate_at(all_data %>% dplyr::select(dplyr::matches("^amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
       mutate(
         priceYearStart = priceLast / (1 + pctChangeYTD) ,
@@ -109,7 +109,7 @@ get_data_tickers_trades <-
   }
 
 
-get_data_company_ticker <-
+.companies_tickers <-
   function(company = "Netflix", return_message = TRUE) {
   json_url <-
     stringr::str_c("http://dev.markitondemand.com/MODApis/Api/v2/Lookup/json?input=", company)
@@ -142,25 +142,25 @@ get_data_company_ticker <-
 #' @export
 #' @import dplyr curl jsonlite stringr dplyr purrr lubridate
 #' @examples
-get_data_companies_tickers <-
+companies_tickers <-
   function(companies = c("Vornado", "Snap"), include_trades = TRUE,
            return_message = TRUE) {
-    get_data_company_ticker_safe <-
-      purrr::possibly(get_data_company_ticker, data_frame())
+    .companies_tickers_safe <-
+      purrr::possibly(.companies_tickers, data_frame())
 
     all_data <-
       companies %>%
       future_map_dfr(function(x) {
-        get_data_company_ticker_safe(company = x)
+        .companies_tickers_safe(company = x)
       })
 
     if (include_trades) {
       tickers <- all_data$idTicker %>% unique()
-      get_data_tickers_trades_safe <-
-        purrr::possibly(get_data_tickers_trades, data_frame())
+      tickers_trades_safe <-
+        purrr::possibly(tickers_trades, data_frame())
       df_trades <-
         tickers %>%
-        get_data_tickers_trades(return_message = return_message) %>%
+        tickers_trades(return_message = return_message) %>%
         suppressMessages()
 
       all_data <-

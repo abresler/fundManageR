@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">fundManageR</a>
-        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.221</span>
+        <span class="label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.22103</span>
       </span>
     </div>
 
@@ -139,18 +139,18 @@
 <a href="#package-dependencies" class="anchor"></a>Package Dependencies</h3>
 <p>In order for this package to work you need the packages listed below must be installed. You can run the code snippet to install them if necessary.</p>
 <p>For <code>pdftools</code> you may need to follow the installation instructions <a href="https://github.com/ropensci/pdftools">here</a>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1">packages &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="st">  </span><span class="kw">c</span>(<span class="st">"curl"</span>, <span class="st">"curlconverter"</span>, <span class="st">"dplyr"</span>, <span class="st">"formattable"</span>, <span class="st">"httr"</span>, <span class="st">"jsonlite"</span>, <span class="st">'devtools'</span>,</a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">    <span class="st">"lazyeval"</span>, <span class="st">"lubridate"</span>, <span class="st">"magrittr"</span>, <span class="st">"pdftools"</span>, <span class="st">"purrr"</span>, <span class="st">"readr"</span>,  <span class="st">'quantmod'</span>,</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">    <span class="st">"readxl"</span>, <span class="st">"rvest"</span>, <span class="st">"stringi"</span>, <span class="st">"stringr"</span>, <span class="st">"tibble"</span>, <span class="st">"tidyr"</span>, <span class="st">'tidyverse'</span>,</a>
-<a class="sourceLine" id="cb1-5" data-line-number="5">    <span class="st">"xml2"</span>, <span class="st">""</span>)</a>
-<a class="sourceLine" id="cb1-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb1-7" data-line-number="7"><span class="kw">lapply</span>(packages, install.packages)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">packages &lt;-<span class="st"> </span></a>
+<a class="sourceLine" id="cb1-2" title="2"><span class="st">  </span><span class="kw">c</span>(<span class="st">"curl"</span>, <span class="st">"curlconverter"</span>, <span class="st">"dplyr"</span>, <span class="st">"formattable"</span>, <span class="st">"httr"</span>, <span class="st">"jsonlite"</span>, <span class="st">'devtools'</span>,</a>
+<a class="sourceLine" id="cb1-3" title="3">    <span class="st">"lazyeval"</span>, <span class="st">"lubridate"</span>, <span class="st">"magrittr"</span>, <span class="st">"pdftools"</span>, <span class="st">"purrr"</span>, <span class="st">"readr"</span>,  <span class="st">'quantmod'</span>,</a>
+<a class="sourceLine" id="cb1-4" title="4">    <span class="st">"readxl"</span>, <span class="st">"rvest"</span>, <span class="st">"stringi"</span>, <span class="st">"stringr"</span>, <span class="st">"tibble"</span>, <span class="st">"tidyr"</span>, <span class="st">'tidyverse'</span>,</a>
+<a class="sourceLine" id="cb1-5" title="5">    <span class="st">"xml2"</span>, <span class="st">""</span>)</a>
+<a class="sourceLine" id="cb1-6" title="6"></a>
+<a class="sourceLine" id="cb1-7" title="7"><span class="kw">lapply</span>(packages, install.packages)</a></code></pre></div>
 <div id="package-installation" class="section level4">
 <h4 class="hasAnchor">
 <a href="#package-installation" class="anchor"></a><strong>Package Installation</strong>
 </h4>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">devtools<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/devtools/topics/reexports">install_github</a></span>(<span class="st">"abresler/fundManageR"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">devtools<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/devtools/topics/reexports">install_github</a></span>(<span class="st">"abresler/fundManageR"</span>)</a></code></pre></div>
 </div>
 <div id="package-idioms" class="section level4">
 <h4 class="hasAnchor">
@@ -200,10 +200,10 @@
 <a href="#parallel-computing" class="anchor"></a>Parallel Computing</h2>
 <p>This package now supports parallel computing for all iterative functions. In order to utilize this just run `<code><a href="http://www.rdocumentation.org/packages/future/topics/plan">future::plan</a></code> with your selected method.</p>
 <p>For example to use muiltiprocess.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="kw">library</span>(fundManageR)</a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">library</span>(future)</a>
-<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw"><a href="http://www.rdocumentation.org/packages/future/topics/plan">plan</a></span>(multiprocess) </a>
-<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="kw">get_game_logs</span>(<span class="dt">seasons =</span> <span class="dv">2010</span><span class="op">:</span><span class="dv">2019</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">library</span>(fundManageR)</a>
+<a class="sourceLine" id="cb3-2" title="2"><span class="kw">library</span>(future)</a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="kw"><a href="http://www.rdocumentation.org/packages/future/topics/plan">plan</a></span>(multiprocess) </a>
+<a class="sourceLine" id="cb3-4" title="4"><span class="kw"><a href="reference/fred_symbols.html">fred_symbols</a></span>(<span class="dt">symbols =</span> <span class="kw">c</span>(<span class="st">"DGS10"</span>, <span class="st">"DGS2"</span>, <span class="st">"DGS30"</span>))</a></code></pre></div>
 <div id="adv-api" class="section level3">
 <h3 class="hasAnchor">
 <a href="#adv-api" class="anchor"></a>ADV API</h3>
@@ -253,46 +253,46 @@
 <div id="most-recent-adv-summary-data" class="section level4">
 <h4 class="hasAnchor">
 <a href="#most-recent-adv-summary-data" class="anchor"></a>Most Recent ADV Summary Data</h4>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">library</span>(fundManageR)</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">recent_period_summary &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="st">  </span><span class="kw"><a href="reference/adv_managers_current_period_summary.html">adv_managers_current_period_summary</a></span>(<span class="dt">file_directory =</span> <span class="ot">NULL</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw">library</span>(fundManageR)</a>
+<a class="sourceLine" id="cb4-2" title="2">recent_period_summary &lt;-<span class="st"> </span></a>
+<a class="sourceLine" id="cb4-3" title="3"><span class="st">  </span><span class="kw"><a href="reference/adv_managers_current_period_summary.html">adv_managers_current_period_summary</a></span>(<span class="dt">file_directory =</span> <span class="ot">NULL</span>)</a></code></pre></div>
 </div>
 <div id="detailed-manager-search" class="section level4">
 <h4 class="hasAnchor">
 <a href="#detailed-manager-search" class="anchor"></a>Detailed Manager Search</h4>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">test_manager &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="st">  </span>fundManageR<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/fundManageR/topics/adv_managers_filings">adv_managers_filings</a></span>(</a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">    <span class="dt">search_names =</span> <span class="st">'EJF Capital'</span>,</a>
-<a class="sourceLine" id="cb5-4" data-line-number="4">    <span class="dt">crd_ids =</span> <span class="dv">156663</span>,</a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">    <span class="dt">all_sections =</span> T,</a>
-<a class="sourceLine" id="cb5-6" data-line-number="6">    <span class="dt">assign_to_environment =</span> T</a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">  )</a></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1">test_manager &lt;-<span class="st"> </span></a>
+<a class="sourceLine" id="cb5-2" title="2"><span class="st">  </span>fundManageR<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/fundManageR/topics/adv_managers_filings">adv_managers_filings</a></span>(</a>
+<a class="sourceLine" id="cb5-3" title="3">    <span class="dt">search_names =</span> <span class="st">'EJF Capital'</span>,</a>
+<a class="sourceLine" id="cb5-4" title="4">    <span class="dt">crd_ids =</span> <span class="dv">156663</span>,</a>
+<a class="sourceLine" id="cb5-5" title="5">    <span class="dt">all_sections =</span> T,</a>
+<a class="sourceLine" id="cb5-6" title="6">    <span class="dt">assign_to_environment =</span> T</a>
+<a class="sourceLine" id="cb5-7" title="7">  )</a></code></pre></div>
 </div>
 <div id="ycombinator-alumni" class="section level4">
 <h4 class="hasAnchor">
 <a href="#ycombinator-alumni" class="anchor"></a>YCombinator Alumni</h4>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">ycombinator_alumni &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="st">  </span>fundManageR<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/fundManageR/topics/ycombinator_alumni">ycombinator_alumni</a></span>()</a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">ycombinator_alumni <span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="st">  </span><span class="kw"><a href="reference/visualize_data_frame.html">visualize_data_frame</a></span>(<span class="dt">edit =</span> F) <span class="co">## visualize it</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">ycombinator_alumni &lt;-<span class="st"> </span></a>
+<a class="sourceLine" id="cb6-2" title="2"><span class="st">  </span>fundManageR<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/fundManageR/topics/ycombinator_alumni">ycombinator_alumni</a></span>()</a>
+<a class="sourceLine" id="cb6-3" title="3"></a>
+<a class="sourceLine" id="cb6-4" title="4">ycombinator_alumni <span class="op">%&gt;%</span><span class="st"> </span></a>
+<a class="sourceLine" id="cb6-5" title="5"><span class="st">  </span><span class="kw"><a href="reference/visualize_data_frame.html">visualize_data_frame</a></span>(<span class="dt">edit =</span> F) <span class="co">## visualize it</span></a></code></pre></div>
 <div id="irr-calculation" class="section level5">
 <h5 class="hasAnchor">
 <a href="#irr-calculation" class="anchor"></a>IRR Calculation</h5>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">library</span>(dplyr)</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2">dates &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="st">  </span><span class="kw">c</span>(<span class="st">"2015-10-09"</span>, <span class="st">"2016-09-26"</span>) <span class="op">%&gt;%</span><span class="st"> </span>lubridate<span class="op">::</span>ymd</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">land_purchase_price &lt;-</a>
-<a class="sourceLine" id="cb7-6" data-line-number="6"><span class="st">  </span><span class="dv">-1000000</span> <span class="op">%&gt;%</span><span class="st"> </span>formattable<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/formattable/topics/currency">currency</a></span>()</a>
-<a class="sourceLine" id="cb7-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb7-8" data-line-number="8">land_sale_price &lt;-</a>
-<a class="sourceLine" id="cb7-9" data-line-number="9"><span class="st">  </span><span class="dv">1300000</span> <span class="op">%&gt;%</span><span class="st"> </span>formattable<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/formattable/topics/currency">currency</a></span>()</a>
-<a class="sourceLine" id="cb7-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb7-11" data-line-number="11">cash_flows &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb7-12" data-line-number="12"><span class="st">  </span><span class="kw">c</span>(land_purchase_price, land_sale_price)</a>
-<a class="sourceLine" id="cb7-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb7-14" data-line-number="14">fundManageR<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/fundManageR/topics/calculate_irr_periods">calculate_irr_periods</a></span>(<span class="dt">dates =</span> dates, <span class="dt">cash_flows =</span> cash_flows, <span class="dt">return_wide =</span> T)</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="kw">library</span>(dplyr)</a>
+<a class="sourceLine" id="cb7-2" title="2">dates &lt;-<span class="st"> </span></a>
+<a class="sourceLine" id="cb7-3" title="3"><span class="st">  </span><span class="kw">c</span>(<span class="st">"2015-10-09"</span>, <span class="st">"2016-09-26"</span>) <span class="op">%&gt;%</span><span class="st"> </span>lubridate<span class="op">::</span>ymd</a>
+<a class="sourceLine" id="cb7-4" title="4"></a>
+<a class="sourceLine" id="cb7-5" title="5">land_purchase_price &lt;-</a>
+<a class="sourceLine" id="cb7-6" title="6"><span class="st">  </span><span class="dv">-1000000</span> <span class="op">%&gt;%</span><span class="st"> </span>formattable<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/formattable/topics/currency">currency</a></span>()</a>
+<a class="sourceLine" id="cb7-7" title="7"></a>
+<a class="sourceLine" id="cb7-8" title="8">land_sale_price &lt;-</a>
+<a class="sourceLine" id="cb7-9" title="9"><span class="st">  </span><span class="dv">1300000</span> <span class="op">%&gt;%</span><span class="st"> </span>formattable<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/formattable/topics/currency">currency</a></span>()</a>
+<a class="sourceLine" id="cb7-10" title="10"></a>
+<a class="sourceLine" id="cb7-11" title="11">cash_flows &lt;-<span class="st"> </span></a>
+<a class="sourceLine" id="cb7-12" title="12"><span class="st">  </span><span class="kw">c</span>(land_purchase_price, land_sale_price)</a>
+<a class="sourceLine" id="cb7-13" title="13"></a>
+<a class="sourceLine" id="cb7-14" title="14">fundManageR<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/fundManageR/topics/calculate_irr_periods">calculate_irr_periods</a></span>(<span class="dt">dates =</span> dates, <span class="dt">cash_flows =</span> cash_flows, <span class="dt">return_wide =</span> T)</a></code></pre></div>
 </div>
 </div>
 </div>

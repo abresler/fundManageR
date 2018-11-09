@@ -82,7 +82,7 @@ tidy_column_formats <-
         dplyr::matches(
           "^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]"
         )
-      ) %>% select(-matches("nameElement")) %>% names(),
+      ) %>% select(-dplyr::matches("nameElement")) %>% names(),
       funs(. %>% str_to_upper())) %>%
       mutate_at(
         data %>% select(dplyr::matches("^amount")) %>% names(),

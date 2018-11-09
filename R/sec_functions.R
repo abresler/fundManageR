@@ -141,7 +141,7 @@ parse_foia_url_df <-
     } else {
       data <-
         data %>%
-        select(-matches("^X")) %>%
+        select(-dplyr::matches("^X")) %>%
         purrr::set_names(
           c(
             'idSECRequest',
@@ -161,10 +161,10 @@ parse_foia_url_df <-
 
     data <-
       data %>%
-      mutate_at(.vars = data %>% select(matches("date")) %>% names,
+      mutate_at(.vars = data %>% select(dplyr::matches("date")) %>% names,
                 funs(. %>% lubridate::mdy())) %>%
       mutate_at(
-        .vars = data %>% select(matches("^name|^description|^category")) %>% names,
+        .vars = data %>% select(dplyr::matches("^name|^description|^category")) %>% names,
         funs(. %>% str_replace('\\-', '') %>% stringr::str_to_upper())
       ) %>%
       mutate(
@@ -545,10 +545,10 @@ parse_sec_cusip_url <-
         pctRateNote = pctRateNote %>% readr::parse_number() / 100,
         isADR = descriptionIssuer %>% str_detect("\\ ADR")
       ) %>%
-      select(-matches("ignore")) %>%
+      select(-dplyr::matches("ignore")) %>%
       select(idCUSIP:nameSecurity,
-             matches("is"),
-             matches("pct"),
+             dplyr::matches("is"),
+             dplyr::matches("pct"),
              everything())
 
     if (return_message) {
@@ -762,7 +762,7 @@ parse_closed_end_fund_url <-
         nameManager = ifelse(!nameManager1 %>% is.na(), nameManager1, nameManager),
         urlSECData = url
       ) %>%
-      select(-matches("nameManager1|hasCO")) %>%
+      select(-dplyr::matches("nameManager1|hasCO")) %>%
       select(
         idSEC,
         idCIK,
@@ -1417,7 +1417,7 @@ parse_brokers_url <-
     df <-
       url %>%
       read_tsv(col_names = FALSE) %>%
-      select(-matches("X9")) %>%
+      select(-dplyr::matches("X9")) %>%
       mutate_all(str_to_upper) %>%
       purrr::set_names(
         c(
@@ -2191,7 +2191,7 @@ sec_securities_metrics_by_exchange <-
 
     all_data <-
       all_data %>%
-      mutate_at(.vars = all_data %>% select(matches("^count|^volume")) %>% names(),
+      mutate_at(.vars = all_data %>% select(dplyr::matches("^count|^volume")) %>% names(),
                 funs(. %>% formattable::comma(digits = 0)))
 
     if (return_message) {
@@ -2459,14 +2459,14 @@ parse_xbrl_url <-
     sub <-
       sub %>%
       mutate_at(
-        sub %>% select(matches("^date[A-Z]")) %>% select(-matches("datetime")) %>% names(),
+        sub %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
         funs(. %>% as.numeric() %>% lubridate::ymd())
       ) %>%
-      mutate_at(sub %>% select(matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
+      mutate_at(sub %>% select(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
                 funs(. %>% as.numeric())) %>%
-      mutate_at(sub %>% select(matches("^is[A-Z]|^has[A-Z]")) %>% names(),
+      mutate_at(sub %>% select(dplyr::matches("^is[A-Z]|^has[A-Z]")) %>% names(),
                 funs(. %>% as.logical())) %>%
-      mutate_at(sub %>% select(matches("^amount")) %>% names(),
+      mutate_at(sub %>% select(dplyr::matches("^amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
       suppressWarnings() %>%
       mutate(
@@ -2540,14 +2540,14 @@ parse_xbrl_url <-
     pre <-
       pre %>%
       mutate_at(
-        pre %>% select(matches("^date[A-Z]")) %>% select(-matches("datetime")) %>% names(),
+        pre %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
         funs(. %>% as.numeric() %>% lubridate::ymd())
       ) %>%
-      mutate_at(pre %>% select(matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
+      mutate_at(pre %>% select(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
                 funs(. %>% as.numeric())) %>%
-      mutate_at(pre %>% select(matches("^is[A-Z]|^has[A-Z]")) %>% names(),
+      mutate_at(pre %>% select(dplyr::matches("^is[A-Z]|^has[A-Z]")) %>% names(),
                 funs(. %>% as.logical())) %>%
-      mutate_at(pre %>% select(matches("^amount")) %>% names(),
+      mutate_at(pre %>% select(dplyr::matches("^amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
       suppressWarnings() %>%
       unite(idReportLine,
@@ -2591,14 +2591,14 @@ parse_xbrl_url <-
     num <-
       num %>%
       mutate_at(
-        num %>% select(matches("^date[A-Z]")) %>% select(-matches("datetime")) %>% names(),
+        num %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
         funs(. %>% as.numeric() %>% lubridate::ymd())
       ) %>%
-      mutate_at(num %>% select(matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
+      mutate_at(num %>% select(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
                 funs(. %>% as.numeric())) %>%
-      mutate_at(num %>% select(matches("^is[A-Z]|^has[A-Z]")) %>% names(),
+      mutate_at(num %>% select(dplyr::matches("^is[A-Z]|^has[A-Z]")) %>% names(),
                 funs(. %>% as.logical())) %>%
-      mutate_at(num %>% select(matches("^amount")) %>% names(),
+      mutate_at(num %>% select(dplyr::matches("^amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
       left_join(data_frame(
         typeUOM = c("AUD", "CAD", "CHF", "EUR", "JPY", "shares", "USD"),
@@ -2633,14 +2633,14 @@ parse_xbrl_url <-
     tag <-
       tag %>%
       mutate_at(
-        tag %>% select(matches("^date[A-Z]")) %>% select(-matches("datetime")) %>% names(),
+        tag %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
         funs(. %>% as.numeric() %>% lubridate::ymd())
       ) %>%
-      mutate_at(tag %>% select(matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
+      mutate_at(tag %>% select(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
                 funs(. %>% as.numeric())) %>%
-      mutate_at(tag %>% select(matches("^is[A-Z]|^has[A-Z]")) %>% names(),
+      mutate_at(tag %>% select(dplyr::matches("^is[A-Z]|^has[A-Z]")) %>% names(),
                 funs(. %>% as.logical())) %>%
-      mutate_at(tag %>% select(matches("^amount")) %>% names(),
+      mutate_at(tag %>% select(dplyr::matches("^amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
       suppressWarnings() %>%
       left_join(data_frame(
@@ -2834,11 +2834,11 @@ sec_xbrl_periods <-
           df_data <-
             df_data %>%
             mutate_at(.vars =
-                        df_data %>% select(matches("^amount|^price|^value")) %>% names(),
+                        df_data %>% select(dplyr::matches("^amount|^price|^value")) %>% names(),
                       funs(. %>% formattable::currency(digits = 2))) %>%
             mutate_at(
               .vars =
-                df_data %>% select(matches("^count[A-Z]")) %>% select(-matches("country")) %>% names(),
+                df_data %>% select(dplyr::matches("^count[A-Z]")) %>% select(-dplyr::matches("country")) %>% names(),
               funs(. %>% formattable::comma(digits = 0))
             )
 
