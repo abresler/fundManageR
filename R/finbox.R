@@ -1,9 +1,48 @@
 #gdeltr2::load_needed_packages(c('dplyr', 'rvest', 'jsonlite', 'stringr', 'purrr', 'lubridate', 'stringi', 'tidyr', 'rlang', 'curl', 'jsonlite', 'anytime', 'reticulate'))
 
+# munge -------------------------------------------------------------------
+
+.extract_date <-
+  function(period = "6 days ago", return_character = T) {
+    period <-
+      period %>% str_replace_all("^a |^an ", "1 ")
+    time_number <-
+      period %>% as.character() %>% readr::parse_number()
+    period_slug <- str_to_lower(period)
+    time_span <- dplyr::case_when(
+      period_slug %>% str_detect("second") ~ "secs",
+      period_slug %>% str_detect("minute") ~ "mins",
+      period_slug %>% str_detect("hour") ~ "hours",
+      period_slug %>% str_detect("day") ~ "days",
+      period_slug %>% str_detect("week") ~ "weeks",
+      period_slug %>% str_detect("month") ~ "months",
+      period_slug %>% str_detect("year") ~ "years"
+    )
+
+    if (time_span %>% str_detect("year")) {
+      x <- Sys.time() - lubridate::years(time_number)
+
+    }
+
+    if  (time_span %>% str_detect("month")) {
+      x <-
+        Sys.time() %m-% months(time_number)
+    }
+
+    if (!period_slug %>% str_detect("month|year")) {
+      x <-
+        Sys.time() - as.difftime(time_number, units = time_span)
+    }
+
+    if (return_character) {
+      x <- as.character(x)
+    }
+    x
+  }
 
 # dictionaries ------------------------------------------------------------
 
-finbox_metric_names <-
+.finbox_metric_names <-
   function() {
     structure(
         list(
@@ -1095,7 +1134,7 @@ finbox_metric_names <-
                 nameFinbox))
   }
 
-get_dictionary_finbox_names <-
+.get_dictionary_finbox_names <-
   function() {
     data_frame(
       nameFinbox = c(
@@ -1151,7 +1190,7 @@ get_dictionary_finbox_names <-
 
 
   }
-get_finbox_base_names <- function() {
+.get_finbox_base_names <- function() {
   df_finbox <- data_frame(
     nameFinbox = c(
       "market_change_today",
@@ -2008,12 +2047,12 @@ get_finbox_base_names <- function() {
   df_finbox
 }
 
-parse_metrics <- function(metrics,
+.parse_metrics <- function(metrics,
                           multiple_types,
                           period_types) {
   if (!'df_finbox_names' %>% exists()) {
     df_finbox_names <-
-      get_finbox_base_names()
+      .get_finbox_base_names()
 
   }
   slug_metrics <- c()
@@ -2098,12 +2137,12 @@ parse_metrics <- function(metrics,
   slug_metrics
 }
 
-parse_actual_names <-
+.parse_actual_names <-
   function(df) {
 
     if (!'df_names' %>% exists()) {
       df_names <-
-        get_dictionary_finbox_names()
+        .get_dictionary_finbox_names()
     }
 
     actual_names <-
@@ -2122,7 +2161,7 @@ parse_actual_names <-
     actual_names
   }
 
-clean_names <-
+.clean_names <-
   function(data) {
     data <-
       data %>%
@@ -2213,8 +2252,8 @@ clean_names <-
 #' @importFrom jsonlite fromJSON
 #'
 #' @examples
-#' get_dictionary_finbox_companies()
-get_dictionary_finbox_companies <-
+#' dictionary_finbox_companies()
+dictionary_finbox_companies <-
   function(return_message = TRUE) {
     data <-
       "https://api.finbox.io/beta/companies" %>%
@@ -2258,11 +2297,11 @@ get_dictionary_finbox_companies <-
 #'
 #' @return
 #' @export
-#'
-#' @examples
 #' @import purrr dplyr stringr
 #' @importFrom jsonlite fromJSON
-get_dictionary_finbox_metrics <-
+#' @examples
+#' dictionary_finbox_metrics()
+dictionary_finbox_metrics <-
   function() {
     data <-
       "https://api.finbox.io/beta/metrics" %>%
@@ -2277,7 +2316,8 @@ get_dictionary_finbox_metrics <-
     df_periods <-
       seq_along(data$data$periods) %>%
       future_map_dfr(function(x) {
-        null_value <- data$data$periods[[x]] %>% purrr::is_null()
+        null_value <-
+          data$data$periods[[x]] %>% purrr::is_null()
         if (null_value) {
           return(data_frame())
         }
@@ -2296,12 +2336,7 @@ get_dictionary_finbox_metrics <-
       dplyr::select(-idRow) %>%
       suppressMessages()
 
-    df_metrics <- finbox_metric_names()
-
-    df_missing <-
-      df_metrics %>% anti_join(df)
-    left_join() %>%
-      suppressMessages()
+    df_metrics <- .finbox_metric_names()
 
     df <-
       df %>%
@@ -2368,7 +2403,7 @@ tickers_metrics <-
     tickers %>% str_c(collapse = ',')
 
   slug_metrics <-
-    parse_metrics(metrics = metrics,
+    .parse_metrics(metrics = metrics,
                   multiple_types = multiple_types,
                   period_types = period_types)
 
@@ -2400,7 +2435,7 @@ tickers_metrics <-
     )
 
   df_fb_names <-
-    get_finbox_base_names()
+    .get_finbox_base_names()
 
   actual_names <-
     1:nrow(df_names) %>%
@@ -2430,7 +2465,7 @@ tickers_metrics <-
 
   data <-
     data %>%
-    clean_names()
+    .clean_names()
   gc()
   data
 }
@@ -2444,7 +2479,7 @@ tickers_metrics <-
 
 # tickers -----------------------------------------------------------------
 
-get_ticker_information <- function(ticker = "VNO") {
+.get_ticker_information <- function(ticker = "VNO") {
   curl_text <-
     "curl 'https://api.finbox.io/v2/query?raw=true' -H 'Pragma: no-cache' -H 'Origin: https://finbox.io' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-US,en;q=0.8' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.24 Safari/537.36' -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'Cache-Control: no-cache' -H 'Referer: https://finbox.io/VNO/models/historical-10yr' -H 'Cookie: _gat_UA-52372956-2=1; _lorid=80573-1497191056992-ee322de3d89c6948; _lo_v=1; _loups=1-0; intercom-id-emiw4mmr=f08d4c83-c1d5-4d83-87c0-0c205e69cdc4; lo_session_in=1; _ga=GA1.2.478469300.1497191057; _gid=GA1.2.501285166.1497191057; _lo_u=1' -H 'Connection: keep-alive' -H 'DNT: 1' --data-binary '{\"query\":\"\\n    query load_company ($ticker: String!) {\\n      company (ticker: $ticker) {\\n        \\n  name\\n  short_name\\n  ticker\\n  sector\\n  industry\\n  country\\n  exchange\\n  last_reported: last_period_end_date\\n  description: short_description\\n  index\\n  similar: benchmarks\\n  enabled\\n  stats\\n  financials\\n  \\nfinql {\\n  stock_price\\n  market_change_today\\n  market_change_today_pct\\n  year_range_low\\n  year_range_high\\n  analyst_price_target\\n  next_earnings_date\\n}\\n  \\nfair_value {\\n  market\\n  analyst_target\\n  ranges\\n  averages\\n  confidence\\n  models\\n}\\n  \\ntemplates {\\n  _id\\n  slug\\n  build_date\\n  name\\n  verified\\n  category\\n  checks_passed\\n}\\n  \\nnews {\\n  title\\n  link\\n  published\\n  host\\n}\\n\\n        \\n\\n        \\n\\n      }\\n    }\\n  \",\"variables\":{\"ticker\":\"ticker_name\"}}' --compressed"
 
@@ -2458,8 +2493,11 @@ get_ticker_information <- function(ticker = "VNO") {
     suppressMessages() %>%
     fromJSON()
 
+  .parse_ticker_json_data_safe <-
+    purrr::possibly(.parse_ticker_json_data, data_frame())
   all_data <-
-    json_data %>% parse_ticker_json_data()
+    json_data %>%
+    .parse_ticker_json_data_safe()
 
   all_data <-
     all_data %>%
@@ -2469,13 +2507,16 @@ get_ticker_information <- function(ticker = "VNO") {
   all_data
 }
 
-parse_ticker_json_data <-
+.parse_ticker_json_data <-
   function(json_data) {
-    data <- json_data$data$company
-    parts <- data %>% names()
+    data <-
+      json_data$data$company
+
+    parts <-
+      data %>% names()
 
     df_names <-
-      get_dictionary_finbox_names()
+      .get_dictionary_finbox_names()
 
 
     df_classes <-
@@ -2518,33 +2559,39 @@ parse_ticker_json_data <-
 
     df_description <-
       df_description %>%
-      dplyr::select(-one_of("ticker")) %>%
-      purrr::set_names(
-        c(
-          'nameCompany',
-          'nameCompanyShort',
-          'sectorCompany',
-          'industryCompany',
-          'slugExchange',
-          'dateEarningsLast',
-          'descriptionCompany',
-          'idTickersSimilar'
-        )
-      )
+      dplyr::select(-one_of("ticker"))
 
-    df_description <-
-      df_description %>%
-      mutate(
-        dateEarningsLast = dateEarningsLast %>% substr(4, nchar(dateEarningsLast)),
-        dateEarningsLast = dateEarningsLast %>% substr(1, 12) %>% lubridate::mdy(),
-        idExchange =
+    if (df_description %>% ncol() == 8) {
+      df_description <-
+        df_description %>%
+        purrr::set_names(
+          c(
+            'nameCompany',
+            'nameCompanyShort',
+            'sectorCompany',
+            'industryCompany',
+            'slugExchange',
+            'dateEarningsLast',
+            'descriptionCompany',
+            'idTickersSimilar'
+          )
+        )
+
+      df_description <-
+        df_description %>%
+        mutate(
+          dateEarningsLast = dateEarningsLast %>% substr(4, nchar(dateEarningsLast)),
+          dateEarningsLast = dateEarningsLast %>% substr(1, 12) %>% lubridate::mdy(),
+          idExchange =
             case_when(
               slugExchange %>% str_detect("NYSE") ~ "NYSE",
               slugExchange %>% str_detect("Nasdaq") ~ "NASDAQ",
               slugExchange %>% str_detect("Nasdaq") ~ "OTC"
 
             )
-      )
+        )
+    }
+
 
     list_cols <-
       df_classes %>%
@@ -2556,7 +2603,6 @@ parse_ticker_json_data <-
       future_map_dfr(function(x){
         nameData <-
           list_cols[[x]]
-
         list_data <-
           data[nameData][[nameData]]
 
@@ -2568,7 +2614,7 @@ parse_ticker_json_data <-
             list_data %>% flatten_df()
 
           actual_names <-
-            parse_actual_names(df = df)
+            .parse_actual_names(df = df)
 
           df <-
             df %>%
@@ -2700,20 +2746,21 @@ parse_ticker_json_data <-
                     flatten_df() %>%
                     gather(typeParty, value) %>%
                     mutate(nameItem = x,
-                           value = value %>% readr::parse_number()) %>%
+                           value = value %>% as.character() %>%  readr::parse_number()) %>%
                     spread(nameItem, value)
                 }) %>%
                 suppressWarnings()
 
               all_data <-
                 all_data %>% reduce(left_join) %>%
-                suppressWarnings()
+                suppressWarnings() %>%
+                suppressMessages()
 
 
             })
 
           data <-
-            list_dfs %>% purrr::reduce(left_join)
+            list_dfs %>% purrr::reduce(left_join) %>% suppressMessages()
 
           data <-
             data_frame(nameTable = list_cols[x],
@@ -2774,7 +2821,6 @@ parse_ticker_json_data <-
       })
 
     df_cols <-
-      data_cols <-
       df_classes %>%
       filter(classPart %in% c('data.frame')) %>%
       pull(namePart)
@@ -2784,7 +2830,6 @@ parse_ticker_json_data <-
       future_map_dfr(function(x){
         nameData <-
           df_cols[[x]]
-
         list_data <-
           data[nameData][[nameData]] %>%
           as_data_frame()
@@ -2794,7 +2839,15 @@ parse_ticker_json_data <-
             list_data %>%
             purrr::set_names(c('titleArticle',
                                'urlArticle',
-                               'timeSincePublished', 'domiainArticle'))
+                               'timeSincePublished', 'domainArticle'))
+
+          list_data <-
+            list_data %>%
+            mutate(datetimeArticle = timeSincePublished %>% map_chr(.extract_date) %>% ymd_hms(),
+                   dateArticle = datetimeArticle %>% as.Date()) %>%
+            select(one_of(c("datetimeArticle","dateArticle", "domainArticle", "titleArticle", "urlArticle"))) %>%
+            arrange(datetimeArticle)
+
         }
 
         if (nameData == 'templates') {
@@ -2828,18 +2881,18 @@ parse_ticker_json_data <-
 #'
 #' @return
 #' @export
-#' @import glue purrr curl rvest jsonlite dplyr anytime reticulate lubridate stringr
+#' @import glue purrr curl rvest jsonlite dplyr anytime reticulate lubridate stringr future furrr
 #' @examples
 finbox_tickers <-
   function(tickers = c("VNO", "BXP"),
            assign_to_environment = TRUE) {
-    get_ticker_information_safe <-
-      purrr::possibly(get_ticker_information, data_frame())
+    .get_ticker_information_safe <-
+      purrr::possibly(.get_ticker_information, data_frame())
 
     all_data <-
       tickers %>%
       future_map_dfr(function(x){
-        get_ticker_information_safe(ticker = x)
+        .get_ticker_information_safe(ticker = x)
       }) %>%
       suppressMessages() %>%
       suppressWarnings()

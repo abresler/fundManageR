@@ -1,4 +1,23 @@
-get_data_ticker_trade <-
+.extract_date_time <-
+  function(x = "Mon Nov 12 10:42:35 UTC-05:00 2018") {
+    total_chars <- x %>% nchar()
+    year_time <-
+      x %>% substr(total_chars -3 , total_chars)
+
+    non_year <-
+      x %>% substr(1, total_chars -4) %>% str_trim() %>% str_split("\\ UTC") %>%
+      flatten_chr() %>% .[[1]]
+
+    md <- non_year %>% substr(4, nchar(non_year)) %>% str_trim()
+
+    x <-
+      glue::glue("{year_time} {md}") %>% lubridate::ymd_hms()
+
+    x
+  }
+
+
+.get_data_ticker_trade <-
   function(ticker = "bxp" , return_message = TRUE) {
   json_url <-
     stringr::str_c('http://dev.markitondemand.com/MODApis/Api/v2/Quote/json?symbol=', ticker)
@@ -20,7 +39,7 @@ get_data_ticker_trade <-
         'priceLast',
         'priceChange',
         'pctChange',
-        'datetimePrice',
+        'datetimeTradeLast',
         'dateMS',
         'amountMarketCapitalization',
         'countVolumeShares',
@@ -32,35 +51,20 @@ get_data_ticker_trade <-
       )
     ) %>%
     dplyr::select(-c(dateMS, statusSearch)) %>%
-    mutate(datetimePrice = datetimePrice %>% str_replace_all(" UTC-04:00 ", ' '))
+    mutate(datetimeTradeLast = datetimeTradeLast %>% str_replace_all(" UTC-04:00 ", ' '))
 
-  time_parts <- df_ticker$datetimePrice %>% str_split('\\ ') %>% flatten_chr()
+  date_time_price <- df_ticker$datetimeTradeLast %>% .extract_date_time()
 
-  date_na <- list(time_parts[5], time_parts[2], time_parts[3], time_parts[4]) %>%
-    purrr::reduce(paste0) %>%
-    lubridate::ymd_hms() %>%
-    is.na()
-  if (date_na){
-    date_time_price <-
-      list(time_parts[5], time_parts[2], time_parts[3]) %>%
-      purrr::reduce(paste0) %>%
-      lubridate::ymd()
-  } else {
-    date_time_price <-
-      list(time_parts[5], time_parts[2], time_parts[3], time_parts[4]) %>%
-      purrr::reduce(paste0) %>%
-      lubridate::ymd_hms()
-  }
+  df_ticker <- df_ticker %>%
+    mutate(datetimeTradeLast = date_time_price) %>%
+    mutate(countSharesOutstanding = amountMarketCapitalization / priceLast) %>%
+    select(datetimeTradeLast, everything())
 
-  df_ticker %>%
-    mutate(dateTimePrice = date_time_price)
-  df_ticker <-
-    df_ticker %>%
-    mutate(countSharesOutstanding = amountMarketCapitalization / priceLast)
   if (return_message) {
-    list("Parsed most recent data for ", ticker)
+    glue::glue("Parsed trades for {str_to_upper(ticker)}") %>% cat(fill = T)
   }
-  return(df_ticker)
+
+df_ticker
 }
 
 
@@ -78,13 +82,13 @@ get_data_ticker_trade <-
 #'
 tickers_trades <-
   function(tickers = c("PEI","bxp") , return_message = TRUE) {
-    get_data_ticker_trade_safe <-
-      purrr::possibly(get_data_ticker_trade, data_frame())
+    .get_data_ticker_trade_safe <-
+      purrr::possibly(.get_data_ticker_trade, data_frame())
 
     all_data <-
       tickers %>%
       future_map_dfr(function(x){
-        get_data_ticker_trade_safe(ticker = x, return_message = return_message)
+        .get_data_ticker_trade_safe(ticker = x, return_message = return_message)
       })
 
     all_data <-
@@ -101,7 +105,7 @@ tickers_trades <-
         priceYearStart = priceLast / (1 + pctChangeYTD) ,
         amountMarketCapitalizationYearStart = amountMarketCapitalization / (1 + pctChangeYTD)
       ) %>%
-      dplyr::select(datetimePrice, everything()) %>%
+      dplyr::select(datetimeTradeLast, everything()) %>%
       suppressWarnings()
 
 

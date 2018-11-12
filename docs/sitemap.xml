@@ -91,7 +91,16 @@
     <loc>http://asbcllc.com/fundManageR//reference/data_sic_naics_codes.html</loc>
   </url>
   <url>
+    <loc>http://asbcllc.com/fundManageR//reference/dictionary_finbox_companies.html</loc>
+  </url>
+  <url>
+    <loc>http://asbcllc.com/fundManageR//reference/dictionary_finbox_metrics.html</loc>
+  </url>
+  <url>
     <loc>http://asbcllc.com/fundManageR//reference/dictionary_form_d_categories.html</loc>
+  </url>
+  <url>
+    <loc>http://asbcllc.com/fundManageR//reference/dictionary_fred_ids.html</loc>
   </url>
   <url>
     <loc>http://asbcllc.com/fundManageR//reference/dictionary_sec_filing_codes.html</loc>
@@ -172,18 +181,6 @@
     <loc>http://asbcllc.com/fundManageR//reference/get_class_df.html</loc>
   </url>
   <url>
-    <loc>http://asbcllc.com/fundManageR//reference/get_dictionary_all_fred_series_ids.html</loc>
-  </url>
-  <url>
-    <loc>http://asbcllc.com/fundManageR//reference/get_dictionary_finbox_companies.html</loc>
-  </url>
-  <url>
-    <loc>http://asbcllc.com/fundManageR//reference/get_dictionary_finbox_metrics.html</loc>
-  </url>
-  <url>
-    <loc>http://asbcllc.com/fundManageR//reference/import_rda_file.html</loc>
-  </url>
-  <url>
     <loc>http://asbcllc.com/fundManageR//reference/irei_entitites.html</loc>
   </url>
   <url>
@@ -236,6 +233,9 @@
   </url>
   <url>
     <loc>http://asbcllc.com/fundManageR//reference/plot_time_series_static.html</loc>
+  </url>
+  <url>
+    <loc>http://asbcllc.com/fundManageR//reference/read_rda_file.html</loc>
   </url>
   <url>
     <loc>http://asbcllc.com/fundManageR//reference/recent_insider_trades.html</loc>

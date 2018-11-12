@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>FRED Terms Series IDs — fred_terms_ids • fundManageR</title>
+<title>read RDA file — read_rda_file • fundManageR</title>
 
 <link rel="shortcut icon" type="image/x-icon" href="../favicon.ico">
 
@@ -32,12 +32,9 @@
 
 
 
-<meta property="og:title" content="FRED Terms Series IDs — fred_terms_ids" />
+<meta property="og:title" content="read RDA file — read_rda_file" />
 
-<meta property="og:description" content="This function returns
-matching FRED series ID for a given
-search term.  When using
-`use_json_api` search results limited to 100," />
+<meta property="og:description" content="read RDA file" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -139,60 +136,26 @@ search term.  When using
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>FRED Terms Series IDs</h1>
+    <h1>read RDA file</h1>
     <small class="dont-index">Source: <a href='https://github.com/abresler/fundManageR/blob/master/R/fred_api.R'><code>R/fred_api.R</code></a></small>
-    <div class="hidden name"><code>fred_terms_ids.Rd</code></div>
+    <div class="hidden name"><code>read_rda_file.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function returns
-matching FRED series ID for a given
-search term.  When using
-`use_json_api` search results limited to 100,</p>
+    <p>read RDA file</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>fred_terms_ids</span>(<span class='kw'>search_terms</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>use_json_api</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
-    
-    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
-    <table class="ref-arguments">
-    <colgroup><col class="name" /><col class="desc" /></colgroup>
-    <tr>
-      <th>search_terms</th>
-      <td><p>vector of search terms</p></td>
-    </tr>
-    <tr>
-      <th>use_json_api</th>
-      <td><p>if <code>TRUE</code> uses faster json API but results limted to 100
-default <code>FALSE</code></p></td>
-    </tr>
-    <tr>
-      <th>return_message</th>
-      <td><p>if <code>TRUE</code> returns message</p></td>
-    </tr>
-    </table>
-    
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+    <pre class="usage"><span class='fu'>read_rda_file</span>(<span class='kw'>file</span> <span class='kw'>=</span> <span class='st'>"https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true"</span>,
+  <span class='kw'>return_data_frame</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+        
 
-    <p>a <code>data_frame</code></p>
-    
-
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='co'># NOT RUN {</span>
-<span class='fu'>fred_terms_ids</span>(<span class='kw'>search_terms</span> <span class='kw'>=</span> <span class='fu'>c</span>(<span class='st'>"China Debt"</span>, <span class='st'>"China Housing"</span>))
-<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-      
-      <li><a href="#examples">Examples</a></li>
-    </ul>
+                </ul>
 
   </div>
 </div>
