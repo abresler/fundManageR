@@ -908,7 +908,7 @@ fred_tags <-
 
 
 # api ---------------------------------------------------------------------
-generate_fred_symbol_url <-
+.generate_fred_symbol_url <-
   function(symbol = c('DGS10'),
            transformation = NULL) {
     df_transforms <-
@@ -970,7 +970,7 @@ generate_fred_symbol_url <-
     return(urls_json)
   }
 
-parse_json_fred <-
+.parse_json_fred <-
   function(url = "https://fred.stlouisfed.org/graph/graph-data.php?id=DGS10&transformation=",
            convert_date_time = TRUE,
            return_message = TRUE) {
@@ -1010,8 +1010,12 @@ parse_json_fred <-
 
     df_data <-
       json_data$series$obs[[1]] %>%
+      data.frame(stringsAsFactors = F) %>%
       as_data_frame() %>%
-      purrr::set_names(c('datetimeData', 'value')) %>%
+      purrr::set_names(c('datetimeData', 'value'))
+
+    df_data <-
+      df_data %>%
       mutate(
         idSymbol = symbol,
         nameSeries = series_name,
@@ -1060,7 +1064,7 @@ parse_json_fred <-
   }
 
 
-fred_symbol <-
+.fred_symbol <-
   function(symbol = 'DGS2',
            transformation = NULL,
            convert_date_time = TRUE,
@@ -1071,13 +1075,13 @@ fred_symbol <-
       stop("Please enter a FRED series ID")
     }
     url <-
-      generate_fred_symbol_url(symbol = symbol, transformation = transformation)
+      .generate_fred_symbol_url(symbol = symbol, transformation = transformation)
 
-    parse_json_fred_safe <-
-      purrr::possibly(parse_json_fred, data_frame())
+    .parse_json_fred_safe <-
+      purrr::possibly(.parse_json_fred, data_frame())
 
     data <-
-      parse_json_fred_safe(
+      .parse_json_fred_safe(
         url = url,
         convert_date_time = convert_date_time,
         return_message = return_message
@@ -1187,7 +1191,7 @@ fred_symbols <-
       as_data_frame()
 
     fred_symbol_safe <-
-      purrr::possibly(fred_symbol, data_frame())
+      purrr::possibly(.fred_symbol, data_frame())
 
     all_data <-
       1:nrow(df_options) %>%
