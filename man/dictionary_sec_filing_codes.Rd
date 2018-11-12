@@ -59,9 +59,9 @@ Other SEC: \code{\link{data_rf_leis}},
 Other dictionary: \code{\link{data_location_codes}},
   \code{\link{data_sec_rules}},
   \code{\link{data_sic_naics_codes}},
+  \code{\link{dictionary_fred_ids}},
   \code{\link{dictionary_sec_form_codes}},
-  \code{\link{dictionary_sic_codes}},
-  \code{\link{get_dictionary_all_fred_series_ids}}
+  \code{\link{dictionary_sic_codes}}
 
 Other SEC: \code{\link{data_rf_leis}},
   \code{\link{dictionary_sec_form_codes}},
@@ -89,9 +89,9 @@ Other SEC: \code{\link{data_rf_leis}},
 Other dictionary: \code{\link{data_location_codes}},
   \code{\link{data_sec_rules}},
   \code{\link{data_sic_naics_codes}},
+  \code{\link{dictionary_fred_ids}},
   \code{\link{dictionary_sec_form_codes}},
-  \code{\link{dictionary_sic_codes}},
-  \code{\link{get_dictionary_all_fred_series_ids}}
+  \code{\link{dictionary_sic_codes}}
 
 Other SEC: \code{\link{data_rf_leis}},
   \code{\link{dictionary_sec_form_codes}},
@@ -119,9 +119,9 @@ Other SEC: \code{\link{data_rf_leis}},
 Other dictionary: \code{\link{data_location_codes}},
   \code{\link{data_sec_rules}},
   \code{\link{data_sic_naics_codes}},
+  \code{\link{dictionary_fred_ids}},
   \code{\link{dictionary_sec_form_codes}},
-  \code{\link{dictionary_sic_codes}},
-  \code{\link{get_dictionary_all_fred_series_ids}}
+  \code{\link{dictionary_sic_codes}}
 }
 \concept{SEC}
 \concept{dictionary}

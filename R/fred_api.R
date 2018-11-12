@@ -3,24 +3,64 @@
 
 # utilities ---------------------------------------------------------------
 
-#' Import RDA file
-#'
-#' @param file a file path
-#'
-#' @return
-#' @export
-#'
-#' @examples
 import_rda_file <-
-  function(file = 'Desktop/fred/fred_series_tags.rda') {
-    if (file %>% is_null()) {
+  function(file = NULL,
+           return_data_frame = TRUE) {
+    if (file %>% purrr::is_null()) {
       stop("Please enter a file path")
     }
 
     env <- new.env()
     nm <- load(file, env)[1]
-    env[[nm]] %>%
-      dplyr::as_data_frame()
+    if (return_data_frame) {
+      data <-
+        env[[nm]] %>%
+        dplyr::as_tibble()
+    } else {
+      data <-
+        env[[nm]]
+    }
+    return(data)
+  }
+
+
+curl_url <-
+  function(url = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
+           return_data_frame = TRUE) {
+    con <-
+      url %>%
+      curl::curl()
+
+    data <-
+      con %>%
+      import_rda_file(return_data_frame = return_data_frame)
+    close(con)
+    return(data)
+  }
+
+#' read RDA file
+#'
+#' @param file
+#' @param return_data_frame
+#' @return
+#' @export
+#' @import dplyr stringr purrr
+#' @importFrom curl curl_download
+#' @importFrom curl curl
+#' @examples
+read_rda_file <-
+  function(file = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
+           return_data_frame = TRUE) {
+    is_html <-
+      file %>% stringr::str_detect("http")
+
+    if (is_html) {
+      data <- curl_url(url = file, return_data_frame = return_data_frame)
+    } else {
+      data <-
+        import_rda_file(file = file, return_data_frame = return_data_frame)
+    }
+    return(data)
   }
 
 
@@ -443,7 +483,7 @@ parse_fred_page <-
     df_items
   }
 
-all_fred_series_ids <-
+.all_fred_series_ids <-
   function(return_message = TRUE,
            nest_data = TRUE,
            sleep = NULL) {
@@ -468,7 +508,7 @@ all_fred_series_ids <-
     return(df_fred_ids)
   }
 
-curl_url <-
+.curl_url <-
   function(url = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true") {
     con <-
       url %>%
@@ -505,8 +545,8 @@ curl_url <-
 #'
 #' @examples
 #'
-#' get_dictionary_all_fred_series_ids(fred_file = NULL, return_message  = TRUE)
-get_dictionary_all_fred_series_ids <-
+#' dictionary_fred_ids(fred_file = NULL, return_message  = TRUE)
+dictionary_fred_ids <-
   function(fred_file = NULL,
            return_message = TRUE) {
     fred_files <-
@@ -524,10 +564,11 @@ get_dictionary_all_fred_series_ids <-
         ) %>% purrr::reduce(paste0))
       }
     }
+
     if (fred_file %>% purrr::is_null()) {
       data <-
         "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true" %>%
-        curl_url()
+        read_rda_file()
 
       if (return_message) {
         message("Imported all FRED series data")
@@ -539,7 +580,7 @@ get_dictionary_all_fred_series_ids <-
     if (fred_file == 'all') {
       data <-
         "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true" %>%
-        curl_url()
+        read_rda_file()
 
       if (return_message) {
         message("Imported all FRED series data")
@@ -551,7 +592,7 @@ get_dictionary_all_fred_series_ids <-
     if (fred_file == 'series') {
       data <-
         "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_dictionary.rda?raw=true" %>%
-        curl_url()
+        read_rda_file()
       if (return_message) {
         message("Imported all FRED series IDs")
       }
@@ -561,7 +602,7 @@ get_dictionary_all_fred_series_ids <-
     if (fred_file == 'tags') {
       data <-
         "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_tags.rda?raw=true" %>%
-        curl_url()
+        read_rda_file()
       if (return_message) {
         message("Imported all FRED series tags")
       }
@@ -571,7 +612,7 @@ get_dictionary_all_fred_series_ids <-
     if (fred_file == 'subindicies') {
       data <-
         "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_subindicies.rda?raw=true" %>%
-        curl_url()
+        read_rda_file()
       if (return_message) {
         message("Imported all FRED series subindicies")
       }
@@ -579,7 +620,7 @@ get_dictionary_all_fred_series_ids <-
     }
   }
 
-parse_fred_search <-
+.parse_fred_search <-
   function(urls, return_message = TRUE) {
     df <-
       data_frame()
@@ -658,7 +699,7 @@ parse_fred_search <-
 
     all_data <-
       json_urls %>%
-      parse_fred_search(return_message = return_message)
+      .parse_fred_search(return_message = return_message)
     all_data
   }
 
@@ -1612,7 +1653,7 @@ visualize_fred_time_series <-
         "Asssigning FRED symbols to your environment as df_fred_symbols" %>% cat(fill = T)
         assign(
           x = 'df_fred_symbols',
-          value = eval(get_dictionary_all_fred_series_ids()),
+          value = eval(dictionary_.all_fred_series_ids()),
           envir = .GlobalEnv
         )
       }
