@@ -91,7 +91,7 @@ packages <-
   c("curl", "curlconverter", "dplyr", "formattable", "httr", "jsonlite", 'devtools',
     "lazyeval", "lubridate", "magrittr", "pdftools", "purrr", "readr",  'quantmod',
     "readxl", "rvest", "stringi", "stringr", "tibble", "tidyr", 'tidyverse',
-    "xml2")
+    "xml2", "")
 
 lapply(packages, install.packages)
 ```
@@ -109,8 +109,8 @@ devtools::install_github("abresler/fundManageR")
 
   - `calculate_` – this function family performs common industry
     specific and generalized calculations.
-  - `get_data_` – this function family retrieves data either from a
-    specified silo or based upon user inputs.
+  - \`\` – this function family retrieves data either from a specified
+    silo or based upon user inputs.
   - `visualize_` – this function family performs pre-packaged
     visualizations geared towards the data this package brings in or
     helps the user to create.
@@ -149,49 +149,44 @@ devtools::install_github("abresler/fundManageR")
   - `calculate_days_accrued_pref` – Calculates accrued
     preference/interest for a specified period.
 
-### `get_data_` Functions
+## Parallel Computing
 
-  - `get_data_ycombinator_alumni` – Retrieves data on
-    [YCombinator](http://www.ycombinator.com/) graduates.
-  - `get_data_libor_current` –Retrieves most recent
-    [LIBOR](https://en.wikipedia.org/wiki/Libor) by duration.
-  - `get_data_promote_structure` – Returns a [carried/promoted
-    interest](https://en.wikipedia.org/wiki/Carried_interest) given
-    promote syntax.
-  - `get_data_fred_index_symbol_time_series` – Retrieves time series
-    data for specified index from the [FRED
-    Database](https://en.wikipedia.org/wiki/Federal_Reserve_Economic_Data).
-  - `get_data_index_symbol_current_value` – Retrieves current value for
-    a specified symbol.
-  - `get_data_cik_codes` – Retrieves all entities with a registered
-    [Central Index
-    Key](https://en.wikipedia.org/wiki/Central_Index_Key).
+This package now supports parallel computing for all iterative
+functions. In order to utilize this just run \``future::plan` with your
+selected method.
 
-### ADV Specific `get_data_` Functions
+For example to use muiltiprocess.
 
-  - `get_data_adv_period_urls` – Retrieves all possible ADV summary
-    periods.
-  - `get_data_adv_managers_current_period_summary` – Retrieves summary
-    data for ADV filing managers from the most recent monthly filing
-    period.
-  - `get_data_adv_managers_periods_summaries`– Retrieves summary ADV
-    filings for specified periods and filing type. By default the files
-    will be saved to and loaded from a temporary directory however a
-    user can override this default by specifying a file directory. If
-    you specify a file directory you can also specify folder name, if
-    you don’t do this the folder `adv_data` is created by default. You
-    can also tell the function to delete the folders and empty the trash
-    by setting `remove_files` and `empty_trash` to TRUE.
-  - `get_data_sec_adv_manager_sitemap`– Retrieves a data frame with the
-    possible detailed ADV sections and their descriptions.
-  - `get_data_adv_managers_metadata` – Retrieves metadata for specified
-    search name or CRD ID; fastest way to search for managers you may
-    wish to explore further.
-  - `get_data_adv_managers_filings` – Retrieves detailed ADV filing for
-    specified [Central Registration Depository
+``` r
+library(fundManageR)
+library(future)
+plan(multiprocess) 
+fred_symbols(symbols = c("DGS10", "DGS2", "DGS30"))
+```
+
+### ADV API
+
+  - `adv_period_urls` – Retrieves all possible ADV summary periods.
+  - `adv_managers_current_period_summary` – Retrieves summary data for
+    ADV filing managers from the most recent monthly filing period.
+  - `adv_managers_periods_summaries`– Retrieves summary ADV filings for
+    specified periods and filing type. By default the files will be
+    saved to and loaded from a temporary directory however a user can
+    override this default by specifying a file directory. If you specify
+    a file directory you can also specify folder name, if you don’t do
+    this the folder `adv_data` is created by default. You can also tell
+    the function to delete the folders and empty the trash by setting
+    `remove_files` and `empty_trash` to TRUE.
+  - `sec_adv_manager_sitemap`– Retrieves a data frame with the possible
+    detailed ADV sections and their descriptions.
+  - `adv_managers_metadata` – Retrieves metadata for specified search
+    name or CRD ID; fastest way to search for managers you may wish to
+    explore further.
+  - `adv_managers_filings` – Retrieves detailed ADV filing for specified
+    [Central Registration Depository
     ID](http://www.finra.org/industry/crd) \[CRD\] and/or company name
     by by specified ADV section.
-  - `get_data_adv_managers_brochures` – Retrieves and
+  - `adv_managers_brochures` – Retrieves and
     [OCRs](https://en.wikipedia.org/wiki/Optical_character_recognition)
     for SEC mandated annual [Uniform Requirements for the Investment
     Adviser Brochure and Brochure
@@ -226,14 +221,14 @@ devtools::install_github("abresler/fundManageR")
 ``` r
 library(fundManageR)
 recent_period_summary <- 
-  get_data_adv_managers_current_period_summary(file_directory = NULL)
+  adv_managers_current_period_summary(file_directory = NULL)
 ```
 
 #### Detailed Manager Search
 
 ``` r
 test_manager <- 
-  fundManageR::get_data_adv_managers_filings(
+  fundManageR::adv_managers_filings(
     search_names = 'EJF Capital',
     crd_ids = 156663,
     all_sections = T,
@@ -245,7 +240,7 @@ test_manager <-
 
 ``` r
 ycombinator_alumni <- 
-  fundManageR::get_data_ycombinator_alumni()
+  fundManageR::ycombinator_alumni()
 
 ycombinator_alumni %>% 
   visualize_data_frame(edit = F) ## visualize it
@@ -256,7 +251,7 @@ ycombinator_alumni %>%
 ``` r
 library(dplyr)
 dates <- 
-  c("2015-10-09", "2016-09-26") %>% lubridate::ymd
+  c("2015-10-09", "2016-09-26") %>% lubridate::ymd()
 
 land_purchase_price <-
   -1000000 %>% formattable::currency()

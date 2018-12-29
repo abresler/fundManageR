@@ -153,7 +153,7 @@ ycombinator_alumni %>%
 ```{r eval = F}
 library(dplyr)
 dates <- 
-  c("2015-10-09", "2016-09-26") %>% lubridate::ymd
+  c("2015-10-09", "2016-09-26") %>% lubridate::ymd()
 
 land_purchase_price <-
   -1000000 %>% formattable::currency()
