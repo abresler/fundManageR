@@ -113,7 +113,7 @@
           html_nodes(css = node_css) %>%
           html_attr(name = html_attribute)
 
-        if (!base_url %>% is_null) {
+        if (!base_url %>% purrr::is_null()) {
           node_attribute <-
             base_url %>%
             paste0(node_attribute)
@@ -1211,7 +1211,7 @@
       mutate(idCRD = idCRD %>% as.numeric(),
              idRow = 1:n())
 
-    if (!name_match_threshold %>% is_null()) {
+    if (!name_match_threshold %>% purrr::is_null()) {
       if ('scoreWord' %in% names(df_fields)) {
         df_fields <-
           df_fields %>%
@@ -1645,7 +1645,7 @@ finra_entities <-
            ocr_pdf = TRUE,
            score_threshold = .20,
            return_message = TRUE) {
-    if (entity_names %>% is_null()) {
+    if (entity_names %>% purrr::is_null()) {
       stop("Please enter entities to search for")
     }
     search_df <-
@@ -1717,7 +1717,7 @@ finra_people <-
   function(search_name = NULL,
            ocr_pdf = TRUE,
            return_message = TRUE) {
-    if (search_name %>% is_null()) {
+    if (search_name %>% purrr::is_null()) {
       stop("Please enter a person to search for")
     }
     search_df <-
@@ -1865,7 +1865,8 @@ finra_people <-
         data_frame(idCRD,
                    urlManagerSummaryADV = NA)
       "No data" %>% message
-    } else {
+    }
+    else {
       page <-
         url %>%
         .get_html_page()
@@ -2108,17 +2109,17 @@ adv_managers_metadata <-
            crd_ids = NULL,
            score_threshold = .2,
            return_message = T) {
-    if (entity_names %>% is_null() & crd_ids %>% is_null()) {
+    if (entity_names %>% purrr::is_null() & crd_ids %>% purrr::is_null()) {
       stop("Please enter a name or CRD to search")
     }
 
-    if (!crd_ids %>% is_null) {
+    if (!crd_ids %>% purrr::is_null()) {
       crd_urls <-
-        'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>%
+        'https://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>%
         paste0(crd_ids)
     }
 
-    if (!entity_names %>% is_null()) {
+    if (!entity_names %>% purrr::is_null()) {
       finra_data <-
         entity_names %>%
         finra_entities(
@@ -2137,12 +2138,12 @@ adv_managers_metadata <-
         finra_data$urlManagerSummaryADV
     }
 
-    if ((!crd_ids %>% is_null()) & (!entity_names %>% is_null())) {
+    if ((!crd_ids %>% purrr::is_null()) & (!entity_names %>% purrr::is_null())) {
       adv_urls <-
         c(adv_urls, crd_urls)
     }
 
-    if ((!crd_ids %>% is_null) & (entity_names %>% is_null)) {
+    if ((!crd_ids %>% purrr::is_null()) & (entity_names %>% purrr::is_null())) {
       adv_urls <-
         c(crd_urls)
     }
@@ -2152,7 +2153,9 @@ adv_managers_metadata <-
 
     sec_summary_data <-
       adv_urls %>%
-      future_map_dfr(.get_manager_sec_page_safe) %>%
+      map_df(function(url){
+        .get_manager_sec_page(url = url)
+      }) %>%
       suppressWarnings() %>%
       filter(!idCRD %>% is.na()) %>%
       mutate_if(is.character,
@@ -2312,7 +2315,7 @@ adv_managers_metadata <-
 #' @examples
 sec_adv_manager_sitemap <-
   function() {
-    sitefuture_map_dfr <-
+    data <-
       data_frame(
         idSection =
           c(
@@ -2383,7 +2386,7 @@ sec_adv_manager_sitemap <-
         )
 
       )
-    return(sitefuture_map_dfr)
+    return(data)
   }
 
 
@@ -2491,7 +2494,7 @@ sec_adv_manager_sitemap <-
              .) %>%
       unique()
 
-    adv_sitefuture_map_dfr <-
+    adv_data <-
       data_frame(
         idCRD,
         nameSection = 'Registration',
@@ -2517,12 +2520,12 @@ sec_adv_manager_sitemap <-
       suppressMessages()
 
     if (return_wide) {
-      adv_sitefuture_map_dfr <-
-        adv_sitefuture_map_dfr %>%
+      adv_data <-
+        adv_data %>%
         spread(idSection, urlADVSection)
 
     }
-    return(adv_sitefuture_map_dfr)
+    return(adv_data)
   }
 
 .get_managers_adv_sitemap_adv <-
@@ -2536,14 +2539,14 @@ sec_adv_manager_sitemap <-
 
     if (!purrr::is_null(idCRDs)) {
       urls <-
-        glue::glue("http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRDs}") %>% as.character()
+        glue::glue("https://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRDs}") %>% as.character()
     }
 
     if (!purrr::is_null(entity_names)) {
       manager_data <-
         entity_names %>%
         future_map_dfr(function(x) {
-          adv_managers_metadata_safe(
+          adv_managers_metadata(
             crd_ids = idCRDs,
             score_threshold = score_threshold,
             entity_names = x,
@@ -2561,29 +2564,30 @@ sec_adv_manager_sitemap <-
         c(urls, manager_data$urlManagerADV %>% unique()) %>% unique()
     }
 
-    if (idCRDs %>% is_null() & 'manager_data' %>% exists()) {
+    if (idCRDs %>% purrr::is_null() & 'manager_data' %>% exists()) {
       urls <-
         manager_data$urlManagerADV %>% unique()
     }
 
-    if ('urls' %>% exists() & entity_names %>% is_null()) {
+    if ('urls' %>% exists() & entity_names %>% purrr::is_null()) {
       manager_data <-
-        adv_managers_metadata_safe(crd_ids = idCRDs, entity_names = NULL)
+        adv_managers_metadata(crd_ids = idCRDs, entity_names = NULL)
 
       name_entity_manager <-
         manager_data$nameEntityManager
     }
     .parse_adv_manager_sitemap_df_safe <-
       purrr::possibly(.parse_adv_manager_sitemap_df, data_frame())
-    sitefuture_map_dfrs <-
+
+    data <-
       urls %>%
       unique() %>%
       future_map_dfr(function(x) {
         .parse_adv_manager_sitemap_df_safe(url = x, return_wide = F)
       })
     if (manager_data %>% nrow() > 0) {
-    sitefuture_map_dfrs <-
-      sitefuture_map_dfrs %>%
+    data <-
+      data %>%
       dplyr::filter(!nameEntityManager %>% is.na()) %>%
       left_join(manager_data %>% dplyr::select(idCRD, nameEntityManager)) %>%
       dplyr::select(
@@ -2598,7 +2602,7 @@ sec_adv_manager_sitemap <-
       suppressMessages()
     }
 
-    return(sitefuture_map_dfrs)
+    return(data)
   }
 
 
@@ -8327,7 +8331,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_crd_sections_data <-
-  function(id_crd = 162351,
+  function(id_crd = 174130,
            all_sections = TRUE,
            score_threshold = .2,
            section_names = c(
@@ -8342,7 +8346,7 @@ sec_adv_manager_sitemap <-
              "Manager Signatories"
            ),
            flatten_tables = TRUE) {
-    sitefuture_map_dfr <-
+    data <-
       .get_managers_adv_sitemap_adv(idCRDs = id_crd, score_threshold = score_threshold) %>%
       distinct() %>%
       dplyr::filter(!idSection %>% str_detect('section12SmallBusiness')) %>%
@@ -8354,19 +8358,19 @@ sec_adv_manager_sitemap <-
 
     if (all_sections) {
       section_names <-
-        sitefuture_map_dfr$nameSectionActual
+        data$nameSectionActual
     }
 
     if (section_null &
         !all_sections) {
       stop("You must select a section, possibilties for this search are:\n" %>%
              paste0(paste0(
-               sitefuture_map_dfr$nameSectionActual, collapse = '\n'
+               data$nameSectionActual, collapse = '\n'
              )))
     }
 
     get_adv_sections <-
-      function(sitefuture_map_dfr, all_sections) {
+      function(data, all_sections) {
         .get_manager_sec_page_safe <-
           possibly(.get_manager_sec_page, data_frame())
         .get_section_drp_safe <-
@@ -8408,34 +8412,34 @@ sec_adv_manager_sitemap <-
 
         if (!all_sections) {
           no_rows <-
-            sitefuture_map_dfr %>%
+            data %>%
             dplyr::filter(nameSectionActual %in% section_names) %>% nrow == 0
 
           if (no_rows) {
             stop(
               "Sorry tables can only be:\n",
-              sitefuture_map_dfr$nameSectionActual %>% paste0(collapse = '\n')
+              data$nameSectionActual %>% paste0(collapse = '\n')
             )
           }
 
-          sitefuture_map_dfr <-
-            sitefuture_map_dfr %>%
+          data <-
+            data %>%
             dplyr::filter(nameSectionActual %in% section_names)
         }
 
         all_data <-
-          1:nrow(sitefuture_map_dfr) %>%
+          1:nrow(data) %>%
           future_map_dfr(function(x) {
             f <-
-              sitefuture_map_dfr$nameFunction[[x]] %>% lazyeval::as_name() %>% eval()
+              data$nameFunction[[x]] %>% lazyeval::as_name() %>% eval()
             url <-
-              sitefuture_map_dfr$urlADVSection[[x]]
+              data$urlADVSection[[x]]
             df_name <-
-              sitefuture_map_dfr$nameData[[x]] %>%
+              data$nameData[[x]] %>%
               str_to_title() %>%
               paste0('data', .)
             nameADVPage <-
-              sitefuture_map_dfr$nameSectionActual[[x]]
+              data$nameSectionActual[[x]]
             paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% cat(fill = T)
             g <-
               f %>%
@@ -8456,12 +8460,12 @@ sec_adv_manager_sitemap <-
       possibly(get_adv_sections, data_frame())
 
     all_data <-
-      get_adv_sections_safe(sitefuture_map_dfr = sitefuture_map_dfr, all_sections = all_sections) %>%
+      get_adv_sections_safe(data = data, all_sections = all_sections) %>%
       suppressWarnings()
 
     all_data <-
       all_data %>%
-      mutate(isNULL = dataTable %>% map_lgl(is_null)) %>%
+      mutate(isNULL = dataTable %>% map_lgl(purrr::is_null)) %>%
       dplyr::filter(isNULL == F) %>%
       dplyr::select(-isNULL) %>%
       mutate(countColumns = dataTable %>% map_dbl(ncol),
@@ -8621,14 +8625,14 @@ sec_adv_manager_sitemap <-
 .get_search_crd_ids <-
   function(entity_names = c('EJF Capital', '137 Ventures'),
            crd_ids = NULL) {
-    if (entity_names %>% is_null() & (crd_ids %>% is_null())) {
+    if (entity_names %>% purrr::is_null() & (crd_ids %>% purrr::is_null())) {
       stop("Please enter search names or CRD IDs")
     }
 
     crd_df <-
       data_frame(idCRD = NA)
 
-    if (!entity_names %>% is_null()) {
+    if (!entity_names %>% purrr::is_null()) {
       finra_entities_safe <-
         purrr::possibly(finra_entities, data_frame())
       search_name_df <-
@@ -8652,7 +8656,7 @@ sec_adv_manager_sitemap <-
         bind_rows(data_frame(idCRD = id_crds))
     }
 
-    if (!crd_ids %>% is_null()) {
+    if (!crd_ids %>% purrr::is_null()) {
       crd_df <-
         crd_df %>%
         bind_rows(data_frame(idCRD = crd_ids))
@@ -8933,7 +8937,7 @@ adv_managers_filings <-
 
     }
     nothing_entered <-
-      (crd_ids %>% is_null()) & (entity_names %>% is_null())
+      (crd_ids %>% purrr::is_null()) & (entity_names %>% purrr::is_null())
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
@@ -8950,7 +8954,7 @@ adv_managers_filings <-
     all_data <-
       seq_along(crds) %>%
       future_map_dfr(function(x) {
-        .get_crd_sections_data_safe(
+        .get_crd_sections_data(
           id_crd = crds[x],
           all_sections = all_sections,
           section_names = section_names,
@@ -9359,7 +9363,7 @@ adv_managers_brochures <-
            split_pages = TRUE,
            nest_data = FALSE) {
     nothing_entered <-
-      (crd_ids %>% is_null()) & (entity_names %>% is_null())
+      (crd_ids %>% purrr::is_null()) & (entity_names %>% purrr::is_null())
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
