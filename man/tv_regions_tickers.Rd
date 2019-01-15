@@ -13,6 +13,7 @@ tv_regions_tickers(regions = c("america", "uk", "australia", "brazil",
 \item{regions}{vector of regions \itemize{
 \item america
 \item uk
+\item china
 \item australia
 \item brazil
 \item canada

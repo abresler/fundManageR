@@ -396,12 +396,12 @@ get_tradeview_term <-
         sep = '\\:'
       ) %>%
       tidyr::separate(idTickerClass,
-                      into = c('idTicker', 'classSecurity')) %>%
+                      into = c('idTicker', 'typeSecurity')) %>%
       mutate_all(str_trim) %>%
       mutate(
         regionSecurities = idRegion,
         urlJSON = url,
-        classSecurity = if_else(classSecurity %>% is.na(), 'COMMON', classSecurity)
+        typeSecurity = if_else(typeSecurity %>% is.na(), 'COMMON', typeSecurity)
       ) %>%
       suppressWarnings() %>%
       dplyr::select(regionSecurities, everything()) %>%
@@ -451,6 +451,7 @@ get_tradeview_term <-
 #' @param regions vector of regions \itemize{
 #' \item america
 #' \item uk
+#' \item china
 #' \item australia
 #' \item brazil
 #' \item canada
@@ -646,6 +647,7 @@ tv_regions_tickers <-
 #'
 #' Get searchable metrics by region
 #' @param regions vector of regions \itemize{
+#' \item cfd
 #' \item america
 #' \item uk
 #' \item australia
@@ -720,6 +722,40 @@ tv_regions_metrics <-
 
 # metric_query ------------------------------------------------------------
 
+#' Default Bond query metric
+#'
+#' @param column_names if not \code{NULL} vector of column names
+#'
+#' @return
+#' @export
+#'
+#' @examples
+generate_tv_bond_query <-
+  function(column_names = c("country_code", "name", "coupon", "maturity_date", "close",
+                            "change", "change_abs", "high", "low", "Recommend.All", "description",
+                            "subtype", "pricescale", "minmov", "fractional", "minmove2",
+                            "ask", "all_time_low", "sector", "country2", "bid", "country",
+                            "current_session", "all_time_high", "rtc", "type", "expiration",
+                            "exchange", "pre_change", "pre_change_abs", "change_from_open_abs",
+                            "change_from_open", "post_change", "time", "open", "gap")
+  ){
+    data <- structure(list(structure(list(c("forex_priority", "sector", "description"
+    ), c("nempty", "equal", "match"), c(NA, "bond", "YIELD$")), .Names = c("left",
+                                                                           "operation", "right"), class = "data.frame", row.names = c(NA,
+                                                                                                                                      3L)), structure(list(structure(list(list()), .Names = "types"),
+                                                                                                                                                           list()), .Names = c("query", "tickers")), c("country_code",
+                                                                                                                                                                                                       "name", "coupon", "maturity_date", "close", "change", "change_abs",
+                                                                                                                                                                                                       "high", "low", "Recommend.All", "description", "name", "subtype",
+                                                                                                                                                                                                       "pricescale", "minmov", "fractional", "minmove2"), structure(list(
+                                                                                                                                                                                                         "forex_priority", "asc"), .Names = c("sortBy", "sortOrder"
+                                                                                                                                                                                                         )), structure(list("en"), .Names = "lang"), c(0L, 30000L)), .Names = c("filter",
+                                                                                                                                                                                                                                                                                "symbols", "columns", "sort", "options", "range"))
+    if (length(column_names) > 0){
+      data$columns <- column_names
+    }
+    data
+  }
+
 #' Generate tradeview metric query
 #'
 #' @param filter
@@ -787,7 +823,9 @@ tv_metric <-
 
     json$close()
     data <-
-      json_data$data %>% as_data_frame() %>% unnest() %>%
+      json_data$data %>% as_data_frame() %>% unnest()
+
+    data <- data %>%
       purrr::set_names(c('idExchangeTicker', 'value')) %>%
       group_by(idExchangeTicker) %>%
       mutate(countItem = 1:n()) %>%
@@ -800,10 +838,10 @@ tv_metric <-
                                'idTickerClass'),
                       sep = '\\:') %>%
       tidyr::separate(idTickerClass,
-                      into = c('idTicker', 'classSecurity')) %>%
+                      into = c('idTicker', 'typeSecurity')) %>%
       mutate_all(str_trim) %>%
       mutate(idRegion,
-             classSecurity = if_else(classSecurity %>% is.na(), 'COMMON', classSecurity)) %>%
+             typeSecurity = if_else(typeSecurity %>% is.na(), 'COMMON', typeSecurity)) %>%
       suppressWarnings() %>%
       dplyr::select(idRegion, everything())
 
@@ -980,12 +1018,417 @@ tv_metric_query <-
       range = c(0, 15000000000000)
     )
   }
+.tv_metric_data <-
+  function(region = c( 'america'),
+           query =
+             list(
+               filter = data_frame(left = 'market_cap_basic',
+                                   operation = 'nempty'),
+               symbols = list(query = list(types = c(
+                 'stock', 'fund', 'dr'
+               ))),
+               metrics =
+                 c(
+                   "subtype",
+                   "name",
+                   "beta_5_year",
+                   "earnings_release_date",
+                   "earnings_per_share_forecast_next_fq",
+                   "operating_margin",
+                   "return_on_equity",
+                   "current_ratio",
+                   "debt_to_assets",
+                   "price_revenue_ttm",
+                   "amount_recent",
+                   "market_cap_basic",
+                   "ebitda",
+                   "fundamental_currency_code",
+                   "total_assets",
+                   "current_session",
+                   "earnings_per_share_fq",
+                   "earnings_per_share_forecast_fq",
+                   "earnings_release_next_time",
+                   "cash_ratio",
+                   "yield_upcoming",
+                   "sector",
+                   "basic_eps_net_income",
+                   "price_book_ratio",
+                   "quick_ratio",
+                   "net_debt",
+                   "total_shares_outstanding_fundamental",
+                   "enterprise_value_fq",
+                   "beta_3_year",
+                   "total_capital",
+                   "earnings_per_share_diluted_ttm",
+                   "last_annual_eps",
+                   "revenue_fq",
+                   "ex_dividend_date_recent",
+                   "price_earnings_ttm",
+                   "debt_to_equity",
+                   "pre_tax_margin",
+                   "debt_to_equity_fq",
+                   "number_of_employees",
+                   "total_current_assets",
+                   "last_annual_revenue",
+                   "revenue_forecast_fq",
+                   "industry",
+                   "return_on_assets",
+                   "return_of_invested_capital_percent_ttm",
+                   "return_on_invested_capital",
+                   "gross_profit",
+                   "dividends_paid",
+                   "preferred_dividends",
+                   "earnings_release_next_date",
+                   "dividends_yield",
+                   "price_sales_ratio",
+                   "yield_recent",
+                   "ex_dividend_date_upcoming",
+                   "total_shares_outstanding",
+                   "price_earnings_to_growth_ttm",
+                   "price_book_fq",
+                   "enterprise_value_ebitda_ttm",
+                   "rtc",
+                   "amount_upcoming",
+                   "average_volume",
+                   "revenue_per_employee",
+                   "after_tax_margin",
+                   "net_income",
+                   "earnings_release_time",
+                   "type",
+                   "dividends_per_share_fq",
+                   "payment_date_upcoming",
+                   "gross_margin_percent_ttm",
+                   "earnings_per_share_basic_ttm",
+                   "price_free_cash_flow_ttm",
+                   "long_term_capital",
+                   "total_debt",
+                   "country",
+                   "total_revenue",
+                   "gross_margin",
+                   "number_of_shareholders",
+                   "beta_1_year",
+                   "goodwill",
+                   "expected_annual_dividends",
+                   "revenue_forecast_next_fq",
+                   "payment_date_recent",
+                   "low",
+                   "volume",
+                   "pre_change_abs",
+                   "gap",
+                   "open",
+                   "volume",
+                   "pre_change_abs",
+                   "time",
+                   "change_from_open",
+                   "low",
+                   "high",
+                   "close",
+                   "volume",
+                   "change_abs",
+                   "open",
+                   "change_from_open",
+                   "change_abs",
+                   "time",
+                   "change",
+                   "pre_change_abs",
+                   "time",
+                   "gap",
+                   "high",
+                   "open",
+                   "change_from_open",
+                   "change_abs",
+                   "low",
+                   "close",
+                   "change",
+                   "change_abs",
+                   "close",
+                   "time",
+                   "change",
+                   "pre_change",
+                   "close",
+                   "high",
+                   "gap",
+                   "change",
+                   "open",
+                   "high",
+                   "pre_change",
+                   "pre_change",
+                   "pre_change_abs",
+                   "gap",
+                   "pre_change",
+                   "change_from_open",
+                   "low",
+                   "volume",
+                   "relative_volume",
+                   "type",
+                   "subtype",
+                   "eps_surprise_fq",
+                   "market_cap_calc",
+                   "exchange",
+                   "price_sales",
+                   "eps_surprise_percent_fq"
+                 )
+               ,
+               sort = list(sortBy = 'market_cap_basic',
+                           sortOrder = 'desc'),
+               options = list(lang = 'eng'),
+               range = c(0, 15000000000000)
+             ),
+           return_message = TRUE) {
+    options(scipen = 99999)
+    glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
+      cat(fill = T)
+
+    urls <-
+      glue::glue("https://scanner.tradingview.com/{region}/scan")
+
+    if (!region %>% str_to_lower() %>% str_detect("cfd")) {
+      data_query <-
+        tv_metric(
+          filter = query$filter,
+          symbols = query$symbols,
+          metrics = query$metrics,
+          sort = query$sort,
+          options = query$options,
+          range = query$range
+        )
+
+    } else {
+      data_query <- toJSON(query, auto_unbox = T)
+    }
+
+    data <-
+      seq_along(urls) %>%
+      future_map_dfr(function(x) {
+        .parse_tv_metric_url(url = urls[x], data_query = data_query)
+      }) %>%
+      mutate(countItem = countItem %>% as.integer())
+
+    if (!region %>% str_to_lower() %>% str_detect("cfd")) {
+      metrics <-
+        data_frame(nameTW = c('name', query$metrics) %>% unique()) %>%
+        mutate(countItem = 1:n())
+
+      data <-
+        data %>%
+        left_join(metrics) %>%
+        suppressMessages()
+    } else {
+
+      metrics <-
+        data_frame(nameTW = c('name', query$columns) %>% unique()) %>%
+        mutate(countItem = 1:n())
+
+      data <-
+        data %>%
+        left_join(metrics) %>%
+        suppressMessages()
+
+      data <- data %>% filter(value != idTicker)
+    }
+
+    if (!region %>% str_to_lower() %>% str_detect("cfd")) {
+      data <-
+        data %>%
+        mutate(idTicker = ifelse(nameTW == "name", value, NA)) %>%
+        fill(idTicker) %>%
+        filter(!nameTW == 'name')
+    }
+
+    df_metrics <-
+      tv_regions_metrics(regions = region)
+
+    data <-
+      data %>%
+      left_join(df_metrics %>%
+                  select(nameTW, typeField)) %>%
+      distinct() %>%
+      suppressMessages() %>%
+      filter(!nameTW %in% c('component', 'index'))
+
+    df_companies <-
+      data %>%
+      filter(typeField %in% c(NA, 'text')) %>%
+      dplyr::select(idRegion:value, nameTW) %>%
+      filter(!is.na(value))
+
+    df_companies <-
+      df_companies %>%
+      spread(nameTW, value)
+
+    df_values <-
+      data %>%
+      filter(!typeField %in% c(NA, 'text')) %>%
+      dplyr::select(idExchange:value, nameTW) %>%
+      mutate(value = value %>% readr::parse_number()) %>%
+      spread(nameTW, value)
+
+    data <-
+      df_companies %>%
+      left_join(df_values) %>%
+      suppressMessages() %>%
+      dplyr::select(which(colMeans(is.na(.)) < 1))
+
+    data <-
+      data %>%
+      mutate_if(is.character,
+                list(function(x) {
+                  ifelse(x == "", NA, x) %>% str_trim() %>% str_to_upper()
+                }))
+
+    df_fields <-
+      df_metrics %>%
+      count(typeField)
+    fields <- df_fields$typeField
+
+    fields %>%
+      walk(function(field){
+
+        if (field == "text") {
+          col_names <- df_metrics %>% filter(typeField == "text") %>% pull(nameTW)
+          mutate_cols <-
+            names(data)[names(data) %in% col_names]
+          if (length(mutate_cols) > 0) {
+            data <<-
+              data %>%
+              mutate_at(mutate_cols,
+                        list(function(x) {
+                          x %>%
+                            gsub("^\\s+|\\s+$", "", .) %>%
+                            str_to_upper() %>% str_trim()
+                        }))
+          }
+        }
+
+        if (field == "number") {
+          col_names <- df_metrics %>% filter(typeField == "number") %>% pull(nameTW)
+          mutate_cols <- names(data)[names(data) %in% col_names]
+          if (length(mutate_cols) > 0) {
+            data <<-
+              data %>%
+              mutate_at(mutate_cols,
+                        list(function(x){
+                          x %>% formattable::comma(digits = 2)
+                        }))
+          }
+        }
+
+        if (field == "percent") {
+          col_names <-
+            df_metrics %>% filter(typeField == "percent") %>% pull(nameTW)
+          mutate_cols <-
+            names(data)[names(data) %in% col_names]
+          if (length(mutate_cols) > 0) {
+            data <<-
+              data %>%
+              mutate_at(mutate_cols,
+                        list(function(x){
+                          (x / 100) %>% formattable::percent(digits = 2)
+                        }))
+          }
+        }
+
+        if (field == "price") {
+          col_names <-
+            df_metrics %>% filter(typeField == "price") %>% pull(nameTW)
+          mutate_cols <-
+            names(data)[names(data) %in% col_names]
+          if (length(mutate_cols) > 0) {
+            data <<-
+              data %>%
+              mutate_at(mutate_cols,
+                        list(function(x){
+                          x %>% formattable::currency(digits = 2)
+                        }))
+          }
+        }
+        if (field == "time") {
+          col_names <-
+            df_metrics %>% filter(typeField == "time") %>% pull(nameTW)
+          mutate_cols <-
+            names(data)[names(data) %in% col_names]
+          if (length(mutate_cols) > 0) {
+            data <<-
+              data %>%
+              mutate_at(mutate_cols,
+                        list(function(x) {
+                          as.POSIXct(x, origin = "1970-01-01", tz = "UTC")
+                        }))
+          }
+        }
+
+
+      })
+
+    data <-
+      data %>%
+      separate(idTicker, sep = "/", into = c("idTicker", "classSecurity")) %>%
+      mutate_if(is.character,
+                list(function(x) {
+                  ifelse(x == "", NA, x) %>% str_trim() %>% str_to_upper()
+                })) %>%
+      suppressMessages() %>%
+      suppressWarnings()
+
+
+    data <-
+      data %>%
+      janitor::clean_names() %>%
+      dplyr::select(which(colMeans(is.na(.)) < 1))
+
+    if (region %>% str_to_lower() %>% str_detect("cfd") %>% sum(na.rm = T) > 0) {
+      data <-
+        data %>%
+        mutate(type_security = "BOND")
+
+      if (data %>% tibble::has_name("country")){
+        data <- data %>% rename(region= country)
+
+      }
+
+      if (data %>% tibble::has_name("descripiton")) {
+        data %>%
+          mutate(
+            country_duration = description,
+            country_duration = country_duration %>% gsub(pattern = "\\ GOVERNMENT BONDS ", replacement = "\\-", .)
+          ) %>%
+          separate(country_duration,
+                   into = c("country", "duration_slug"),
+                   sep = "\\-") %>%
+          mutate(
+            duration_slug = duration_slug %>% gsub("\\ YIELD", "", .),
+            days_duration_bond =
+              case_when(
+                duration_slug == "1 YR" ~ 360,
+                duration_slug == "2 YR" ~ 2 * 360,
+                duration_slug == "3 YR" ~ 3 * 360,
+                duration_slug == "5 YR" ~ 5 * 360,
+                duration_slug == "10 YR" ~ 10 * 360,
+                duration_slug == "15 YR" ~ 15 * 360,
+                duration_slug == "30 YR" ~ 30 * 360,
+                duration_slug == "20 YR" ~ 20 * 360,
+                duration_slug == "3 MO" ~ 90,
+                duration_slug == "6 MO" ~ 180 ,
+                duration_slug == "25 YR" ~ 25 * 360,
+                duration_slug == "50 YR" ~ 50 * 360,
+                duration_slug ==  "40 YR" ~ 40 * 360,
+                duration_slug == "1 MO" ~ 90
+              )
+          )
+      }
+
+    }
+
+    data
+
+  }
 
 #' Tradeview region metrics
 #'
 #' Get data for trade view query
 #'
 #' @param regions vector of regions \itemize{
+#' \item cfd
 #' \item america
 #' \item uk
 #' \item australia
@@ -1019,245 +1462,170 @@ tv_metric_query <-
 #' @import reticulate dplyr purrr stringr glue
 #'
 #' @examples
-#' tv_regions_metrics_data(regions = c( 'america'))
-tv_regions_metrics_data <-
+#' tv_metrics_data(regions = c( 'america'))
+tv_metrics_data <-
   function(regions = c( 'america'),
            query =
              list(
-             filter = data_frame(left = 'market_cap_basic',
-                                 operation = 'nempty'),
-             symbols = list(query = list(types = c(
-               'stock', 'fund', 'dr'
-             ))),
-             metrics =
-               c(
-                 "subtype",
-                 "beta_5_year",
-                 "earnings_release_date",
-                 "earnings_per_share_forecast_next_fq",
-                 "operating_margin",
-                 "return_on_equity",
-                 "current_ratio",
-                 "debt_to_assets",
-                 "price_revenue_ttm",
-                 "amount_recent",
-                 "market_cap_basic",
-                 "ebitda",
-                 "fundamental_currency_code",
-                 "total_assets",
-                 "current_session",
-                 "earnings_per_share_fq",
-                 "earnings_per_share_forecast_fq",
-                 "earnings_release_next_time",
-                 "cash_ratio",
-                 "yield_upcoming",
-                 "sector",
-                 "basic_eps_net_income",
-                 "price_book_ratio",
-                 "quick_ratio",
-                 "net_debt",
-                 "total_shares_outstanding_fundamental",
-                 "enterprise_value_fq",
-                 "beta_3_year",
-                 "total_capital",
-                 "earnings_per_share_diluted_ttm",
-                 "last_annual_eps",
-                 "revenue_fq",
-                 "ex_dividend_date_recent",
-                 "price_earnings_ttm",
-                 "debt_to_equity",
-                 "pre_tax_margin",
-                 "debt_to_equity_fq",
-                 "number_of_employees",
-                 "total_current_assets",
-                 "last_annual_revenue",
-                 "revenue_forecast_fq",
-                 "industry",
-                 "return_on_assets",
-                 "return_of_invested_capital_percent_ttm",
-                 "return_on_invested_capital",
-                 "gross_profit",
-                 "dividends_paid",
-                 "preferred_dividends",
-                 "earnings_release_next_date",
-                 "dividends_yield",
-                 "price_sales_ratio",
-                 "yield_recent",
-                 "ex_dividend_date_upcoming",
-                 "total_shares_outstanding",
-                 "price_earnings_to_growth_ttm",
-                 "price_book_fq",
-                 "enterprise_value_ebitda_ttm",
-                 "rtc",
-                 "amount_upcoming",
-                 "average_volume",
-                 "revenue_per_employee",
-                 "after_tax_margin",
-                 "net_income",
-                 "earnings_release_time",
-                 "type",
-                 "dividends_per_share_fq",
-                 "payment_date_upcoming",
-                 "gross_margin_percent_ttm",
-                 "earnings_per_share_basic_ttm",
-                 "price_free_cash_flow_ttm",
-                 "long_term_capital",
-                 "total_debt",
-                 "country",
-                 "total_revenue",
-                 "gross_margin",
-                 "number_of_shareholders",
-                 "beta_1_year",
-                 "goodwill",
-                 "expected_annual_dividends",
-                 "revenue_forecast_next_fq",
-                 "payment_date_recent",
-                 "low",
-                 "volume",
-                 "pre_change_abs",
-                 "gap",
-                 "open",
-                 "volume",
-                 "pre_change_abs",
-                 "time",
-                 "change_from_open",
-                 "low",
-                 "high",
-                 "close",
-                 "volume",
-                 "change_abs",
-                 "open",
-                 "change_from_open",
-                 "change_abs",
-                 "time",
-                 "change",
-                 "pre_change_abs",
-                 "time",
-                 "gap",
-                 "high",
-                 "open",
-                 "change_from_open",
-                 "change_abs",
-                 "low",
-                 "close",
-                 "change",
-                 "change_abs",
-                 "close",
-                 "time",
-                 "change",
-                 "pre_change",
-                 "close",
-                 "high",
-                 "gap",
-                 "change",
-                 "open",
-                 "high",
-                 "pre_change",
-                 "pre_change",
-                 "pre_change_abs",
-                 "gap",
-                 "pre_change",
-                 "change_from_open",
-                 "low",
-                 "volume",
-                 "relative_volume",
-                 "type",
-                 "subtype",
-                 "eps_surprise_fq",
-                 "market_cap_calc",
-                 "exchange",
-                 "price_sales",
-                 "eps_surprise_percent_fq"
-               )
-             ,
-             sort = list(sortBy = 'market_cap_basic',
-                         sortOrder = 'desc'),
-             options = list(lang = 'eng'),
-             range = c(0, 15000000000000)
-           ),
+               filter = data_frame(left = 'market_cap_basic',
+                                   operation = 'nempty'),
+               symbols = list(query = list(types = c(
+                 'stock', 'fund', 'dr'
+               ))),
+               metrics =
+                 c(
+                   "subtype",
+                   "name",
+                   "beta_5_year",
+                   "earnings_release_date",
+                   "earnings_per_share_forecast_next_fq",
+                   "operating_margin",
+                   "return_on_equity",
+                   "current_ratio",
+                   "debt_to_assets",
+                   "price_revenue_ttm",
+                   "amount_recent",
+                   "market_cap_basic",
+                   "ebitda",
+                   "fundamental_currency_code",
+                   "total_assets",
+                   "current_session",
+                   "earnings_per_share_fq",
+                   "earnings_per_share_forecast_fq",
+                   "earnings_release_next_time",
+                   "cash_ratio",
+                   "yield_upcoming",
+                   "sector",
+                   "basic_eps_net_income",
+                   "price_book_ratio",
+                   "quick_ratio",
+                   "net_debt",
+                   "total_shares_outstanding_fundamental",
+                   "enterprise_value_fq",
+                   "beta_3_year",
+                   "total_capital",
+                   "earnings_per_share_diluted_ttm",
+                   "last_annual_eps",
+                   "revenue_fq",
+                   "ex_dividend_date_recent",
+                   "price_earnings_ttm",
+                   "debt_to_equity",
+                   "pre_tax_margin",
+                   "debt_to_equity_fq",
+                   "number_of_employees",
+                   "total_current_assets",
+                   "last_annual_revenue",
+                   "revenue_forecast_fq",
+                   "industry",
+                   "return_on_assets",
+                   "return_of_invested_capital_percent_ttm",
+                   "return_on_invested_capital",
+                   "gross_profit",
+                   "dividends_paid",
+                   "preferred_dividends",
+                   "earnings_release_next_date",
+                   "dividends_yield",
+                   "price_sales_ratio",
+                   "yield_recent",
+                   "ex_dividend_date_upcoming",
+                   "total_shares_outstanding",
+                   "price_earnings_to_growth_ttm",
+                   "price_book_fq",
+                   "enterprise_value_ebitda_ttm",
+                   "rtc",
+                   "amount_upcoming",
+                   "average_volume",
+                   "revenue_per_employee",
+                   "after_tax_margin",
+                   "net_income",
+                   "earnings_release_time",
+                   "type",
+                   "dividends_per_share_fq",
+                   "payment_date_upcoming",
+                   "gross_margin_percent_ttm",
+                   "earnings_per_share_basic_ttm",
+                   "price_free_cash_flow_ttm",
+                   "long_term_capital",
+                   "total_debt",
+                   "country",
+                   "total_revenue",
+                   "gross_margin",
+                   "number_of_shareholders",
+                   "beta_1_year",
+                   "goodwill",
+                   "expected_annual_dividends",
+                   "revenue_forecast_next_fq",
+                   "payment_date_recent",
+                   "low",
+                   "volume",
+                   "pre_change_abs",
+                   "gap",
+                   "open",
+                   "volume",
+                   "pre_change_abs",
+                   "time",
+                   "change_from_open",
+                   "low",
+                   "high",
+                   "close",
+                   "volume",
+                   "change_abs",
+                   "open",
+                   "change_from_open",
+                   "change_abs",
+                   "time",
+                   "change",
+                   "pre_change_abs",
+                   "time",
+                   "gap",
+                   "high",
+                   "open",
+                   "change_from_open",
+                   "change_abs",
+                   "low",
+                   "close",
+                   "change",
+                   "change_abs",
+                   "close",
+                   "time",
+                   "change",
+                   "pre_change",
+                   "close",
+                   "high",
+                   "gap",
+                   "change",
+                   "open",
+                   "high",
+                   "pre_change",
+                   "pre_change",
+                   "pre_change_abs",
+                   "gap",
+                   "pre_change",
+                   "change_from_open",
+                   "low",
+                   "volume",
+                   "relative_volume",
+                   "type",
+                   "subtype",
+                   "eps_surprise_fq",
+                   "market_cap_calc",
+                   "exchange",
+                   "price_sales",
+                   "eps_surprise_percent_fq"
+                 )
+               ,
+               sort = list(sortBy = 'market_cap_basic',
+                           sortOrder = 'desc'),
+               options = list(lang = 'eng'),
+               range = c(0, 15000000000000)
+             ),
            return_message = TRUE) {
-    options(scipen = 99999)
-    glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
-      cat(fill = T)
-
-    urls <-
-      glue::glue("https://scanner.tradingview.com/{regions}/scan")
-
-    data_query <-
-      tv_metric(
-        filter = query$filter,
-        symbols = query$symbols,
-        metrics = query$metrics,
-        sort = query$sort,
-        options = query$options,
-        range = query$range
-      )
-
-    data <-
-      seq_along(urls) %>%
-      future_map_dfr(function(x) {
-        .parse_tv_metric_url(url = urls[x], data_query = data_query)
-      }) %>%
-      mutate(countItem = countItem %>% as.integer())
-
-    metrics <-
-      data_frame(nameTW = c('name', query$metrics) %>% unique()) %>%
-      mutate(countItem = 1:n())
-
-    data <-
-      data %>%
-      left_join(metrics) %>%
-      suppressMessages()
-
-    data <-
-      data %>%
-      mutate(idTicker = ifelse(nameTW == "name", value, NA)) %>%
-      fill(idTicker) %>%
-      filter(!nameTW == 'name')
-
-    df_metrics <-
-      tv_regions_metrics(regions = regions[1])
-
-    data <-
-      data %>%
-      left_join(df_metrics %>%
-                  select(nameTW, typeField)) %>%
-      distinct() %>%
-      suppressMessages() %>%
-      filter(!nameTW %in% c('component', 'index'))
-
-    df_companies <-
-      data %>%
-      filter(typeField %in% c(NA, 'text')) %>%
-      dplyr::select(idRegion:value, nameTW) %>%
-      spread(nameTW, value)
-
-    df_values <-
-      data %>%
-      filter(!typeField %in% c(NA, 'text')) %>%
-      dplyr::select(idExchange:value, nameTW) %>%
-      mutate(value = value %>% readr::parse_number()) %>%
-      spread(nameTW, value)
-
-    data <-
-      df_companies %>%
-      left_join(df_values) %>%
-      suppressMessages() %>%
-      dplyr::select(which(colMeans(is.na(.)) < 1))
-
-    data <-
-      data %>%
-      mutate_if(is.character,
-                list(function(x) {
-                  ifelse(x == "", NA, x) %>% str_trim() %>% str_to_upper()
-                }))
-
-    data <-
-      data %>%
-      janitor::clean_names()
-
-    data
-
+    .tv_metric_data_safe <-
+      purrr::possibly(.tv_metric_data, data_frame())
+    regions %>%
+      map_df(function(region){
+        .tv_metric_data_safe(region = region, query = query, return_message = return_message)
+      })
   }
 
 

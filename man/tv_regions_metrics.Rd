@@ -11,6 +11,7 @@ tv_regions_metrics(regions = c("america", "uk", "australia", "brazil",
 }
 \arguments{
 \item{regions}{vector of regions \itemize{
+\item cfd
 \item america
 \item uk
 \item australia

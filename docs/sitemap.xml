@@ -178,6 +178,9 @@
     <loc>http://asbcllc.com/fundManageR//reference/fundManageR.html</loc>
   </url>
   <url>
+    <loc>http://asbcllc.com/fundManageR//reference/generate_tv_bond_query.html</loc>
+  </url>
+  <url>
     <loc>http://asbcllc.com/fundManageR//reference/get_class_df.html</loc>
   </url>
   <url>
@@ -331,10 +334,10 @@
     <loc>http://asbcllc.com/fundManageR//reference/tv_metric_query.html</loc>
   </url>
   <url>
-    <loc>http://asbcllc.com/fundManageR//reference/tv_regions_metrics.html</loc>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_metrics_data.html</loc>
   </url>
   <url>
-    <loc>http://asbcllc.com/fundManageR//reference/tv_regions_metrics_data.html</loc>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_regions_metrics.html</loc>
   </url>
   <url>
     <loc>http://asbcllc.com/fundManageR//reference/tv_regions_tickers.html</loc>
