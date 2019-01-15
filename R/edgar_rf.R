@@ -3988,7 +3988,7 @@ get_cik_url_df <-
   }
 
 .parse_cik_data <-
-  function(cik = 1326801,
+  function(cik = 899689,
            nest_data = TRUE,
            tables = NULL,
            return_message = TRUE) {
@@ -4399,7 +4399,7 @@ get_cik_url_df <-
       select(-dplyr::matches("countCols")
       )
 
-    return(all_data)
+    all_data
   }
 
 #' SEC filer
@@ -7164,7 +7164,7 @@ sec_filing_streams_rf <-
   }
 
 .parse_ticker_data <-
-  function(ticker = "FB",
+  function(ticker = "VNO",
            nest_data = TRUE,
            tables = NULL,
            return_message = TRUE) {
@@ -7200,8 +7200,8 @@ sec_filing_streams_rf <-
 
     general <-
       .parse_company_general_safe(ticker = ticker,
-                                 nest_data = nest_data,
-                                 return_message = return_message) %>%
+                                  nest_data = nest_data,
+                                  return_message = return_message) %>%
       suppressWarnings()
 
     has_trades <-
@@ -7210,8 +7210,8 @@ sec_filing_streams_rf <-
     if (has_trades) {
       trades <-
         .parse_trades_safe(ticker = ticker,
-                          nest_data = nest_data,
-                          return_message = return_message) %>%
+                           nest_data = nest_data,
+                           return_message = return_message) %>%
         suppressWarnings()
     } else {
       trades <-
@@ -7221,8 +7221,8 @@ sec_filing_streams_rf <-
     cik_data <-
       general$idCIK %>%
       .parse_cik_data(tables = tables,
-                     nest_data = nest_data,
-                     return_message = return_message)
+                      nest_data = nest_data,
+                      return_message = return_message)
 
     if ('General' %in% cik_data$nameTable) {
       cik_data <-
@@ -7241,13 +7241,15 @@ sec_filing_streams_rf <-
       filter(countCols > 1) %>%
       select(-countCols)
 
-    return(all_data)
 
     if (return_message) {
       list("Acquired all data for ", all_data$nameEntity %>% unique()) %>%
         purrr::invoke(paste0, .) %>%
         cat(fill = T)
     }
+
+    return(all_data)
+
 
   }
 
