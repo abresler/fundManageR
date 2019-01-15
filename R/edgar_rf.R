@@ -2548,7 +2548,7 @@ get_cik_url_df <-
 
         company_name_df <-
           ticker %>%
-          parse_company_general() %>%
+          .parse_company_general() %>%
           suppressWarnings()
 
         has_rows <-
@@ -3847,7 +3847,7 @@ get_cik_url_df <-
         as_data_frame()
 
       general_df <-
-        parse_company_general(ticker = company_df$company)
+        .parse_company_general(ticker = company_df$company)
     }
 
     if (is_insider) {
@@ -3988,7 +3988,7 @@ get_cik_url_df <-
   }
 
 .parse_cik_data <-
-  function(cik = 1612000,
+  function(cik = 1326801,
            nest_data = TRUE,
            tables = NULL,
            return_message = TRUE) {
@@ -4093,7 +4093,7 @@ get_cik_url_df <-
       general_df <-
         url_df$urlJSON[[1]] %>%
         .parse_json_general_filing(nest_data = nest_data,
-                                       return_message = return_message) %>%
+                                   return_message = return_message) %>%
         mutate(nameEntity = nameEntity %>% str_to_upper()) %>%
         as_tibble()
 
@@ -4141,7 +4141,7 @@ get_cik_url_df <-
       private_df <-
         url_df$urlJSON[[3]] %>%
         .parse_json_private_safe(nest_data = nest_data,
-                                return_message = return_message)
+                                 return_message = return_message)
 
       has_rows  <-
         private_df %>% nrow() > 0
@@ -4257,12 +4257,12 @@ get_cik_url_df <-
       owners_df <-
         url_df$urlJSON[[8]] %>%
         .parse_json_owners_safe(nest_data = nest_data,
-                               return_message = return_message)
+                                return_message = return_message)
 
       if ('idTypeFilerOwner' %in% names(owners_df)) {
         owners_df <-
           owners_df %>%
-          left_join(get_filer_type_df()) %>%
+          left_join(filer_type_df()) %>%
           select(idCIK:nameEntityOwner, typeFilerOwner, everything()) %>%
           suppressMessages()
       }
@@ -4396,7 +4396,8 @@ get_cik_url_df <-
       mutate(countCols = dataTable %>% purrr::map_dbl(ncol)) %>%
       filter(countCols > 1) %>%
       suppressWarnings() %>%
-      select(-dplyr::matches("countCols"))
+      select(-dplyr::matches("countCols")
+      )
 
     return(all_data)
   }
@@ -4560,8 +4561,8 @@ sec_filer <-
     }
 
     if (has_tickers) {
-      parse_ticker_data_safe <-
-        purrr::possibly(parse_ticker_data, data_frame())
+      .parse_ticker_data_safe <-
+        purrr::possibly(.parse_ticker_data, data_frame())
 
       table_exists <-
         'all_data' %>% exists()
@@ -4570,7 +4571,7 @@ sec_filer <-
         all_ticker_data <-
           tickers %>%
           future_map_dfr(function(x) {
-            parse_ticker_data(
+            .parse_ticker_data(
               ticker = x,
               nest_data = nest_data,
               tables = tables,
@@ -4586,7 +4587,7 @@ sec_filer <-
         all_data <-
           tickers %>%
           future_map_dfr(function(x) {
-            parse_ticker_data_safe(ticker = x,
+            .parse_ticker_data_safe(ticker = x,
                                    tables = tables,
                                    return_message = return_message)
           }) %>%
@@ -6527,7 +6528,7 @@ sec_filing_streams_rf <-
 
 
 # publics -----------------------------------------------------------------
-generate_ticker_general_url <-
+.generate_ticker_general_url <-
   function(ticker = "FB") {
     list("http://rankandfiled.com/data/company/",
          ticker,
@@ -6536,7 +6537,7 @@ generate_ticker_general_url <-
   }
 
 
-parse_json_public_general <-
+.parse_json_public_general <-
   function(url = "http://rankandfiled.com/data/company/BX/general",
            nest_data = TRUE,
            return_message = TRUE) {
@@ -6870,13 +6871,13 @@ parse_json_public_general <-
     return(general_df)
   }
 
-parse_company_general <-
+.parse_company_general <-
   function(ticker = "FB",
            nest_data = TRUE,
            return_message = TRUE) {
     data <-
-      generate_ticker_general_url(ticker = ticker) %>%
-      parse_json_public_general(nest_data = nest_data,
+      .generate_ticker_general_url(ticker = ticker) %>%
+      .parse_json_public_general(nest_data = nest_data,
                                 return_message = return_message)
     if ('nameEntity' %in% names(data)) {
       data <-
@@ -6909,7 +6910,7 @@ parse_company_general <-
     return(data)
   }
 
-parse_json_trades <-
+.parse_json_trades <-
   function(url = "http://rankandfiled.com/data/filer/1326801/trades?start=0",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -7017,12 +7018,12 @@ parse_json_trades <-
     return(trade_df)
   }
 
-parse_trades <-
+.parse_trades <-
   function(ticker = "FB",
            nest_data = TRUE,
            return_message = TRUE) {
     general_df <-
-      parse_company_general(ticker = ticker, nest_data)
+      .parse_company_general(ticker = ticker, nest_data)
 
     cik <-
       general_df$idCIK
@@ -7044,13 +7045,13 @@ parse_trades <-
       ) %>%
       purrr::invoke(paste0, .)
 
-    parse_json_trades_safe <-
-      purrr::possibly(parse_json_trades, NULL)
+    .parse_json_trades_safe <-
+      purrr::possibly(.parse_json_trades, NULL)
 
     all_trades <-
       trade_urls %>%
       future_map_dfr(function(x) {
-        parse_json_trades_safe(url = x, return_message = return_message)
+        .parse_json_trades_safe(url = x, return_message = return_message)
       }) %>%
       distinct() %>%
       suppressWarnings()
@@ -7106,11 +7107,11 @@ parse_trades <-
 
   }
 
-parse_public_filings <-
+.parse_public_filings <-
   function(ticker = "FB",
            return_message = TRUE) {
     general_df <-
-      parse_company_general(ticker = ticker)
+      .parse_company_general(ticker = ticker)
 
     cik <-
       general_df$idCIK
@@ -7162,12 +7163,12 @@ parse_public_filings <-
     return(all_filings)
   }
 
-parse_ticker_data <-
+.parse_ticker_data <-
   function(ticker = "FB",
            nest_data = TRUE,
            tables = NULL,
            return_message = TRUE) {
-    if (tables %>% is_null()) {
+    if (length(tables) == 0) {
       tables <-
         c(
           'General',
@@ -7184,20 +7185,21 @@ parse_ticker_data <-
           'Subsidiaries'
         )
     }
+
     ticker <-
       ticker %>% str_to_upper()
 
-    parse_company_general_safe <-
-      purrr::possibly(parse_company_general, NULL)
+    .parse_company_general_safe <-
+      purrr::possibly(.parse_company_general, NULL)
 
-    parse_trades_safe <-
-      purrr::possibly(parse_trades, NULL)
+    .parse_trades_safe <-
+      purrr::possibly(.parse_trades, NULL)
 
-    parse_public_filings_safe <-
-      purrr::possibly(parse_public_filings, NULL)
+    .parse_public_filings_safe <-
+      purrr::possibly(.parse_public_filings, NULL)
 
     general <-
-      parse_company_general_safe(ticker = ticker,
+      .parse_company_general_safe(ticker = ticker,
                                  nest_data = nest_data,
                                  return_message = return_message) %>%
       suppressWarnings()
@@ -7207,7 +7209,7 @@ parse_ticker_data <-
 
     if (has_trades) {
       trades <-
-        parse_trades_safe(ticker = ticker,
+        .parse_trades_safe(ticker = ticker,
                           nest_data = nest_data,
                           return_message = return_message) %>%
         suppressWarnings()
@@ -7423,7 +7425,7 @@ us_public_companies <-
     dup_general_df <-
       dup_count_df$idTicker %>%
       future_map_dfr(function(x) {
-        parse_company_general(ticker = x)
+        .parse_company_general(ticker = x)
       }) %>%
       arrange(idTicker)
 
@@ -7451,7 +7453,7 @@ us_public_companies <-
         company_data$idTicker %>%
         unique() %>%
         future_map_dfr(function(x) {
-          parse_company_general(ticker = x, return_message = return_message)
+          .parse_company_general(ticker = x, return_message = return_message)
         }) %>%
         suppressWarnings()
 
@@ -7529,12 +7531,12 @@ us_public_companies <-
       dup_df <-
         company_data %>%
         filter(idTicker %in% dup_tickers)
-      parse_company_general_safe <-
-        purrr::possibly(parse_company_general, data_frame)
+      .parse_company_general_safe <-
+        purrr::possibly(.parse_company_general, data_frame)
       dup_general_df <-
         dup_tickers %>%
         future_map_dfr(function(x) {
-          parse_company_general(ticker = x)
+          .parse_company_general(ticker = x)
         }) %>%
         arrange(idTicker) %>%
         suppressWarnings()
@@ -7587,7 +7589,7 @@ us_public_companies <-
       dup_general_df <-
         dup_tickers %>%
         future_map_dfr(function(x) {
-          parse_company_general(ticker = x)
+          .parse_company_general(ticker = x)
         }) %>%
         arrange(idTicker) %>%
         suppressWarnings()
