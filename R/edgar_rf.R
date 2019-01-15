@@ -1739,28 +1739,51 @@ recent_insider_trades <-
 #' sec_securities_filing_counts()
 sec_securities_filing_counts <-
   function(return_message = TRUE) {
-    data_frame(
-      idForm = c('D', 'W', 'S-1', 'S-3', 'S-4'),
+    dict_count <- data_frame(
+      idForm = c('D', 'W', 'S-1', 'S-3', 'S-4', "F"),
       nameForm = c(
         "Exempt Offering",
         "Secondary Sale",
         "IPOs",
-        "IPO Withdrawls",
-        "Merger"
+        "Simplified Registration Form",
+        "Merger",
+        "Foreign Issuer"
       ) %>% stringr::str_to_upper()
     )
+    data <-
+      "http://rankandfiled.com/data/registered_offerings" %>%
+      jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = T)
+
+
+    data <-
+      data$registered
+
+    data <-
+      seq_along(data) %>%
+      map_df(function(x) {
+        df_row <-
+          data[[x]]
+        year_no <-
+          names(data[x]) %>% as.numeric()
+        df_row %>%
+          flatten_df() %>%
+          as_tibble() %>%
+          gather(idForm, countFilings) %>%
+          mutate(yearFiling = year_no) %>%
+          select(yearFiling, everything())
+      })
 
     filing_count_data <-
-      "http://rankandfiled.com/data/registered_offerings" %>%
-      jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-      flatten_df() %>%
-      unnest() %>%
-      mutate(idForm = c('D', 'W', 'S-1', 'S-3', 'S-4')) %>%
-      select(idForm, everything()) %>%
-      gather(yearFiling, countFilings, -idForm) %>%
-      mutate(yearFiling = yearFiling %>% as.numeric(),
-             countFilings = countFilings %>% formattable::comma(digits = 0)) %>%
-      filter(countFilings > 0)
+      data %>%
+      mutate(
+        countFilings = countFilings %>% formattable::comma(digits = 0)
+      ) %>%
+      filter(countFilings > 0) %>%
+      left_join(
+        dict_count
+      ) %>%
+      select(yearFiling, idForm,nameForm, everything()) %>%
+      suppressMessages()
 
     if (return_message) {
       list(
@@ -1775,7 +1798,7 @@ sec_securities_filing_counts <-
         cat(fill = T)
     }
 
-    return(filing_count_data)
+    filing_count_data
 
   }
 
@@ -1996,7 +2019,7 @@ parse_rf_search_name <-
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
       .$results %>%
       data.frame(results = ., stringsAsFactors = FALSE) %>%
-      as_data_frame()
+      as_tibble()
 
     type_df <-
       data_frame(
@@ -2019,7 +2042,7 @@ parse_rf_search_name <-
       ) %>%
       mutate(idCIK = idCIKTicker %>% as.character() %>% readr::parse_number()) %>%
       left_join(type_df) %>%
-      left_join(get_company_type_df()) %>%
+      left_join(company_type_df()) %>%
       suppressWarnings() %>%
       suppressMessages()
 
@@ -2064,6 +2087,7 @@ sec_entity <-
     json_url <-
       entity_name %>%
       generate_search_name()
+
     parse_rf_search_name_safe <-
       possibly(parse_rf_search_name, data_frame())
 
@@ -2327,7 +2351,7 @@ sec_form_ds <-
       period_df$namePeriod
 
     category_df <-
-      get_dictionary_form_d_categories()
+      dictionary_form_d_categories()
 
     if ('industries' %>% exists()) {
       industries <-
@@ -2481,7 +2505,7 @@ get_cik_url_df <-
     return(url_df)
   }
 
-parse_json_general_filing <-
+.parse_json_general_filing <-
   function(url = "http://rankandfiled.com/data/filer/1468327/general",
            nest_data = TRUE,
            return_message = TRUE) {
@@ -2686,7 +2710,7 @@ parse_json_general_filing <-
 
   }
 
-parse_json_filings <-
+.parse_json_filings <-
   function(url = "http://rankandfiled.com/data/filer/1138621/filings",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -2757,7 +2781,7 @@ parse_json_filings <-
     return(json_data)
   }
 
-parse_json_private <-
+.parse_json_private <-
   function(url = "http://rankandfiled.com/data/filer/1438171/private",
            nest_data = TRUE,
            return_message = TRUE) {
@@ -2913,9 +2937,9 @@ parse_json_private <-
     if (has_brokers) {
       broker_df <-
         1:(json_data$offering_history$amended %>% length()) %>%
-        future_map_dfr(function(x) {
+        map_dfr(function(x) {
           empty_value <-
-            json_data$offering_history$`_brokers`[[x]] %>% is_null()
+            json_data$offering_history$`_brokers`[[x]] %>% length() ==0
           if (empty_value) {
             broker_crd <-
               NA
@@ -3059,7 +3083,7 @@ parse_json_private <-
     return(offering_data)
   }
 
-parse_json_fundraising <-
+.parse_json_fundraising <-
   function(url = "http://rankandfiled.com/data/filer/1138621/fundraising",
            nest_data = TRUE,
            return_message = TRUE) {
@@ -3195,7 +3219,7 @@ parse_json_fundraising <-
     return(fundraising_df)
   }
 
-parse_json_traders <-
+.parse_json_traders <-
   function(url = "http://rankandfiled.com/data/filer/1326801/traders",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -3234,7 +3258,7 @@ parse_json_traders <-
     return(df)
   }
 
-parse_json_clevel <-
+.parse_json_clevel <-
   function(url = "http://rankandfiled.com/data/filer/1326801/clevel",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -3288,7 +3312,7 @@ parse_json_clevel <-
     return(clevel_df)
   }
 
-parse_json_mda <-
+.parse_json_mda <-
   function(url = "http://rankandfiled.com/data/filer/1326801/mda",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -3332,7 +3356,7 @@ parse_json_mda <-
     return(data)
   }
 
-parse_json_owners <-
+.parse_json_owners <-
   function(url = "http://rankandfiled.com/data/filer/1326801/owners",
            nest_data = TRUE,
            return_message = TRUE) {
@@ -3571,7 +3595,7 @@ parse_json_owners <-
     return(general_df)
   }
 
-parse_json_public_filers <-
+.parse_json_public_filers <-
   function(url = "http://rankandfiled.com/data/filer/1680780/all?start=0",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -3661,7 +3685,7 @@ parse_json_public_filers <-
       tidyr::fill(dateFiling) %>%
       tidyr::fill(detailForm) %>%
       select(-slugSEC) %>%
-      left_join(get_dictionary_sec_form_codes()) %>%
+      left_join(dictionary_sec_form_codes()) %>%
       tidyr::fill(nameForm) %>%
       select(idCIK, idRF, idForm, nameForm, everything()) %>%
       suppressMessages() %>%
@@ -3677,7 +3701,7 @@ parse_json_public_filers <-
     return(filing_df)
   }
 
-parse_json_subsidiaries <-
+.parse_json_subsidiaries <-
   function(url = "http://rankandfiled.com/data/filer/34088/subsidiaries",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -3802,7 +3826,7 @@ parse_json_subsidiaries <-
     return(data)
   }
 
-parse_cik_filings <-
+.parse_cik_filings <-
   function(cik = 1527559,
            return_message = TRUE) {
     general_url <-
@@ -3836,7 +3860,7 @@ parse_cik_filings <-
     if (is_private_filer) {
       general_df <-
         general_url %>%
-        parse_json_general_filing()
+        .parse_json_general_filing()
     }
 
     filing_pages <-
@@ -3860,13 +3884,13 @@ parse_cik_filings <-
         purrr::invoke(paste0, .)
     }
 
-    parse_json_public_filers_safe <-
-      purrr::possibly(parse_json_public_filers, NULL)
+    .parse_json_public_filers_safe <-
+      purrr::possibly(.parse_json_public_filers, NULL)
 
     all_filings <-
       filing_urls %>%
       future_map_dfr(function(x) {
-        parse_json_public_filers_safe(url = x, return_message = return_message)
+        .parse_json_public_filers_safe(url = x, return_message = return_message)
       }) %>%
       distinct() %>%
       suppressWarnings()
@@ -3884,7 +3908,7 @@ parse_cik_filings <-
 
     if ('typeReport' %in% names(all_filings)) {
       report_dict_df <-
-        get_dictionary_sec_filing_codes()
+        dictionary_sec_filing_codes()
 
       report_df <-
         all_filings %>%
@@ -3963,8 +3987,8 @@ parse_cik_filings <-
     return(all_filings)
   }
 
-parse_cik_data <-
-  function(cik = 1326801,
+.parse_cik_data <-
+  function(cik = 1612000,
            nest_data = TRUE,
            tables = NULL,
            return_message = TRUE) {
@@ -4064,13 +4088,14 @@ parse_cik_data <-
       'subsidiaries' %>% str_to_upper() %>% str_detect(tables) %>% sum() > 0
 
     if (has_general) {
-      parse_json_general_filing_safe <-
-        purrr::possibly(parse_json_general_filing, data_frame())
+      .parse_json_general_filing_safe <-
+        purrr::possibly(.parse_json_general_filing, data_frame())
       general_df <-
         url_df$urlJSON[[1]] %>%
-        parse_json_general_filing(nest_data = nest_data,
+        .parse_json_general_filing(nest_data = nest_data,
                                        return_message = return_message) %>%
-        mutate(nameEntity = nameEntity %>% str_to_upper())
+        mutate(nameEntity = nameEntity %>% str_to_upper()) %>%
+        as_tibble()
 
       if (general_df %>% nrow() == 0) {
         general_df <-
@@ -4084,12 +4109,12 @@ parse_cik_data <-
 
 
     if (has_filings) {
-      parse_json_filings_safe <-
-        purrr::possibly(parse_json_filings, data_frame())
+      .parse_json_filings_safe <-
+        purrr::possibly(.parse_json_filings, data_frame())
 
       filing_df <-
         url_df$urlJSON[[2]] %>%
-        parse_json_filings_safe(return_message = return_message) %>%
+        .parse_json_filings_safe(return_message = return_message) %>%
         mutate_if(is_character,
                   str_to_upper)
 
@@ -4110,12 +4135,12 @@ parse_cik_data <-
 
 
     if (has_private) {
-      parse_json_private_safe <-
-        purrr::possibly(parse_json_private, data_frame())
+      .parse_json_private_safe <-
+        purrr::possibly(.parse_json_private, data_frame())
 
       private_df <-
         url_df$urlJSON[[3]] %>%
-        parse_json_private_safe(nest_data = nest_data,
+        .parse_json_private_safe(nest_data = nest_data,
                                 return_message = return_message)
 
       has_rows  <-
@@ -4135,12 +4160,12 @@ parse_cik_data <-
 
 
     if (has_related) {
-      parse_json_fundraising_safe <-
-        purrr::possibly(parse_json_fundraising, data_frame())
+      .parse_json_fundraising_safe <-
+        purrr::possibly(.parse_json_fundraising, data_frame())
 
       fundraising_df <-
         url_df$urlJSON[[4]] %>%
-        parse_json_fundraising_safe(nest_data = nest_data,
+        .parse_json_fundraising_safe(nest_data = nest_data,
                                     return_message = return_message)
 
       has_rows  <-
@@ -4158,12 +4183,12 @@ parse_cik_data <-
     }
 
     if (has_traders) {
-      parse_json_traders_safe <-
-        purrr::possibly(parse_json_traders, data_frame())
+      .parse_json_traders_safe <-
+        purrr::possibly(.parse_json_traders, data_frame())
 
       traders_df <-
         url_df$urlJSON[[5]] %>%
-        parse_json_traders_safe(return_message = return_message)
+        .parse_json_traders_safe(return_message = return_message)
 
       has_rows  <-
         traders_df %>% nrow() > 0
@@ -4181,12 +4206,12 @@ parse_cik_data <-
 
 
     if (has_clevel) {
-      parse_json_clevel_safe <-
-        purrr::possibly(parse_json_clevel, data_frame())
+      .parse_json_clevel_safe <-
+        purrr::possibly(.parse_json_clevel, data_frame())
 
       clevel_df <-
         url_df$urlJSON[[6]] %>%
-        parse_json_clevel_safe(return_message = return_message)
+        .parse_json_clevel_safe(return_message = return_message)
 
       has_rows  <-
         clevel_df %>% nrow() > 0
@@ -4203,12 +4228,12 @@ parse_cik_data <-
     }
 
     if (has_mda) {
-      parse_json_mda_safe <-
-        purrr::possibly(parse_json_mda, data_frame())
+      .parse_json_mda_safe <-
+        purrr::possibly(.parse_json_mda, data_frame())
 
       mda_df <-
         url_df$urlJSON[[7]] %>%
-        parse_json_mda_safe(return_message = return_message)
+        .parse_json_mda_safe(return_message = return_message)
 
       has_rows  <-
         mda_df %>% nrow() > 0
@@ -4226,12 +4251,12 @@ parse_cik_data <-
     }
 
     if (has_owners) {
-      parse_json_owners_safe <-
-        purrr::possibly(parse_json_owners, data_frame())
+      .parse_json_owners_safe <-
+        purrr::possibly(.parse_json_owners, data_frame())
 
       owners_df <-
         url_df$urlJSON[[8]] %>%
-        parse_json_owners_safe(nest_data = nest_data,
+        .parse_json_owners_safe(nest_data = nest_data,
                                return_message = return_message)
 
       if ('idTypeFilerOwner' %in% names(owners_df)) {
@@ -4258,11 +4283,11 @@ parse_cik_data <-
     }
 
     if (has_cik_filings) {
-      parse_cik_filings_safe <-
-        purrr::possibly(parse_cik_filings, data_frame())
+      .parse_cik_filings_safe <-
+        purrr::possibly(.parse_cik_filings, data_frame())
 
       cik_filing_df <-
-        parse_cik_filings_safe(cik = cik, return_message = return_message)
+        .parse_cik_filings_safe(cik = cik, return_message = return_message)
     } else {
       cik_filing_df <-
         data_frame(idCIK = cik)
@@ -4293,12 +4318,12 @@ parse_cik_data <-
     }
 
     if (has_subs) {
-      parse_json_subsidiaries_safe <-
-        purrr::possibly(parse_json_subsidiaries, data_frame())
+      .parse_json_subsidiaries_safe <-
+        purrr::possibly(.parse_json_subsidiaries, data_frame())
 
       sub_df <-
         url_df$urlJSON[[9]] %>%
-        parse_json_subsidiaries(return_message = return_message)
+        .parse_json_subsidiaries(return_message = return_message)
 
       has_rows  <-
         sub_df %>% nrow() > 0
@@ -4510,15 +4535,15 @@ sec_filer <-
         append(ciks)
     }
 
-    parse_cik_data_safe <-
-      possibly(parse_cik_data, NULL)
+    .parse_cik_data_safe <-
+      possibly(.parse_cik_data, NULL)
 
     if (all_ciks %>% length() > 0) {
       all_data <-
         all_ciks %>%
         sort() %>%
         future_map_dfr(function(x) {
-          parse_cik_data_safe(
+          .parse_cik_data_safe(
             tables = tables,
             nest_data = nest_data,
             cik = x,
@@ -5244,7 +5269,8 @@ parse_json_general_insider <-
         companies_df <-
           companies_df %>%
           mutate(idRow = 1:n()) %>%
-          nest(-c(idRow, idCIK), .key = dataDetailsCompaniesOwned)
+          nest(-c(idRow, idCIK), .key = dataDetailsCompaniesOwned) %>%
+          as_tibble()
       }
 
       general_df <-
@@ -5441,7 +5467,7 @@ parse_insider_trades <-
     owned_company_df <-
       company_urls_general %>%
       future_map_dfr(function(x) {
-        parse_json_general_filing(url = x,
+        .parse_json_general_filing(url = x,
                                   return_message = TRUE,
                                   nest_data = nest_data)
       })
@@ -5517,13 +5543,13 @@ parse_insider_filings <-
       ) %>%
       purrr::invoke(paste0, .)
 
-    parse_json_public_filers_safe <-
-      purrr::possibly(parse_json_public_filers, NULL)
+    .parse_json_public_filers_safe <-
+      purrr::possibly(.parse_json_public_filers, NULL)
 
     all_filings <-
       filing_urls %>%
       future_map_dfr(function(x) {
-        parse_json_public_filers_safe(url = x, return_message = return_message)
+        .parse_json_public_filers_safe(url = x, return_message = return_message)
       }) %>%
       distinct() %>%
       suppressWarnings() %>%
@@ -5891,7 +5917,7 @@ parse_filing_stream <-
 
     if ('idFormType' %in% names(general_df)) {
       general_df %>%
-        left_join(get_dictionary_sec_filing_codes()) %>%
+        left_join(dictionary_sec_filing_codes()) %>%
         suppressMessages()
     }
 
@@ -6864,7 +6890,7 @@ parse_company_general <-
              data$idCIK,
              '/general') %>%
         purrr::invoke(paste0, .) %>%
-        parse_json_general_filing()
+        .parse_json_general_filing()
 
       entity <-
         df_name$nameEntity
@@ -7006,7 +7032,7 @@ parse_trades <-
       purrr::invoke(paste0, .)
 
     count_trades <-
-      parse_json_traders(url = trader_url) %>%
+      .parse_json_traders(url = trader_url) %>%
       .$countTraders %>% unique() %/% 50
 
     trade_urls <-
@@ -7032,7 +7058,7 @@ parse_trades <-
     owners_df <-
       list("http://rankandfiled.com/data/filer/", cik, '/owners') %>%
       purrr::invoke(paste0, .) %>%
-      parse_json_owners(nest_data = nest_data)
+      .parse_json_owners(nest_data = nest_data)
 
     entity <-
       general_df$nameEntity
@@ -7101,13 +7127,13 @@ parse_public_filings <-
       ) %>%
       purrr::invoke(paste0, .)
 
-    parse_json_public_filers_safe <-
-      purrr::possibly(parse_json_public_filers, NULL)
+    .parse_json_public_filers_safe <-
+      purrr::possibly(.parse_json_public_filers, NULL)
 
     all_filings <-
       filing_urls %>%
       future_map_dfr(function(x) {
-        parse_json_public_filers_safe(url = x, return_message = return_message)
+        .parse_json_public_filers_safe(url = x, return_message = return_message)
       }) %>%
       distinct() %>%
       suppressWarnings()
@@ -7192,7 +7218,7 @@ parse_ticker_data <-
 
     cik_data <-
       general$idCIK %>%
-      parse_cik_data(tables = tables,
+      .parse_cik_data(tables = tables,
                      nest_data = nest_data,
                      return_message = return_message)
 
