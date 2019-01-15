@@ -1,6 +1,6 @@
-pandoc: '2.4'
-pkgdown: 1.1.0.9000
-pkgdown_sha: a15850f0c2111bf68e4d137e3e52afdf1bf3c9f8
+pandoc: '2.5'
+pkgdown: 1.3.0.9000
+pkgdown_sha: fa9b7502e80401db4b410086b0a8f6ab444f0c66
 articles: []
 urls:
   reference: http://asbcllc.com/fundManageR//reference

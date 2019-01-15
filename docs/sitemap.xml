@@ -184,9 +184,6 @@
     <loc>http://asbcllc.com/fundManageR//reference/irei_entitites.html</loc>
   </url>
   <url>
-    <loc>http://asbcllc.com/fundManageR//reference/market_events.html</loc>
-  </url>
-  <url>
     <loc>http://asbcllc.com/fundManageR//reference/mmf_owned_debt_securities.html</loc>
   </url>
   <url>
@@ -313,9 +310,6 @@
     <loc>http://asbcllc.com/fundManageR//reference/tickers_metrics.html</loc>
   </url>
   <url>
-    <loc>http://asbcllc.com/fundManageR//reference/tickers_news.html</loc>
-  </url>
-  <url>
     <loc>http://asbcllc.com/fundManageR//reference/tickers_trades.html</loc>
   </url>
   <url>
@@ -328,13 +322,25 @@
     <loc>http://asbcllc.com/fundManageR//reference/tidy_promote_structure.html</loc>
   </url>
   <url>
-    <loc>http://asbcllc.com/fundManageR//reference/tradeview_metric.html</loc>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_market_events.html</loc>
   </url>
   <url>
-    <loc>http://asbcllc.com/fundManageR//reference/tradeview_regions_metrics.html</loc>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_metric.html</loc>
   </url>
   <url>
-    <loc>http://asbcllc.com/fundManageR//reference/tradingview_regions_tickers.html</loc>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_metric_query.html</loc>
+  </url>
+  <url>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_regions_metrics.html</loc>
+  </url>
+  <url>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_regions_metrics_data.html</loc>
+  </url>
+  <url>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_regions_tickers.html</loc>
+  </url>
+  <url>
+    <loc>http://asbcllc.com/fundManageR//reference/tv_tickers_news.html</loc>
   </url>
   <url>
     <loc>http://asbcllc.com/fundManageR//reference/us_inflation.html</loc>

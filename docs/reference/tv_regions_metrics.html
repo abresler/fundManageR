@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>FRED Series IDs — dictionary_fred_ids • fundManageR</title>
+<title>Tradingview searchable metrics by region — tv_regions_metrics • fundManageR</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,11 +30,9 @@
 
 
 
-<meta property="og:title" content="FRED Series IDs — dictionary_fred_ids" />
+<meta property="og:title" content="Tradingview searchable metrics by region — tv_regions_metrics" />
 
-<meta property="og:description" content="This function imports dictionaries for all possible FRED
-series.  You can us this data to find series to search in the
-fred_symbols function." />
+<meta property="og:description" content="Get searchable metrics by region" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -137,76 +135,61 @@ fred_symbols function." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>FRED Series IDs</h1>
-    <small class="dont-index">Source: <a href='https://github.com/abresler/fundManageR/blob/master/R/fred_api.R'><code>R/fred_api.R</code></a></small>
-    <div class="hidden name"><code>dictionary_fred_ids.Rd</code></div>
+    <h1>Tradingview searchable metrics by region</h1>
+    <small class="dont-index">Source: <a href='https://github.com/abresler/fundManageR/blob/master/R/trading_view.R'><code>R/trading_view.R</code></a></small>
+    <div class="hidden name"><code>tv_regions_metrics.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>This function imports dictionaries for all possible FRED
-series.  You can us this data to find series to search in the
-<code><a href='fred_symbols.html'>fred_symbols</a></code> function.</p>
+    <p>Get searchable metrics by region</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>dictionary_fred_ids</span>(<span class='kw'>fred_file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
+    <pre class="usage"><span class='fu'>tv_regions_metrics</span>(<span class='kw'>regions</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"america"</span>, <span class='st'>"uk"</span>, <span class='st'>"australia"</span>, <span class='st'>"brazil"</span>,
+  <span class='st'>"canada"</span>, <span class='st'>"euronext"</span>, <span class='st'>"germany"</span>, <span class='st'>"hongkong"</span>, <span class='st'>"india"</span>, <span class='st'>"japan"</span>, <span class='st'>"mexico"</span>,
+  <span class='st'>"newzealand"</span>, <span class='st'>"russia"</span>, <span class='st'>"singapore"</span>, <span class='st'>"spain"</span>, <span class='st'>"switzerland"</span>, <span class='st'>"taiwan"</span>,
+  <span class='st'>"turkey"</span>), <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>nest_data</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>fred_file</th>
-      <td><p>the type of dictionary you wish to import</p><ul>
-<li><p><code>NULL, All</code>:  returns all dictionary data in a nested data frame (default)</p></li>
-<li><p><code>series</code>: returns a data frame of the series name, id, and attributes</p></li>
-<li><p><code>tags</code>: returns a data frame of the series id and their corresponding search tag</p></li>
-<li><p><code>subindicies</code>: returns a data frame with the parent series and any sub-indicies if they have them</p></li>
+      <th>regions</th>
+      <td><p>vector of regions</p><ul>
+<li><p>america</p></li>
+<li><p>uk</p></li>
+<li><p>australia</p></li>
+<li><p>brazil</p></li>
+<li><p>canada</p></li>
+<li><p>euronext</p></li>
+<li><p>germany</p></li>
+<li><p>hongkong</p></li>
+<li><p>india</p></li>
+<li><p>japan</p></li>
+<li><p>mexico</p></li>
+<li><p>newzealand</p></li>
+<li><p>russia</p></li>
+<li><p>singapore</p></li>
+<li><p>spain</p></li>
+<li><p>switzerland</p></li>
+<li><p>taiwan</p></li>
+<li><p>turkey</p></li>
 </ul></td>
     </tr>
     <tr>
       <th>return_message</th>
-      <td><p><code>TRUE</code> return a message after data import</p></td>
+      <td><p>if <code>TRUE</code> return message</p></td>
     </tr>
     </table>
     
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a <code>data_frame</code></p>
-    
-    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
-
-    <p>This dictionary was indexed on January 22, 2017, please be aware
-that there may be new series added to FRED since then.</p>
-    
-    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
-
-    <div class='dont-index'><p>Other dictionary: <code><a href='data_location_codes.html'>data_location_codes</a></code>,
-  <code><a href='data_sec_rules.html'>data_sec_rules</a></code>,
-  <code><a href='data_sic_naics_codes.html'>data_sic_naics_codes</a></code>,
-  <code><a href='dictionary_sec_filing_codes.html'>dictionary_sec_filing_codes</a></code>,
-  <code><a href='dictionary_sec_form_codes.html'>dictionary_sec_form_codes</a></code>,
-  <code><a href='dictionary_sic_codes.html'>dictionary_sic_codes</a></code></p></div>
-    
-
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='co'># NOT RUN {</span>
-<span class='fu'>dictionary_fred_ids</span>(<span class='kw'>fred_file</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>return_message</span>  <span class='kw'>=</span> <span class='fl'>TRUE</span>)
-<span class='co'># }</span></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-
-      <li><a href="#details">Details</a></li>
-
-      <li><a href="#see-also">See also</a></li>
-      
-      <li><a href="#examples">Examples</a></li>
-    </ul>
+                </ul>
 
   </div>
 </div>
