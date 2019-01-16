@@ -15329,12 +15329,14 @@ edgar_ft_terms <-
       find_target_filings()
 
     if (include_counts) {
+      cik_filing_count_safe <-
+        purrr::possibly(cik_filing_count, data_frame())
       df_counts <-
         all_data %>%
         pull(idCIKFiler) %>%
         unique() %>%
         future_map_dfr(function(x){
-          get_cik_filing_count(cik = x)
+          cik_filing_count_safe(cik = x)
         })
 
       all_data <-
