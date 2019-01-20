@@ -1,4 +1,4 @@
-url: http://asbcllc.com/fundManageR/
+url: https://asbcllc.com/fundManageR/
 
 template:
   params:
@@ -7,7 +7,7 @@ template:
 navbar:
   left:
   - text: ASBC LLC
-    href: http://asbcllc.com/
+    href: https://asbcllc.com/
   - text: "Examples and Tutorials"
     menu:
       - text: "Facebook IRR"
@@ -15,9 +15,9 @@ navbar:
       - text: "Sleuthing Blackstone"
         href: http://rstudio-pubs-static.s3.amazonaws.com/212788_b319809622a942b4a760d307a4cfe636.html
       - text: "Find me a VC"
-        href: http://asbcllc.com/r_packages/fundManageR/tutorials/2016/find_me_a_vc/index.html
+        href: https://asbcllc.com/r_packages/fundManageR/tutorials/2016/find_me_a_vc/index.html
       - text: "Juice -- err - Oh...."
-        href: http://asbcllc.com/blog/2017/september/juice_err_ohhh/index.html
+        href: https://asbcllc.com/blog/2017/september/juice_err_ohhh/index.html
   - text: Reference
     href: reference/index.html
   right:
