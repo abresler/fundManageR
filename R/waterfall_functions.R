@@ -146,7 +146,7 @@ calculate_irr_periods <-
 
     multipleCapital <-
       (abs(equityDistributions) / equityContributions) %>% digits(digits = 3)
-    valueProfit <-
+    amountProfit <-
       -(equityDistributions + equityContributions)
 
     if (return_df)
@@ -157,7 +157,7 @@ calculate_irr_periods <-
         equityContributions,
         equityDistributions,
         pctIRR = irr,
-        valueProfit,
+        amountProfit,
         multipleCapital,
         dateTimeCF = Sys.time()
       ) %>%
@@ -168,19 +168,19 @@ calculate_irr_periods <-
     }
 
     if (return_message) {
-      "\n\nCash Flow Produces a " %>%
+      "\nCash Flow Produces a " %>%
         paste0(
-          irr,
+          formattable::percent(irr, digits = 3),
           '% IRR\nFrom ',
           dateStart,
           ' to ',
           dateEnd,
           '\n',
           'Profit of ',
-          valueProfit,
+          formattable::currency(amountProfit, digits = 2),
           '\nCapital Multiple of ',
           multipleCapital,
-          "\n\n"
+          "\n"
         ) %>%
         cat(fill = T)
     }
@@ -1689,7 +1689,7 @@ calculate_cash_flow_waterfall_partnership <-
         .vars = c(
           "equityContributions",
           "equityDistributions",
-          "valueProfit"
+          "amountProfit"
         ),
         .funs = currency
       )
