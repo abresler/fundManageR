@@ -28,13 +28,13 @@ dtcc_trades(assets = NULL, include_today = FALSE, start_date = NULL,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-where \code{nest_data} is \code{TRUE} a nested data_frame by asset and action
-where \code{nest_data} is \code{FALSE} a data_frame
+where \code{nest_data} is \code{TRUE} a nested tibble by asset and action
+where \code{nest_data} is \code{FALSE} a tibble
 
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 
-where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-where \code{nest_data} is \code{FALSE} a data_frame
+where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+where \code{nest_data} is \code{FALSE} a tibble
 }
 \description{
 This function returns information on derivatives trades cleared by the

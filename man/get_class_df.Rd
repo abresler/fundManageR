@@ -7,10 +7,10 @@
 get_class_df(data)
 }
 \arguments{
-\item{data}{a \code{data_frame}}
+\item{data}{a \code{tibble}}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function returns the

@@ -9,7 +9,7 @@
 #'
 #' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import dplyr readr tidyr stringr
@@ -97,11 +97,11 @@ get_foia_url_df <-
 
         if (items %>% length() == 2) {
           df <-
-            data_frame(yearData = items[[1]] %>% as.numeric,
+            tibble(yearData = items[[1]] %>% as.numeric,
                        quarterData = items[[2]])
         } else {
           df <-
-            data_frame(yearData = items %>% as.numeric())
+            tibble(yearData = items %>% as.numeric())
         }
         return(df)
       }) %>%
@@ -214,7 +214,7 @@ parse_foia_url_df <-
 #' @param search_years vector of years to search, starting in 2006
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest tidyr curl
@@ -309,7 +309,7 @@ get_cusip_url_df <-
       paste0('https://www.sec.gov', .)
 
     url_df <-
-      data_frame(namePeriod = periods, urlSEC = urls) %>%
+      tibble(namePeriod = periods, urlSEC = urls) %>%
       separate(namePeriod,
                sep = '\\ ',
                into = c('idPeriod', 'quarter', 'yearData')) %>%
@@ -330,7 +330,7 @@ get_cusip_url_df <-
       Sys.Date() %>% lubridate::year()
 
     year_df <-
-      data_frame(yearData = 2004:(current_year),
+      tibble(yearData = 2004:(current_year),
                  pageStart = 3)
 
     url_df <-
@@ -339,7 +339,7 @@ get_cusip_url_df <-
         url_df %>% filter(yearData >= 2004) %>%
           select(periodData) %>%
           mutate(pageStart = 3) %>%
-          bind_rows(data_frame(
+          bind_rows(tibble(
             periodData = c(
               "2003q4",
               "2003q3",
@@ -408,7 +408,7 @@ get_cusip_url_df <-
             )
           ))
       ) %>%
-      left_join(data_frame(
+      left_join(tibble(
         periodData = "2016q3",
         areaTable = c("113.14286-64.42471-727.78378-520.05405")
       )) %>%
@@ -476,7 +476,7 @@ parse_sec_cusip_url <-
       seq_along(tables) %>%
       future_map_dfr(function(x) {
         tables[[x]] %>%
-          as_data_frame() %>%
+          as_tibble() %>%
           mutate_all(str_trim)
       }) %>%
       select(-6) %>%
@@ -584,7 +584,7 @@ parse_sec_cusip_url <-
 #' @param only_most_recent \code{TRUE} search only the most recent period
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @import purrr stringr dplyr rvest formattable tidyr xml2 tabulizer
 #' @importFrom lubridate mdy
@@ -644,7 +644,7 @@ sec_cusips <-
     }
 
     parse_sec_cusip_url_safe <-
-      purrr::possibly(parse_sec_cusip_url, data_frame())
+      purrr::possibly(parse_sec_cusip_url, tibble())
 
     all_data <-
       1:nrow(urls_df) %>%
@@ -706,7 +706,7 @@ get_closed_end_fund_url_df <-
     years[[1]] <-
       Sys.Date() %>% lubridate::year()
 
-    data_frame(yearData = years,
+    tibble(yearData = years,
                urlData = urls)
 
   }
@@ -792,7 +792,7 @@ parse_closed_end_fund_url <-
 #' @param only_most_recent \code{TRUE} return only the most recent year
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest readr lubridate formattable tidyr
@@ -838,7 +838,7 @@ sec_closed_end_funds <-
     }
 
     parse_closed_end_fund_url_safe <-
-      purrr::possibly(parse_closed_end_fund_url, data_frame())
+      purrr::possibly(parse_closed_end_fund_url, tibble())
 
     all_data <-
       urls %>%
@@ -887,7 +887,7 @@ sec_closed_end_funds <-
 #'
 #' @param only_most_recent \code{TRUE} return only the most recent year
 #' @param return_message \code{TRUE} return a message after data import
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest formattable tidyr
@@ -955,7 +955,7 @@ sec_investment_companies <-
 
     df <-
       df %>%
-      left_join(data_frame(
+      left_join(tibble(
         idOrganizationType = c(30, 31, 32, 33, 55, 75),
         typeOrganization = c(
           'Open-end Mutual Fund',
@@ -1022,7 +1022,7 @@ get_mmf_url_df <-
       purrr::invoke(paste0, .) %>%
       lubridate::ymd()
 
-    data_frame(dateData = csv_dates,
+    tibble(dateData = csv_dates,
                urlData = urls_csv) %>%
       mutate(
         yearData = dateData %>% lubridate::year(),
@@ -1128,7 +1128,7 @@ parse_mmf_url <-
 #' @param only_most_recent \code{TRUE} search only the most recent period
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @import purrr stringr dplyr rvest formattable lubridate readr
 #' @return
@@ -1155,7 +1155,7 @@ sec_money_market_funds <-
     }
 
     parse_mmf_url_safe <-
-      purrr::possibly(parse_mmf_url, data_frame())
+      purrr::possibly(parse_mmf_url, tibble())
 
     mmf_url_df <-
       get_mmf_url_df()
@@ -1299,7 +1299,7 @@ parse_bankruptcy_url <-
 #'
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest formattable
@@ -1332,11 +1332,11 @@ sec_bankruptcies <-
       2009
 
     url_df <-
-      data_frame(yearData = years,
+      tibble(yearData = years,
                  urlData = url_data)
 
     parse_bankruptcy_url_safe <-
-      purrr::possibly(parse_bankruptcy_url, data_frame())
+      purrr::possibly(parse_bankruptcy_url, tibble())
 
     all_data <-
       url_df$urlData %>%
@@ -1403,7 +1403,7 @@ get_broker_data_urls <-
       str_replace_all('/foia/bdreports/bd|.txt', '') %>%
       lubridate::mdy()
 
-    data_frame(dateData = periods,
+    tibble(dateData = periods,
                urlData = url_data) %>%
       mutate(
         yearData = dateData %>% lubridate::year(),
@@ -1474,7 +1474,7 @@ parse_brokers_url <-
 #' @param only_most_recent \code{TRUE} search only the most recent period
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @import purrr stringr dplyr rvest formattable readr
 #' @export
@@ -1500,7 +1500,7 @@ sec_broker_dealers <-
     }
 
     parse_brokers_url_safe <-
-      purrr::possibly(parse_brokers_url, data_frame())
+      purrr::possibly(parse_brokers_url, tibble())
 
     broker_df <-
       get_broker_data_urls()
@@ -1587,7 +1587,7 @@ parse_municpal_dealer_url <-
       url %>%
       rio::import() %>%
       data.frame(stringsAsFactors = FALSE) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate_all(str_to_upper) %>%
       suppressWarnings() %>%
       slice(-c(1:3)) %>%
@@ -1629,7 +1629,7 @@ get_muni_advisor_urls <-
       str_replace_all('/foia/muniadvisors/ma|.zip', '') %>%
       lubridate::mdy()
 
-    data_frame(dateData = periods,
+    tibble(dateData = periods,
                urlData = url_data) %>%
       mutate(
         yearData = dateData %>% lubridate::year(),
@@ -1648,7 +1648,7 @@ get_muni_advisor_urls <-
 #' @param only_most_recent \code{TRUE} search only the most recent period
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest formattable lubridate readr
@@ -1674,7 +1674,7 @@ sec_municipal_advisors <-
     }
 
     parse_municpal_dealer_url_safe <-
-      purrr::possibly(parse_municpal_dealer_url, data_frame())
+      purrr::possibly(parse_municpal_dealer_url, tibble())
 
     muni_df <-
       get_muni_advisor_urls()
@@ -1829,10 +1829,10 @@ get_fail_to_deliver_urls <-
       )
 
     url_df <-
-      data_frame(period = periods, urlData = urls) %>%
+      tibble(period = periods, urlData = urls) %>%
       mutate(char = period %>% substr(stop = period %>% nchar(), start = period %>% nchar())) %>%
-      left_join(data_frame(char = c('a', 'b'), day = c("01", "15"))) %>%
-      left_join(data_frame(
+      left_join(tibble(char = c('a', 'b'), day = c("01", "15"))) %>%
+      left_join(tibble(
         char = c("1", "2", "3", "4"),
         monthday = c('0331', '0630', '0930', '1231')
       )) %>%
@@ -1870,7 +1870,7 @@ get_fail_to_deliver_urls <-
 #' @param only_most_recent \code{TRUE} search only the most recent period
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest formattable readr xml2
@@ -1895,7 +1895,7 @@ sec_failed_to_deliver_securities <-
     }
 
     parse_fail_to_deliver_url_safe <-
-      purrr::possibly(parse_fail_to_deliver_url, data_frame())
+      purrr::possibly(parse_fail_to_deliver_url, tibble())
 
     urls_df <-
       get_fail_to_deliver_urls()
@@ -2004,9 +2004,9 @@ get_market_structure_url_df <-
       )
 
     url_df <-
-      data_frame(period = periods, urlData = urls) %>%
+      tibble(period = periods, urlData = urls) %>%
       mutate(char = period %>% substr(stop = period %>% nchar(), start = period %>% nchar())) %>%
-      left_join(data_frame(
+      left_join(tibble(
         char = c("1", "2", "3", "4"),
         monthday = c('0331', '0630', '0930', '1231')
       )) %>%
@@ -2096,7 +2096,7 @@ parse_market_structure_url <-
 #' @param only_most_recent \code{TRUE} search only the most recent period
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @import purrr stringr dplyr rvest formattable readr
 #' @importFrom curl curl_download
@@ -2122,7 +2122,7 @@ sec_securities_metrics_by_exchange <-
     }
 
     parse_market_structure_url_safe <-
-      purrr::possibly(parse_market_structure_url, data_frame())
+      purrr::possibly(parse_market_structure_url, tibble())
 
     urls_df <-
       get_market_structure_url_df() %>%
@@ -2223,7 +2223,7 @@ sec_securities_metrics_by_exchange <-
 # Note: The SEC website folder http://www.sec.gov/Archives/edgar/data/{cik}/{accession}/ will always contain all the files for a given submission, where {accession} is the adsh with the ‘-‘characters removed.
 get_xbrl_name_df <-
   function() {
-    data_frame(
+    tibble(
       nameSEC = c(
         "adsh",
         "report",
@@ -2374,7 +2374,7 @@ get_xbrl_url_df <-
       paste0(slugs)
 
     url_df <-
-      data_frame(idPeriod = periods, urlSEC = urls) %>%
+      tibble(idPeriod = periods, urlSEC = urls) %>%
       separate(
         idPeriod,
         into = c('yearData', 'quarterData'),
@@ -2419,9 +2419,9 @@ parse_xbrl_url <-
       as.numeric()
 
     date_data <-
-      data_frame(yearData = year_data,
+      tibble(yearData = year_data,
                  quarterData = quarter_data) %>%
-      left_join(data_frame(
+      left_join(tibble(
         quarterData = 1:4,
         monthday = c('0331', '0630', '0930', '1231')
       )) %>%
@@ -2430,7 +2430,7 @@ parse_xbrl_url <-
       suppressMessages()
 
     read_xbrl_file_safe <-
-      purrr::possibly(read_xbrl_file, data_frame())
+      purrr::possibly(read_xbrl_file, tibble())
 
     tmp <-
       tempfile()
@@ -2510,7 +2510,7 @@ parse_xbrl_url <-
           zipcodeFilerMailing
         ) %>% purrr::invoke(paste0, .)
       ) %>%
-      left_join(data_frame(
+      left_join(tibble(
         idAFS = c("1-LAF", "2-ACC", "3-SRA", "4-NON", "5-SML", NA),
         typeAFS = c(
           'Large Accelerated',
@@ -2557,7 +2557,7 @@ parse_xbrl_url <-
             remove = FALSE) %>%
       mutate(idReportLine = idReportLine %>% as.numeric()) %>%
       left_join(
-        data_frame(
+        tibble(
           idFinancialStatementLocation = c("BS", "IS", "CF", "EQ", "CI", "UN"),
           nameFinancialStatementLocation = c(
             "Balance Sheet",
@@ -2569,7 +2569,7 @@ parse_xbrl_url <-
           )
         )
       ) %>%
-      left_join(data_frame(
+      left_join(tibble(
         idDataFileType = c("H", "X"),
         typeDataFile = c("HTML", "XML")
       )) %>%
@@ -2600,7 +2600,7 @@ parse_xbrl_url <-
                 funs(. %>% as.logical())) %>%
       mutate_at(num %>% select(dplyr::matches("^amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
-      left_join(data_frame(
+      left_join(tibble(
         typeUOM = c("AUD", "CAD", "CHF", "EUR", "JPY", "shares", "USD"),
         itemUOM = c(
           "amountAUD",
@@ -2643,11 +2643,11 @@ parse_xbrl_url <-
       mutate_at(tag %>% select(dplyr::matches("^amount")) %>% names(),
                 funs(. %>% formattable::currency(digits = 0))) %>%
       suppressWarnings() %>%
-      left_join(data_frame(
+      left_join(tibble(
         idValueType = c("I", "D"),
         typeValue = c("Point-in Time", "Duration")
       )) %>%
-      left_join(data_frame(
+      left_join(tibble(
         idAccountingType = c("C", "D"),
         typeAccounting = c("Credit", "Debit")
       )) %>%
@@ -2679,7 +2679,7 @@ parse_xbrl_url <-
         suppressMessages()
 
       all_data <-
-        data_frame(nameTable = c('All Data'),
+        tibble(nameTable = c('All Data'),
                    dataTable = list(all)) %>%
         mutate(
           periodData = period_data,
@@ -2693,7 +2693,7 @@ parse_xbrl_url <-
     }
 
     all_data <-
-      data_frame(
+      tibble(
         nameTable = c('Presentation', 'Values', 'Filers', 'Taxonomy'),
         dataTable = list(pre, num, sub, tag)
       ) %>%
@@ -2741,7 +2741,7 @@ parse_xbrl_url <-
 #' @param only_all \code{TRUE} returns a joined file of the four tables
 #' @param assign_to_environment \code{TRUE} assign the results into your environment
 #'
-#' @return nested \code{data_frame} or \code{data_frame}
+#' @return nested \code{tibble} or \code{tibble}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest formattable
@@ -2793,7 +2793,7 @@ sec_xbrl_periods <-
       url_df$urlSEC
 
     parse_xbrl_url_safe <-
-      purrr::possibly(parse_xbrl_url, data_frame())
+      purrr::possibly(parse_xbrl_url, tibble())
 
     all_data <-
       urls %>%

@@ -20,7 +20,7 @@ nareit_capital_raises(capital_type = NULL, nest_data = TRUE,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}#' @export
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}#' @export
 }
 \description{
 This function acquires data on REIT

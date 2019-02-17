@@ -12,7 +12,7 @@ sec_bankruptcies(nest_data = TRUE, return_message = TRUE)
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function returns information containing

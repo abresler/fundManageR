@@ -14,9 +14,9 @@
 #' @importFrom magrittr %>%
 #' @importFrom formattable digits currency percent
 #' @importFrom lubridate ymd
-#' @importFrom dplyr data_frame
+#' @importFrom dplyr tibble
 #'
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @family calculation
 #' @family leveraged finance calculation
 #' @family partnership calculation
@@ -151,7 +151,7 @@ calculate_irr_periods <-
 
     if (return_df)
       data <-
-      data_frame(
+      tibble(
         dateStart,
         dateEnd,
         equityContributions,
@@ -171,7 +171,7 @@ calculate_irr_periods <-
       "\nCash Flow Produces a " %>%
         paste0(
           formattable::percent(irr, digits = 3),
-          '% IRR\nFrom ',
+          ' IRR\nFrom ',
           dateStart,
           ' to ',
           dateEnd,
@@ -217,7 +217,7 @@ calculate_irr_periods <-
 #' @import tidyr dplyr stringr formattable purrr
 #' @importFrom magrittr %>%
 #' @importFrom lubridate ymd
-#' @return data_frame
+#' @return tibble
 #' @export
 #' @family calculation
 #' @family leveraged finance calculation
@@ -286,7 +286,7 @@ calculate_cash_flow_dates <-
     ## Distribution
 
     distribution_dates_df <-
-      data_frame(date = dates) %>%
+      tibble(date = dates) %>%
       mutate(idPeriod = 0:(nrow(.) - 1))
 
     distribution_dates_df <-
@@ -317,7 +317,7 @@ calculate_cash_flow_dates <-
     }
 
     cf_data <-
-      data_frame(date = dates %>% ymd(),
+      tibble(date = dates %>% ymd(),
                  cashFlow = cash_flows %>% currency(digits = 2)) %>%
       mutate(idPeriod = 0:(nrow(.) - 1)) %>%
       dplyr::select(idPeriod, everything()) %>%
@@ -431,7 +431,7 @@ calculate_cash_flow_dates <-
 #' @param return_df return data frame
 #' @param return_message include a message
 #'
-#' @return data_frame
+#' @return tibble
 #' @export
 #' @family calculation
 #' @family leveraged finance calculation
@@ -547,7 +547,7 @@ parse_promote_structure <-
       c("pctPromote", 'valueHurdle')
 
     promote_df <-
-      data_frame(typeHurdle,
+      tibble(typeHurdle,
                  item = items,
                  value = hurdle_promote) %>%
       mutate(item = if_else(
@@ -584,7 +584,7 @@ tidy_promote_structure <-
   function(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"),
            return_wide = F) {
     parse_promote_structure_safe <-
-      purrr::possibly(parse_promote_structure, data_frame())
+      purrr::possibly(parse_promote_structure, tibble())
 
     promote_data <-
       seq_along(promote_structures) %>%
@@ -696,7 +696,7 @@ get_waterfall_tier_df <-
   function(tiers = 1:5,
            return_wide = F) {
     waterfall_df <-
-      data_frame(
+      tibble(
         tierWaterfall = 1,
         bbAccruedPref = 0,
         accruedPref = 0,
@@ -717,7 +717,7 @@ get_waterfall_tier_df <-
       other_tiers <-
         tiers[tiers > 1] %>%
         future_map_dfr(function(x) {
-          data_frame(
+          tibble(
             tierWaterfall = rep(x),
             bbAccruedPref = 0,
             accruedPref = 0,
@@ -797,7 +797,7 @@ get_initial_equity_df <-
       equityBB + equityDraw + toEquity
 
     equity_df <-
-      data_frame(idPeriod = period,
+      tibble(idPeriod = period,
                  equityBB,
                  equityDraw,
                  toEquity,
@@ -829,7 +829,7 @@ get_initial_equity_df <-
 #' @param remove_zero_cols \code{TRUE} remove zero-value columns
 #' @param widen_waterfall \code{TRUE} returns waterfall in wide form
 #' @import tidyr formattable dplyr stringr
-#' @return data_frame
+#' @return tibble
 #' @export
 #' @family calculation
 #' @family leveraged finance calculation
@@ -1358,7 +1358,7 @@ calculate_cash_flow_waterfall <-
           }
 
           period_waterfall <-
-            data_frame(
+            tibble(
               idPeriod = period,
               tierWaterfall = tier,
               bbAccruedPref,
@@ -1382,7 +1382,7 @@ calculate_cash_flow_waterfall <-
             distinct()
 
           period_equity <-
-            data_frame(idPeriod = period,
+            tibble(idPeriod = period,
               equityBB,
               equityDraw,
               toEquity,
@@ -1517,7 +1517,7 @@ calculate_cash_flow_waterfall <-
 #' @family calculation
 #' @family leveraged finance calculation
 #' @family partnership calculation
-#' @return \code{data_frame}O
+#' @return \code{tibble}O
 #' @export
 #'
 #' @examples
@@ -1561,7 +1561,7 @@ calculate_cash_flow_waterfall_partnership <-
       1 - gp_promote_share
 
     promote_name_df <-
-      data_frame(tierWaterfall = 1,
+      tibble(tierWaterfall = 1,
                  nameTier = "Return of Equity") %>%
       bind_rows(
         tidy_promote_structure(promote_structures = promote_structure,
@@ -1701,7 +1701,7 @@ calculate_cash_flow_waterfall_partnership <-
     }
 
     data <-
-      data_frame(
+      tibble(
         nameTable =
           c(
             'Cash Flow Waterfall',
@@ -1719,7 +1719,7 @@ calculate_cash_flow_waterfall_partnership <-
     if (assign_to_environment) {
       data <-
         data %>%
-        left_join(data_frame(
+        left_join(tibble(
           nameTable = c(
             "Cash Flow Waterfall",
             "Entity Waterfall",

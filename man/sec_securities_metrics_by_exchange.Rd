@@ -20,7 +20,7 @@ sec_securities_metrics_by_exchange(only_most_recent = FALSE,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function returns a variety of metrics surrounding

@@ -11,11 +11,11 @@ dictionary_sec_filing_codes()
 dictionary_sec_filing_codes()
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 
-a \code{data_frame}
+a \code{tibble}
 
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns a

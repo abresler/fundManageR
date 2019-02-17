@@ -1,6 +1,6 @@
 .dictionary_finra_names <-
   function() {
-    data_frame(nameFINRA = c("bc_branch_city", "bc_branch_zip", "bc_firm_name", "bc_branch_state",
+    tibble(nameFINRA = c("bc_branch_city", "bc_branch_zip", "bc_firm_name", "bc_branch_state",
                              "bc_firm_id", "bc_branch_id"),
                nameActual = c("cityCompany", "zipcodeCompany", "nameCompany", "stateCompany",
                               "idCompany", "idBranch")
@@ -423,7 +423,7 @@
     item_name_df <-
       seq_along(item_name) %>%
       future_map_dfr(function(x) {
-        data_frame(nameItem = rep(item_name[x], 2),
+        tibble(nameItem = rep(item_name[x], 2),
                    valueItem = c(T, F)) %>%
           unite(fullnameItem,
                 nameItem,
@@ -439,7 +439,7 @@
     item_name_df <-
       seq_along(item_name) %>%
       future_map_dfr(function(x) {
-        data_frame(nameItem = rep(item_name[x], 1),
+        tibble(nameItem = rep(item_name[x], 1),
                    valueItem = T) %>%
           mutate(fullnameItem = nameItem)
       })
@@ -453,7 +453,7 @@
 
 .get_finra_name_df <-
   function() {
-    data_frame(
+    tibble(
       nameFINRA = c(
         "fields.score",
         "fields.bc_source_id",
@@ -661,14 +661,14 @@
     class_df <-
       json_dfs %>%
       future_map(class) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       gather(nameTable, type) %>%
       mutate(idTable = 1:n())
 
     count_df <-
       json_dfs %>% map_dbl(length) %>%
       data.frame(count = ., stringsAsFactors = F) %>%
-      dplyr::as_data_frame()
+      dplyr::as_tibble()
 
     class_df <-
       class_df %>%
@@ -705,7 +705,7 @@
           json_dfs[[table_no]]
 
         if (df %>% length() == 0) {
-          return(data_frame())
+          return(tibble())
         }
         name_df <-
           .get_finra_name_df() %>%
@@ -725,7 +725,7 @@
           class_df_list <-
             df %>%
             future_map(class) %>%
-            as_data_frame() %>%
+            as_tibble() %>%
             gather(column, type)
 
           columns <-
@@ -735,7 +735,7 @@
 
           df_items <-
             df[columns] %>%
-            as_data_frame()
+            as_tibble()
 
           finra_names <-
             names(df_items)
@@ -809,10 +809,10 @@
               list_cols %>%
               future_map_dfr(function(x) {
                 if (df[[x]] %>% length() == 0) {
-                  return(data_frame())
+                  return(tibble())
                 }
                 if (x == "disclosureDetail") {
-                  return(data_frame())
+                  return(tibble())
                 }
                 df_list <-
                   df[[x]] %>%
@@ -874,7 +874,7 @@
           if ('disclosureDetail' %in% class_df_list$column) {
             df_list <-
               df[['disclosureDetail']] %>%
-              as_data_frame()
+              as_tibble()
             actual_names <-
               names(df_list) %>%
               map_chr(function(x) {
@@ -903,7 +903,7 @@
 
 
             df <-
-              data_frame(
+              tibble(
                 idTable = x,
                 nameTable = name_table,
                 dataTable = list(df_items),
@@ -914,7 +914,7 @@
           }
 
           df <-
-            data_frame(
+            tibble(
               idTable = x,
               nameTable = name_table,
               dataTable = list(df_items)
@@ -924,7 +924,7 @@
 
         if (df_class == 'data.frame') {
           df %>%
-            as_data_frame()
+            as_tibble()
         }
       })
 
@@ -950,7 +950,7 @@
       flatten_df()
 
     sec_name_df <-
-      data_frame(
+      tibble(
         nameSEC = c(
           "version",
           "pages",
@@ -1003,7 +1003,7 @@
           nameActual <-
             NA
         }
-        data_frame(idColumn = x, nameActual)
+        tibble(idColumn = x, nameActual)
       })
 
     columns_selected <-
@@ -1058,7 +1058,7 @@
           stringi::stri_trans_general("latin-ascii")
 
         df_page <-
-          data_frame(numberPage = x, textPage = page_text)
+          tibble(numberPage = x, textPage = page_text)
         return(df_page)
       }) %>%
       dplyr::select(textPage) %>%
@@ -1085,7 +1085,7 @@
 
     list_cols <-
       df %>% future_map(class) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       gather(column, type) %>%
       filter(type %in% 'list') %>%
       .$column
@@ -1093,7 +1093,7 @@
     df_fields <-
       df %>%
       dplyr::select(-one_of(list_cols)) %>%
-      as_data_frame()
+      as_tibble()
     if ('fields.bc_firm_address_details' %in% names(df_fields)) {
       df_fields <-
         df_fields %>%
@@ -1207,7 +1207,7 @@
     df_fields <-
       df_fields %>%
       dplyr::select(-dplyr::matches("htmlName|^highlight")) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate(idCRD = idCRD %>% as.numeric(),
              idRow = 1:n())
 
@@ -1233,7 +1233,7 @@
           js_data <-
             df_fields$addressFiler[[x]]
           if (js_data %>% is.na()) {
-            return(data_frame(idRow = x))
+            return(tibble(idRow = x))
           }
           js_df <-
             js_data %>% jsonlite::fromJSON() %>% flatten_df()
@@ -1264,10 +1264,10 @@
             df$fields.bc_other_names[[x]]
 
           if (entities %>% length() == 0) {
-            return(data_frame(idRow = x))
+            return(tibble(idRow = x))
           }
           data <-
-            data_frame(nameEntityRelated = entities) %>%
+            tibble(nameEntityRelated = entities) %>%
             mutate(idRow = x, countEntity = 1:n()) %>%
             dplyr::select(idRow, countEntity, nameEntityRelated)
           return(data)
@@ -1318,7 +1318,7 @@
         urls_json %>% length() > 0
       if (has_broker) {
         .parse_broker_json_url_safe <-
-          purrr::possibly(.parse_broker_json_url, data_frame())
+          purrr::possibly(.parse_broker_json_url, tibble())
 
         broker_df <-
           urls_json %>%
@@ -1350,7 +1350,7 @@
             df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
             .$urlFINRABrokerPDF
           .parse_finra_pdf_brochure_safe <-
-            purrr::possibly(.parse_finra_pdf_brochure, data_frame())
+            purrr::possibly(.parse_finra_pdf_brochure, tibble())
           pdf_df <-
             pdf_urls %>%
             future_map_dfr(function(x) {
@@ -1399,7 +1399,7 @@
         unique()
 
       .parse_broker_json_url_safe <-
-        purrr::possibly(.parse_broker_json_url, data_frame())
+        purrr::possibly(.parse_broker_json_url, tibble())
 
       broker_df <-
         urls_json %>%
@@ -1434,7 +1434,7 @@
             df_fields %>% filter(!urlFINRABrokerPDF %>% is.na()) %>%
             .$urlFINRABrokerPDF
           .parse_finra_pdf_brochure_safe <-
-            purrr::possibly(.parse_finra_pdf_brochure, data_frame())
+            purrr::possibly(.parse_finra_pdf_brochure, tibble())
           pdf_df <-
             pdf_urls %>%
             future_map_dfr(function(x) {
@@ -1493,7 +1493,7 @@
         df_emp <-
           employer %>%
           jsonlite::fromJSON(simplifyDataFrame = T) %>%
-          dplyr::as_data_frame()
+          dplyr::as_tibble()
 
         actual_names <- .resolve_finra_names(finra_names = names(df_emp))
         df_emp %>%
@@ -1585,11 +1585,11 @@
           url <-
             .generate_finra_url(is_firm = is_firm, search_name = x)
 
-          data_frame(nameSearch = x, urlJSON = url)
+          tibble(nameSearch = x, urlJSON = url)
       })
 
     .parse_finra_json_url_safe <-
-      possibly(.parse_finra_json_url, data_frame())
+      possibly(.parse_finra_json_url, tibble())
 
     all_data <-
       url_df$urlJSON %>%
@@ -1654,9 +1654,9 @@ finra_entities <-
         isFirm = TRUE,
         stringsAsFactors = FALSE
       ) %>%
-      as_data_frame()
+      as_tibble()
     .finra_entity_safe <-
-      purrr::possibly(.finra_entity, data_frame())
+      purrr::possibly(.finra_entity, tibble())
 
     all_data <-
       1:nrow(search_df) %>%
@@ -1671,7 +1671,7 @@ finra_entities <-
       })
 
     if (all_data %>% nrow() == 0) {
-      return(data_frame())
+      return(tibble())
     }
 
     if ('typeActiveFiler' %in% names(all_data)) {
@@ -1726,9 +1726,9 @@ finra_people <-
         isFirm = FALSE,
         stringsAsFactors = FALSE
       ) %>%
-      as_data_frame()
+      as_tibble()
     .finra_entity_safe <-
-      purrr::possibly(.finra_entity, data_frame())
+      purrr::possibly(.finra_entity, tibble())
 
     all_data <-
       1:nrow(search_df) %>%
@@ -1742,7 +1742,7 @@ finra_people <-
       })
 
     if (all_data %>% nrow() == 0) {
-      return(data_frame())
+      return(tibble())
     }
 
     if ('typeActiveFiler' %in% names(all_data)) {
@@ -1809,7 +1809,7 @@ finra_people <-
                                base_url = 'http://www.adviserinfo.sec.gov')
 
     pdf_data <-
-      data_frame(
+      tibble(
         idCRD,
         nameEntityBrochure,
         urlPDFManagerADVBrochure,
@@ -1862,7 +1862,7 @@ finra_people <-
         .get_url_crd()
 
       manager_df <-
-        data_frame(idCRD,
+        tibble(idCRD,
                    urlManagerSummaryADV = NA)
       "No data" %>% message
     }
@@ -1908,7 +1908,7 @@ finra_people <-
 
 
                 table_df <-
-                  data_frame(statusJurisdictionERA,
+                  tibble(statusJurisdictionERA,
                              statusReportingERA,
                              dateEffectiveERA) %>%
                   mutate(nameEntityManager = name_entity_manager,
@@ -1919,7 +1919,7 @@ finra_people <-
 
               } else {
                 table_df <-
-                  data_frame(nameEntityManager = name_entity_manager, isExempt = F)
+                  tibble(nameEntityManager = name_entity_manager, isExempt = F)
               }
               return(table_df)
             }
@@ -1944,7 +1944,7 @@ finra_people <-
                   as.character()
 
                 table_df <-
-                  data_frame(stateRegistration, dateEffectiveState) %>%
+                  tibble(stateRegistration, dateEffectiveState) %>%
                   mutate(nameEntityManager = name_entity_manager) %>%
                   dplyr::select(nameEntityManager, everything()) %>%
                   mutate(countItem = 1:n()) %>%
@@ -1954,7 +1954,7 @@ finra_people <-
 
               } else {
                 table_df <-
-                  data_frame(nameEntityManager = name_entity_manager)
+                  tibble(nameEntityManager = name_entity_manager)
               }
               return(table_df)
             }
@@ -1984,7 +1984,7 @@ finra_people <-
                   as.character()
 
                 table_df <-
-                  data_frame(statusJurisdiction, statusReporting, dateEffective) %>%
+                  tibble(statusJurisdiction, statusReporting, dateEffective) %>%
                   mutate(nameEntityManager = name_entity_manager,
                          countItem = 1:n()) %>%
                   dplyr::select(nameEntityManager, everything()) %>%
@@ -1993,7 +1993,7 @@ finra_people <-
 
               } else {
                 table_df <-
-                  data_frame(nameEntityManager = name_entity_manager, isExempt = F)
+                  tibble(nameEntityManager = name_entity_manager, isExempt = F)
               }
               return(table_df)
             }
@@ -2189,7 +2189,7 @@ adv_managers_metadata <-
 
 .get_sec_sitemap_df <-
   function() {
-    data_frame(
+    tibble(
         nameSection = c(
           'Registration',
           "Part 1A Item 11 Disclosure Information",
@@ -2316,7 +2316,7 @@ adv_managers_metadata <-
 sec_adv_manager_sitemap <-
   function() {
     data <-
-      data_frame(
+      tibble(
         idSection =
           c(
             'sectionRegistration',
@@ -2393,7 +2393,7 @@ sec_adv_manager_sitemap <-
 .get_location_name_df <-
   function() {
     location_name_df <-
-      data_frame(
+      tibble(
         itemNode = c(
           "Number and Street 1",
           'Number and Street 2',
@@ -2495,7 +2495,7 @@ sec_adv_manager_sitemap <-
       unique()
 
     adv_data <-
-      data_frame(
+      tibble(
         idCRD,
         nameSection = 'Registration',
         urlADVSection = idCRD %>% paste0(
@@ -2503,7 +2503,7 @@ sec_adv_manager_sitemap <-
           .
         )
       ) %>%
-      bind_rows(data_frame(idCRD,
+      bind_rows(tibble(idCRD,
                            nameSection = items,
                            urlADVSection = values)) %>%
       left_join(.get_sec_sitemap_df()) %>%
@@ -2577,7 +2577,7 @@ sec_adv_manager_sitemap <-
         manager_data$nameEntityManager
     }
     .parse_adv_manager_sitemap_df_safe <-
-      purrr::possibly(.parse_adv_manager_sitemap_df, data_frame())
+      purrr::possibly(.parse_adv_manager_sitemap_df, tibble())
 
     data <-
       urls %>%
@@ -2609,7 +2609,7 @@ sec_adv_manager_sitemap <-
 .get_type_manager_entity_owner_df <-
   function() {
     type_df <-
-      data_frame(
+      tibble(
         idTypeEntityManagerOwner = c("I", "DE", "FE"),
         typeEntityManagerOwner = c('Individual', 'Domestic Entity', 'Foreign Entity'),
         isEntityOwnerManagerEntity = c(F, T, T)
@@ -2620,7 +2620,7 @@ sec_adv_manager_sitemap <-
 .get_range_entity_owner_df <-
   function() {
     range_df <-
-      data_frame(
+      tibble(
         idRangeManagerEntityOwnership = c(NA, LETTERS[1:6]),
         rangeManagerEntityOwnership = c(
           "< 5%",
@@ -2694,7 +2694,7 @@ sec_adv_manager_sitemap <-
     }
 
     name_df <-
-      data_frame(
+      tibble(
         nameEntityManagerOwner = x,
         nameCommonEntityOwnerManager = name_common,
         nameFullEntityOwnerManager = name_full,
@@ -2732,7 +2732,7 @@ sec_adv_manager_sitemap <-
 .get_check_box_value_df <-
   function() {
     node_check_df <-
-      data_frame(
+      tibble(
         nodeName = c(
           "Checkbox checked, changed",
           "Checkbox not checked",
@@ -2748,7 +2748,7 @@ sec_adv_manager_sitemap <-
 .get_form_check_box_df <-
   function(modify = T) {
     form_value_df <-
-      data_frame(
+      tibble(
         idRow = 1:52,
         nameItem = c(
           'hasICA1940S31Exclusion.TRUE',
@@ -2808,7 +2808,7 @@ sec_adv_manager_sitemap <-
     if (modify) {
       form_value_df <-
         form_value_df <-
-        data_frame(
+        tibble(
           nameItem = c(
             'isMasterFund.TRUE',
             'isMasterFund.FALSE',
@@ -2903,7 +2903,7 @@ sec_adv_manager_sitemap <-
     }
 
     check_box_df <-
-      data_frame(nodeName = table_checked_nodes) %>%
+      tibble(nodeName = table_checked_nodes) %>%
       mutate(idTable = table_number,
              idImageNode = 1:n()) %>%
       left_join(.get_check_box_value_df()) %>%
@@ -3137,7 +3137,7 @@ sec_adv_manager_sitemap <-
             nodeText <-
               NA
           }
-          data_frame(idNode = x, numberSection, letterSection, nodeText)
+          tibble(idNode = x, numberSection, letterSection, nodeText)
         }
       }) %>%
       fill(numberSection, letterSection) %>%
@@ -3377,7 +3377,7 @@ sec_adv_manager_sitemap <-
     }
 
     node_df <-
-      data_frame(nameVariable = variable_name,
+      tibble(nameVariable = variable_name,
                  valueNode = node_value) %>%
       mutate(sectionLetter = section_letter) %>%
       dplyr::select(sectionLetter, everything())
@@ -3388,7 +3388,7 @@ sec_adv_manager_sitemap <-
 .get_section_matrix_df <-
   function() {
     section_matrix_df <-
-      data_frame(
+      tibble(
         sectionLetter = c(
           "1a",
           "1b",
@@ -3494,7 +3494,7 @@ sec_adv_manager_sitemap <-
           )
 
       .extract_node_data_safe <-
-        purrr::possibly(.extract_node_data, data_frame())
+        purrr::possibly(.extract_node_data, tibble())
       fund_table_data <-
         1:nrow(section_matrix_df) %>%
         future_map_dfr(function(x) {
@@ -3622,7 +3622,7 @@ sec_adv_manager_sitemap <-
           str_trim()
 
         node_df <-
-          data_frame(nodeName = check_nodes) %>%
+          tibble(nodeName = check_nodes) %>%
           left_join(.get_check_box_value_df()) %>%
           bind_cols(get_node_item_df()) %>%
           mutate(valueItem = T) %>%
@@ -3647,7 +3647,7 @@ sec_adv_manager_sitemap <-
           .parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_IdentInfoPHSection_ctl00_trIAPDHeader + tr +tr td td')
 
         business_name_df <-
-          data_frame(
+          tibble(
             nameItem = c(
               'nameEntityManagerLegal',
               'nameEntityManagerBusiness',
@@ -3683,7 +3683,7 @@ sec_adv_manager_sitemap <-
         business_data_df <-
           1:nrow(business_name_df) %>%
           future_map_dfr(function(x) {
-            data_frame(
+            tibble(
               nameItem =
                 business_name_df$nameItem[[x]],
               value =
@@ -3873,7 +3873,7 @@ sec_adv_manager_sitemap <-
         state_df <-
           seq_along(states) %>%
           future_map_dfr(function(x) {
-            data_frame(nameItem = item_name,
+            tibble(nameItem = item_name,
                        valueItem = states[x]) %>%
               unite(fullnameItem,
                     nameItem,
@@ -3911,7 +3911,7 @@ sec_adv_manager_sitemap <-
 
         if (check_nodes %>% length() == 3) {
           node_item_df <-
-            data_frame(
+            tibble(
               nameItem = c(
                 'hasExemptionAsSolelyVentureAdviser',
                 'hasExemptionAsPrivateFundManagerUnder150MAUM',
@@ -3920,7 +3920,7 @@ sec_adv_manager_sitemap <-
               valueItem = T
             )
           node_df <-
-            data_frame(nodeName = check_nodes) %>%
+            tibble(nodeName = check_nodes) %>%
             left_join(.get_check_box_value_df()) %>%
             mutate(isNodeChecked = if_else(nodeName %>% str_detect('Checkbox not checked'), F, T)) %>%
             bind_cols(node_item_df) %>%
@@ -3941,7 +3941,7 @@ sec_adv_manager_sitemap <-
               dplyr::select(nameItem, valueItem)
 
             node_item_df <-
-              data_frame(
+              tibble(
                 nameItem = c(
                   'hasExemptionAsSolelyVentureAdviser',
                   'hasExemptionAsPrivateFundManagerUnder150MAUM',
@@ -3959,7 +3959,7 @@ sec_adv_manager_sitemap <-
               dplyr::select(nameItem, valueItem)
 
             node_item_df <-
-              data_frame(
+              tibble(
                 nameItem = c(
                   "hasAUMGreater100M",
                   "hasAUMUnder100MOver25m",
@@ -3981,7 +3981,7 @@ sec_adv_manager_sitemap <-
           }
 
           node_df <-
-            data_frame(nodeName = check_nodes) %>%
+            tibble(nodeName = check_nodes) %>%
             left_join(.get_check_box_value_df()) %>%
             tidyr::replace_na(list(isNodeChecked = F)) %>%
             mutate(isNodeChecked = if_else(nodeName %>% str_detect('Checkbox not checked'), F, T)) %>%
@@ -4052,7 +4052,7 @@ sec_adv_manager_sitemap <-
                   str_detect("Radio")]
 
         typeEntityManager <-
-          data_frame(
+          tibble(
             typeEntityManager = c(
               'Corporation',
               'Sole Proprietorship',
@@ -4085,7 +4085,7 @@ sec_adv_manager_sitemap <-
             NA
         }
         org_data <-
-          data_frame(typeEntityManager,
+          tibble(typeEntityManager,
                      monthFiscalYearEnd,
                      locationEntityOrganized)
         return(org_data)
@@ -4134,7 +4134,7 @@ sec_adv_manager_sitemap <-
           str_trim()
 
         node_df <-
-          data_frame(nodeName = check_nodes) %>%
+          tibble(nodeName = check_nodes) %>%
           left_join(.get_check_box_value_df()) %>%
           bind_cols(get_node_item_df()) %>%
           dplyr::filter(isNodeChecked == T) %>%
@@ -4228,7 +4228,7 @@ sec_adv_manager_sitemap <-
     .get_section_5_node_name_df <-
       function() {
         name_df <-
-          data_frame(
+          tibble(
             fullnameItem =
               c(
                 "rangeClientsZero",
@@ -4842,7 +4842,7 @@ sec_adv_manager_sitemap <-
               str_trim()
 
             client_summary_image_df <-
-              data_frame(nodeName = check_nodes) %>%
+              tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               suppressMessages()
 
@@ -4893,7 +4893,7 @@ sec_adv_manager_sitemap <-
           .parse_node_table_to_text(css_node = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ClientCompensation_ctl00_trIAPDHeader + tr + tr')
 
         employee_node_df <-
-          data_frame(
+          tibble(
             nameItem = c(
               "countEmployeesTotal",
               "countEmployeesInvestmentAdvisory",
@@ -4921,7 +4921,7 @@ sec_adv_manager_sitemap <-
         employee_count_df <-
           1:nrow(employee_node_df) %>%
           future_map_dfr(function(x) {
-            data_frame(
+            tibble(
               nameItem =
                 employee_node_df$nameItem[[x]],
               value =
@@ -4946,7 +4946,7 @@ sec_adv_manager_sitemap <-
           )
 
         aum_value_name_df <-
-          data_frame(
+          tibble(
             nameItem = c(
               "amountAUMDiscretionary",
               "amountAUMNonDiscretionary",
@@ -4997,7 +4997,7 @@ sec_adv_manager_sitemap <-
                   NA
               }
 
-              data_frame(nameItem =
+              tibble(nameItem =
                            aum_value_name_df$nameItem[[x]],
                          value =
                            val)
@@ -5015,14 +5015,14 @@ sec_adv_manager_sitemap <-
 
         } else {
           aum_value_df <-
-            data_frame(nameEntityManager = name_entity_manager)
+            tibble(nameEntityManager = name_entity_manager)
         }
 
         check_node_df <-
           page %>% parse_section_5_check_nodes()
 
         section_5_data <-
-          data_frame(idCRD,
+          tibble(idCRD,
                      nameEntityManager = name_entity_manager) %>%
           bind_cols(list(employee_count_df, check_node_df)) %>%
           left_join(aum_value_df) %>%
@@ -5049,7 +5049,7 @@ sec_adv_manager_sitemap <-
             node_text[grepl("[[:upper:]]+$", node_text)] %>% unique()
 
           type_df <-
-            data_frame(nameItem = rep('typeOther', length(other_value)),
+            tibble(nameItem = rep('typeOther', length(other_value)),
                        value = other_value) %>%
             mutate(
               countItem = (1:n()) - 1,
@@ -5129,7 +5129,7 @@ sec_adv_manager_sitemap <-
               check_nodes[check_nodes %>% str_detect("Radio")]
 
             node_df <-
-              data_frame(nodeName = check_nodes) %>%
+              tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>%
@@ -5186,7 +5186,7 @@ sec_adv_manager_sitemap <-
     get_node_item_df <-
       function() {
         node_item_df <-
-          data_frame(
+          tibble(
             nameItem = c(
               'isBrokerDealer',
               'isOtherInvestmentAdvisor',
@@ -5219,7 +5219,7 @@ sec_adv_manager_sitemap <-
               html_attr('alt') %>%
               str_trim()
             has_nodes <-
-              data_frame(nodeName = check_nodes) %>%
+              tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               mutate(valueItem = T) %>%
@@ -5229,7 +5229,7 @@ sec_adv_manager_sitemap <-
 
             if (has_nodes) {
               affiliation_df <-
-                data_frame(nodeName = check_nodes) %>%
+                tibble(nodeName = check_nodes) %>%
                 left_join(.get_check_box_value_df()) %>%
                 bind_cols(get_node_item_df()) %>%
                 mutate(valueItem = T) %>%
@@ -5247,7 +5247,7 @@ sec_adv_manager_sitemap <-
               }
             } else {
               affiliation_df <-
-                data_frame(idCRD, nameEntityManager = name_entity_manager)
+                tibble(idCRD, nameEntityManager = name_entity_manager)
             }
             return(affiliation_df)
           }
@@ -5319,7 +5319,7 @@ sec_adv_manager_sitemap <-
             })
 
           table_css_node_df <-
-            data_frame(
+            tibble(
               numberTable = 1:fund_count,
               pageSequenceNode = page_sequences,
               tableCSSNode = page_table_nodes
@@ -5359,7 +5359,7 @@ sec_adv_manager_sitemap <-
           }
         } else {
           all_data <-
-            data_frame(nameEntityManager = name_entity_manager)
+            tibble(nameEntityManager = name_entity_manager)
         }
         all_data
       }
@@ -5432,7 +5432,7 @@ sec_adv_manager_sitemap <-
               str_trim()
 
             section_data <-
-              data_frame(nodeName = check_nodes) %>%
+              tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>%
@@ -5486,7 +5486,7 @@ sec_adv_manager_sitemap <-
     get_node_item_df <-
       function() {
         node_item_df <-
-          data_frame(
+          tibble(
             namefullItem =
               c(
                 "hasCustodyClientCash.TRUE",
@@ -5559,7 +5559,7 @@ sec_adv_manager_sitemap <-
               str_trim()
 
             node_df <-
-              data_frame(nodeName = check_nodes) %>%
+              tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               mutate(value = T) %>%
@@ -5601,7 +5601,7 @@ sec_adv_manager_sitemap <-
 
     if (has_nodes) {
       custody_name_df <-
-        data_frame(
+        tibble(
           nameItem = c(
             "amountAUMClientFundsInCustody",
             "countClientFundsInCustody",
@@ -5650,7 +5650,7 @@ sec_adv_manager_sitemap <-
           }
 
           val_df <-
-            data_frame(nameItem =
+            tibble(nameItem =
                          custody_name_df$nameItem[[x]],
                        value = value)
           return(val_df)
@@ -5703,7 +5703,7 @@ sec_adv_manager_sitemap <-
               str_trim()
 
             section_data <-
-              data_frame(nodeName = check_nodes) %>%
+              tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>%
@@ -5730,7 +5730,7 @@ sec_adv_manager_sitemap <-
           parse_section_10_nodes()
 
         section_data <-
-          data_frame(nameEntityManager = name_entity_manager) %>%
+          tibble(nameEntityManager = name_entity_manager) %>%
           bind_cols(list(section_data))
 
         return(section_data)
@@ -5742,7 +5742,7 @@ sec_adv_manager_sitemap <-
       parse_section_10()
 
     section_data <-
-      data_frame(idCRD) %>%
+      tibble(idCRD) %>%
       bind_cols(section_data)
 
     return(section_data)
@@ -5808,7 +5808,7 @@ sec_adv_manager_sitemap <-
               str_trim()
 
             section_data <-
-              data_frame(nodeName = check_nodes) %>%
+              tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
               dplyr::filter(isNodeChecked == T) %>%
@@ -5885,7 +5885,7 @@ sec_adv_manager_sitemap <-
               str_trim()
 
             has_nodes <-
-              data_frame(nodeName = check_nodes) %>%
+              tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               suppressMessages() %>%
               bind_cols(get_node_item_df()) %>%
@@ -5894,7 +5894,7 @@ sec_adv_manager_sitemap <-
 
             if (has_nodes) {
               section_data <-
-                data_frame(nodeName = check_nodes) %>%
+                tibble(nodeName = check_nodes) %>%
                 left_join(.get_check_box_value_df()) %>%
                 bind_cols(get_node_item_df()) %>%
                 dplyr::filter(isNodeChecked == T) %>%
@@ -5924,7 +5924,7 @@ sec_adv_manager_sitemap <-
                 dplyr::select(one_of(col_order))
             } else {
               section_data <-
-                data_frame(nameEntityManager = name_entity_manager)
+                tibble(nameEntityManager = name_entity_manager)
             }
 
             return(section_data)
@@ -5977,7 +5977,7 @@ sec_adv_manager_sitemap <-
             html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleAPHSection_ctl00_ownersGrid') %>%
             html_table(fill = T, header = F) %>%
             data.frame(stringsAsFactors = F) %>%
-            as_data_frame() %>%
+            as_tibble() %>%
             slice(-1) %>%
             mutate(X1 = X1 %>% str_to_upper())
 
@@ -6107,7 +6107,7 @@ sec_adv_manager_sitemap <-
             )
         } else {
           table_data <-
-            data_frame(nameEntityManager = name_entity_manager)
+            tibble(nameEntityManager = name_entity_manager)
         }
         return(table_data)
       }
@@ -6187,7 +6187,7 @@ sec_adv_manager_sitemap <-
             html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleBPHSection_ctl00_ownersGrid') %>%
             html_table(fill = T, header = F) %>%
             data.frame(stringsAsFactors = F) %>%
-            as_data_frame() %>%
+            as_tibble() %>%
             slice(-1) %>%
             mutate(X1 = X1 %>% str_to_upper())
 
@@ -6401,7 +6401,7 @@ sec_adv_manager_sitemap <-
             )
         } else {
           table_data <-
-            data_frame(nameEntityManager = name_entity_manager)
+            tibble(nameEntityManager = name_entity_manager)
         }
         return(table_data)
       }
@@ -6484,7 +6484,7 @@ sec_adv_manager_sitemap <-
           table_ids[table_ids %>% str_detect('PFID|pageMessages|Lookup|Header') == F]
 
         table_node_df <-
-          data_frame(idCSSTable = table_ids %>% paste0('#', .)) %>%
+          tibble(idCSSTable = table_ids %>% paste0('#', .)) %>%
           mutate(idTable = 1:n())
 
         table_nodes <-
@@ -6509,7 +6509,7 @@ sec_adv_manager_sitemap <-
               raw_nodes[!raw_nodes == '']
 
             if (raw_nodes %>% length() > 0) {
-              data_frame(idTable = x, nodeText = raw_nodes)
+              tibble(idTable = x, nodeText = raw_nodes)
             }
           }) %>%
           mutate(idRow = 1:n())
@@ -6539,7 +6539,7 @@ sec_adv_manager_sitemap <-
                 is_end_table <-
                   raw_nodes %>% grep("A. PRIVATE FUND|SECTION 6", .) %>%
                   length() > 0
-                data_frame(
+                tibble(
                   idTable = x,
                   isEndTable = is_end_table,
                   nodesText = raw_nodes
@@ -6580,7 +6580,7 @@ sec_adv_manager_sitemap <-
                 has_nodes <-
                   raw_nodes %>% length() > 0
                 if (has_nodes) {
-                  data_frame(idTable = x, itemvalueNode = raw_nodes)
+                  tibble(idTable = x, itemvalueNode = raw_nodes)
                 }
               }) %>%
               dplyr::filter(
@@ -6658,7 +6658,7 @@ sec_adv_manager_sitemap <-
               }
             } else {
               all_locations <-
-                data_frame(nameEntityManager = name_entity_manager)
+                tibble(nameEntityManager = name_entity_manager)
             }
             return(all_locations)
           }
@@ -6678,7 +6678,7 @@ sec_adv_manager_sitemap <-
                 nodes[nodes %>% grep('http', .)]
 
               url_df <-
-                data_frame(urlManager) %>%
+                tibble(urlManager) %>%
                 mutate(countItem = 1:n()) %>%
                 gather(item, value, -countItem) %>%
                 dplyr::filter(!value %>% is.na()) %>%
@@ -6693,7 +6693,7 @@ sec_adv_manager_sitemap <-
             } else {
               url_df <-
                 url_df <-
-                data_frame(nameEntityManager = name_entity_manager)
+                tibble(nameEntityManager = name_entity_manager)
             }
             return(url_df)
           }
@@ -6720,7 +6720,7 @@ sec_adv_manager_sitemap <-
                 paste0('#', ., ' + table')
 
               related_adviser_node_df <-
-                data_frame(cssNode = node_id_value) %>%
+                tibble(cssNode = node_id_value) %>%
                 mutate(idTable = 1:n()) %>%
                 dplyr::select(idTable, everything())
 
@@ -6760,7 +6760,7 @@ sec_adv_manager_sitemap <-
                   }
 
                   data_df <-
-                    data_frame(
+                    tibble(
                       idTable = x,
                       nameBusinessRelatedEntity,
                       nameLegalRelatedEntity,
@@ -6787,7 +6787,7 @@ sec_adv_manager_sitemap <-
                       str_trim()
 
                     node_df <-
-                      data_frame(
+                      tibble(
                         nameItem = c(
                           'isBrokerDealer',
                           'isOtherInvestmentAdvisor',
@@ -6831,7 +6831,7 @@ sec_adv_manager_sitemap <-
                       )
 
                     box_df <-
-                      data_frame(nodeName = check_nodes) %>%
+                      tibble(nodeName = check_nodes) %>%
                       mutate(idTable = x) %>%
                       left_join(.get_check_box_value_df()) %>%
                       bind_cols(node_df) %>%
@@ -6873,7 +6873,7 @@ sec_adv_manager_sitemap <-
               }
             } else {
               related_advisor_df <-
-                data_frame(nameEntityManager = name_entity_manager)
+                tibble(nameEntityManager = name_entity_manager)
             }
             return(related_advisor_df)
           }
@@ -6901,7 +6901,7 @@ sec_adv_manager_sitemap <-
                     val <- NA
                   }
 
-                  data_frame(value = val,
+                  tibble(value = val,
                              idNode = x)
                 }) %>%
                 dplyr::filter(!value %>% is.na()) %>%
@@ -6915,7 +6915,7 @@ sec_adv_manager_sitemap <-
                 mutate(
                   value = value %>% str_replace_all('Name of entity where books and records are kept:', '')
                 ) %>%
-                left_join(data_frame(
+                left_join(tibble(
                   idNode = c(-1, 5, 7, 10, 12, 14, 16, 18, 19, 20, 21) ,
                   nameItem = c(
                     'descriptionRecordsKept',
@@ -6982,11 +6982,11 @@ sec_adv_manager_sitemap <-
               if (record_df %>% ncol > 100 |
                   record_df %>% nrow > 8) {
                 record_df <-
-                  data_frame(nameEntityManager = name_entity_manager)
+                  tibble(nameEntityManager = name_entity_manager)
               }
             } else {
               record_df <-
-                data_frame(nameEntityManager = name_entity_manager)
+                tibble(nameEntityManager = name_entity_manager)
             }
 
             return(record_df)
@@ -7010,10 +7010,10 @@ sec_adv_manager_sitemap <-
               control_person_df <-
                 8:0 %>%
                 future_map_dfr(function(x) {
-                  data_frame(value = nodes[node_locations - x],
+                  tibble(value = nodes[node_locations - x],
                              idNode = x)
                 }) %>%
-                left_join(data_frame(
+                left_join(tibble(
                   idNode = 8:0,
                   nameItem = c(
                     'nameControlPerson',
@@ -7131,7 +7131,7 @@ sec_adv_manager_sitemap <-
               }
             } else {
               control_person_df <-
-                data_frame(nameEntityManager = name_entity_manager)
+                tibble(nameEntityManager = name_entity_manager)
             }
             return(control_person_df)
           }
@@ -7159,11 +7159,11 @@ sec_adv_manager_sitemap <-
                 as.numeric()
 
               public_control_df <-
-                data_frame(nameEntityManager = name_entity_manager) %>%
+                tibble(nameEntityManager = name_entity_manager) %>%
                 mutate(idCIKPublicCompany, namePublicCompanyLegal)
             } else {
               public_control_df <-
-                data_frame(nameEntityManager = name_entity_manager)
+                tibble(nameEntityManager = name_entity_manager)
             }
 
             return(public_control_df)
@@ -7199,7 +7199,7 @@ sec_adv_manager_sitemap <-
                 node_text[!node_text == '']
 
               other_node_text_df <-
-                data_frame(
+                tibble(
                   nameEntityManager = name_entity_manager,
                   item = 'descriptionOtherDisclosures',
                   value = node_text
@@ -7214,7 +7214,7 @@ sec_adv_manager_sitemap <-
               }
             } else {
               other_node_text_df <-
-                data_frame(nameEntityManager = name_entity_manager)
+                tibble(nameEntityManager = name_entity_manager)
             }
             return(other_node_text_df)
           }
@@ -7281,7 +7281,7 @@ sec_adv_manager_sitemap <-
             suppressMessages()
         } else {
           section_data <-
-            data_frame(
+            tibble(
               nameTable = c(
                 'Other Office Locations',
                 'Record Locations',
@@ -7385,7 +7385,7 @@ sec_adv_manager_sitemap <-
               'titleSignatory')
 
           signature_df <-
-            data_frame(item = item_names,
+            tibble(item = item_names,
                        value = nodes) %>%
             spread(item, value) %>%
             mutate(dateADVFiling = dateADVFiling %>% lubridate::mdy())
@@ -7397,7 +7397,7 @@ sec_adv_manager_sitemap <-
               'dateADVFiling')
 
           signature_df <-
-            data_frame(item = item_names,
+            tibble(item = item_names,
                        value = nodes) %>%
             spread(item, value)
         }
@@ -7469,7 +7469,7 @@ sec_adv_manager_sitemap <-
                replace_words = NA,
                filter_words = NA) {
         name_df <-
-          data_frame(
+          tibble(
             nameItem = item_name,
             hit_word,
             offset,
@@ -7599,7 +7599,7 @@ sec_adv_manager_sitemap <-
           values %>% length() > 0
         if (has_values) {
           table_df  <-
-            data_frame(value = values) %>%
+            tibble(value = values) %>%
             dplyr::filter(!value %>% is.na()) %>%
             mutate(countItem = 1:n(),
                    nameItem = item_name) %>%
@@ -7625,7 +7625,7 @@ sec_adv_manager_sitemap <-
 
         } else {
           table_df <-
-            data_frame(nameItem = item_name)
+            tibble(nameItem = item_name)
         }
         return(table_df)
       }
@@ -7663,7 +7663,7 @@ sec_adv_manager_sitemap <-
                 raw_nodes[!raw_nodes == '']
 
               if (raw_nodes %>% length() > 0) {
-                data_frame(idTable = x, nodeText = raw_nodes)
+                tibble(idTable = x, nodeText = raw_nodes)
               }
             }) %>%
             dplyr::select(nodeText) %>%
@@ -7788,7 +7788,7 @@ sec_adv_manager_sitemap <-
             suppressWarnings()
         } else{
           all_drp_data <-
-            data_frame(nameEntityManager = name_entity_manager)
+            tibble(nameEntityManager = name_entity_manager)
         }
         return(all_drp_data)
       }
@@ -7823,7 +7823,7 @@ sec_adv_manager_sitemap <-
                 raw_nodes[!raw_nodes == '']
 
               if (raw_nodes %>% length() > 0) {
-                data_frame(idTable = x, nodeText = raw_nodes)
+                tibble(idTable = x, nodeText = raw_nodes)
               }
             }) %>%
             dplyr::select(nodeText) %>%
@@ -8025,7 +8025,7 @@ sec_adv_manager_sitemap <-
             suppressWarnings()
         } else{
           all_drp_data <-
-            data_frame(nameEntityManager = name_entity_manager)
+            tibble(nameEntityManager = name_entity_manager)
         }
         return(all_drp_data)
       }
@@ -8061,7 +8061,7 @@ sec_adv_manager_sitemap <-
                 raw_nodes[!raw_nodes == '']
 
               if (raw_nodes %>% length() > 0) {
-                data_frame(idTable = x, nodeText = raw_nodes)
+                tibble(idTable = x, nodeText = raw_nodes)
               }
             }) %>%
             dplyr::select(nodeText) %>%
@@ -8266,7 +8266,7 @@ sec_adv_manager_sitemap <-
             suppressWarnings()
         } else{
           all_drp_data <-
-            data_frame(nameEntityManager = name_entity_manager)
+            tibble(nameEntityManager = name_entity_manager)
         }
         return(all_drp_data)
       }
@@ -8306,7 +8306,7 @@ sec_adv_manager_sitemap <-
         dplyr::select(idCRD, nameEntityManager, everything())
     } else {
       all_drp_data <-
-        data_frame(
+        tibble(
           nameTable = c('Criminal DRP', 'Regulatory CRD', 'Civil CRD'),
           dataTable = list(criminal_df, regulatory_df, civil_df)
         ) %>%
@@ -8372,43 +8372,43 @@ sec_adv_manager_sitemap <-
     get_adv_sections <-
       function(data, all_sections) {
         .get_manager_sec_page_safe <-
-          possibly(.get_manager_sec_page, data_frame())
+          possibly(.get_manager_sec_page, tibble())
         .get_section_drp_safe <-
-          possibly(.get_section_drp, data_frame())
+          possibly(.get_section_drp, tibble())
         .get_section_1_data_safe <-
-          possibly(.get_section_1_data, data_frame())
+          possibly(.get_section_1_data, tibble())
         .get_section_2_data_safe <-
-          possibly(.get_section_2_data, data_frame())
+          possibly(.get_section_2_data, tibble())
         .get_section_3_data_safe <-
-          possibly(.get_section_3_data, data_frame())
+          possibly(.get_section_3_data, tibble())
         .get_section_4_data_safe <-
-          possibly(.get_section_4_data, data_frame())
+          possibly(.get_section_4_data, tibble())
         .get_section_5_data_safe <-
-          possibly(.get_section_5_data, data_frame())
+          possibly(.get_section_5_data, tibble())
         .get_section_6_data_safe <-
-          possibly(.get_section_6_data, data_frame())
+          possibly(.get_section_6_data, tibble())
         .get_section_7a_data_safe <-
-          possibly(.get_section_7a_data, data_frame())
+          possibly(.get_section_7a_data, tibble())
         .get_section_7b_data_safe <-
-          possibly(.get_section_7b_data, data_frame())
+          possibly(.get_section_7b_data, tibble())
         .get_section_8_data_safe <-
-          possibly(.get_section_8_data, data_frame())
+          possibly(.get_section_8_data, tibble())
         .get_section_9_data_safe <-
-          possibly(.get_section_9_data, data_frame())
+          possibly(.get_section_9_data, tibble())
         .get_section_10_data_safe <-
-          possibly(.get_section_10_data, data_frame())
+          possibly(.get_section_10_data, tibble())
         .get_section_11_data_safe <-
-          possibly(.get_section_11_data, data_frame())
+          possibly(.get_section_11_data, tibble())
         .get_section_12_data_safe <-
-          possibly(.get_section_12_data, data_frame())
+          possibly(.get_section_12_data, tibble())
         .get_schedule_a_data_safe <-
-          possibly(.get_schedule_a_data, data_frame())
+          possibly(.get_schedule_a_data, tibble())
         .get_schedule_b_data_safe <-
-          possibly(.get_schedule_b_data, data_frame())
+          possibly(.get_schedule_b_data, tibble())
         .get_schedule_d_data_safe <-
-          possibly(.get_schedule_d_data, data_frame())
+          possibly(.get_schedule_d_data, tibble())
         .get_manager_signatory_data_safe <-
-          possibly(.get_manager_signatory_data, data_frame())
+          possibly(.get_manager_signatory_data, tibble())
 
         if (!all_sections) {
           no_rows <-
@@ -8449,7 +8449,7 @@ sec_adv_manager_sitemap <-
             assign(x = df_name, eval(g)) %>%
               suppressWarnings()
             data <-
-              data_frame(nameADVPage = nameADVPage,
+              tibble(nameADVPage = nameADVPage,
                          dataTable = list(df_name %>% as_name() %>% eval()))
             return(data)
           })
@@ -8457,7 +8457,7 @@ sec_adv_manager_sitemap <-
       }
 
     get_adv_sections_safe <-
-      possibly(get_adv_sections, data_frame())
+      possibly(get_adv_sections, tibble())
 
     all_data <-
       get_adv_sections_safe(data = data, all_sections = all_sections) %>%
@@ -8602,7 +8602,7 @@ sec_adv_manager_sitemap <-
         get_all_manager_description_data()
 
       all_data <-
-        data_frame(
+        tibble(
           idCRD = id_crd,
           nameEntityManager = name_entity_manager,
           nameTable = 'Manager Description',
@@ -8630,11 +8630,11 @@ sec_adv_manager_sitemap <-
     }
 
     crd_df <-
-      data_frame(idCRD = NA)
+      tibble(idCRD = NA)
 
     if (!entity_names %>% purrr::is_null()) {
       finra_entities_safe <-
-        purrr::possibly(finra_entities, data_frame())
+        purrr::possibly(finra_entities, tibble())
       search_name_df <-
         entity_names %>%
         future_map_dfr(function(x) {
@@ -8653,13 +8653,13 @@ sec_adv_manager_sitemap <-
 
       crd_df <-
         crd_df %>%
-        bind_rows(data_frame(idCRD = id_crds))
+        bind_rows(tibble(idCRD = id_crds))
     }
 
     if (!crd_ids %>% purrr::is_null()) {
       crd_df <-
         crd_df %>%
-        bind_rows(data_frame(idCRD = crd_ids))
+        bind_rows(tibble(idCRD = crd_ids))
     }
     crds <-
       crd_df %>%
@@ -8703,7 +8703,7 @@ sec_adv_manager_sitemap <-
           dplyr::select(dataTable) %>%
           unnest() %>%
           future_map(class) %>%
-          as_data_frame() %>%
+          as_tibble() %>%
           gather(column, valueCol) %>%
           .$valueCol %>% str_count('list') %>% sum() >= 1
 
@@ -8721,11 +8721,11 @@ sec_adv_manager_sitemap <-
             .get_sec_sitemap_df() %>%
             dplyr::select(nameSectionActual, idSection) %>%
             bind_rows(
-              data_frame(nameSectionActual = 'Manager Description',
+              tibble(nameSectionActual = 'Manager Description',
                          idSection = 'managerDescription')
             )
           df_name <-
-            data_frame(nameSectionActual = table_name) %>%
+            tibble(nameSectionActual = table_name) %>%
             left_join(section_df) %>%
             suppressMessages() %>%
             .$idSection
@@ -8793,7 +8793,7 @@ sec_adv_manager_sitemap <-
               unique()
 
             table_name_df <-
-              data_frame(idTable = table_names,
+              tibble(idTable = table_names,
                          nameTable = data_selected$nameTable %>% unique())
 
             data_selected <-
@@ -8893,7 +8893,7 @@ sec_adv_manager_sitemap <-
 #' @param gather_data \code{TRUE} returns a long data frame
 #' @param assign_to_environment \code{TRUE} assign individual data frames to your environment
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import tidyverse curl dplyr formattable httr lubridate magrittr purrr readr lazyeval rvest stringi stringr tibble tidyr xml2
 #' @importFrom lazyeval as_name
@@ -8942,14 +8942,14 @@ adv_managers_filings <-
       stop("Please enter a CRD ID or a search name")
     }
     .get_search_crd_ids_safe <-
-      possibly(.get_search_crd_ids, data_frame())
+      possibly(.get_search_crd_ids, tibble())
 
     crds <-
       .get_search_crd_ids_safe(entity_names = entity_names,
                               crd_ids = crd_ids)
 
     .get_crd_sections_data_safe <-
-      possibly(.get_crd_sections_data, data_frame())
+      possibly(.get_crd_sections_data, tibble())
 
     all_data <-
       seq_along(crds) %>%
@@ -8963,7 +8963,7 @@ adv_managers_filings <-
       }, .progress = T)
 
     .return_selected_adv_tables_safe <-
-      possibly(.return_selected_adv_tables, data_frame())
+      possibly(.return_selected_adv_tables, tibble())
 
     only_1 <-
       section_names %>% length() == 1 & assign_to_environment
@@ -9131,7 +9131,7 @@ return(all_data)
           flatten_df()
 
         sec_name_df <-
-          data_frame(
+          tibble(
             nameSEC = c(
               "version",
               "pages",
@@ -9184,7 +9184,7 @@ return(all_data)
               nameActual <-
                 NA
             }
-            data_frame(idColumn = x, nameActual)
+            tibble(idColumn = x, nameActual)
           })
 
         columns_selected <-
@@ -9268,7 +9268,7 @@ return(all_data)
               stringi::stri_trans_general("latin-ascii")
 
             page_data <-
-              data_frame(numberPage = x, textPage = page_text)
+              tibble(numberPage = x, textPage = page_text)
             return(page_data)
           }) %>%
           dplyr::select(textPage) %>%
@@ -9303,7 +9303,7 @@ return(all_data)
         arrange(desc(datetimeCreated))
     } else {
       brochure_data <-
-        data_frame(nameEntityManager = name_entity_manager, idCRD)
+        tibble(nameEntityManager = name_entity_manager, idCRD)
     }
 
     brochure_data <-
@@ -9368,13 +9368,13 @@ adv_managers_brochures <-
       stop("Please enter a CRD ID or a search name")
     }
     .get_search_crd_ids_safe <-
-      possibly(.get_search_crd_ids, data_frame())
+      possibly(.get_search_crd_ids, tibble())
 
     crds <-
       .get_search_crd_ids_safe(entity_names = entity_names, crd_ids = crd_ids)
 
     .get_manager_brochure_data_safe <-
-      possibly(.get_manager_brochure_data, data_frame())
+      possibly(.get_manager_brochure_data, tibble())
 
     all_data <-
      crds %>%
@@ -9438,7 +9438,7 @@ adv_period_urls <-
       str_c("https://www.sec.gov", .)
 
     data <-
-      data_frame(nameTitle = titles, urlZip = urls) %>%
+      tibble(nameTitle = titles, urlZip = urls) %>%
       separate(nameTitle,
                into = c("typeReport", "periodReport"),
                sep = '\\, ') %>%
@@ -9519,7 +9519,7 @@ adv_period_urls <-
 dictionary_sec_names <-
   function() {
     sec_name_df <-
-      data_frame(
+      tibble(
         nameSEC = c("SEC Region", "Organization CRD#", "SEC#", "Firm Type", "Primary Business Name",
                     "Legal Name", "Main Office Street Address 1", "Main Office Street Address 2",
                     "Main Office City", "Main Office State", "Main Office Country",
@@ -10048,7 +10048,7 @@ dictionary_sec_names <-
       )
 
     column_ids <-
-      data_frame(nameActual = names(adv_data)) %>%
+      tibble(nameActual = names(adv_data)) %>%
       mutate(idRow = 1:n()) %>%
       group_by(nameActual) %>%
       filter(idRow == min(idRow)) %>%
@@ -10056,7 +10056,7 @@ dictionary_sec_names <-
 
     adv_data <-
       adv_data[, column_ids] %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       select(idCRD, dplyr::matches("^nameEntityManager"), everything())
 
     has_columns <-
@@ -10070,7 +10070,7 @@ dictionary_sec_names <-
           dplyr::select(-dplyr::matches("country")) %>%
           dplyr::select(dplyr::matches("^count[A-Z]")) %>%
           future_map(class) %>%
-          as_data_frame() %>%
+          as_tibble() %>%
           gather(column, class) %>%
           dplyr::filter(class == 'character') %>% nrow() > 0
       )
@@ -10081,7 +10081,7 @@ dictionary_sec_names <-
         dplyr::select(-dplyr::matches("country")) %>%
         dplyr::select(dplyr::matches("^count[A-Z]")) %>%
         future_map(class) %>%
-        as_data_frame() %>%
+        as_tibble() %>%
         gather(column, class) %>%
         dplyr::filter(class == 'character') %>%
         .$column
@@ -10210,13 +10210,13 @@ dictionary_sec_names <-
 
 .parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.zip', return_message = TRUE) {
   df <-
-    data_frame()
+    tibble()
   success <- function(res) {
 
 
 
     parse_sec_adv_data_url_safe <-
-      purrr::possibly(.parse_sec_adv_data_url, data_frame())
+      purrr::possibly(.parse_sec_adv_data_url, tibble())
 
     page_url <- res$url
 
@@ -10232,7 +10232,7 @@ dictionary_sec_names <-
   }
 
   failure <- function(msg) {
-    data_frame()
+    tibble()
   }
 
 
@@ -10257,8 +10257,8 @@ dictionary_sec_names <-
 #' @param return_message return a message after parsing data
 #' @import dplyr stringr lubridate readr readxl rvest purrr httr tidyr tibble glue
 #' @importFrom curl curl_download
-#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by period and type of filer,
-#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @return where \code{nest_data} is \code{TRUE} a nested tibble by period and type of filer,
+#' where \code{nest_data} is \code{FALSE} a tibble
 #' @export
 #' @family IAPD
 #' @family ADV
@@ -10313,7 +10313,7 @@ adv_managers_periods_summaries <-
     }
 
     .parse_adv_urls_safe <-
-      purrr::possibly(.parse_adv_urls, data_frame())
+      purrr::possibly(.parse_adv_urls, tibble())
 
     all_adv_data <-
       .parse_adv_urls(urls = urls, return_message = return_message)
@@ -10552,7 +10552,7 @@ adv_managers_current_period_summary <-
   ),
   return_message = TRUE) {
     adv_managers_periods_summaries_safe <-
-      purrr::possibly(adv_managers_periods_summaries, data_frame())
+      purrr::possibly(adv_managers_periods_summaries, tibble())
 
     all_data <-
       adv_managers_periods_summaries(only_most_recent = TRUE,
@@ -10571,7 +10571,7 @@ adv_managers_current_period_summary <-
 
 #' Extract fee references
 #'
-#' @param data A \code{data_frame} with the OCR'd brochur data
+#' @param data A \code{tibble} with the OCR'd brochur data
 #' @param word_threshhold
 #' @param print_sentences if \code{TRUE} prints fee reference data
 #'

@@ -64,7 +64,7 @@ and auto formats counts, amounts and values." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fundManageR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.223</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.22302</span>
       </span>
     </div>
 
@@ -155,7 +155,7 @@ and auto formats counts, amounts and values.</p>
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>data</th>
-      <td><p><code>data_frame</code></p></td>
+      <td><p><code>tibble</code></p></td>
     </tr>
     <tr>
       <th>drop_na_columns</th>
@@ -165,7 +165,7 @@ and auto formats counts, amounts and values.</p>
     
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p><code>data_frame</code></p>
+    <p><code>tibble</code></p>
     
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
@@ -177,7 +177,7 @@ and auto formats counts, amounts and values.</p>
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><span class='co'># NOT RUN {</span>
 <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/library'>library</a></span>(<span class='no'>dplyr</span>)
-<span class='fu'><a href='https://dplyr.tidyverse.org/reference/reexports.html'>data_frame</a></span>(<span class='kw'>nameFund</span> <span class='kw'>=</span> <span class='st'>"Blackstone Real Estate Fund IX"</span>, <span class='kw'>isNewFund</span> <span class='kw'>=</span> <span class='st'>"N/A"</span>,
+<span class='fu'><a href='https://dplyr.tidyverse.org/reference/reexports.html'>tibble</a></span>(<span class='kw'>nameFund</span> <span class='kw'>=</span> <span class='st'>"Blackstone Real Estate Fund IX"</span>, <span class='kw'>isNewFund</span> <span class='kw'>=</span> <span class='st'>"N/A"</span>,
 <span class='kw'>countAssets</span> <span class='kw'>=</span> <span class='fl'>12000</span>, <span class='kw'>amountAUM</span> <span class='kw'>=</span> <span class='fl'>65000000</span>, <span class='kw'>isRealEstateFund</span> <span class='kw'>=</span> <span class='fl'>1</span>) <span class='kw'>%&gt;%</span> <span class='fu'>tidy_column_formats</span>(<span class='kw'>drop_na_columns</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>)
 <span class='co'># }</span></pre>
   </div>

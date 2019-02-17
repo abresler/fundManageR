@@ -16,7 +16,7 @@
     paste0('https://www.dallasfed.org',.)
 
   df_quarters <-
-    data_frame(
+    tibble(
       nameQuarter = c('first', 'second', 'third', 'fourth'),
       idQuarter = 1:4,
       dateEnd = c('03-31', "06-30", "09-30", "12-31")
@@ -27,7 +27,7 @@
       year <- x %>% readr::parse_number()
       quarter <-
         x %>% str_to_lower %>% str_split('\\ ') %>% flatten_chr() %>% .[[1]]
-      data_frame(yearData = year,
+      tibble(yearData = year,
                  nameQuarter = quarter) %>%
         left_join(df_quarters) %>%
         mutate(
@@ -91,7 +91,7 @@
 
     data <-
       data %>%
-      left_join(data_frame(
+      left_join(tibble(
         nameCountry = c("AGGREGATE", "S. AFRICA", "US", "S. KOREA", "UK"),
         nameCountryActual = c(
           "TOTAL",
@@ -105,7 +105,7 @@
       select(-nameCountryActual) %>%
       left_join(
         countrycode::codelist %>%
-          as_data_frame() %>%
+          as_tibble() %>%
           select(nameCountry = country.name.en, idISO3c = iso3c, nameContinent = continent) %>%
           mutate(nameCountry = nameCountry %>% str_replace("Republic of Korea", "South Korea"),
                  nameCountry = nameCountry %>% str_replace("United Kingdom of Great Britain and Northern Ireland", "United Kingdom")) %>%
@@ -116,7 +116,7 @@
       mutate(urlData = url)
 
     df_quarters <-
-      data_frame(
+      tibble(
         nameQuarter = c('first', 'second', 'third', 'fourth'),
         idQuarter = 1:4,
         dateEnd = c('03-31', "06-30", "09-30", "12-31")
@@ -162,7 +162,7 @@ dallas_fed_international_housing <-
       slice(1)
 
     .parse_housing_excel_safe <-
-      purrr::possibly(.parse_housing_excel, data_frame())
+      purrr::possibly(.parse_housing_excel, tibble())
 
     data <-
       df_url$urlData %>%
@@ -171,7 +171,7 @@ dallas_fed_international_housing <-
       })
 
     df_index <-
-      data_frame(codeIndex = c("HPI", "RHPI", "PDI", "RPDI"),
+      tibble(codeIndex = c("HPI", "RHPI", "PDI", "RPDI"),
                  nameIndex = c("house price index", "real house price index", "personal disposable income index", "real personal disposable income index") %>% str_to_upper())
 
     data <-

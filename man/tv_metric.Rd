@@ -4,7 +4,7 @@
 \alias{tv_metric}
 \title{Generate tradeview metric query}
 \usage{
-tv_metric(filter = data_frame(left = "market_cap_basic", operation =
+tv_metric(filter = tibble(left = "market_cap_basic", operation =
   "nempty"), symbols = list(query = list(types = c("stock", "fund",
   "dr"))), metrics = c("change", "change_abs", "close", "description",
   "earnings_per_share_basic_ttm", "market_cap_basic", "name",

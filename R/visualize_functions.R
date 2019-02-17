@@ -10,8 +10,8 @@
 #' @export
 #' @import listviewer
 #' @examples
-#' visualize_data_frame(mtcars)
-visualize_data_frame <-
+#' visualize_tibble(mtcars)
+visualize_tibble <-
   function(data, edit = F) {
     if (edit) {
       json_list <-

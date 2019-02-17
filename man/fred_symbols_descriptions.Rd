@@ -15,7 +15,7 @@ fred_symbols_descriptions(symbols = c("DGS2", "DGS10"),
 \item{return_message}{if \code{TRUE} returns message}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 FRED Symbols descriptions

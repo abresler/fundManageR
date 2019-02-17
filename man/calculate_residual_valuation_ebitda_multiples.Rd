@@ -20,7 +20,7 @@ calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10,
 \item{return_wide}{return data in wide or long form}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function calculates \href{https://en.wikipedia.org/wiki/Residual_value}{residual values}

@@ -20,7 +20,7 @@ calculate_residual_valuation_cap_rates(cap_rates = c(0.05, 0.0525, 0.06,
 \item{return_wide}{\code{TRUE} return wide or \code{FALSE}}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function calculates \href{https://en.wikipedia.org/wiki/Residual_value}{residual values}

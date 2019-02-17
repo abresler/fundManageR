@@ -7,7 +7,7 @@
 msci_indicies()
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 Returns all MSCI indicies.  This function

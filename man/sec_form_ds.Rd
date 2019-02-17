@@ -34,8 +34,8 @@ sec_form_ds(industries = NULL, form_years = NULL, months = NULL,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-where \code{nest_data} is \code{FALSE} a data_frame
+where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+where \code{nest_data} is \code{FALSE} a tibble
 }
 \description{
 This function returns data for SEC Form D's by

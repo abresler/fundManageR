@@ -83,7 +83,7 @@ df_ticker
 tickers_trades <-
   function(tickers = c("PEI","bxp") , return_message = TRUE) {
     .get_data_ticker_trade_safe <-
-      purrr::possibly(.get_data_ticker_trade, data_frame())
+      purrr::possibly(.get_data_ticker_trade, tibble())
 
     all_data <-
       tickers %>%
@@ -122,7 +122,7 @@ tickers_trades <-
     json_url %>%
     jsonlite::fromJSON() %>%
     data.frame(stringsAsFactors = FALSE) %>%
-    as_data_frame() %>%
+    as_tibble() %>%
     purrr::set_names(c('idTicker', 'nameCompany', 'nameExchange')) %>%
     mutate(nameCompanySearch = company) %>%
     dplyr::select(nameCompanySearch, everything())
@@ -150,7 +150,7 @@ companies_tickers <-
   function(companies = c("Vornado", "Snap"), include_trades = TRUE,
            return_message = TRUE) {
     .companies_tickers_safe <-
-      purrr::possibly(.companies_tickers, data_frame())
+      purrr::possibly(.companies_tickers, tibble())
 
     all_data <-
       companies %>%
@@ -161,7 +161,7 @@ companies_tickers <-
     if (include_trades) {
       tickers <- all_data$idTicker %>% unique()
       tickers_trades_safe <-
-        purrr::possibly(tickers_trades, data_frame())
+        purrr::possibly(tickers_trades, tibble())
       df_trades <-
         tickers %>%
         tickers_trades(return_message = return_message) %>%

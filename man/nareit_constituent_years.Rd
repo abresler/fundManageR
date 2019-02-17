@@ -17,7 +17,7 @@ nareit_constituent_years(years = 2010:2016, resolve_names = TRUE,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function allows the user to acquire data on

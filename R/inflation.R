@@ -28,7 +28,7 @@
       page %>%
       html_table(fill = F) %>%
       flatten_df() %>%
-      dplyr::as_data_frame() %>%
+      dplyr::as_tibble() %>%
       purrr::set_names(c("yearIndex", "ratioIndex", "pctChangeIndex"))
 
     data %>%
@@ -45,7 +45,7 @@
       page %>%
       html_table(fill = F) %>%
       flatten_df() %>%
-      dplyr::as_data_frame() %>%
+      dplyr::as_tibble() %>%
       purrr::set_names(c("yearIndex", "ratioIndex", "pctChangeIndex"))
 
     data %>%
@@ -59,7 +59,7 @@
 #'
 #' @param base_year 1913 or 1800
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import rvest xml2 dplyr readr purrr
 #' @examples

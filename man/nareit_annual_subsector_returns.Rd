@@ -13,7 +13,7 @@ nareit_annual_subsector_returns(return_wide = TRUE,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function returns annual subsector returns

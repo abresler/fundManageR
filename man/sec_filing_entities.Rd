@@ -14,7 +14,7 @@ sec_filing_entities(entity_names = c("Rockwood Capital", "Vornado",
 \item{return_message}{return a message \code{TRUE, FALSE}}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns metadata for

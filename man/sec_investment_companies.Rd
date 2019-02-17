@@ -12,7 +12,7 @@ sec_investment_companies(nest_data = TRUE, return_message = TRUE)
 \item{only_most_recent}{\code{TRUE} return only the most recent year}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function returns information about SEC

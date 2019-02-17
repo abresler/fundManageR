@@ -15,7 +15,7 @@ us_public_companies(merge_type = NULL, return_message = TRUE)
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns snapshot details

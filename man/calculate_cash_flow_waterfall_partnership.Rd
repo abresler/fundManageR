@@ -45,7 +45,7 @@ calculate_cash_flow_waterfall_partnership(dates = c("2016-09-01",
 \item{widen_waterfall}{\code{TRUE} returns waterfall in wide form}
 }
 \value{
-\code{data_frame}O
+\code{tibble}O
 }
 \description{
 This function is a variant of the \code{\link{calculate_cash_flow_waterfall}}

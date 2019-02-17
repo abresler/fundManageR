@@ -13,8 +13,8 @@ ycombinator_alumni(nest_data = FALSE, return_message = TRUE)
 includes information about a random YC company}
 }
 \value{
-where \code{nest_data} is \code{TRUE} a nested data_frame by batch,
-where \code{nest_data} is \code{FALSE} a data_frame
+where \code{nest_data} is \code{TRUE} a nested tibble by batch,
+where \code{nest_data} is \code{FALSE} a tibble
 }
 \description{
 This function returns information on

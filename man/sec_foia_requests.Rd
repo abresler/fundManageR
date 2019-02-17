@@ -15,7 +15,7 @@ sec_foia_requests(search_years = 2006:2016, nest_data = TRUE,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function returns returns all Freedom of Information Act requests

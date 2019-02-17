@@ -58,7 +58,7 @@ calculate_leverage_metrics(purchase_price = 0,
 \item{is_actual_360}{\code{TRUE} interest calculated on actual/360 basis}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns data with the outputs

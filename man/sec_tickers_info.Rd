@@ -13,7 +13,7 @@ sec_tickers_info(tickers = c("VNO", "NVDA", "FB"),
 \item{return_message}{if \code{true} return a message}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 Get Ticker SEC company information

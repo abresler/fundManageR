@@ -11,11 +11,11 @@ dictionary_form_d_categories()
 dictionary_form_d_categories()
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 
-a \code{data_frame}
+a \code{tibble}
 
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns searchable

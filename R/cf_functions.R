@@ -78,7 +78,7 @@ cap_rate_valuation <-
     }
 
     value_df <-
-      data_frame(
+      tibble(
         pctCapRate = pct_cap_rate,
         pctCostSale = pct_sale_cost,
         amountNetOperatingIncome = noi,
@@ -155,7 +155,7 @@ ebtida_multiple_value <-
     }
 
     value_df <-
-      data_frame(
+      tibble(
         multipleEBITDA,
         pctCostSale = pct_sale_cost,
         amountEBITDA = ebitda,
@@ -197,7 +197,7 @@ ebtida_multiple_value <-
 #' @param debt_balance vector of anticipated debt balance at sale in numeric or character numeric/currency form
 #' @param return_wide \code{TRUE} return wide or \code{FALSE}
 #' @import readr dplyr purrr formattable
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @family calculation
 #' @family residual value calculation
 #' @export
@@ -219,7 +219,7 @@ calculate_residual_valuation_cap_rates <-
         debt = debt_balance,
         stringsAsFactors = F
       ) %>%
-      as_data_frame
+      as_tibble
 
     scenario_df <-
       1:nrow(scenario_matrix) %>%
@@ -278,7 +278,7 @@ calculate_residual_valuation_cap_rates <-
 #' @param debt_balance vector of anticipated debt balance at sale in numeric or character numeric/currency form
 #' @param return_wide return data in wide or long form
 #' @import readr dplyr purrr formattable
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @family calculation
 #' @family residual value calculation
@@ -298,7 +298,7 @@ calculate_residual_valuation_ebitda_multiples <-
         debt = debt_balance,
         stringsAsFactors = F
       ) %>%
-      as_data_frame
+      as_tibble
 
     scenario_df <-
       1:nrow(scenario_matrix) %>%
@@ -362,7 +362,7 @@ post_money_valuation <-
       pre_money + new_capital
 
     valuation_data <-
-      data_frame(valuationPreMoney = pre_money,
+      tibble(valuationPreMoney = pre_money,
                  amountCapitalInvestment = new_capital) %>%
       mutate(
         pctOwnershipExistingShareholders = (pre_money / total_val) %>% percent,
@@ -380,7 +380,7 @@ post_money_valuation <-
 #' @param percent_sold  vector of of amount of business sold in percent or character percent form
 #' @param return_wide Return data in wide or long form
 #' @import readr dplyr purrr formattable tidyr
-#' @return a \code{data_frame()}
+#' @return a \code{tibble()}
 #' @family calculation
 #' @family venture capital
 #' @export
@@ -397,7 +397,7 @@ calculate_valuation_post_money <-
         percent_sold = percent_sold,
         stringsAsFactors = F
       ) %>%
-      as_data_frame
+      as_tibble
 
     scenario_df <-
       1:nrow(scenario_matrix) %>%
@@ -485,7 +485,7 @@ calculate_basis <-
     }
 
     basis_df <-
-      data_frame(amountPurchasePrice,
+      tibble(amountPurchasePrice,
                  amountCapitalInvestment,
                  amountCapitalizedCosts) %>%
       mutate(amountBasis = amountPurchasePrice + amountCapitalInvestment + amountCapitalizedCosts)
@@ -595,7 +595,7 @@ get_data_monthly_periods <-
             as.Date()
         }
         period_df <-
-          data_frame(idPeriod = period, datePeriod = period_date)
+          tibble(idPeriod = period, datePeriod = period_date)
         return(period_df)
 
       }
@@ -650,7 +650,7 @@ pmt <-
 #' @param balloon_month month loan baloons
 #' @param return_annual_summary \code{TRUE} returns annual summary
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @family leveraged finance calculation
 #' @family calculation
@@ -722,7 +722,7 @@ calculate_loan_payment <-
     periods <-
       loan_period_df$idPeriod
     all_payment_data <-
-      data_frame()
+      tibble()
 
     for (period in periods) {
       period_index <-
@@ -745,7 +745,7 @@ calculate_loan_payment <-
 
       if (period == 0) {
         month_df <-
-          data_frame(
+          tibble(
             idPeriod = period,
             dateStartPeriod = datePeriod,
             dateEndPeriod = datePeriod,
@@ -822,7 +822,7 @@ calculate_loan_payment <-
         }
 
         month_df <-
-          data_frame(
+          tibble(
             idPeriod = period,
             dateStartPeriod = start_month,
             dateEndPeriod = datePeriod,
@@ -1102,7 +1102,7 @@ calculate_leverage_metric <-
 #' @param return_wide \code{TRUE} return data in wide form
 #' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import readr dplyr lubridate stringr purrr tidyr formattable
 #' @family calculation
@@ -1160,7 +1160,7 @@ calculate_leverage_metrics <-
         pct_loan_fee = pct_loan_fee,
         stringsAsFactors = F
       ) %>%
-      as_data_frame()
+      as_tibble()
 
     all_data <-
       1:nrow(variable_matrix) %>%

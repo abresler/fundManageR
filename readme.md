@@ -195,7 +195,7 @@ fred_symbols(symbols = c("DGS10", "DGS2", "DGS30"))
 
 ### `visualize_` Functions
 
-  - `visualize_data_frame` – This function allows the user to visualize
+  - `visualize_tibble` – This function allows the user to visualize
     a data frame object to better understand the structure and contents
     of a data frame. The function utlizes the fantastic
     [listviewer](https://github.com/timelyportfolio/listviewer) package
@@ -243,7 +243,7 @@ ycombinator_alumni <-
   fundManageR::ycombinator_alumni()
 
 ycombinator_alumni %>% 
-  visualize_data_frame(edit = F) ## visualize it
+  visualize_tibble(edit = F) ## visualize it
 ```
 
 ##### IRR Calculation

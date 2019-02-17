@@ -5,14 +5,14 @@
 
 import_rda_file <-
   function(file = NULL,
-           return_data_frame = TRUE) {
+           return_tibble = TRUE) {
     if (file %>% purrr::is_null()) {
       stop("Please enter a file path")
     }
 
     env <- new.env()
     nm <- load(file, env)[1]
-    if (return_data_frame) {
+    if (return_tibble) {
       data <-
         env[[nm]] %>%
         dplyr::as_tibble()
@@ -26,14 +26,14 @@ import_rda_file <-
 
 curl_url <-
   function(url = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
-           return_data_frame = TRUE) {
+           return_tibble = TRUE) {
     con <-
       url %>%
       curl::curl()
 
     data <-
       con %>%
-      import_rda_file(return_data_frame = return_data_frame)
+      import_rda_file(return_tibble = return_tibble)
     close(con)
     return(data)
   }
@@ -41,7 +41,7 @@ curl_url <-
 #' read RDA file
 #'
 #' @param file
-#' @param return_data_frame
+#' @param return_tibble
 #' @return
 #' @export
 #' @import dplyr stringr purrr
@@ -50,15 +50,15 @@ curl_url <-
 #' @examples
 read_rda_file <-
   function(file = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
-           return_data_frame = TRUE) {
+           return_tibble = TRUE) {
     is_html <-
       file %>% stringr::str_detect("http")
 
     if (is_html) {
-      data <- curl_url(url = file, return_data_frame = return_data_frame)
+      data <- curl_url(url = file, return_tibble = return_tibble)
     } else {
       data <-
-        import_rda_file(file = file, return_data_frame = return_data_frame)
+        import_rda_file(file = file, return_tibble = return_tibble)
     }
     return(data)
   }
@@ -92,10 +92,10 @@ parse_table_node <-
         str_to_upper()
 
       df_att <-
-        data_frame(countItemPage = x, nameAttribute = attribute)
+        tibble(countItemPage = x, nameAttribute = attribute)
     } else {
       df_att <-
-        data_frame(countItemPage = x)
+        tibble(countItemPage = x)
     }
 
     if (has_series) {
@@ -120,7 +120,7 @@ parse_table_node <-
         gsub("\\s+", " ", .)
 
       df_series <-
-        data_frame(
+        tibble(
           countItemPage = x,
           nameItem = periods,
           idSeriesDetailed = series_ids,
@@ -137,7 +137,7 @@ parse_table_node <-
         mutate(hasDetailedSeries = !dataSeries %>% map_lgl(is.null))
     } else {
       df_series <-
-        data_frame(countItemPage = x)
+        tibble(countItemPage = x)
     }
 
     if (has_tags) {
@@ -150,7 +150,7 @@ parse_table_node <-
         gsub("\\s+", " ", .)
 
       df_tags <-
-        data_frame(countItemPage = x, nameTag = tags) %>%
+        tibble(countItemPage = x, nameTag = tags) %>%
         mutate(countItem = 1:n())
 
       df_tags <-
@@ -158,7 +158,7 @@ parse_table_node <-
         nest(-countItemPage, .key = dataTags)
     } else {
       df_tags <-
-        data_frame(countItemPage = x)
+        tibble(countItemPage = x)
     }
     df <-
       df_att %>%
@@ -197,7 +197,7 @@ get_fred_page_count <-
            '&t=') %>%
       purrr::reduce(paste0)
 
-    data_frame(numberPage = fred_pages, urlPage = urls)
+    tibble(numberPage = fred_pages, urlPage = urls)
   }
 
 .parse_fred_ft_html <-
@@ -214,7 +214,7 @@ get_fred_page_count <-
       length()
 
     df_css_nodes <-
-      data_frame(idRow = 1:item_count,
+      tibble(idRow = 1:item_count,
                  nodeNumber = c(2, seq(
                    5, by = 3, length.out = item_count - 1
                  )))
@@ -256,7 +256,7 @@ get_fred_page_count <-
           str_to_upper()
 
         table_df <-
-          data_frame(
+          tibble(
             countItemPage = x,
             idSeries = series_id,
             nameSeries = series_name
@@ -306,7 +306,7 @@ get_fred_page_count <-
       discard(is.na) %>% length() == 0
 
     if (no_extra) {
-      df <- data_frame(numberPage = 1, urlPage = as.character(url))
+      df <- tibble(numberPage = 1, urlPage = as.character(url))
       return(df)
     }
 
@@ -325,7 +325,7 @@ get_fred_page_count <-
     urls <-
       glue::glue("{base_url}&pageID={fred_pages}") %>% as.character()
 
-    data_frame(numberPage = fred_pages, urlPage = as.character(urls))
+    tibble(numberPage = fred_pages, urlPage = as.character(urls))
 
   }
 
@@ -345,7 +345,7 @@ get_fred_page_count <-
       select(termSearch, everything())
 
     .parse_fred_ft_html_safe <-
-      purrr::possibly(.parse_fred_ft_html, data_frame())
+      purrr::possibly(.parse_fred_ft_html, tibble())
     df_data <-
       1:nrow(df_urls) %>%
       future_map_dfr(function(x) {
@@ -373,7 +373,7 @@ get_fred_page_count <-
   function(search_terms = c("China Debt", "China Investment"),
            return_message = TRUE) {
     .parse_fred_html_search_term_safe <-
-      purrr::possibly(.parse_fred_html_search_term, data_frame())
+      purrr::possibly(.parse_fred_html_search_term, tibble())
 
     all_data <-
       search_terms %>%
@@ -413,7 +413,7 @@ parse_fred_page <-
       length()
 
     df_css_nodes <-
-      data_frame(idRow = 1:item_count,
+      tibble(idRow = 1:item_count,
                  nodeNumber = c(2, seq(
                    5, by = 3, length.out = item_count - 1
                  )))
@@ -455,7 +455,7 @@ parse_fred_page <-
           str_to_upper()
 
         table_df <-
-          data_frame(
+          tibble(
             countItemPage = x,
             idSeries = series_id,
             nameSeries = series_name
@@ -488,7 +488,7 @@ parse_fred_page <-
            nest_data = TRUE,
            sleep = NULL) {
     parse_fred_page_safe <-
-      purrr::possibly(parse_fred_page, data_frame())
+      purrr::possibly(parse_fred_page, tibble())
 
     urls <-
       get_fred_page_count() %>%
@@ -538,7 +538,7 @@ parse_fred_page <-
 #' }
 #' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @family FRED
 #' @family dictionary
@@ -623,7 +623,7 @@ dictionary_fred_ids <-
 .parse_fred_search <-
   function(urls, return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       works <- res$status_code == 200
       if (works) {
@@ -640,7 +640,7 @@ dictionary_fred_ids <-
 
         data <-
           json_data %>%
-          as_data_frame() %>%
+          as_tibble() %>%
           purrr::set_names(
             c(
               "periodDataStart",
@@ -716,7 +716,7 @@ dictionary_fred_ids <-
 #' default \code{FALSE}
 #' @param return_message if \code{TRUE} returns message
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr lubridate tidyr purrr jsonlite curl rvest glue stringr
 #' @examples
@@ -731,7 +731,7 @@ fred_terms_ids <-
 
     if (use_json_api) {
       .fred_terms_ids_json_safe <-
-        purrr::possibly(.fred_terms_ids_json, data_frame())
+        purrr::possibly(.fred_terms_ids_json, tibble())
       all_data <-
         .fred_terms_ids_json_safe(search_terms = search_terms, return_message = return_message)
       return(all_data)
@@ -739,7 +739,7 @@ fred_terms_ids <-
     }
 
     .fred_terms_ids_html_safe <-
-      purrr::possibly(.fred_terms_ids_html, data_frame())
+      purrr::possibly(.fred_terms_ids_html, tibble())
 
     all_data <-
       .fred_terms_ids_html_safe(search_terms = search_terms, return_message = return_message)
@@ -763,7 +763,7 @@ fred_terms_ids <-
       select(tagSearch, everything())
 
     .parse_fred_ft_html_safe <-
-      purrr::possibly(.parse_fred_ft_html, data_frame())
+      purrr::possibly(.parse_fred_ft_html, tibble())
     df_data <-
       1:nrow(df_urls) %>%
       future_map_dfr(function(x) {
@@ -793,7 +793,7 @@ fred_terms_ids <-
 #' @param return_message if \code{TRUE} returns message
 #' @param nest_data if \code{TRUE} nests data
 #'
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @import dplyr purrr glue rvest curl stringr tidyr
 #' @examples
@@ -807,7 +807,7 @@ fred_tags <-
       stop("Please Enter Tag")
     }
     .get_fred_tag_safe <-
-      purrr::possibly(.get_fred_tag, data_frame())
+      purrr::possibly(.get_fred_tag, tibble())
 
     all_data <-
       tags %>%
@@ -840,7 +840,7 @@ fred_tags <-
   function(data) {
 
     if (nrow(data) <= 1) {
-      return(data_frame())
+      return(tibble())
     }
     obs <- nrow(data)
     date_first <-
@@ -867,7 +867,7 @@ fred_tags <-
       value_last -  value_first
 
     calculate_irr_periods_safe <-
-      purrr::possibly(calculate_irr_periods, data_frame())
+      purrr::possibly(calculate_irr_periods, tibble())
 
     df_irr <-
       calculate_irr_periods_safe(
@@ -912,7 +912,7 @@ fred_tags <-
   function(symbol = c('DGS10'),
            transformation = NULL) {
     df_transforms <-
-      data_frame(
+      tibble(
         nameTransformation = c(
           'default',
           'change',
@@ -1011,7 +1011,7 @@ fred_tags <-
     df_data <-
       json_data$series$obs[[1]] %>%
       data.frame(stringsAsFactors = F) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       purrr::set_names(c('datetimeData', 'value'))
 
     df_data <-
@@ -1078,7 +1078,7 @@ fred_tags <-
       .generate_fred_symbol_url(symbol = symbol, transformation = transformation)
 
     .parse_json_fred_safe <-
-      purrr::possibly(.parse_json_fred, data_frame())
+      purrr::possibly(.parse_json_fred, tibble())
 
     data <-
       .parse_json_fred_safe(
@@ -1147,7 +1147,7 @@ fred_tags <-
     data
   }
 
-#'  Federal Reserve Economic Data time series data_frame
+#'  Federal Reserve Economic Data time series tibble
 #'
 #'
 #' This function returns a data for specified series from
@@ -1161,7 +1161,7 @@ fred_tags <-
 #' @param include_metadata if \code{TRUE} returns meta data from time series
 #' @param widen_data if \code{TRUE} widens data
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr lubridate tidyr purrr jsonlite
 #' @family index values
@@ -1188,10 +1188,10 @@ fred_symbols <-
       expand.grid(symbol = symbols,
                   transform = transformations,
                   stringsAsFactors = FALSE) %>%
-      as_data_frame()
+      as_tibble()
 
     fred_symbol_safe <-
-      purrr::possibly(.fred_symbol, data_frame())
+      purrr::possibly(.fred_symbol, tibble())
 
     all_data <-
       1:nrow(df_options) %>%
@@ -1252,14 +1252,14 @@ fred_symbols <-
   items <- c("nameSource", "nameRelease")
 
   data <-
-    data_frame(item = items[seq_along(sources)], value = sources) %>%
+    tibble(item = items[seq_along(sources)], value = sources) %>%
     tidyr::spread(item, value) %>%
     select(one_of(items))
 
   items <- c("urlSource", "urlRelease")
 
   df_urls <-
-    data_frame(item = items[seq_along(urls)], value = urls) %>%
+    tibble(item = items[seq_along(urls)], value = urls) %>%
     tidyr::spread(item, value) %>%
     select(one_of(items))
 
@@ -1274,7 +1274,7 @@ fred_symbols <-
     html_nodes(".fg-cat-lnk-gtm") %>% html_text() %>% str_trim()
 
   df_cat <-
-    data_frame(nameCategory = categories) %>%
+    tibble(nameCategory = categories) %>%
     mutate(numberCategory = 1:n()) %>%
     select(numberCategory, everything())
 
@@ -1283,7 +1283,7 @@ fred_symbols <-
     html_nodes(".fg-tag-lnk-gtm") %>% html_text() %>% str_trim()
 
   df_tags <-
-    data_frame(nameTag = tags) %>%
+    tibble(nameTag = tags) %>%
     mutate(numberTag = 1:n()) %>%
     select(numberTag, everything())
 
@@ -1306,7 +1306,7 @@ fred_symbols <-
   include_tags = F,
   return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
 
     success <- function(res) {
       url <-
@@ -1317,7 +1317,7 @@ fred_symbols <-
           cat(fill = T)
       }
       .parse_fred_description_url_safe <-
-        purrr::possibly(.parse_fred_description_url, data_frame())
+        purrr::possibly(.parse_fred_description_url, tibble())
 
       all_data <-
         .parse_fred_description_url_safe(url = url, include_tags = include_tags)
@@ -1328,7 +1328,7 @@ fred_symbols <-
         bind_rows(all_data)
     }
     failure <- function(msg) {
-      data_frame()
+      tibble()
     }
     urls %>%
       future_map(function(x) {
@@ -1344,7 +1344,7 @@ fred_symbols <-
 #' @param include_tags if \code{TRUE} returns symbols
 #' @param return_message if \code{TRUE} returns message
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #'
 #' @examples
@@ -1354,7 +1354,7 @@ fred_symbols_descriptions <-
            include_tags = FALSE,
            return_message = TRUE) {
     df_urls <-
-      data_frame(idSymbol = symbols,
+      tibble(idSymbol = symbols,
                urlSeries = glue::glue("https://fred.stlouisfed.org/series/{idSymbol}") %>% as.character())
 
     data <-
@@ -1592,7 +1592,7 @@ plot_time_series <-
 check_for_hrb <- function() {
   df_pkgs <-
     installed.packages() %>%
-    dplyr::as_data_frame()
+    dplyr::as_tibble()
 
   missing_hrb_themes <-
     df_pkgs %>%
@@ -1904,7 +1904,7 @@ plot_time_series_static <-
     if (include_recessions) {
       df_recession_start_end <-
         tis::nberDates() %>%
-        as_data_frame() %>%
+        as_tibble() %>%
         mutate_all(lubridate::ymd) %>%
         purrr::set_names(c("dateStart", "dateEnd"))
 

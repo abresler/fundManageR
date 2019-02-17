@@ -7,7 +7,7 @@
 nareit_notable_properties()
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function returns information about notable NAREIT identified properties.

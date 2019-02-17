@@ -9,8 +9,8 @@
 #' includes information about a random YC company
 #' @param nest_data \code{TRUE} return nested data frame
 #' @references \href{https://www.ycombinator.com/}{YCombinator}
-#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by batch,
-#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @return where \code{nest_data} is \code{TRUE} a nested tibble by batch,
+#' where \code{nest_data} is \code{FALSE} a tibble
 #' @export
 #' @import stringr dplyr readr
 #' @importFrom jsonlite fromJSON
@@ -24,7 +24,7 @@ ycombinator_alumni <-
     data <-
       "https://api.ycombinator.com/companies/export.json" %>%
       fromJSON(simplifyDataFrame = T, flatten = T) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       set_names(
         c(
           'nameCompany',
@@ -45,7 +45,7 @@ ycombinator_alumni <-
              idSeasonYC = batchYC %>% substr(1, 1),) %>%
       mutate_if(is.character,
                 funs(ifelse(. == "", NA, .))) %>%
-      left_join(data_frame(
+      left_join(tibble(
         idSeasonYC = c('w', 's'),
         nameSeasonYC = c('Winter', 'Summer')
       )) %>%
@@ -127,7 +127,7 @@ ycombinator_alumni <-
 #' exceeds $1B as identified by CB Insights.
 #'
 #' @param return_message \code{TRUE} return a message after data import
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @references \href{https://cbinsights/}{CB Insights}
 #' @export
 #' @import dplyr rvest formattable stringr purrr
@@ -184,7 +184,7 @@ cb_unicorns <-
       html_text()
 
     unicorn_df <-
-      data_frame(
+      tibble(
       nameCompany = companies %>% stringr::str_to_upper(),
       amountValuationBillions = valuation_billions,
       dateJoined = date_joined,

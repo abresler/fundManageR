@@ -23,8 +23,8 @@ securities_offerings(year_forms = NULL, forms = NULL,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-where \code{nest_data} is \code{FALSE} a data_frame
+where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+where \code{nest_data} is \code{FALSE} a tibble
 }
 \description{
 This function returns securities offering

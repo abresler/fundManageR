@@ -10,7 +10,7 @@ sec_securities_filing_counts(return_message = TRUE)
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns counts of SEC filings

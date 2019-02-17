@@ -7,12 +7,12 @@
 tidy_column_formats(data, drop_na_columns = TRUE)
 }
 \arguments{
-\item{data}{\code{data_frame}}
+\item{data}{\code{tibble}}
 
 \item{drop_na_columns}{\code{TRUE} drops NA columns}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 Tidys a data frame to return unified case names, autoparses logical columns
@@ -20,7 +20,7 @@ and auto formats counts, amounts and values.
 }
 \examples{
 library(dplyr)
-data_frame(nameFund = "Blackstone Real Estate Fund IX", isNewFund = "N/A",
+tibble(nameFund = "Blackstone Real Estate Fund IX", isNewFund = "N/A",
 countAssets = 12000, amountAUM = 65000000, isRealEstateFund = 1) \%>\% tidy_column_formats(drop_na_columns = FALSE)
 }
 \seealso{

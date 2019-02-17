@@ -5,7 +5,7 @@
 \title{Tradeview region metrics}
 \usage{
 tv_metrics_data(regions = c("america"), query = list(filter =
-  data_frame(left = "market_cap_basic", operation = "nempty"), symbols =
+  tibble(left = "market_cap_basic", operation = "nempty"), symbols =
   list(query = list(types = c("stock", "fund", "dr"))), metrics =
   c("subtype", "name", "beta_5_year", "earnings_release_date",
   "earnings_per_share_forecast_next_fq", "operating_margin",

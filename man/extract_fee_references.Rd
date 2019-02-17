@@ -8,7 +8,7 @@ extract_fee_references(data, word_threshhold = 5,
   print_sentences = TRUE)
 }
 \arguments{
-\item{data}{A \code{data_frame} with the OCR'd brochur data}
+\item{data}{A \code{tibble} with the OCR'd brochur data}
 
 \item{print_sentences}{if \code{TRUE} prints fee reference data}
 }

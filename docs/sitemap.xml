@@ -244,6 +244,9 @@
     <loc>https://asbcllc.com/fundManageR//reference/reit_funds.html</loc>
   </url>
   <url>
+    <loc>https://asbcllc.com/fundManageR//reference/residual_values.html</loc>
+  </url>
+  <url>
     <loc>https://asbcllc.com/fundManageR//reference/rf_sec_13F_companies.html</loc>
   </url>
   <url>
@@ -352,10 +355,10 @@
     <loc>https://asbcllc.com/fundManageR//reference/us_public_companies.html</loc>
   </url>
   <url>
-    <loc>https://asbcllc.com/fundManageR//reference/visualize_data_frame.html</loc>
+    <loc>https://asbcllc.com/fundManageR//reference/visualize_fred_time_series.html</loc>
   </url>
   <url>
-    <loc>https://asbcllc.com/fundManageR//reference/visualize_fred_time_series.html</loc>
+    <loc>https://asbcllc.com/fundManageR//reference/visualize_tibble.html</loc>
   </url>
   <url>
     <loc>https://asbcllc.com/fundManageR//reference/ycombinator_alumni.html</loc>

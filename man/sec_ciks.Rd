@@ -10,7 +10,7 @@ sec_ciks(return_message = TRUE)
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function returns information on every \href{https://en.wikipedia.org/wiki/Central_Index_Key}{Central Index Key}

@@ -37,7 +37,7 @@ calculate_cash_flows_returns(dates = c("2016-09-01", "2017-08-31",
 \item{include_final_day}{include the final day in calculation}
 }
 \value{
-data_frame
+tibble
 }
 \description{
 Calculate returns for a given set of cash flows

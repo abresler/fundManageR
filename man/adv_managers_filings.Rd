@@ -39,7 +39,7 @@ searches all sections}
 \item{assign_to_environment}{\code{TRUE} assign individual data frames to your environment}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function parses the specified sections of the

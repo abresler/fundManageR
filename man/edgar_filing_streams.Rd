@@ -31,7 +31,7 @@ edgar_filing_streams(start_date = "2017-02-15", end_date = Sys.Date(),
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function parses daily

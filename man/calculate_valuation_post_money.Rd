@@ -15,7 +15,7 @@ calculate_valuation_post_money(pre_money_valuation = "$45,000,000",
 \item{return_wide}{Return data in wide or long form}
 }
 \value{
-a \code{data_frame()}
+a \code{tibble()}
 }
 \description{
 This function calculates the the post-money

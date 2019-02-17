@@ -10,7 +10,7 @@ crsp_files(include_summary_files = TRUE)
 \item{include_summary_file}{\code{TRUE} (default) or \code{FALSE} to exclude}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns information about available

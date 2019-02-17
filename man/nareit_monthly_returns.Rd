@@ -12,7 +12,7 @@ nareit_monthly_returns(return_wide = TRUE, return_message = TRUE)
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function acquires FTSE NAREIT monthly return data

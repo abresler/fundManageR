@@ -20,8 +20,8 @@ adv_managers_periods_summaries(periods = c("2018-06"),
 \item{is_exempt}{exempt, non-exempt filers}
 }
 \value{
-where \code{nest_data} is \code{TRUE} a nested data_frame by period and type of filer,
-where \code{nest_data} is \code{FALSE} a data_frame
+where \code{nest_data} is \code{TRUE} a nested tibble by period and type of filer,
+where \code{nest_data} is \code{FALSE} a tibble
 }
 \description{
 This function returns monthly summary

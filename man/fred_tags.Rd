@@ -14,7 +14,7 @@ fred_tags(tags = NULL, return_message = T, nest_data = F)
 \item{nest_data}{if \code{TRUE} nests data}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 FRED tag search

@@ -30,7 +30,7 @@ irei_entitites(filter_type = NULL, return_message = TRUE)
 \item{return_message}{if \code{TRUE} returns a message}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 Acquires a list of IREI tracked entities

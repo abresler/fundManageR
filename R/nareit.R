@@ -27,7 +27,7 @@
       slugs %>% paste0('https://www.reit.com', .)
 
     df <-
-      data_frame(yearData = year,
+      tibble(yearData = year,
                urlData = urls)
 
     return(df)
@@ -37,7 +37,7 @@
   function(url = "https://www.reit.com/sites/default/files/returns/FNUSIC2016.pdf",
            return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       url <-
         res$url
@@ -88,7 +88,7 @@
         seq_along(tables) %>%
         future_map_dfr(function(x) {
           tables[[x]] %>%
-            as_data_frame() %>%
+            as_tibble() %>%
             mutate(idTable = x)
 
         })
@@ -302,7 +302,7 @@
         bind_rows(all_data)
     }
     failure <- function(msg) {
-      data_frame()
+      tibble()
     }
     url %>%
       future_map(function(x) {
@@ -321,7 +321,7 @@
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
 #' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @export
 #' @family NAREIT
 #' @family index constituents
@@ -345,7 +345,7 @@ nareit_constituent_years <-
       .$urlData
 
     .parse_nareit_constituent_url_safe <-
-      purrr::possibly(.parse_nareit_constituent_url, data_frame())
+      purrr::possibly(.parse_nareit_constituent_url, tibble())
 
     all_data <-
       urls %>%
@@ -504,7 +504,7 @@ nareit_constituent_years <-
 # reits -------------------------------------------------------------------
 .dictionary_nareit_names <-
   function() {
-    data_frame(nameNAREIT = c("Company Type", "Listing Status", "Industry Sector", "Investment Sector",
+    tibble(nameNAREIT = c("Company Type", "Listing Status", "Industry Sector", "Investment Sector",
                               "Ticker", "Exchange", "Previous Day Close", "Current Day High & Low",
                               "Day's Volume", "30 Day Average Volume", "52 Week High & Low",
                               "Market Cap", "Prev. Quarter Dividend", "Yield", "Prev. Quarter FFO"
@@ -532,7 +532,7 @@ nareit_constituent_years <-
         readr::parse_number() %>% suppressWarnings()
     }
 
-    data_frame(item, value = values)
+    tibble(item, value = values)
   }
 
 .parse_nareit_page <-
@@ -585,7 +585,7 @@ nareit_constituent_years <-
       str_replace_all("1 Mo. Total Return: ", "")
 
     df_returns <-
-      data_frame(returns) %>%
+      tibble(returns) %>%
       tidyr::separate(returns,
                       into = c("pctReturnMonth", "pctReturnDay"),
                       sep = "\\ ") %>%
@@ -612,7 +612,7 @@ nareit_constituent_years <-
 .parse_nareit_pages <-
   function(urls = c("https://www.reit.com/investing/reit-directory?page=1", "https://www.reit.com/investing/reit-directory?page=2"), return_message = T) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       url <-
         res$url
@@ -622,7 +622,7 @@ nareit_constituent_years <-
           cat(fill = T)
       }
       .parse_nareit_page.safe <-
-        purrr::possibly(.parse_nareit_page, data_frame())
+        purrr::possibly(.parse_nareit_page, tibble())
 
       all_data <-
         .parse_nareit_page.safe(url = url)
@@ -633,7 +633,7 @@ nareit_constituent_years <-
         bind_rows(all_data)
     }
     failure <- function(msg){
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x){
@@ -664,7 +664,7 @@ nareit_constituent_years <-
 
     item <-  c("nameCompany", "idTicker")
     df_metadata <-
-      data_frame(item = item[seq_along(company_ticker)], value = company_ticker) %>%
+      tibble(item = item[seq_along(company_ticker)], value = company_ticker) %>%
       spread(item, value)
 
     description <-
@@ -697,7 +697,7 @@ nareit_constituent_years <-
 
     if (returns %>% length() > 0) {
       items <- c("pctReturnMonth", "pctReturnDay")
-      df_ret <- data_frame(item = items[seq_along(returns)],
+      df_ret <- tibble(item = items[seq_along(returns)],
                            value = returns) %>%
         spread(item, value)
       if (df_ret %>% tibble::has_name("pctReturnMonth")) {
@@ -730,7 +730,7 @@ nareit_constituent_years <-
       })
 
     data <-
-      data_frame(item = actual_names, value = overview_values) %>%
+      tibble(item = actual_names, value = overview_values) %>%
       spread(item, value) %>%
       select(one_of(actual_names))
 
@@ -872,7 +872,7 @@ nareit_constituent_years <-
         page %>% html_nodes(".reit-company-contact__title") %>% html_text() %>% str_trim()
 
       df_contacts <-
-        data_frame(titlePerson = titles, namePerson = contacts) %>%
+        tibble(titlePerson = titles, namePerson = contacts) %>%
         separate_rows(namePerson, sep = "\\, ") %>%
         separate_rows(titlePerson, sep = "\\ & ") %>%
         mutate_all(str_trim)
@@ -894,7 +894,7 @@ nareit_constituent_years <-
         page %>% html_nodes(".news-detail .date") %>% html_text() %>% str_trim() %>% lubridate::mdy()
 
       df_news <-
-        data_frame(
+        tibble(
           dateArticle = dates,
           titleArticle = titles,
           urlArticle = news
@@ -923,7 +923,7 @@ nareit_constituent_years <-
           tenants <- page %>% html_nodes(tenant_css) %>% html_text()
           cities <- page %>% html_nodes(city_css) %>% html_text()
 
-          data_frame(addressStreetProperty = tenants,
+          tibble(addressStreetProperty = tenants,
                      cityProperty = cities) %>%
             slice(2:nrow(.)) %>%
             separate_rows(addressStreetProperty, sep = "              ") %>%
@@ -961,7 +961,7 @@ nareit_constituent_years <-
                     "https://www.reit.com/investing/reit-directory/vici-properties-inc"),
            return_message = T) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       url <-
         res$url
@@ -971,7 +971,7 @@ nareit_constituent_years <-
           cat(fill = T)
       }
       .parse_nareit_entity_page.safe <-
-        purrr::possibly(.parse_nareit_entity_page, data_frame())
+        purrr::possibly(.parse_nareit_entity_page, tibble())
 
       all_data <-
         .parse_nareit_entity_page.safe(url = url)
@@ -982,7 +982,7 @@ nareit_constituent_years <-
         bind_rows(all_data)
     }
     failure <- function(msg){
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x){
@@ -1007,10 +1007,10 @@ nareit_constituent_years <-
 #' company metadata, company properties, company contacts and more
 #' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
-#' @return data_frame
+#' @return tibble
 #' @family NAREIT
 #' @family entity search
 #' @export
@@ -1141,7 +1141,7 @@ nareit_entities <-
 #' This function returns information about notable NAREIT identified properties.
 #'
 #' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @import purrr stringr dplyr jsonlite formattable lubridate tidyr readr
 #' @family NAREIT
@@ -1156,7 +1156,7 @@ nareit_notable_properties <-
 
     df <-
       json_data$properties$property %>%
-      as_data_frame()
+      as_tibble()
 
     df <-
       df %>%
@@ -1234,12 +1234,12 @@ nareit_notable_properties <-
       json_data$reits %>% length() == 0
 
     if (no_data) {
-      return(data_frame(slugState))
+      return(tibble(slugState))
     }
 
     df_hq <-
       json_data$reits$reit %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       select(-dplyr::matches("slug_url")) %>%
       purrr::set_names(c(
         'idSNL',
@@ -1286,12 +1286,12 @@ nareit_notable_properties <-
       json_data$companies$company %>% length() == 0
 
     if (no_data) {
-      return(data_frame(slugState))
+      return(tibble(slugState))
     }
 
     df_holdings <-
       json_data$companies$company %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       select(-dplyr::matches("slug_url")) %>%
       purrr::set_names(c('idSNL', 'nameCompany', 'urlCompany'))
 
@@ -1344,7 +1344,7 @@ nareit_notable_properties <-
 
     df <-
       json_data$states$state %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate(image_path = image_path %>% flatten_chr() %>% paste0('http://app.reitsacrossamerica.com/', .)) %>%
       mutate(id = id %>% as.numeric()) %>%
       purrr::set_names(
@@ -1383,7 +1383,7 @@ nareit_notable_properties <-
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
 #' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @export
 #' @import purrr stringr dplyr jsonlite formattable lubridate tidyr readr
 #' @family NAREIT
@@ -1401,7 +1401,7 @@ nareit_property_msa <-
 
     df_property <-
       json_data$features$properties %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       select(-dplyr::matches("_string")) %>%
       select(-type)
 
@@ -1417,7 +1417,7 @@ nareit_property_msa <-
 
     df_lat_lon <-
       json_data$features$geometry %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate(idLocation = 1:n()) %>%
       unnest()
 
@@ -1478,7 +1478,7 @@ nareit_property_msa <-
 #' @param nest_data \code{TRUE} return nested data frame
 #' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
 #'
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @export
 #' @family NAREIT
 #' @family property data
@@ -1497,7 +1497,7 @@ nareit_state_info <-
 
     df_property <-
       json_data$features$properties %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       select(-dplyr::matches("_string")) %>%
       select(-type) %>%
       purrr::set_names(c('amountValuationOwnedProperties',
@@ -1511,7 +1511,7 @@ nareit_state_info <-
 
     df_lat_lon <-
       json_data$features$geometry %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate(idLocation = 1:n()) %>%
       unnest()
 
@@ -1560,7 +1560,7 @@ nareit_state_info <-
         purrr::invoke(paste0, .)
 
       .parse_json_hq_safe <-
-        purrr::possibly(.parse_json_hq, data_frame())
+        purrr::possibly(.parse_json_hq, tibble())
 
       df_hqs <-
         url_states %>%
@@ -1593,7 +1593,7 @@ nareit_state_info <-
         purrr::invoke(paste0, .)
 
       .parse_json_holdings_safe <-
-        purrr::possibly(.parse_json_holdings, data_frame())
+        purrr::possibly(.parse_json_holdings, tibble())
 
       holdings_df <-
         url_states %>%
@@ -1637,7 +1637,7 @@ nareit_state_info <-
 #' @param return_message \code{TRUE} return a message after data import
 #'
 #' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @import dplyr purrr curl tidyr stringr formattable
 #' @importFrom xlsx read.xlsx
@@ -1669,7 +1669,7 @@ nareit_monthly_returns <-
       select(-1) %>%
       slice(5:7) %>%
       t() %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       fill(V1) %>%
       fill(V2) %>%
       purrr::set_names(c('nameIndex', 'item1', 'item2')) %>%
@@ -1686,7 +1686,7 @@ nareit_monthly_returns <-
     data <-
       data %>%
       slice(7:nrow(data)) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate_all(as.character) %>%
       purrr::set_names(items)
 
@@ -1701,7 +1701,7 @@ nareit_monthly_returns <-
         nameIndex = nameIndex %>% str_replace_all('\\_', '\\ '),
         metricItem = metricItem %>% str_replace_all('\\ ', '')
       ) %>%
-      left_join(data_frame(
+      left_join(tibble(
         metricItem = c(
           "DividendYield",
           "IncomeReturn",
@@ -1765,7 +1765,7 @@ nareit_monthly_returns <-
 #' @param return_wide \code{TRUE} return data in wide form
 #' @param return_message \code{TRUE} return a message after data import
 #' @references \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @import dplyr purrr curl tidyr stringr formattable
 #' @importFrom xlsx read.xlsx
@@ -1798,7 +1798,7 @@ nareit_annual_subsector_returns <-
       select(-1) %>%
       slice(4:6) %>%
       t() %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       fill(V1) %>%
       fill(V2) %>%
       purrr::set_names(c('nameSector', 'nameSubSector', 'nameIndex')) %>%
@@ -1815,7 +1815,7 @@ nareit_annual_subsector_returns <-
     data <-
       data %>%
       slice(8:nrow(data)) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate_all(as.character) %>%
       select(1:24) %>%
       purrr::set_names(items[1:24]) %>%
@@ -1878,7 +1878,7 @@ nareit_annual_subsector_returns <-
 
 .get_nareit_offering_name_df <-
   function() {
-    data_frame(
+    tibble(
       nameNAREIT = c(
         "Name",
         "Type",
@@ -1956,7 +1956,7 @@ nareit_annual_subsector_returns <-
       }
 
     url_df <-
-      data_frame(
+      tibble(
         typeCapital = c('IPO', 'Secondary', 'Debt'),
         indexSheet = c(1, 2, 1),
         urlData = capital_urls
@@ -1979,7 +1979,7 @@ nareit_annual_subsector_returns <-
       xlsx::read.xlsx(sheetIndex = sheet) %>%
       data.frame(stringsAsFactors = FALSE) %>%
       suppressWarnings() %>%
-      as_data_frame()
+      as_tibble()
 
     con %>% unlink()
     rm(con)
@@ -2085,7 +2085,7 @@ nareit_annual_subsector_returns <-
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
 #'
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}#' @export
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}#' @export
 #' @import dplyr purrr curl tidyr stringr formattable
 #' @importFrom xlsx read.xlsx
 #' @family NAREIT
@@ -2116,7 +2116,7 @@ nareit_capital_raises <-
         filter(typeCapital %in% capital_type)
     }
     .parse_nareit_offering_url_safe <-
-      purrr::possibly(.parse_nareit_offering_url, data_frame())
+      purrr::possibly(.parse_nareit_offering_url, tibble())
 
     all_data <-
       1:nrow(url_df) %>%
@@ -2173,7 +2173,7 @@ nareit_capital_raises <-
 #' @param return_wide \code{TRUE} return data in wide form
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @export
 #' @import purrr stringr dplyr rvest formattable lubridate tidyr readr
 #' @family NAREIT
@@ -2205,7 +2205,7 @@ nareit_mergers_acquisitions <-
       seq_along(tables) %>%
       future_map_dfr(function(x) {
         tables[[x]] %>%
-          as_data_frame()
+          as_tibble()
       }) %>%
       slice(3:nrow(.)) %>%
       mutate(V1 = ifelse(V1 == '', NA, V1)) %>%
@@ -2370,7 +2370,7 @@ nareit_mergers_acquisitions <-
           filter(nameTarget == '') %>%
           select(-c(nameAcquiror, nameTarget)) %>%
           left_join(
-            data_frame(
+            tibble(
               idTransaction = c(32, 60),
               nameAcquiror = c(
                 'Westmont Hospitality; Cadim Inc. (Braveheart Holdings LP)',
@@ -2505,7 +2505,7 @@ nareit_mergers_acquisitions <-
 #' @param return_wide \code{TRUE} return data in wide form
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @export
 #' @import dplyr purrr curl tidyr stringr formattable rvest
 #' @importFrom xlsx read.xlsx
@@ -2545,7 +2545,7 @@ nareit_industry_tracker <-
                       header = FALSE) %>%
       data.frame(stringsAsFactors = FALSE) %>%
       suppressWarnings() %>%
-      as_data_frame()
+      as_tibble()
 
     tmp %>%
       unlink()
@@ -2579,7 +2579,7 @@ nareit_industry_tracker <-
       data %>%
       filter(X2 %>% is.na()) %>%
       select(idRow, item = X1) %>%
-      left_join(data_frame(
+      left_join(tibble(
         item = c("FFO", "NOI", "Dividends paid", "Same Store NOI"),
         nameItem = c('FFO', "NOI", 'Dividends', 'NOISameStore')
       )) %>%
@@ -2591,7 +2591,7 @@ nareit_industry_tracker <-
       data %>%
       filter(X2 == "2000.1") %>%
       select(idRow, nameMeasure = X1) %>%
-      left_join(data_frame(
+      left_join(tibble(
         nameMeasure = c("millions of dollars", "percent change over 4 quarters"),
         typeUOM = c('amount', 'pctChangeYear')
       )) %>%
@@ -2740,7 +2740,7 @@ nareit_industry_tracker <-
           fund_node %>% html_nodes(".return") %>% html_text()
 
         data <-
-          data_frame(categoryFund,
+          tibble(categoryFund,
                    nameFundOperator,
                    nameFund,
                    idTicker)
@@ -2777,7 +2777,7 @@ nareit_industry_tracker <-
   function(urls,
            return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       works <- res$status_code == 200
       if (works) {
@@ -2809,7 +2809,7 @@ nareit_industry_tracker <-
             "pctTurnOver")
 
         data <-
-          data_frame(item = items, value  = values) %>%
+          tibble(item = items, value  = values) %>%
           spread(item, value) %>%
           suppressWarnings() %>%
           mutate_at(
@@ -2864,7 +2864,7 @@ nareit_industry_tracker <-
         is_equal_length <- length(items) == length(table_values)
         if (is_equal_length) {
           data_perform <-
-            data_frame(item = items,
+            tibble(item = items,
                        period = periods,
                        value = table_values)
 
@@ -2916,7 +2916,7 @@ nareit_industry_tracker <-
 #' @param parse_fund_details \code{TRUE} parses fund details
 #' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @import dplyr stringr xml2 rvest purrr tidyr formattable
 #' @family NAREIT
@@ -2937,7 +2937,7 @@ reit_funds <-
 
     urls <- glue::glue("https://www.reit.com/investing/reit-funds?page={1:pages}") %>% as.character()
     .parse_fund_reit_page_safe <-
-      purrr::possibly(.parse_fund_reit_page, data_frame())
+      purrr::possibly(.parse_fund_reit_page, tibble())
 
     df_table <-
       urls %>%
@@ -2949,7 +2949,7 @@ reit_funds <-
 
     if (parse_fund_details) {
       .parse_reit_fund_info_page_safe <-
-        purrr::possibly(.parse_reit_fund_info_page, data_frame())
+        purrr::possibly(.parse_reit_fund_info_page, tibble())
 
       urls <-
         df_table$urlNAREIT

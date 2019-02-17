@@ -17,7 +17,7 @@ tidy_column_relations(data, column_keys = c("idCIK", "nameEntity"),
 \item{clean_column_formats}{\code{TRUE} clean the columns}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function unnests any neseted columns and

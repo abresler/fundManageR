@@ -22,10 +22,10 @@ dtcc_recent_trades(assets = NULL, nest_data = TRUE,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 
-where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-where \code{nest_data} is \code{FALSE} a data_frame
+where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+where \code{nest_data} is \code{FALSE} a tibble
 }
 \description{
 This function returns information about the most recent

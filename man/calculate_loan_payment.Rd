@@ -47,7 +47,7 @@ calculate_loan_payment(loan_start_date = "2016-06-01",
 \item{return_annual_summary}{\code{TRUE} returns annual summary}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 Calculate loan payment information

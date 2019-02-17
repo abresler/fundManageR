@@ -10,7 +10,7 @@ us_inflation(base_year = 1913)
 \item{base_year}{1913 or 1800}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 Gets a table to adjust prices to current dollars

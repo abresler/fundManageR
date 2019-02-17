@@ -30,7 +30,7 @@ calculate_irr_periods(dates = c("2016-06-01", "2017-05-31", "2018-05-31",
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function returns a data frame that produces

@@ -10,7 +10,7 @@ mmf_owned_debt_securities(return_message = TRUE)
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns

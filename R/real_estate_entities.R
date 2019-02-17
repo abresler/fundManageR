@@ -21,7 +21,7 @@
 #' }
 #' @param return_message if \code{TRUE} returns a message
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @source IREI
 #' @export
 #' @import dplyr rvest glue tidyr stringr tibble
@@ -54,12 +54,12 @@ irei_entitites <- function(filter_type = NULL, return_message = TRUE) {
     html_attr('href')
 
   data <-
-    data_frame(nameEntity = entities, urlEntity = urls) %>%
+    tibble(nameEntity = entities, urlEntity = urls) %>%
     filter(!nameEntity == '') %>%
     mutate(idRow = 1:n())
 
   df_headers <-
-    data_frame(nameEntity = headers) %>%
+    tibble(nameEntity = headers) %>%
     left_join(data %>% dplyr::select(nameEntity, idRow)) %>%
     suppressMessages()
 

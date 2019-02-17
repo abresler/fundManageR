@@ -148,7 +148,7 @@ resolve_names_to_upper <-
 remove_duplicate_columns <-
   function(data) {
     column_ids <-
-      data_frame(name = names(data)) %>%
+      tibble(name = names(data)) %>%
       mutate(idColumn = 1:n()) %>%
       group_by(name) %>%
       mutate(countCol = 1:n()) %>%
@@ -181,7 +181,7 @@ find_target_filings <-
 
 filer_type_df <-
   function() {
-    data_frame(
+    tibble(
       idTypeFilerOwner = c(
         'insider',
         'private' ,
@@ -209,7 +209,7 @@ filer_type_df <-
 general_name_df <-
   function() {
     general_name_df <-
-      data_frame(
+      tibble(
         nameRF = c(
           "category",
           "cik",
@@ -410,7 +410,7 @@ general_name_df <-
 
 private_name_df <-
   function() {
-    data_frame(
+    tibble(
       nameRF = c(
         "amended",
         "cik",
@@ -478,7 +478,7 @@ private_name_df <-
 #' industries for parsed SEC Form-D
 #' filings
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr
 #' @examples
@@ -486,7 +486,7 @@ private_name_df <-
 dictionary_form_d_categories <-
   function() {
     category_df <-
-      dplyr::data_frame(
+      dplyr::tibble(
         idIndustry = 1:35,
         nameIndustry = c(
           "AGRICULTURE",
@@ -606,7 +606,7 @@ dictionary_form_d_categories <-
 insider_code_df <-
   function() {
     insider_df <-
-      data_frame(
+      tibble(
         idInsiderTransaction =
           c(
             "A",
@@ -683,7 +683,7 @@ insider_code_df <-
 #' This function returns a
 #' dictionary of SEC form filing types
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr stringr
 #' @family SEC
@@ -693,7 +693,7 @@ insider_code_df <-
 #' dictionary_sec_filing_codes()
 dictionary_sec_filing_codes <-
   function() {
-    data_frame(
+    tibble(
       idFormType = c(
         "1.01",
         "1.02",
@@ -769,7 +769,7 @@ dictionary_sec_filing_codes <-
 #' This function returns a
 #' dictionary of SEC form codes
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @family SEC
 #' @family dictionary
@@ -778,7 +778,7 @@ dictionary_sec_filing_codes <-
 #' dictionary_sec_form_codes()
 dictionary_sec_form_codes <-
   function() {
-    data_frame(
+    tibble(
       idForm = c(
         "R",
         "A",
@@ -820,7 +820,7 @@ dictionary_sec_form_codes <-
 
 company_type_df <-
   function() {
-    data_frame(
+    tibble(
       idCompanyType = c(
         "ic",
         "i",
@@ -861,7 +861,7 @@ company_type_df <-
 #' This function retuns a
 #' dictionary of SEC rules
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr stringr
 #'
@@ -869,7 +869,7 @@ company_type_df <-
 #' dictionary_sec_rules()
 dictionary_sec_rules <-
   function() {
-    data_frame(
+    tibble(
       idRule = c(
         "06",
         "3C",
@@ -1156,7 +1156,7 @@ resolve_name_df <-
 #'
 #' @param filter_duplicates \code{TRUE} removes duplicate entries
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr
 #' @importFrom readr read_csv
@@ -1209,7 +1209,7 @@ data_sic_naics_codes <-
 #' descriptions of SEC rules and the
 #' law that created the rule
 #'
-#' @return a  \code{data_frame}
+#' @return a  \code{tibble}
 #' @export
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
@@ -1235,7 +1235,7 @@ data_sec_rules <-
 #' This function returns location codes
 #' and the name the location
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
@@ -1341,7 +1341,7 @@ data_rf_us_tickers <-
         idIRS = ifelse(idIRS == '', NA, idIRS)
       ) %>%
       arrange(nameCompany) %>%
-      left_join(data_frame(
+      left_join(tibble(
         idExchange2 = c(
           NA,
           "NASDAQ",
@@ -1438,7 +1438,7 @@ data_rf_us_tickers <-
 #'
 #' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
@@ -1496,7 +1496,7 @@ mmf_owned_debt_securities <-
 #' @param return_message \code{TRUE} return a message after data import
 #'
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
 #' @importFrom readr read_csv
@@ -1550,7 +1550,7 @@ rf_sec_13F_companies <-
 #'
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @import dplyr purrr tidyr readr lubridate stringr
 #' @importFrom jsonlite fromJSON
 #' @export
@@ -1568,7 +1568,7 @@ recent_insider_trades <-
       "http://rankandfiled.com/data/buy_sell" %>%
       jsonlite::fromJSON()
     insider_name_df <-
-      data_frame(
+      tibble(
         idInsiderTable = 1:5,
         nameRF = json_data$result %>% names(),
         typeInsider = c(rep('Company', 3), rep('Person', 2)),
@@ -1603,7 +1603,7 @@ recent_insider_trades <-
             )
 
           df <-
-            data_frame(X1 = table) %>%
+            tibble(X1 = table) %>%
             tidyr::separate(col = X1,
                             into = table_names,
                             sep = '\\*') %>%
@@ -1624,7 +1624,7 @@ recent_insider_trades <-
             )
 
           df <-
-            data_frame(X1 = table) %>%
+            tibble(X1 = table) %>%
             tidyr::separate(col = X1,
                             into = table_names,
                             sep = '\\*') %>%
@@ -1645,7 +1645,7 @@ recent_insider_trades <-
             )
 
           df <-
-            data_frame(X1 = table) %>%
+            tibble(X1 = table) %>%
             tidyr::separate(col = X1,
                             into = table_names,
                             sep = '\\*') %>%
@@ -1730,7 +1730,7 @@ recent_insider_trades <-
 #' @param return_message \code{TRUE} return a message after data import
 #' @import dplyr purrr tidyr readr lubridate stringr formattable
 #' @importFrom jsonlite fromJSON
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @family SEC
 #' @family Rank and Fild
@@ -1739,7 +1739,7 @@ recent_insider_trades <-
 #' sec_securities_filing_counts()
 sec_securities_filing_counts <-
   function(return_message = TRUE) {
-    dict_count <- data_frame(
+    dict_count <- tibble(
       idForm = c('D', 'W', 'S-1', 'S-3', 'S-4', "F"),
       nameForm = c(
         "Exempt Offering",
@@ -1825,7 +1825,7 @@ generate_securities_urls <-
           ) %>%
           purrr::invoke(paste0, .)
 
-        data_frame(
+        tibble(
           idForm = row_df$idForm,
           yearFiling = row_df$yearFiling,
           urlData = url_data
@@ -1850,7 +1850,7 @@ parse_securities_url <-
         jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
         .$detail %>%
         data.frame(stringsAsFactors = FALSE) %>%
-        dplyr::as_data_frame() %>%
+        dplyr::as_tibble() %>%
         purrr::set_names(c('dateFiling', 'offering')) %>%
         suppressWarnings() %>%
         suppressMessages()
@@ -1898,8 +1898,8 @@ parse_securities_url <-
 #' }
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @return where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+#' where \code{nest_data} is \code{FALSE} a tibble
 #' @export
 #' @family SEC
 #' @family entity search
@@ -1956,7 +1956,7 @@ securities_offerings <-
 
     all_data <-
       all_data %>%
-      left_join(data_frame(
+      left_join(tibble(
         idForm =
           c("S-4", "S-3", "S-1", "W", "D", "F-4", "F-3", "F-1", "REGDEX"),
         typeForm =
@@ -2022,7 +2022,7 @@ parse_rf_search_name <-
       as_tibble()
 
     type_df <-
-      data_frame(
+      tibble(
         idTypeFiler = c('f', 'i', 'c'),
         typeFiler = c('Filer', 'Insider',
                       'Company'),
@@ -2089,7 +2089,7 @@ sec_entity <-
       generate_search_name()
 
     parse_rf_search_name_safe <-
-      possibly(parse_rf_search_name, data_frame())
+      possibly(parse_rf_search_name, tibble())
 
     data <-
       json_url %>%
@@ -2098,7 +2098,7 @@ sec_entity <-
       select(nameEntitySearch, dplyr::matches("^name"), everything())
 
     if (data %>% nrow() == 0) {
-      return(data_frame())
+      return(tibble())
     }
 
     has_names <-
@@ -2145,7 +2145,7 @@ sec_entity <-
 #' @param entity_names vector of names to search
 #' @param return_message return a message \code{TRUE, FALSE}
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import purrr dplyr stringr tidyr formattable
 #' @importFrom jsonlite fromJSON
@@ -2195,7 +2195,7 @@ sec_filing_entities <-
           has_double <-
             entity %>% str_detect("|")
           if (!has_double) {
-            return(data_frame(idRow = x, nameEntity = entity))
+            return(tibble(idRow = x, nameEntity = entity))
           }
           entities <-
             entity %>%
@@ -2208,7 +2208,7 @@ sec_filing_entities <-
           }
 
           entity_df <-
-            data_frame(idRow = x,
+            tibble(idRow = x,
                        item = 'nameEntity',
                        value = entities) %>%
             mutate(countItems = 1:n() - 1,
@@ -2264,8 +2264,8 @@ sec_filing_entities <-
 #' @param nest_data \code{TRUE} return nested data frame
 #' @import purrr dplyr stringr tidyr formattable lubridate
 #' @importFrom jsonlite fromJSON
-#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @return where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+#' where \code{nest_data} is \code{FALSE} a tibble
 
 #' @export
 #'
@@ -2488,7 +2488,7 @@ get_cik_url_df <-
       purrr::invoke(paste0, .)
 
     url_df <-
-      dplyr::data_frame(
+      dplyr::tibble(
         nameTable = c(
           'General',
           'Filings',
@@ -2510,14 +2510,14 @@ get_cik_url_df <-
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     data <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
       data.frame(stringsAsFactors = FALSE) %>%
-      as_data_frame()
+      as_tibble()
 
     is_company <-
       'company' %in% names(data)
@@ -2623,7 +2623,7 @@ get_cik_url_df <-
 
           if (detail_value %>% is.na()) {
             df <-
-              data_frame(idRow = x, nameCompanyOwns = NA)
+              tibble(idRow = x, nameCompanyOwns = NA)
 
             if (nest_data) {
               df <-
@@ -2640,7 +2640,7 @@ get_cik_url_df <-
             flatten_chr()
 
           df_data <-
-            data_frame(value = values) %>%
+            tibble(value = values) %>%
             tidyr::separate(value,
                             into = c('idTickerOwns', 'other'),
                             sep = '\\:') %>%
@@ -2714,7 +2714,7 @@ get_cik_url_df <-
   function(url = "http://rankandfiled.com/data/filer/1138621/filings",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     cik <-
@@ -2725,7 +2725,7 @@ get_cik_url_df <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
       data.frame(stringsAsFactors = FALSE) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       tidyr::separate(
         filings,
         sep = '\\*',
@@ -2786,7 +2786,7 @@ get_cik_url_df <-
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -2812,7 +2812,7 @@ get_cik_url_df <-
 
     offering_data <-
       offering_data %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate_all(funs(. %>% str_replace('\\|', '')))
 
     offering_data <-
@@ -2878,7 +2878,7 @@ get_cik_url_df <-
             relation_data <-
               NA
           }
-          data_frame(nameRelation = relation_data)
+          tibble(nameRelation = relation_data)
         }) %>%
         resolve_names_to_upper()
 
@@ -2893,7 +2893,7 @@ get_cik_url_df <-
             str_trim()
 
           df <-
-            data_frame(idRow = x, person_title) %>%
+            tibble(idRow = x, person_title) %>%
             tidyr::separate(
               person_title,
               sep = '\\-',
@@ -2950,7 +2950,7 @@ get_cik_url_df <-
               .$nameBrokerCRD %>%
               paste0(collapse = ' | ')
           }
-          data_frame(nameBrokerCRD = broker_crd)
+          tibble(nameBrokerCRD = broker_crd)
         }) %>%
         resolve_names_to_upper()
 
@@ -2966,7 +2966,7 @@ get_cik_url_df <-
 
           if (broker_crd %>% is.na() %>% sum() > 0) {
             df <-
-              data_frame(
+              tibble(
                 idRow = x,
                 nameBroker = "NONE",
                 idCRDBroker = NA
@@ -2976,11 +2976,11 @@ get_cik_url_df <-
                 df %>%
                 nest(-idRow, .key = dataBrokers)
             }
-            return(data_frame())
+            return(tibble())
           }
 
           df <-
-            data_frame(idRow = x, broker_crd) %>%
+            tibble(idRow = x, broker_crd) %>%
             tidyr::separate(broker_crd,
                             sep = '\\&',
                             into = c('nameBroker', 'idCRDBroker')) %>%
@@ -3088,7 +3088,7 @@ get_cik_url_df <-
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -3097,7 +3097,7 @@ get_cik_url_df <-
 
     fundraising_df <-
       json_data$results %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       purrr::set_names(c(
         'idCIKs',
         'nameCompanies',
@@ -3126,7 +3126,7 @@ get_cik_url_df <-
           str_to_upper()
 
         df <-
-          data_frame(value = company_name_data) %>%
+          tibble(value = company_name_data) %>%
           mutate(item = 'nameCompanyFundraisingRelated') %>%
           mutate(countRow = 1:n()) %>%
           mutate(
@@ -3166,7 +3166,7 @@ get_cik_url_df <-
           flatten_chr()
 
         df <-
-          data_frame(offering = offering_value_data) %>%
+          tibble(offering = offering_value_data) %>%
           tidyr::separate(
             offering,
             into = c(
@@ -3223,7 +3223,7 @@ get_cik_url_df <-
   function(url = "http://rankandfiled.com/data/filer/1326801/traders",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -3239,7 +3239,7 @@ get_cik_url_df <-
 
     df <-
       json_data$owners$owners %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       purrr::set_names(c('nameEntityTrader', 'idCIKTrader', 'titleEntityTrader')) %>%
       mutate(
         nameEntityTrader = nameEntityTrader %>% str_to_upper(),
@@ -3262,7 +3262,7 @@ get_cik_url_df <-
   function(url = "http://rankandfiled.com/data/filer/1326801/clevel",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -3276,7 +3276,7 @@ get_cik_url_df <-
 
     clevel_df <-
       json_data$clevel %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       tidyr::separate(
         value,
         into = c(
@@ -3316,7 +3316,7 @@ get_cik_url_df <-
   function(url = "http://rankandfiled.com/data/filer/1326801/mda",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -3331,7 +3331,7 @@ get_cik_url_df <-
 
     data <-
       json_data$results$matrix %>%
-      as_data_frame()
+      as_tibble()
 
     names(data) <-
       json_data$results$dates %>% lubridate::ymd()
@@ -3361,7 +3361,7 @@ get_cik_url_df <-
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -3373,7 +3373,7 @@ get_cik_url_df <-
       as.numeric()
 
     general_df <-
-      data_frame(idCIK = cik,
+      tibble(idCIK = cik,
                  idCIKOwned = json_data$insiders$cik %>% as.numeric())
 
     has_filer <-
@@ -3382,7 +3382,7 @@ get_cik_url_df <-
     if (has_filer) {
       filing_df <-
         json_data$insiders$filer %>%
-        as_data_frame()
+        as_tibble()
 
       filing_df <-
         filing_df %>%
@@ -3419,7 +3419,7 @@ get_cik_url_df <-
 
             if (detail_value %>% is.na()) {
               df <-
-                data_frame(idRow = x, nameCompanyOwned = NA)
+                tibble(idRow = x, nameCompanyOwned = NA)
 
               if (nest_data) {
                 df <-
@@ -3435,7 +3435,7 @@ get_cik_url_df <-
               flatten_chr()
 
             df_data <-
-              data_frame(value = values) %>%
+              tibble(value = values) %>%
               tidyr::separate(value,
                               into = c('idTickerOwned', 'other'),
                               sep = '\\:') %>%
@@ -3507,7 +3507,7 @@ get_cik_url_df <-
 
           if (has_no_data) {
             df <-
-              data_frame(idRow = x, nameFiler = NA)
+              tibble(idRow = x, nameFiler = NA)
             if (nest_data) {
               df <-
                 df %>%
@@ -3517,7 +3517,7 @@ get_cik_url_df <-
 
           company_df <-
             json_data$insiders$companies[[x]] %>%
-            as_data_frame() %>%
+            as_tibble() %>%
             resolve_name_df() %>%
             mutate(idRow = x) %>%
             mutate(nameFiler = nameFiler %>% str_to_upper())
@@ -3599,7 +3599,7 @@ get_cik_url_df <-
   function(url = "http://rankandfiled.com/data/filer/1680780/all?start=0",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -3617,7 +3617,7 @@ get_cik_url_df <-
 
     filing_df <-
       json_data$filings %>%
-      as_data_frame()
+      as_tibble()
 
     filing_df <-
       filing_df %>%
@@ -3705,12 +3705,12 @@ get_cik_url_df <-
   function(url = "http://rankandfiled.com/data/filer/34088/subsidiaries",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
     options(scipen = 9999)
 
     name_df <-
-      data_frame(
+      tibble(
         nameRF = c(
           "cik",
           "country",
@@ -3734,7 +3734,7 @@ get_cik_url_df <-
       url %>%
       jsonlite::fromJSON() %>%
       .$subsidiaries %>%
-      as_data_frame()
+      as_tibble()
 
     rf_names <-
       data %>% names()
@@ -3844,7 +3844,7 @@ get_cik_url_df <-
     if (is_public_company) {
       company_df <-
         general_url %>% jsonlite::fromJSON() %>% data.frame(stringsAsFactors = FALSE) %>%
-        as_data_frame()
+        as_tibble()
 
       general_df <-
         .parse_company_general(ticker = company_df$company)
@@ -3923,7 +3923,7 @@ get_cik_url_df <-
             report_df$typeReport[[x]] == 'None'
 
           if (is_none) {
-            return(data_frame(
+            return(tibble(
               idRow = report_df$idRow[[x]],
               idFormType = 'None',
               nameFormType = NA
@@ -3939,7 +3939,7 @@ get_cik_url_df <-
             flatten_chr()
 
           item_df <-
-            data_frame(idFormType = reports, idRow = row_df$idRow) %>%
+            tibble(idFormType = reports, idRow = row_df$idRow) %>%
             left_join(report_dict_df) %>%
             gather(item, value, -idRow) %>%
             group_by(item) %>%
@@ -4089,7 +4089,7 @@ get_cik_url_df <-
 
     if (has_general) {
       .parse_json_general_filing_safe <-
-        purrr::possibly(.parse_json_general_filing, data_frame())
+        purrr::possibly(.parse_json_general_filing, tibble())
       general_df <-
         url_df$urlJSON[[1]] %>%
         .parse_json_general_filing(nest_data = nest_data,
@@ -4099,18 +4099,18 @@ get_cik_url_df <-
 
       if (general_df %>% nrow() == 0) {
         general_df <-
-          data_frame(idCIK = cik,
+          tibble(idCIK = cik,
                      nameEntity = NA)
       }
     } else {
       general_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
 
     if (has_filings) {
       .parse_json_filings_safe <-
-        purrr::possibly(.parse_json_filings, data_frame())
+        purrr::possibly(.parse_json_filings, tibble())
 
       filing_df <-
         url_df$urlJSON[[2]] %>%
@@ -4130,13 +4130,13 @@ get_cik_url_df <-
       }
     } else {
       filing_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
 
     if (has_private) {
       .parse_json_private_safe <-
-        purrr::possibly(.parse_json_private, data_frame())
+        purrr::possibly(.parse_json_private, tibble())
 
       private_df <-
         url_df$urlJSON[[3]] %>%
@@ -4155,13 +4155,13 @@ get_cik_url_df <-
       }
     } else {
       private_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
 
     if (has_related) {
       .parse_json_fundraising_safe <-
-        purrr::possibly(.parse_json_fundraising, data_frame())
+        purrr::possibly(.parse_json_fundraising, tibble())
 
       fundraising_df <-
         url_df$urlJSON[[4]] %>%
@@ -4179,12 +4179,12 @@ get_cik_url_df <-
       }
     } else {
       fundraising_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
     if (has_traders) {
       .parse_json_traders_safe <-
-        purrr::possibly(.parse_json_traders, data_frame())
+        purrr::possibly(.parse_json_traders, tibble())
 
       traders_df <-
         url_df$urlJSON[[5]] %>%
@@ -4201,13 +4201,13 @@ get_cik_url_df <-
       }
     } else {
       traders_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
 
     if (has_clevel) {
       .parse_json_clevel_safe <-
-        purrr::possibly(.parse_json_clevel, data_frame())
+        purrr::possibly(.parse_json_clevel, tibble())
 
       clevel_df <-
         url_df$urlJSON[[6]] %>%
@@ -4224,12 +4224,12 @@ get_cik_url_df <-
       }
     } else {
       clevel_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
     if (has_mda) {
       .parse_json_mda_safe <-
-        purrr::possibly(.parse_json_mda, data_frame())
+        purrr::possibly(.parse_json_mda, tibble())
 
       mda_df <-
         url_df$urlJSON[[7]] %>%
@@ -4247,12 +4247,12 @@ get_cik_url_df <-
       }
     } else {
       mda_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
     if (has_owners) {
       .parse_json_owners_safe <-
-        purrr::possibly(.parse_json_owners, data_frame())
+        purrr::possibly(.parse_json_owners, tibble())
 
       owners_df <-
         url_df$urlJSON[[8]] %>%
@@ -4279,23 +4279,23 @@ get_cik_url_df <-
       }
     } else {
       owners_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
     if (has_cik_filings) {
       .parse_cik_filings_safe <-
-        purrr::possibly(.parse_cik_filings, data_frame())
+        purrr::possibly(.parse_cik_filings, tibble())
 
       cik_filing_df <-
         .parse_cik_filings_safe(cik = cik, return_message = return_message)
     } else {
       cik_filing_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
     if (has_insider_trades) {
       parse_insider_trades_safe <-
-        purrr::possibly(parse_insider_trades, data_frame())
+        purrr::possibly(parse_insider_trades, tibble())
 
       insider_trade_df <-
         parse_insider_trades_safe(cik = cik,
@@ -4314,12 +4314,12 @@ get_cik_url_df <-
       }
     } else {
       insider_trade_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
     if (has_subs) {
       .parse_json_subsidiaries_safe <-
-        purrr::possibly(.parse_json_subsidiaries, data_frame())
+        purrr::possibly(.parse_json_subsidiaries, tibble())
 
       sub_df <-
         url_df$urlJSON[[9]] %>%
@@ -4336,7 +4336,7 @@ get_cik_url_df <-
       }
     } else {
       sub_df <-
-        data_frame(idCIK = cik)
+        tibble(idCIK = cik)
     }
 
     if ('nameEntity' %in% names(general_df)) {
@@ -4350,7 +4350,7 @@ get_cik_url_df <-
 
 
     all_data <-
-      data_frame(
+      tibble(
         idCIK = cik,
         nameEntity,
         nameTable = c(
@@ -4446,8 +4446,8 @@ get_cik_url_df <-
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
 #' @export
-#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @return where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+#' where \code{nest_data} is \code{FALSE} a tibble
 #' @family SEC
 #' @family Rank and Filed
 #' @family XBRL
@@ -4511,7 +4511,7 @@ sec_filer <-
 
     if (has_entities) {
       sec_filing_entities_safe <-
-        purrr::possibly(sec_filing_entities, data_frame())
+        purrr::possibly(sec_filing_entities, tibble())
 
       search_df <-
         entity_names %>%
@@ -4562,7 +4562,7 @@ sec_filer <-
 
     if (has_tickers) {
       .parse_ticker_data_safe <-
-        purrr::possibly(.parse_ticker_data, data_frame())
+        purrr::possibly(.parse_ticker_data, tibble())
 
       table_exists <-
         'all_data' %>% exists()
@@ -4628,7 +4628,7 @@ sec_filer <-
     }
 
     if (!'all_data' %>% exists()) {
-      return(data_frame())
+      return(tibble())
     }
 
     missing_ciks <-
@@ -4681,7 +4681,7 @@ sec_filer <-
 
           if (has_subsidiaries) {
             parse_sec_subsidiary_url_safe <-
-              purrr::possibly(parse_sec_subsidiary_url, data_frame())
+              purrr::possibly(parse_sec_subsidiary_url, tibble())
 
             has_list <-
               filing_df %>%
@@ -4840,7 +4840,7 @@ sec_filer <-
           }
 
         parse_for_tables_rf_safe <-
-          purrr::possibly(parse_for_tables_rf, data_frame())
+          purrr::possibly(parse_for_tables_rf, tibble())
 
         tables_edgar <-
           parse_for_tables_rf_safe(
@@ -4978,7 +4978,7 @@ sec_filer <-
                   unnest()
 
                 select_cols <-
-                  data_frame(nameData = names(df_data)) %>%
+                  tibble(nameData = names(df_data)) %>%
                   mutate(idColumn = 1:n()) %>%
                   group_by(nameData) %>%
                   mutate(countColumn = 1:n()) %>%
@@ -5026,7 +5026,7 @@ parse_json_general_insider <-
       list('http://rankandfiled.com/data/insider/', cik, '/general') %>%
       purrr::invoke(paste0, .)
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     data <-
@@ -5078,7 +5078,7 @@ parse_json_general_insider <-
 
             if (detail_value %>% is.na()) {
               df <-
-                data_frame(idRow = x, nameCompanyOwns = NA)
+                tibble(idRow = x, nameCompanyOwns = NA)
               if (nest_data) {
                 df <-
                   df %>%
@@ -5093,7 +5093,7 @@ parse_json_general_insider <-
               flatten_chr()
 
             df_data <-
-              data_frame(value = values) %>%
+              tibble(value = values) %>%
               tidyr::separate(value,
                               into = c('idTickerOwns', 'other'),
                               sep = '\\:') %>%
@@ -5158,7 +5158,7 @@ parse_json_general_insider <-
     if (has_companies) {
       companies_df <-
         data$companies %>%
-        as_data_frame() %>%
+        as_tibble() %>%
         resolve_name_df()
 
       company_name_df <-
@@ -5196,11 +5196,11 @@ parse_json_general_insider <-
           future_map_dfr(function(x) {
             df <-
               companies_df$status_history[[x]] %>%
-              as_data_frame() %>%
+              as_tibble() %>%
               mutate(idRow = x) %>%
               select(-dplyr::matches("other|pair_id")) %>%
               gather(item, value, -idRow) %>%
-              left_join(data_frame(
+              left_join(tibble(
                 item = c('date', 'officer', 'title', 'ten_percent', 'director'),
                 nameItem = c(
                   'dateAppointment',
@@ -5307,7 +5307,7 @@ parse_insider_trade_json_url <-
   function(url = "http://rankandfiled.com/data/insider/1070844/trades?start=0",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -5325,7 +5325,7 @@ parse_insider_trade_json_url <-
 
     trade_df <-
       json_data$trades %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       dplyr::rename(dateTrade = date) %>%
       mutate(dateTrade = dateTrade %>% lubridate::ymd())
 
@@ -5381,13 +5381,13 @@ parse_insider_trade_json_url <-
       mutate_at(.vars =
                   trade_df %>% select(dplyr::matches("idCIK|count|amount|price")) %>% names(),
                 funs(. %>% as.character() %>% readr::parse_number())) %>%
-      left_join(data_frame(
+      left_join(tibble(
         idInsiderType = c("D", "ND"),
         typeInsider = c("Director", "Non-Director")
       )) %>%
       left_join(get_insider_code_df()) %>%
       left_join(
-        data_frame(
+        tibble(
           idTypeInsiderTransaction = c("A", "D", "None"),
           typeInsiderTransaction = c('Purchase', 'Sale', 'None'),
           isBought = c(TRUE, FALSE, NA)
@@ -5447,7 +5447,7 @@ parse_insider_trades <-
       purrr::invoke(paste0, .)
 
     parse_insider_trade_json_url_safe <-
-      purrr::possibly(parse_insider_trade_json_url, data_frame())
+      purrr::possibly(parse_insider_trade_json_url, tibble())
 
     all_data <-
       trade_urls %>%
@@ -5582,7 +5582,7 @@ parse_json_fund_general <-
       generate_fund_general_url()
 
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -5622,7 +5622,7 @@ parse_json_fund_general <-
     if (has_filer) {
       filer_df <-
         json_data$filer %>%
-        as_data_frame()
+        as_tibble()
 
       filer_df <-
         filer_df %>%
@@ -5694,7 +5694,7 @@ parse_for_tables_rf <-
            nest_data = TRUE,
            return_message = TRUE) {
     all_tables <-
-      data_frame()
+      tibble()
     parse_all_filings <-
       c(
         parse_complete_text_filings,
@@ -5708,7 +5708,7 @@ parse_for_tables_rf <-
       sum() > 0
 
     parse_form_data_safe <-
-      purrr::possibly(parse_form_data, data_frame())
+      purrr::possibly(parse_form_data, tibble())
 
     if (parse_all_filings) {
       if (!'typeFile' %in% names(filing_df)) {
@@ -5758,13 +5758,13 @@ parse_for_tables_rf <-
           df_all_filing_urls$urlTextFilingFull %>%
           unique()
         sec_complete_filings_safe <-
-          purrr::possibly(sec_complete_filings, data_frame())
+          purrr::possibly(sec_complete_filings, tibble())
         all_text_df <-
           sec_complete_filings(urls = urls)
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(
+          bind_rows(tibble(
             nameTable = 'Text Filings',
             dataTable = list(all_text_df %>% nest(-c(idCIK), .key = dataFilings))
           ))
@@ -5777,7 +5777,7 @@ parse_for_tables_rf <-
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(
+          bind_rows(tibble(
             nameTable = 'FormDs',
             dataTable = list(df_form_ds)
           ))
@@ -5790,7 +5790,7 @@ parse_for_tables_rf <-
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = '13Fs', dataTable = list(df_13F)))
+          bind_rows(tibble(nameTable = '13Fs', dataTable = list(df_13F)))
       }
 
       if (parse_small_offerings) {
@@ -5799,7 +5799,7 @@ parse_for_tables_rf <-
           parse_form_data_safe(filter_parameter = 'hasSmallOfferingData')
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(
+          bind_rows(tibble(
             nameTable = 'Small Offerings',
             dataTable = list(df_small_offerings)
           ))
@@ -5812,7 +5812,7 @@ parse_for_tables_rf <-
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(
+          bind_rows(tibble(
             nameTable = 'Form 3 and 4',
             dataTable = list(df_form3_4)
           ))
@@ -5825,7 +5825,7 @@ parse_for_tables_rf <-
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = 'Asset Data', dataTable = list(df_assets)))
+          bind_rows(tibble(nameTable = 'Asset Data', dataTable = list(df_assets)))
       }
 
       if (parse_xbrl) {
@@ -5835,7 +5835,7 @@ parse_for_tables_rf <-
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = 'XBRL', dataTable = list(df_xbrl)))
+          bind_rows(tibble(nameTable = 'XBRL', dataTable = list(df_xbrl)))
       }
 
     }
@@ -5885,7 +5885,7 @@ parse_filing_stream <-
 
     general_df <-
       general_df %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate_all(funs(. %>% str_replace('\\|', '')))
 
     general_df <-
@@ -5928,7 +5928,7 @@ parse_filing_stream <-
     if (has_filer) {
       filer_df <-
         json_data$filings$filer %>%
-        as_data_frame()
+        as_tibble()
 
       filer_df <-
         filer_df %>%
@@ -5966,7 +5966,7 @@ parse_filing_stream <-
               flatten_chr()
 
             df <-
-              data_frame(idRow = x, owns) %>%
+              tibble(idRow = x, owns) %>%
               tidyr::separate(owns,
                               into = c('idTickerOwns', 'owns'),
                               sep = '\\:') %>%
@@ -6053,12 +6053,12 @@ parse_filing_stream <-
             offering %>% is_null()
 
           if (has_no_data) {
-            return(data_frame(idRow = x))
+            return(tibble(idRow = x))
           }
           has_no_rows <-
             offering %>% nrow() == 0
           if (has_no_rows) {
-            return(data_frame(idRow = x))
+            return(tibble(idRow = x))
           }
 
           offering_long <-
@@ -6135,12 +6135,12 @@ parse_filing_stream <-
             trades %>% is_null()
 
           if (has_no_data) {
-            return(data_frame(idRow = x))
+            return(tibble(idRow = x))
           }
           has_no_rows <-
             trades %>% nrow() == 0
           if (has_no_rows) {
-            return(data_frame(idRow = x))
+            return(tibble(idRow = x))
           }
 
           trades <-
@@ -6267,7 +6267,7 @@ sec_filing_stream <-
         purrr::invoke(paste0, .)
 
       parse_filing_stream_safe <-
-        purrr::possibly(parse_filing_stream, data_frame())
+        purrr::possibly(parse_filing_stream, tibble())
 
       data <-
         urls %>%
@@ -6347,7 +6347,7 @@ sec_filing_stream <-
       }
 
       filer_type_df <-
-        data_frame(
+        tibble(
           codeFiler = c('All', 'insider', 'company', 'inv_co'),
           nameFiler = filer_names
         )
@@ -6358,7 +6358,7 @@ sec_filing_stream <-
         .$codeFiler
 
       filing_name_df <-
-        data_frame(
+        tibble(
           codeFiling  = c(
             "A",
             "Q",
@@ -6495,7 +6495,7 @@ sec_filing_streams_rf <-
         nameFiling = filing_names,
         stringsAsFactors = FALSE
       ) %>%
-      as_data_frame()
+      as_tibble()
 
     sec_filing_stream_safe <-
       purrr::possibly(sec_filing_stream, NULL)
@@ -6542,7 +6542,7 @@ sec_filing_streams_rf <-
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -6612,7 +6612,7 @@ sec_filing_streams_rf <-
     if (has_snap_shot) {
       snap_shot_df <-
         json_data$snapshot %>%
-        as_data_frame()
+        as_tibble()
 
       if ('ebitda' %in% names(snap_shot_df)) {
         snap_shot_df <-
@@ -6656,13 +6656,13 @@ sec_filing_streams_rf <-
     has_filer <-
       ((
         'filer' %in% names(json_data) &
-          json_data$filer %>% as_data_frame() %>% ncol > 2
+          json_data$filer %>% as_tibble() %>% ncol > 2
       ))
 
     if (has_filer) {
       filer_df <-
         json_data$filer %>%
-        as_data_frame()
+        as_tibble()
 
       filer_df <-
         filer_df %>%
@@ -6687,7 +6687,7 @@ sec_filing_streams_rf <-
               flatten_chr()
 
             df <-
-              data_frame(idRow = x, owns) %>%
+              tibble(idRow = x, owns) %>%
               tidyr::separate(owns,
                               into = c('idTickerOwns', 'owns'),
                               sep = '\\:') %>%
@@ -6788,7 +6788,7 @@ sec_filing_streams_rf <-
 
           if (detail_value %>% is.na()) {
             df <-
-              data_frame(idRow = x, nameCompanyOwns = NA)
+              tibble(idRow = x, nameCompanyOwns = NA)
             if (nest_data) {
               df <-
                 df %>%
@@ -6803,7 +6803,7 @@ sec_filing_streams_rf <-
             flatten_chr()
 
           df_data <-
-            data_frame(value = values) %>%
+            tibble(value = values) %>%
             tidyr::separate(value,
                             into = c('idTickerOwns', 'other'),
                             sep = '\\:') %>%
@@ -6914,7 +6914,7 @@ sec_filing_streams_rf <-
   function(url = "http://rankandfiled.com/data/filer/1326801/trades?start=0",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
-      return(data_frame())
+      return(tibble())
     }
 
     json_data <-
@@ -6932,7 +6932,7 @@ sec_filing_streams_rf <-
 
     trade_df <-
       json_data$trades %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       dplyr::rename(dateTrade = date) %>%
       mutate(dateTrade = dateTrade %>% lubridate::ymd())
 
@@ -6972,13 +6972,13 @@ sec_filing_streams_rf <-
       mutate_at(.vars =
                   trade_df %>% select(dplyr::matches("idCIK|count|amount|price")) %>% names(),
                 funs(. %>% as.character() %>% readr::parse_number())) %>%
-      left_join(data_frame(
+      left_join(tibble(
         idInsiderType = c("D", "ND"),
         typeInsider = c("Director", "Non-Director")
       )) %>%
       left_join(get_insider_code_df()) %>%
       left_join(
-        data_frame(
+        tibble(
           idTypeInsiderTransaction = c("A", "D", "None"),
           typeInsiderTransaction = c('Purchase', 'Sale', 'None'),
           isBought = c(TRUE, FALSE, NA)
@@ -7215,7 +7215,7 @@ sec_filing_streams_rf <-
         suppressWarnings()
     } else {
       trades <-
-        data_frame(idTicker = ticker)
+        tibble(idTicker = ticker)
     }
 
     cik_data <-
@@ -7230,7 +7230,7 @@ sec_filing_streams_rf <-
         filter(!nameTable == 'General')
     }
     all_data <-
-      data_frame(
+      tibble(
         nameEntity = general$nameEntity,
         idCIK = general$idCIK,
         nameTable = c('Company Profile', 'Insider Trades'),
@@ -7265,7 +7265,7 @@ sec_filing_streams_rf <-
 #' }
 #' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr tidyr purrr stringr formattable readr lubridate
 #' @importFrom jsonlite fromJSON
@@ -7295,7 +7295,7 @@ us_public_companies <-
       jsonlite::fromJSON()
 
     company_data <-
-      data_frame(df = json_data$result$data %>%
+      tibble(df = json_data$result$data %>%
                    str_split(pattern = '\\|') %>%
                    flatten_chr()) %>%
       tidyr::separate(
@@ -7318,7 +7318,7 @@ us_public_companies <-
           'price52WeekHigh'
         )
       ) %>%
-      left_join(data_frame(
+      left_join(tibble(
         idSector = 1:12,
         nameSector = c(
           'Finance',
@@ -7336,7 +7336,7 @@ us_public_companies <-
         )
       )) %>%
       suppressMessages() %>%
-      left_join(data_frame(
+      left_join(tibble(
         idExchange = c('N', 'Q', 'A'),
         nameExchange = c('NYSE', 'NASDAQ', 'NYSE ARCA')
       )) %>%
@@ -7534,7 +7534,7 @@ us_public_companies <-
         company_data %>%
         filter(idTicker %in% dup_tickers)
       .parse_company_general_safe <-
-        purrr::possibly(.parse_company_general, data_frame)
+        purrr::possibly(.parse_company_general, tibble)
       dup_general_df <-
         dup_tickers %>%
         future_map_dfr(function(x) {
@@ -7669,7 +7669,7 @@ parse_sec_url_for_cik <-
 
 get_loc_df <-
   function() {
-    data_frame(
+    tibble(
       nameLocation = c(
         "AFGHANISTAN",
         "ALAND ISLANDS",
@@ -8037,7 +8037,7 @@ parse_page_sub_multi_item_html <-
       data_nodes[data_nodes %in% locations]
 
     pct_vals <-
-      data_frame(value = data_nodes) %>%
+      tibble(value = data_nodes) %>%
       filter(!value %>% str_detect("\\([(1-9)]\\)")) %>%
       mutate(pctSubsidiaryOwned = value %>% as.numeric()) %>%
       filter(!pctSubsidiaryOwned %>% is.na()) %>%
@@ -8047,7 +8047,7 @@ parse_page_sub_multi_item_html <-
       suppressMessages()
 
     all_data <-
-      data_frame(
+      tibble(
         nameSubsidiary = subsidiaries,
         nameLocationSubsidiary = location_items,
         pctSubsidiaryOwned = pct_vals
@@ -8169,7 +8169,7 @@ parse_page_subsidiary_table_html <-
             html_nodes(css_selector) %>%
             html_text() %>%
             str_trim()
-          data_frame(item, value)
+          tibble(item, value)
         }
       }) %>%
       mutate(
@@ -8290,14 +8290,14 @@ parse_page_subsidiary_table_html <-
             table_df <-
               tables[[x]] %>%
               data.frame(stringsAsFactors = FALSE) %>%
-              as_data_frame()
+              as_tibble()
 
             column_df <-
               table_df %>% slice(1) %>%
               gather(column, value) %>%
               mutate(idColumn = 1:n()) %>%
               filter(!value %>% is.na()) %>%
-              left_join(data_frame(
+              left_join(tibble(
                 value = c(
                   "PROPERTY",
                   "ENTITIES",
@@ -8479,7 +8479,7 @@ parse_sec_subsidiary_url_html <-
           data[data %>% str_detect('\\(')]
 
         df <-
-          data_frame(data) %>%
+          tibble(data) %>%
           separate(
             data,
             sep = '\\(',
@@ -8523,11 +8523,11 @@ parse_sec_subsidiary_url_html <-
           data[data %>% nchar() > 3] %>% str_to_upper()
 
         df <-
-          data_frame(nameSubsidiary = data) %>%
+          tibble(nameSubsidiary = data) %>%
           mutate(idRow = 1:n())
 
         loc_df <-
-          data_frame(nameSubsidiary = locations) %>%
+          tibble(nameSubsidiary = locations) %>%
           inner_join(df %>% select(idRow, nameSubsidiary)) %>%
           mutate(idRow = idRow + 1) %>%
           select(locationOrganizationSubsidiary = nameSubsidiary, idRow) %>%
@@ -8583,7 +8583,7 @@ parse_sec_subsidiary_url_html <-
               html_nodes(css_selector) %>%
               html_text() %>%
               str_trim()
-            data_frame(item, value)
+            tibble(item, value)
           }
         }) %>%
         mutate(
@@ -8765,14 +8765,14 @@ parse_sec_subsidiary_url_text <-
           items[!items == '']
 
         if (items %>% length() == 1) {
-          return(data_frame())
+          return(tibble())
         }
 
         two_items <-
           items %>% length() == 2
         if (two_items) {
           table_data <-
-            data_frame(
+            tibble(
               idSubsidiary = x,
               nameSubsidiary = items[[1]],
               locationOrganizationSubsidiary = items[[2]]
@@ -8782,7 +8782,7 @@ parse_sec_subsidiary_url_text <-
           items %>% length() == 3
         if (three_items) {
           table_data <-
-            data_frame(
+            tibble(
               idSubsidiary = x,
               nameSubsidiary = items[[1]],
               locationOrganizationSubsidiary = items[[2]],
@@ -8830,10 +8830,10 @@ parse_sec_subsidiary_url  <-
       url %>%
       str_detect("html|htm")
     parse_sec_subsidiary_url_text_safe <-
-      purrr::possibly(parse_sec_subsidiary_url_text, data_frame())
+      purrr::possibly(parse_sec_subsidiary_url_text, tibble())
 
     parse_sec_subsidiary_url_html_safe <-
-      purrr::possibly(parse_sec_subsidiary_url_html, data_frame())
+      purrr::possibly(parse_sec_subsidiary_url_html, tibble())
 
     if (is_text) {
       data <-
@@ -8885,7 +8885,7 @@ parse_full_form_names <-
             pieces %>% paste0(collapse = '')
 
           df <-
-            data_frame(nameSECFull = sec_name,
+            tibble(nameSECFull = sec_name,
                        nameSEC = name_item)
           return(df)
         }
@@ -8909,7 +8909,7 @@ parse_full_form_names <-
 
         if (is_federal) {
           df <-
-            data_frame(
+            tibble(
               nameSECFull = sec_name,
               nameTable = pieces[[1]],
               nameSEC = name_item
@@ -8930,7 +8930,7 @@ parse_full_form_names <-
             items[length(items)]
 
           df <-
-            data_frame(
+            tibble(
               nameSECFull = sec_name,
               nameTable = 'issuer',
               countItem,
@@ -8951,18 +8951,18 @@ parse_full_form_names <-
             countItem <-
               pieces[2] %>%as.character() %>%  readr::parse_number() %>% suppressWarnings()
           }
-          return(data_frame(nameTable = 'footnotes', nameSECFull = sec_name, nameSEC = item, countItem))
+          return(tibble(nameTable = 'footnotes', nameSECFull = sec_name, nameSEC = item, countItem))
         }
 
         if (is_sig) {
           df <-
-            data_frame(nameTable = 'signatures', nameSECFull = sec_name, nameSEC = name_item)
+            tibble(nameTable = 'signatures', nameSECFull = sec_name, nameSEC = name_item)
           return(df)
         }
 
         if (peice_length == 1) {
           df <-
-            data_frame(nameSECFull = sec_name, nameSEC = name_item)
+            tibble(nameSECFull = sec_name, nameSEC = name_item)
           return(df)
         }
 
@@ -8971,7 +8971,7 @@ parse_full_form_names <-
 
         if (piece_count == 1) {
           df <-
-            data_frame(nameSECFull = sec_name, nameSEC = sec_name)
+            tibble(nameSECFull = sec_name, nameSEC = sec_name)
           return(df)
         }
 
@@ -8979,7 +8979,7 @@ parse_full_form_names <-
 
 
           df <-
-            data_frame(nameSECFull = sec_name,
+            tibble(nameSECFull = sec_name,
                        nameTable = pieces[[1]] ,
                        nameSEC = name_item)
 
@@ -8991,7 +8991,7 @@ parse_full_form_names <-
             pieces[2] %>%as.character() %>%  readr::parse_number() %>% suppressWarnings()
 
           df <-
-            data_frame(
+            tibble(
               nameSECFull = sec_name,
               nameTable = pieces[[1]] ,
               countItem,
@@ -9082,7 +9082,7 @@ parse_xml_tables <-
             page %>% xml_contents() %>% xml_text()
 
           df <-
-            data_frame(idTable = x, nameSECFull = table, value)
+            tibble(idTable = x, nameSECFull = table, value)
           return(df)
 
         }
@@ -9123,12 +9123,12 @@ parse_xml_tables <-
           value <-
             xml_nodes %>% xml_text()
           json_data <-
-            data_frame(item, value) %>%
+            tibble(item, value) %>%
             spread(item, value)
         }
 
         if (json_data %>% length() == 0) {
-          return(data_frame())
+          return(tibble())
         }
         if ('summaryInfo' %in% names(json_data)) {
           json_data <-
@@ -9152,7 +9152,7 @@ parse_xml_tables <-
         json_data <-
           json_data %>%
           data.frame(stringsAsFactors = FALSE) %>%
-          as_data_frame() %>%
+          as_tibble() %>%
           mutate_all(as.character) %>%
           mutate(idTable = x) %>%
           gather(nameSECFull, value, -idTable) %>%
@@ -9281,7 +9281,7 @@ parse_sec_form <-
         resolve_form_columns()
     } else {
       df_metadata <-
-        data_frame(idCIKFiler = cik,
+        tibble(idCIKFiler = cik,
                    urlSECFiling = url)
     }
 
@@ -9379,10 +9379,10 @@ parse_form_data <-
 
     if (filter_parameter == 'isXBRLInstanceFile') {
       if (df_search %>% nrow() == 0) {
-        return(data_frame())
+        return(tibble())
       }
       parse_xbrl_filer_url_safe <-
-        purrr::possibly(parse_xbrl_filer_url, data_frame())
+        purrr::possibly(parse_xbrl_filer_url, tibble())
       all_data <-
         df_search$urlSECFiling %>%
         unique() %>%
@@ -9415,7 +9415,7 @@ parse_form_data <-
       }
     }
     if (df_search %>% nrow() == 0) {
-      return(data_frame())
+      return(tibble())
     }
     all_data <-
       df_search$urlSECFiling %>%
@@ -9495,7 +9495,7 @@ parse_xbrl_filer_url <-
     ## Get a data frame with facts:
     df_fct <-
       XBRL::xbrlProcessFacts(doc) %>%
-      as_data_frame()
+      as_tibble()
 
     df_fct <-
       df_fct %>%
@@ -9511,19 +9511,19 @@ parse_xbrl_filer_url <-
     ## Get a data frame with contexts:
     df_cts <-
       XBRL::xbrlProcessContexts(doc) %>%
-      as_data_frame()
+      as_tibble()
     ## Get a data frame with units:
     df_unt <-
       XBRL::xbrlProcessUnits(doc) %>%
-      as_data_frame()
+      as_tibble()
 
     df_sch <-
       XBRL::xbrlGetSchemaName(doc) %>%
-      as_data_frame()
+      as_tibble()
 
     df_footnotes <-
       XBRL::xbrlProcessFootnotes(doc) %>%
-      as_data_frame()
+      as_tibble()
 
 
     ## Free the external memory used:
@@ -9541,7 +9541,7 @@ parse_xbrl_filer_url <-
     df_rls <-
       docS %>%
       XBRL::xbrlProcessRoles() %>%
-      as_data_frame()
+      as_tibble()
 
     ## calculation
     url_cal <-
@@ -9557,10 +9557,10 @@ parse_xbrl_filer_url <-
       df_calcs <-
         docS %>%
         XBRL::xbrlProcessArcs(arcType = 'calculation') %>%
-        as_data_frame()
+        as_tibble()
     } else {
       df_calcs <-
-        data_frame()
+        tibble()
     }
 
     ## definition
@@ -9577,7 +9577,7 @@ parse_xbrl_filer_url <-
     df_defs <-
       docS %>%
       XBRL::xbrlProcessArcs(arcType = 'definition') %>%
-      as_data_frame()
+      as_tibble()
 
     ## labels
     url_lab <-
@@ -9593,7 +9593,7 @@ parse_xbrl_filer_url <-
     df_labels <-
       docS %>%
       XBRL::xbrlProcessLabels() %>%
-      as_data_frame()
+      as_tibble()
 
     ## presentation
     url_pre <-
@@ -9610,7 +9610,7 @@ parse_xbrl_filer_url <-
     tf %>%
       unlink()
     data <-
-      data_frame(
+      tibble(
         idCIK = cik,
         urlSECFiling = url,
         dataFacts = list(df_fct),
@@ -9634,7 +9634,7 @@ parse_xbrl_filer_url <-
 # dictionaries ------------------------------------------------------------
 sec_form_title_df <-
   function() {
-    data_frame(
+    tibble(
       nameSEC = c(
         "conversionOrExercisePrice",
         "deemedExecutionDate",
@@ -10850,7 +10850,7 @@ sec_form_title_df <-
 
 filer_type_df <-
   function() {
-    data_frame(
+    tibble(
       idTypeFilerOwner = c(
         'insider',
         'private' ,
@@ -10881,7 +10881,7 @@ filer_type_df <-
 #' industries for parsed SEC Form-D
 #' filings
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr
 #' @examples
@@ -10889,7 +10889,7 @@ filer_type_df <-
 dictionary_form_d_categories <-
   function() {
     category_df <-
-      dplyr::data_frame(
+      dplyr::tibble(
         idIndustry = 1:35,
         nameIndustry = c(
           "AGRICULTURE",
@@ -11009,7 +11009,7 @@ dictionary_form_d_categories <-
 insider_code_df <-
   function() {
     insider_df <-
-      data_frame(
+      tibble(
         idInsiderTransaction =
           c(
             "A",
@@ -11086,7 +11086,7 @@ insider_code_df <-
 #' This function returns a
 #' dictionary of SEC form filing types
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr stringr
 #' @family SEC
@@ -11096,7 +11096,7 @@ insider_code_df <-
 #' dictionary_sec_filing_codes()
 dictionary_sec_filing_codes <-
   function() {
-    data_frame(
+    tibble(
       idFormType = c(
         "1.01",
         "1.02",
@@ -11172,7 +11172,7 @@ dictionary_sec_filing_codes <-
 #' This function returns a
 #' dictionary of SEC form codes
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @family SEC
 #' @family dictionary
@@ -11181,7 +11181,7 @@ dictionary_sec_filing_codes <-
 #' dictionary_sec_form_codes()
 dictionary_sec_form_codes <-
   function() {
-    data_frame(
+    tibble(
       idForm = c(
         "R",
         "A",
@@ -11223,7 +11223,7 @@ dictionary_sec_form_codes <-
 
 company_type_df <-
   function() {
-    data_frame(
+    tibble(
       idCompanyType = c(
         "ic",
         "i",
@@ -11264,7 +11264,7 @@ company_type_df <-
 #' This function retuns a
 #' dictionary of SEC rules
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr stringr
 #'
@@ -11272,7 +11272,7 @@ company_type_df <-
 #' dictionary_sec_rules()
 dictionary_sec_rules <-
   function() {
-    data_frame(
+    tibble(
       idRule = c(
         "06",
         "3C",
@@ -11368,7 +11368,7 @@ parse_full_form_names <-
             pieces %>% paste0(collapse = '')
 
           df <-
-            data_frame(nameSECFull = sec_name,
+            tibble(nameSECFull = sec_name,
                        nameSEC = name_item)
           return(df)
         }
@@ -11392,7 +11392,7 @@ parse_full_form_names <-
 
         if (is_federal) {
           df <-
-            data_frame(
+            tibble(
               nameSECFull = sec_name,
               nameTable = pieces[[1]],
               nameSEC = name_item
@@ -11413,7 +11413,7 @@ parse_full_form_names <-
             items[length(items)]
 
           df <-
-            data_frame(
+            tibble(
               nameSECFull = sec_name,
               nameTable = 'issuer',
               countItem,
@@ -11434,18 +11434,18 @@ parse_full_form_names <-
             countItem <-
               pieces[2] %>% as.character() %>% readr::parse_number() %>% suppressWarnings()
           }
-          return(data_frame(nameTable = 'footnotes', nameSECFull = sec_name, nameSEC = item, countItem))
+          return(tibble(nameTable = 'footnotes', nameSECFull = sec_name, nameSEC = item, countItem))
         }
 
         if (is_sig) {
           df <-
-            data_frame(nameTable = 'signatures', nameSECFull = sec_name, nameSEC = name_item)
+            tibble(nameTable = 'signatures', nameSECFull = sec_name, nameSEC = name_item)
           return(df)
         }
 
         if (peice_length == 1) {
           df <-
-            data_frame(nameSECFull = sec_name, nameSEC = name_item)
+            tibble(nameSECFull = sec_name, nameSEC = name_item)
           return(df)
         }
 
@@ -11454,7 +11454,7 @@ parse_full_form_names <-
 
         if (piece_count == 1) {
           df <-
-            data_frame(nameSECFull = sec_name, nameSEC = sec_name)
+            tibble(nameSECFull = sec_name, nameSEC = sec_name)
           return(df)
         }
 
@@ -11462,7 +11462,7 @@ parse_full_form_names <-
 
 
           df <-
-            data_frame(nameSECFull = sec_name,
+            tibble(nameSECFull = sec_name,
                        nameTable = pieces[[1]] ,
                        nameSEC = name_item)
 
@@ -11476,7 +11476,7 @@ parse_full_form_names <-
             readr::parse_number() %>% suppressWarnings()
 
           df <-
-            data_frame(
+            tibble(
               nameSECFull = sec_name,
               nameTable = pieces[[1]] ,
               countItem,
@@ -11568,7 +11568,7 @@ parse_xml_tables <-
             page %>% xml_contents() %>% xml_text()
 
           df <-
-            data_frame(idTable = x, nameSECFull = table, value)
+            tibble(idTable = x, nameSECFull = table, value)
           return(df)
 
         }
@@ -11611,12 +11611,12 @@ parse_xml_tables <-
           value <-
             xml_nodes %>% xml_text()
           json_data <-
-            data_frame(item, value) %>%
+            tibble(item, value) %>%
             spread(item, value)
         }
 
         if (json_data %>% length() == 0) {
-          return(data_frame())
+          return(tibble())
         }
         if ('summaryInfo' %in% names(json_data)) {
           json_data <-
@@ -11640,7 +11640,7 @@ parse_xml_tables <-
         json_data <-
           json_data %>%
           data.frame(stringsAsFactors = FALSE) %>%
-          as_data_frame() %>%
+          as_tibble() %>%
           mutate_all(as.character) %>%
           mutate(idTable = x) %>%
           gather(nameSECFull, value, -idTable) %>%
@@ -11769,7 +11769,7 @@ parse_sec_form <-
         resolve_form_columns()
     } else {
       df_metadata <-
-        data_frame(idCIKFiler = cik,
+        tibble(idCIKFiler = cik,
                    urlSECFiling = url)
     }
 
@@ -11863,10 +11863,10 @@ parse_form_data <-
 
     if (filter_parameter == 'isXBRLInstanceFile') {
       if (df_search %>% nrow() == 0) {
-        return(data_frame())
+        return(tibble())
       }
       parse_xbrl_filer_url_safe <-
-        purrr::possibly(parse_xbrl_filer_url, data_frame())
+        purrr::possibly(parse_xbrl_filer_url, tibble())
       all_data <-
         df_search$urlSECFiling %>%
         unique() %>%
@@ -11917,7 +11917,7 @@ parse_form_data <-
           isPrimary <-
             parts[[3]] %>% str_detect("primary")
 
-          data_frame(idCIKFiler, slugAccession, isPrimary, urlSECFiling = url, urlSECFilingDirectory)
+          tibble(idCIKFiler, slugAccession, isPrimary, urlSECFiling = url, urlSECFilingDirectory)
         })
 
       slugs <-
@@ -11997,11 +11997,11 @@ parse_form_data <-
       }
     }
     if (df_search %>% nrow() == 0) {
-      return(data_frame())
+      return(tibble())
     }
 
     parse_sec_form_safe <-
-      purrr::possibly(parse_sec_form, data_frame())
+      purrr::possibly(parse_sec_form, tibble())
     all_data <-
       df_search$urlSECFiling %>%
       unique() %>%
@@ -12062,7 +12062,7 @@ parse_form_data <-
 parse_sec_filing_index <-
   function(urls, return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       if (return_message) {
         list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% cat(fill = T)
@@ -12090,7 +12090,7 @@ parse_sec_filing_index <-
           html_text()
 
         if (length(values) == 0) {
-          return(data_frame())
+          return(tibble())
         }
 
         items <-
@@ -12146,7 +12146,7 @@ parse_sec_filing_index <-
         search_url <-
           res$url
         df_metadata <-
-          data_frame(item = all_items,
+          tibble(item = all_items,
                      value = values) %>%
           mutate(urlSECFilingDirectory = search_url) %>%
           spread(item, value)
@@ -12212,7 +12212,7 @@ parse_sec_filing_index <-
         search_url <-
           res$url
         data <-
-          data_frame(
+          tibble(
             nameFile = files,
             nameHref = namehref,
             typeForm = types_form,
@@ -12261,7 +12261,7 @@ parse_sec_filing_index <-
         search_url <-
           res$url
         data <-
-          data_frame(idCIK = cik,
+          tibble(idCIK = cik,
                      urlSECFilingDirectory = search_url)
       }
 
@@ -12270,7 +12270,7 @@ parse_sec_filing_index <-
         bind_rows(data)
     }
     failure <- function(msg){
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x){
@@ -12310,7 +12310,7 @@ all_filing_urls <-
             flatten_chr() %>% {
               .[length(.)] %>% str_replace_all('-index.htm', '')
             }
-          data_frame(idAccession, urlSECFilingDirectory)
+          tibble(idAccession, urlSECFilingDirectory)
         })
 
       data <-
@@ -12351,7 +12351,7 @@ all_filing_urls <-
 # Text Form ---------------------------------------------------------------
 header_names <-
   function() {
-    data_frame(
+    tibble(
       nameSEC = c(
         "ACCEPTANCE-DATETIME",
         "ACCESSION NUMBER",
@@ -12413,13 +12413,13 @@ header_names <-
 
 section_names <-
   function() {
-    data_frame(nameSectionSEC = c(NA, "SUBJECT COMPANY", "FILED BY", 'ISSUER', 'REPORTING-OWNER'),
+    tibble(nameSectionSEC = c(NA, "SUBJECT COMPANY", "FILED BY", 'ISSUER', 'REPORTING-OWNER'),
                nameSectionActual = c('', '', 'FilingEntity', 'Issuer', 'ownerReporting')
     )
   }
 parent_names <-
   function() {
-    data_frame(nameParentSEC = c(NA, "COMPANY DATA", "FILING VALUES", "BUSINESS ADDRESS", "MAIL ADDRESS",
+    tibble(nameParentSEC = c(NA, "COMPANY DATA", "FILING VALUES", "BUSINESS ADDRESS", "MAIL ADDRESS",
                                  "FORMER COMPANY"),
                nameParentActual = c('', '', '', 'Business', 'Mailing', ''))
   }
@@ -12437,7 +12437,7 @@ parse_text_headers <- function(text_blob){
   header_text <-
     header_text %>% str_replace_all('\\<','') %>% str_replace_all('\\>',':')
 
-  df_headers <- data_frame(text = header_text) %>%
+  df_headers <- tibble(text = header_text) %>%
     tidyr::separate(col = text, into = c('nameSEC', 'value'), sep = '\\:') %>%
     mutate(value = value %>% str_replace_all("\t", '')) %>%
     mutate(idRow = 1:n())
@@ -12516,7 +12516,7 @@ parse_text_headers <- function(text_blob){
           list(first,other) %>%
           purrr::reduce(paste0)
 
-        data_frame(nameSEC = x, nameActual = actual)
+        tibble(nameSEC = x, nameActual = actual)
       })
 
     df_names <- df_names %>%
@@ -12582,7 +12582,7 @@ parse_for_text <- function(text_blob) {
     text_end %>% max() - 1
 
   df_text <-
-    data_frame(textRow = text_blob[text_start:text_end]) %>%
+    tibble(textRow = text_blob[text_start:text_end]) %>%
     mutate(idRow = 1:n()) %>%
     select(idRow, everything())
 
@@ -12629,7 +12629,7 @@ sec_complete_filings <-
   function(urls = c("https://www.sec.gov/Archives/edgar/data/732712/000119312517030264/0001193125-17-030264.txt", "https://www.sec.gov/Archives/edgar/data/732712/000161159317000024/0001611593-17-000024.txt", "https://www.sec.gov/Archives/edgar/data/1629703/000161159317000025/0001611593-17-000025.txt", "https://www.sec.gov/Archives/edgar/data/1284999/000161159317000014/0001611593-17-000014.txt"),
            return_message =  TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       url <-
         res$url
@@ -12644,7 +12644,7 @@ sec_complete_filings <-
         bind_rows(data)
     }
     failure <- function(msg) {
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x) {
@@ -12685,7 +12685,7 @@ parse_xbrl_filer_url <-
     ## Get a data frame with facts:
     df_fct <-
       XBRL::xbrlProcessFacts(doc) %>%
-      as_data_frame()
+      as_tibble()
 
     df_fct <-
       df_fct %>%
@@ -12701,19 +12701,19 @@ parse_xbrl_filer_url <-
     ## Get a data frame with contexts:
     df_cts <-
       XBRL::xbrlProcessContexts(doc) %>%
-      as_data_frame()
+      as_tibble()
     ## Get a data frame with units:
     df_unt <-
       XBRL::xbrlProcessUnits(doc) %>%
-      as_data_frame()
+      as_tibble()
 
     df_sch <-
       XBRL::xbrlGetSchemaName(doc) %>%
-      as_data_frame()
+      as_tibble()
 
     df_footnotes <-
       XBRL::xbrlProcessFootnotes(doc) %>%
-      as_data_frame()
+      as_tibble()
 
 
     ## Free the external memory used:
@@ -12731,7 +12731,7 @@ parse_xbrl_filer_url <-
     df_rls <-
       docS %>%
       XBRL::xbrlProcessRoles() %>%
-      as_data_frame()
+      as_tibble()
 
     ## calculation
     url_cal <-
@@ -12747,10 +12747,10 @@ parse_xbrl_filer_url <-
       df_calcs <-
         docS %>%
         XBRL::xbrlProcessArcs(arcType = 'calculation') %>%
-        as_data_frame()
+        as_tibble()
     } else {
       df_calcs <-
-        data_frame()
+        tibble()
     }
 
     ## definition
@@ -12767,7 +12767,7 @@ parse_xbrl_filer_url <-
     df_defs <-
       docS %>%
       XBRL::xbrlProcessArcs(arcType = 'definition') %>%
-      as_data_frame()
+      as_tibble()
 
     ## labels
     url_lab <-
@@ -12783,7 +12783,7 @@ parse_xbrl_filer_url <-
     df_labels <-
       docS %>%
       XBRL::xbrlProcessLabels() %>%
-      as_data_frame()
+      as_tibble()
 
     ## presentation
     url_pre <-
@@ -12800,7 +12800,7 @@ parse_xbrl_filer_url <-
     tf %>%
       unlink()
     data <-
-      data_frame(
+      tibble(
         idCIK = cik,
         urlSECFiling = url,
         dataFacts = list(df_fct),
@@ -12822,7 +12822,7 @@ parse_xbrl_filer_url <-
 # dictionaries ------------------------------------------------------------
 sec_form_title_df <-
   function() {
-    data_frame(
+    tibble(
       nameSEC = c(
         "conversionOrExercisePrice",
         "deemedExecutionDate",
@@ -14048,7 +14048,7 @@ sec_form_title_df <-
 
 filer_type_df <-
   function() {
-    data_frame(
+    tibble(
       idTypeFilerOwner = c(
         'insider',
         'private' ,
@@ -14079,7 +14079,7 @@ filer_type_df <-
 #' industries for parsed SEC Form-D
 #' filings
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr
 #' @examples
@@ -14087,7 +14087,7 @@ filer_type_df <-
 dictionary_form_d_categories <-
   function() {
     category_df <-
-      dplyr::data_frame(
+      dplyr::tibble(
         idIndustry = 1:35,
         nameIndustry = c(
           "AGRICULTURE",
@@ -14207,7 +14207,7 @@ dictionary_form_d_categories <-
 insider_code_df <-
   function() {
     insider_df <-
-      data_frame(
+      tibble(
         idInsiderTransaction =
           c(
             "A",
@@ -14284,7 +14284,7 @@ insider_code_df <-
 #' This function returns a
 #' dictionary of SEC form filing types
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr stringr
 #' @family SEC
@@ -14294,7 +14294,7 @@ insider_code_df <-
 #' dictionary_sec_filing_codes()
 dictionary_sec_filing_codes <-
   function() {
-    data_frame(
+    tibble(
       idFormType = c(
         "1.01",
         "1.02",
@@ -14370,7 +14370,7 @@ dictionary_sec_filing_codes <-
 #' This function returns a
 #' dictionary of SEC form codes
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @family SEC
 #' @family dictionary
@@ -14379,7 +14379,7 @@ dictionary_sec_filing_codes <-
 #' dictionary_sec_form_codes()
 dictionary_sec_form_codes <-
   function() {
-    data_frame(
+    tibble(
       idForm = c(
         "R",
         "A",
@@ -14421,7 +14421,7 @@ dictionary_sec_form_codes <-
 
 company_type_df <-
   function() {
-    data_frame(
+    tibble(
       idCompanyType = c(
         "ic",
         "i",
@@ -14462,7 +14462,7 @@ company_type_df <-
 #' This function retuns a
 #' dictionary of SEC rules
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import dplyr stringr
 #'
@@ -14470,7 +14470,7 @@ company_type_df <-
 #' dictionary_sec_rules()
 dictionary_sec_rules <-
   function() {
-    data_frame(
+    tibble(
       idRule = c(
         "06",
         "3C",
@@ -14595,7 +14595,7 @@ cik_filing_count <-
       html_text() %>% length() == 0
 
     if (no_data) {
-      return(data_frame(idCIK = cik))
+      return(tibble(idCIK = cik))
     }
 
     filings <-
@@ -14609,7 +14609,7 @@ cik_filing_count <-
       ceiling(filings/100)
 
     df <-
-      data_frame(idCIK = cik,
+      tibble(idCIK = cik,
                  countFilings = filings,
                  countPages = pages) %>%
       mutate(isMultiSearch = pages > 20)
@@ -14655,7 +14655,7 @@ sic_filing_count <-
       html_text() %>% length() == 0
 
     if (no_data) {
-      return(data_frame(idCIK = cik))
+      return(tibble(idCIK = cik))
     }
 
     filings <-
@@ -14669,7 +14669,7 @@ sic_filing_count <-
       ceiling(filings/100)
 
     df <-
-      data_frame(idSIC = sic,
+      tibble(idSIC = sic,
                  countFilings = filings,
                  countPages = pages) %>%
       mutate(isMultiSearch = pages > 20)
@@ -14776,7 +14776,7 @@ dictionary_sic_codes <-
           item <-
             'nameIndustry'
         }
-        data_frame(value = values) %>%
+        tibble(value = values) %>%
           mutate(item,
                  idRow = 1:n()) %>%
           select(idRow, item, value)
@@ -14863,7 +14863,7 @@ dictionary_sec_forms <-
       purrr::flatten_chr()
 
     data <-
-      data_frame(
+      tibble(
         idForm = forms,
         nameForm = form_names,
         urlFormDescription = url_description_form,
@@ -14913,10 +14913,10 @@ parse_for_tables <-
            nest_data = TRUE,
            return_message = TRUE) {
     all_tables <-
-      data_frame()
+      tibble()
 
     parse_form_data_safe <-
-      purrr::possibly(parse_form_data, data_frame())
+      purrr::possibly(parse_form_data, tibble())
     parse_all_filings <-
       c(
         parse_complete_text_filings,
@@ -14936,7 +14936,7 @@ parse_for_tables <-
 
       all_tables <-
         all_tables %>%
-        bind_rows(data_frame(nameTable = 'Summary', dataTable = list(df_general)))
+        bind_rows(tibble(nameTable = 'Summary', dataTable = list(df_general)))
 
       all_data <-
         all_data %>% select(-c(termSearch, countFilings))
@@ -14944,7 +14944,7 @@ parse_for_tables <-
     } else {
       all_tables <-
         all_tables %>%
-        bind_rows(data_frame(nameTable = 'Summary', dataTable = list(data_frame())))
+        bind_rows(tibble(nameTable = 'Summary', dataTable = list(tibble())))
     }
 
     if (parse_all_filings) {
@@ -14992,7 +14992,7 @@ parse_for_tables <-
 
       all_tables <-
         all_tables %>%
-        bind_rows(data_frame(nameTable = table_name_initial, dataTable = list(all_data)))
+        bind_rows(tibble(nameTable = table_name_initial, dataTable = list(all_data)))
 
       all_filings <-
         all_data %>%
@@ -15019,7 +15019,7 @@ parse_for_tables <-
 
       all_tables <-
         all_tables %>%
-        bind_rows(data_frame(nameTable = 'All Filing URLS', dataTable = list(all_filings)))
+        bind_rows(tibble(nameTable = 'All Filing URLS', dataTable = list(all_filings)))
 
       if (parse_complete_text_filings) {
         if (!'urlTextFilingFull' %in% names(all_data)) {
@@ -15031,13 +15031,13 @@ parse_for_tables <-
           all_data$urlTextFilingFull %>%
           unique()
         sec_complete_filings_safe <-
-          purrr::possibly(sec_complete_filings, data_frame())
+          purrr::possibly(sec_complete_filings, tibble())
         all_text_df <-
           sec_complete_filings(urls = urls)
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = 'Text Filings', dataTable = list(all_text_df)))
+          bind_rows(tibble(nameTable = 'Text Filings', dataTable = list(all_text_df)))
       }
 
       if (parse_form_d) {
@@ -15046,7 +15046,7 @@ parse_for_tables <-
           parse_form_data_safe(filter_parameter = 'isFormD')
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = 'FormDs', dataTable = list(df_form_ds)))
+          bind_rows(tibble(nameTable = 'FormDs', dataTable = list(df_form_ds)))
       }
 
       if (parse_13F) {
@@ -15055,7 +15055,7 @@ parse_for_tables <-
           parse_form_data_safe(filter_parameter = 'is13FFiling')
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = '13Fs', dataTable = list(df_13F)))
+          bind_rows(tibble(nameTable = '13Fs', dataTable = list(df_13F)))
       }
 
       if (parse_small_offerings) {
@@ -15064,7 +15064,7 @@ parse_for_tables <-
           parse_form_data_safe(filter_parameter = 'hasSmallOfferingData')
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(
+          bind_rows(tibble(
             nameTable = 'Small Offerings',
             dataTable = list(df_small_offerings)
           ))
@@ -15077,7 +15077,7 @@ parse_for_tables <-
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = 'Form 3 and 4', dataTable = list(df_form3_4)))
+          bind_rows(tibble(nameTable = 'Form 3 and 4', dataTable = list(df_form3_4)))
       }
 
       if (parse_asset_files) {
@@ -15087,7 +15087,7 @@ parse_for_tables <-
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = 'Asset Data', dataTable = list(df_assets)))
+          bind_rows(tibble(nameTable = 'Asset Data', dataTable = list(df_assets)))
       }
 
       if (parse_xbrl) {
@@ -15097,13 +15097,13 @@ parse_for_tables <-
 
         all_tables <-
           all_tables %>%
-          bind_rows(data_frame(nameTable = 'XBRL', dataTable = list(df_xbrl)))
+          bind_rows(tibble(nameTable = 'XBRL', dataTable = list(df_xbrl)))
       }
 
     } else {
       all_tables <-
         all_tables %>%
-        bind_rows(data_frame(nameTable = 'TermsFilings', dataTable = list(all_data)))
+        bind_rows(tibble(nameTable = 'TermsFilings', dataTable = list(all_data)))
 
     }
 
@@ -15198,13 +15198,13 @@ generate_ft_search_urls <-
     if (return_message) {
       list("Found SEC free text urls for ", search_term) %>% purrr::reduce(paste0) %>% cat(fill = T)
     }
-    data_frame(termSearch = search_term, urlSECSearch = urls)
+    tibble(termSearch = search_term, urlSECSearch = urls)
   }
 
 parse_ft_filing_page <-
   function(urls, return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       if (return_message) {
         list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% cat(fill = T)
@@ -15258,7 +15258,7 @@ parse_ft_filing_page <-
         str_to_upper()
 
       data <-
-        data_frame(
+        tibble(
           dateFiling = dates[seq_along(ciks)],
           idCIKFiler = ciks,
           nameFilerFilingExhibit = search_items,
@@ -15285,7 +15285,7 @@ parse_ft_filing_page <-
         bind_rows(data)
     }
     failure <- function(msg){
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x){
@@ -15312,7 +15312,7 @@ edgar_ft_terms <-
            nest_data = FALSE,
            return_message = TRUE) {
     generate_ft_search_urls_safe <-
-      purrr::possibly(generate_ft_search_urls, data_frame())
+      purrr::possibly(generate_ft_search_urls, tibble())
 
     df_urls <-
       search_terms %>%
@@ -15330,7 +15330,7 @@ edgar_ft_terms <-
 
     if (include_counts) {
       cik_filing_count_safe <-
-        purrr::possibly(cik_filing_count, data_frame())
+        purrr::possibly(cik_filing_count, tibble())
       df_counts <-
         all_data %>%
         pull(idCIKFiler) %>%
@@ -15373,7 +15373,7 @@ edgar_ft_terms <-
 
 # Boolean Archive Search --------------------------------------------------
 sec_parameter_df <- function() {
-  data_frame(
+  tibble(
     nameParameter = c(
       "Company Name",
       "Company CIK",
@@ -15433,7 +15433,7 @@ sec_parameter_df <- function() {
 parse_boolean_search_page <-
   function(urls, return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res){
       if (return_message) {
         list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = T)
@@ -15490,7 +15490,7 @@ parse_boolean_search_page <-
             is_html <-
               accession %>% str_detect(".htm|.html")
 
-            data_frame(idRow = x, idCIK = cik,
+            tibble(idRow = x, idCIK = cik,
                        isHTML = is_html,
                        slugAccension = accession,
                        urlSECFilingDirectory = url_filing)
@@ -15498,7 +15498,7 @@ parse_boolean_search_page <-
           })
       } else {
         data <-
-          data_frame(idRow = x, idCIK = NA)
+          tibble(idRow = x, idCIK = NA)
       }
 
       form <-
@@ -15572,7 +15572,7 @@ parse_boolean_search_page <-
         bind_rows(data)
     }
     failure <- function(msg){
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x){
@@ -15737,7 +15737,7 @@ generate_search_term_urls <-
     rm(page)
 
     df_urls <-
-      data_frame(termSearch = search_term,
+      tibble(termSearch = search_term,
                  countFilings = filings, urlSECSearch = urls)
     return(df_urls)
   }
@@ -15825,7 +15825,7 @@ edgar_search_terms <-
            return_message = TRUE) {
 
     sec_search_term_safe <-
-      purrr::possibly(sec_search_term, data_frame())
+      purrr::possibly(sec_search_term, tibble())
 
     all_data <-
       search_terms %>%
@@ -15842,11 +15842,11 @@ edgar_search_terms <-
 
 
     if (all_data %>% nrow() == 0) {
-      return(data_frame())
+      return(tibble())
     }
 
     parse_for_tables_safe <-
-      purrr::possibly(parse_for_tables, data_frame())
+      purrr::possibly(parse_for_tables, tibble())
 
     all_tables <-
       parse_for_tables_safe(
@@ -15870,7 +15870,7 @@ edgar_search_terms <-
 
     all_tables <-
       all_tables %>%
-      bind_rows(data_frame(nameTable = 'Search Filings', dataTable = list(all_data)))
+      bind_rows(tibble(nameTable = 'Search Filings', dataTable = list(all_data)))
 
     if (assign_to_environment) {
       table_name_df <-
@@ -15928,7 +15928,7 @@ edgar_search_terms <-
                 df_data %>%
                 unnest()
 
-              select_cols <- data_frame(nameData = names(df_data)) %>%
+              select_cols <- tibble(nameData = names(df_data)) %>%
                 mutate(idColumn = 1:n()) %>%
                 group_by(nameData) %>%
                 mutate(countColumn = 1:n()) %>%
@@ -15996,7 +15996,7 @@ parse_most_recent_filing_form_page <-
         data %>%
         mutate(idRow = 1:n()) %>%
         left_join(
-          data_frame(urlCIKFiler = urls[c(FALSE,TRUE)] %>% paste0('&start=0&count=100'),
+          tibble(urlCIKFiler = urls[c(FALSE,TRUE)] %>% paste0('&start=0&count=100'),
                      urlSECFilingDirectory = urls[c(FALSE, TRUE)]) %>%
             mutate(idRow = 1:n())
 
@@ -16090,7 +16090,7 @@ parse_most_recent_stream <-
             str_trim()
 
           df <-
-            data_frame(idRow = x,
+            tibble(idRow = x,
                        descriptionFiling = filing_description,
                        idAccession = accession,
                        idSECAct = items[[1]],
@@ -16115,7 +16115,7 @@ parse_most_recent_stream <-
           str_trim()
 
         df <-
-          data_frame(idRow = x,
+          tibble(idRow = x,
                      descriptionFiling = filing_description,
                      idAccession = items[[1]],
                      descriptionFileSize = items[[2]])
@@ -16146,7 +16146,7 @@ parse_most_recent_stream <-
             str_trim()
 
           df <-
-            data_frame(idRow = x, item = c('nameEntityLegal', 'idCIK', 'typeSECEntity'), value = values) %>%
+            tibble(idRow = x, item = c('nameEntityLegal', 'idCIK', 'typeSECEntity'), value = values) %>%
             spread(item, value) %>%
             mutate(idCIK = idCIK %>% as.numeric())
 
@@ -16170,7 +16170,7 @@ parse_most_recent_stream <-
                 purrr::reduce(paste), values[3], values[4])
 
           df <-
-            data_frame(idRow = x, item = c('nameEntityLegal', 'idCIK', 'typeSECEntity'), value = values) %>%
+            tibble(idRow = x, item = c('nameEntityLegal', 'idCIK', 'typeSECEntity'), value = values) %>%
             spread(item, value) %>%
             mutate(idCIK = idCIK %>% as.numeric())
 
@@ -16210,7 +16210,7 @@ parse_most_recent_stream <-
       future_map_dfr(function(x){
         parts <-
           file_film[[x]] %>% str_split('\n') %>% flatten_chr()
-        data_frame(
+        tibble(
           idRow = x,
           idFile = parts[[1]] %>% stringr::str_trim(),
           idSECFiling = parts[[2]] %>% as.numeric()
@@ -16359,7 +16359,7 @@ get_most_recent_filing_urls <-
       purrr::reduce(paste0)
 
     df_mr_urls <-
-      data_frame(urlPageFiling = urls) %>%
+      tibble(urlPageFiling = urls) %>%
       mutate(countPage = 1:n())
 
     if (!filing_type %>% is_null()) {
@@ -16378,7 +16378,7 @@ get_most_recent_filing_urls <-
 sec_filing_most_recent <-
   function(filing_type = NULL, return_message = TRUE) {
     get_most_recent_filing_urls_safe <-
-      purrr::possibly(get_most_recent_filing_urls, data_frame())
+      purrr::possibly(get_most_recent_filing_urls, tibble())
     url_df <-
       get_most_recent_filing_urls_safe(filing_type = filing_type)
 
@@ -16391,7 +16391,7 @@ sec_filing_most_recent <-
     }
 
     parse_most_recent_stream_safe <-
-      purrr::possibly(parse_most_recent_stream, data_frame())
+      purrr::possibly(parse_most_recent_stream, tibble())
 
     all_data <-
       url_df$urlPageFiling %>%
@@ -16436,7 +16436,7 @@ edgar_filings_most_recent <-
            nest_data = FALSE,
            return_message = TRUE) {
     sec_filing_most_recent_safe <-
-      purrr::possibly(sec_filing_most_recent, data_frame())
+      purrr::possibly(sec_filing_most_recent, tibble())
 
     all_data <-
       forms %>%
@@ -16497,7 +16497,7 @@ get_year_index_urls <-
       purrr::reduce(paste0)
 
     url_df <-
-      data_frame(idQuarter =quarters, yearData,
+      tibble(idQuarter =quarters, yearData,
                  urlQuarter = urls)
     return(url_df)
   }
@@ -16523,7 +16523,7 @@ parse_quarter_urls <-
       purrr::reduce(paste0)
 
     df_urls <-
-      data_frame(slugs, urlSECIndex = urls) %>%
+      tibble(slugs, urlSECIndex = urls) %>%
       tidyr::separate(slugs,
                       into = c('typeIndex', 'dateData', 'remove'),
                       sep = '\\.')
@@ -16871,7 +16871,7 @@ get_years_page_urls <-
 #' }
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
@@ -16950,7 +16950,7 @@ edgar_filing_streams <-
     }
 
     parse_index_filing_page_safe <-
-      purrr::possibly(parse_index_filing_page, data_frame())
+      purrr::possibly(parse_index_filing_page, tibble())
 
     all_data <-
       seq_along(urls) %>%
@@ -17048,23 +17048,23 @@ guess_page_ongoing <-
       !items %>% str_detect("NEXT 100") %>% sum(na.rm = T) > 0
 
     if (is_end & (!no_page)) {
-      return(data_frame(isEnd = TRUE, countStart = page_count))
+      return(tibble(isEnd = TRUE, countStart = page_count))
     }
     if (!override) {
       if (!is_end) {
-        return(data_frame())
+        return(tibble())
       }
     } else {
-      return(data_frame(countStart = page_count))
+      return(tibble(countStart = page_count))
     }
-    data_frame(isEnd = is_end, countPage = page_count -100)
+    tibble(isEnd = is_end, countPage = page_count -100)
   }
 
 parse_search_page <-
   function(urls = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=Bank&owner=exclude&match=&start=500&count=100&hidefilings=0",
            return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res){
       if (return_message) {
         list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = T)
@@ -17095,7 +17095,7 @@ parse_search_page <-
         NA
 
       data <-
-        data_frame(
+        tibble(
           idCIK = cik,
           nameEntityLegal = entities,
           codeLocationBusiness = locations
@@ -17131,7 +17131,7 @@ parse_search_page <-
         bind_rows(data)
     }
     failure <- function(msg){
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x) {
@@ -17190,7 +17190,7 @@ parse_search_page_length <-
 
     if (df_end %>% ncol() == 0) {
       df_end <-
-        data_frame(countStart = 0)
+        tibble(countStart = 0)
     }
     length_actual_pages <-
       ceiling(df_end$countStart/100)
@@ -17203,7 +17203,7 @@ parse_search_page_length <-
       purrr::reduce(paste0)
 
     df_filing_urls <-
-      data_frame(nameSearch = search_term, urlCIKPageFiling = urls) %>%
+      tibble(nameSearch = search_term, urlCIKPageFiling = urls) %>%
       mutate(countPage = 1:n())
     if('dfEnd' %>% exists()){
       rm(list = c('dfEnd'), pos = ".GlobalEnv")
@@ -17255,7 +17255,7 @@ edgar_entities_cik <-
            return_message = TRUE) {
 
     sec_entity_safe <-
-      purrr::possibly(entity_ciks, data_frame())
+      purrr::possibly(entity_ciks, tibble())
 
     all_data <-
       search_names %>%
@@ -17317,14 +17317,14 @@ parse_city_state <-
       city <-
         state_city[!state_city %in% state] %>% str_c(collapse = ' ')
       data <-
-        data_frame(
+        tibble(
           cityCompany = city,
           stateCompany = state,
           zipcodeCompany = zipcode
         )
       return(data)
     }
-    data_frame()
+    tibble()
   }
 
 generate_url <- function(ticker = "FB") {
@@ -17396,7 +17396,7 @@ parse_company_info <-
       state.inc <- NA
     }
     data <-
-      data_frame(
+      tibble(
         nameCompany = company_name,
         slugCIK = cik,
         idCIK = readr::parse_number(as.character(cik)),
@@ -17413,10 +17413,10 @@ parse_company_pages <-
   function(urls,
            return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       parse_company_info_safe <-
-        purrr::possibly(parse_company_info, data_frame())
+        purrr::possibly(parse_company_info, tibble())
 
       data <-
         parse_company_info(url = res$url)
@@ -17445,7 +17445,7 @@ sec_ticker_info <-
       glue::glue("Acquiring company information for {ticker}") %>% cat(fill = T)
     }
     parse_company_pages_safe <-
-      purrr::possibly(parse_company_pages, data_frame())
+      purrr::possibly(parse_company_pages, tibble())
     url <- ticker %>%
       generate_url()
 
@@ -17465,7 +17465,7 @@ sec_ticker_info <-
 #' @param tickers character vector of ticker symbols
 #' @param return_message if \code{true} return a message
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @import curl glue dplyr purrr stringr rvest xml2
 #'
@@ -17486,7 +17486,7 @@ sec_tickers_info <-
 # page_guess --------------------------------------------------------------
 sec_filer_name_page_df <-
   function(){
-    data_frame(
+    tibble(
       nameSEC = c("dateFiled", "filingHREF", "formName", "type", "XBRLREF"),
       nameActual = c(
         "dateFiling",
@@ -17538,16 +17538,16 @@ guess_page_ongoing <-
       !items %>% str_detect("NEXT 100") %>% sum(na.rm = T) > 0
 
     if (is_end & (!no_page)) {
-      return(data_frame(isEnd = TRUE, countStart = page_count))
+      return(tibble(isEnd = TRUE, countStart = page_count))
     }
     if (!override) {
       if (!is_end) {
-        return(data_frame())
+        return(tibble())
       }
     } else {
-      return(data_frame(countStart = page_count))
+      return(tibble(countStart = page_count))
     }
-    data_frame(isEnd = is_end, countPage = page_count -100)
+    tibble(isEnd = is_end, countPage = page_count -100)
   }
 
 
@@ -17608,7 +17608,7 @@ cik_filer_page_urls <-
       purrr::reduce(paste0)
 
     df_filing_urls <-
-      data_frame(idCIK = cik, urlCIKPageFiling = urls) %>%
+      tibble(idCIK = cik, urlCIKPageFiling = urls) %>%
       mutate(countPage = 1:n())
     if('dfEnd' %>% exists()){
       rm(list = c('dfEnd'), pos = ".GlobalEnv")
@@ -17651,7 +17651,7 @@ parse_cik_filer_page <-
           xml_children() %>%
           xml_text()
 
-        return(data_frame(
+        return(tibble(
           countPageFiling = x,
           nameSEC = items,
           value = values
@@ -17681,7 +17681,7 @@ parse_cik_filer_page <-
   }
 df_general_name_df <-
   function() {
-    data_frame(nameSEC = c("CIK", "CIKHREF", "Location", "SIC", "SICDescription", "SICHREF",
+    tibble(nameSEC = c("CIK", "CIKHREF", "Location", "SIC", "SICDescription", "SICHREF",
                            "businessAddresscity", "businessAddressphoneNumber", "businessAddressstate",
                            "businessAddressstreet", "businessAddresszipCode", "fiscalYearEnd",
                            "mailingAddresscity", "mailingAddressstate", "mailingAddressstreet",
@@ -17766,7 +17766,7 @@ parse_cik_filer_general_info <-
             xml_text()
 
           df <-
-            data_frame(
+            tibble(
               countItem = x,
               itemParent = item_parent[seq_along(item)],
               nameSEC = items,
@@ -17796,7 +17796,7 @@ parse_cik_filer_general_info <-
             values[length(values)]
 
           df <-
-            data_frame(
+            tibble(
               countItem = x,
               nameSEC = items,
               value = values
@@ -17839,7 +17839,7 @@ parse_cik_filer_general_info <-
                 xml_text()
 
               df <-
-                data_frame(
+                tibble(
                   countItem = x,
                   itemParent = item_parent[seq_along(item)],
                   nameSEC = items,
@@ -17867,7 +17867,7 @@ parse_cik_filer_general_info <-
               xml_text()
 
             df <-
-              data_frame(
+              tibble(
                 countItem = x,
                 itemParent = item_parent,
                 nameSEC = item,
@@ -17884,7 +17884,7 @@ parse_cik_filer_general_info <-
               xml_text()
           }
           df <-
-            data_frame(
+            tibble(
               countItem = x,
               nameSEC = item,
               value = values
@@ -17895,7 +17895,7 @@ parse_cik_filer_general_info <-
           xml_node %>%
           xml_find_all(list('//', item) %>% purrr::reduce(paste0)) %>%
           xml_name()
-        data_frame(idRow = countRow, nameSEC, value = value)
+        tibble(idRow = countRow, nameSEC, value = value)
       })
 
     df_general <-
@@ -17954,7 +17954,7 @@ cik_filer_filings <-
       suppressMessages()
 
     parse_cik_filer_page_safe <-
-      purrr::possibly(parse_cik_filer_page, data_frame())
+      purrr::possibly(parse_cik_filer_page, tibble())
 
     df_filings <-
       df_urls$urlCIKPageFiling %>%
@@ -18033,7 +18033,7 @@ sic_filer_page_urls <-
       df_end %>% length() == 0
     if (still_none)  {
       df_end <-
-        data_frame(countStart = 0)
+        tibble(countStart = 0)
     }
     length_actual_pages <-
       ceiling(df_end$countStart/100)
@@ -18045,7 +18045,7 @@ sic_filer_page_urls <-
       purrr::reduce(paste0)
 
     df_sic_urls <-
-      data_frame(idSIC = sic, urlSICPageFiling = urls) %>%
+      tibble(idSIC = sic, urlSICPageFiling = urls) %>%
       mutate(countPage = 1:n())
     if('dfEnd' %>% exists()){
       rm(list = c('dfEnd'), pos = ".GlobalEnv")
@@ -18058,13 +18058,13 @@ sic_code_filer <-
            return_message = TRUE) {
 
     sic_filer_page_urls_safe <-
-      purrr::possibly(sic_filer_page_urls, data_frame())
+      purrr::possibly(sic_filer_page_urls, tibble())
 
     url_df <-
       sic_filer_page_urls_safe(sic = sic)
 
     parse_search_page_safe <-
-      purrr::possibly(parse_search_page, data_frame())
+      purrr::possibly(parse_search_page, tibble())
 
     all_data <-
       url_df$urlSICPageFiling %>%
@@ -18108,7 +18108,7 @@ edgar_sic_filers <-
     }
 
     sic_code_filer_safe <-
-      purrr::possibly(sic_code_filer, data_frame())
+      purrr::possibly(sic_code_filer, tibble())
 
     all_data <-
       sic_codes %>%
@@ -18147,7 +18147,7 @@ parse_sec_url_for_cik <-
 
 loc_df <-
   function() {
-    data_frame(
+    tibble(
       nameLocation = c(
         "AFGHANISTAN",
         "ALAND ISLANDS",
@@ -18515,7 +18515,7 @@ parse_page_sub_multi_item_html <-
       data_nodes[data_nodes %in% locations]
 
     pct_vals <-
-      data_frame(value = data_nodes) %>%
+      tibble(value = data_nodes) %>%
       filter(!value %>% str_detect("\\([(1-9)]\\)")) %>%
       mutate(pctSubsidiaryOwned = value %>% as.numeric()) %>%
       filter(!pctSubsidiaryOwned %>% is.na()) %>%
@@ -18525,7 +18525,7 @@ parse_page_sub_multi_item_html <-
       suppressMessages()
 
     all_data <-
-      data_frame(
+      tibble(
         nameSubsidiary = subsidiaries,
         nameLocationSubsidiary = location_items,
         pctSubsidiaryOwned = pct_vals
@@ -18642,7 +18642,7 @@ parse_page_subsidiary_table_html <-
             html_nodes(css_selector) %>%
             html_text() %>%
             str_trim()
-          data_frame(item, value)
+          tibble(item, value)
         }
       }) %>%
       mutate(
@@ -18763,14 +18763,14 @@ parse_page_subsidiary_table_html <-
             table_df <-
               tables[[x]] %>%
               data.frame(stringsAsFactors = FALSE) %>%
-              as_data_frame()
+              as_tibble()
 
             column_df <-
               table_df %>% slice(1) %>%
               gather(column, value) %>%
               mutate(idColumn = 1:n()) %>%
               filter(!value %>% is.na()) %>%
-              left_join(data_frame(
+              left_join(tibble(
                 value = c(
                   "PROPERTY",
                   "ENTITIES",
@@ -18952,7 +18952,7 @@ parse_sec_subsidiary_url_html <-
           data[data %>% str_detect('\\(')]
 
         df <-
-          data_frame(data) %>%
+          tibble(data) %>%
           separate(
             data,
             sep = '\\(',
@@ -18996,11 +18996,11 @@ parse_sec_subsidiary_url_html <-
           data[data %>% nchar() > 3] %>% str_to_upper()
 
         df <-
-          data_frame(nameSubsidiary = data) %>%
+          tibble(nameSubsidiary = data) %>%
           mutate(idRow = 1:n())
 
         loc_df <-
-          data_frame(nameSubsidiary = locations) %>%
+          tibble(nameSubsidiary = locations) %>%
           inner_join(df %>% select(idRow, nameSubsidiary)) %>%
           mutate(idRow = idRow + 1) %>%
           select(locationOrganizationSubsidiary = nameSubsidiary, idRow) %>%
@@ -19056,7 +19056,7 @@ parse_sec_subsidiary_url_html <-
               html_nodes(css_selector) %>%
               html_text() %>%
               str_trim()
-            data_frame(item, value)
+            tibble(item, value)
           }
         }) %>%
         mutate(
@@ -19238,14 +19238,14 @@ parse_sec_subsidiary_url_text <-
           items[!items == '']
 
         if (items %>% length() == 1) {
-          return(data_frame())
+          return(tibble())
         }
 
         two_items <-
           items %>% length() == 2
         if (two_items) {
           table_data <-
-            data_frame(
+            tibble(
               idSubsidiary = x,
               nameSubsidiary = items[[1]],
               locationOrganizationSubsidiary = items[[2]]
@@ -19255,7 +19255,7 @@ parse_sec_subsidiary_url_text <-
           items %>% length() == 3
         if (three_items) {
           table_data <-
-            data_frame(
+            tibble(
               idSubsidiary = x,
               nameSubsidiary = items[[1]],
               locationOrganizationSubsidiary = items[[2]],
@@ -19303,10 +19303,10 @@ parse_sec_subsidiary_url  <-
       url %>%
       str_detect("html|htm")
     parse_sec_subsidiary_url_text_safe <-
-      purrr::possibly(parse_sec_subsidiary_url_text, data_frame())
+      purrr::possibly(parse_sec_subsidiary_url_text, tibble())
 
     parse_sec_subsidiary_url_html_safe <-
-      purrr::possibly(parse_sec_subsidiary_url_html, data_frame())
+      purrr::possibly(parse_sec_subsidiary_url_html, tibble())
 
     if (is_text) {
       data <-

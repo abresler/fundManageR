@@ -2,7 +2,7 @@
 % Please edit documentation in R/fred_api.R
 \name{fred_symbols}
 \alias{fred_symbols}
-\title{Federal Reserve Economic Data time series data_frame}
+\title{Federal Reserve Economic Data time series tibble}
 \usage{
 fred_symbols(symbols = c("DGS2", "DGS10", "DGS30"),
   transformations = c("default"), widen_data = F,
@@ -25,7 +25,7 @@ fred_symbols(symbols = c("DGS2", "DGS10", "DGS30"),
 \item{return_message}{if \code{TRUE} return message}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns a data for specified series from

@@ -1136,7 +1136,7 @@
 
 .get_dictionary_finbox_names <-
   function() {
-    data_frame(
+    tibble(
       nameFinbox = c(
         "stock_price",
         "market_change_today",
@@ -1191,7 +1191,7 @@
 
   }
 .get_finbox_base_names <- function() {
-  df_finbox <- data_frame(
+  df_finbox <- tibble(
     nameFinbox = c(
       "market_change_today",
       "pct_50_day_moving_average",
@@ -2076,7 +2076,7 @@
       expand.grid(metric = multiple_metrics,
                   type = multiple_types,
                   stringsAsFactors = F) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       tidyr::unite(typeMetric, metric, type, sep = '_') %>%
       pull(typeMetric)
 
@@ -2102,7 +2102,7 @@
       expand.grid(metric = period_metrics,
                   period = period_types,
                   stringsAsFactors = F) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       tidyr::unite(periodMetric, metric, period, sep = '_') %>%
       pull(periodMetric)
 
@@ -2181,10 +2181,10 @@
         seq_along(data$idIndicies) %>%
         future_map_dfr(function(x){
           if (data$idIndicies[x] %>% flatten_chr() %>% length() == 0) {
-            return(data_frame(idRow = x, nameIndicies = NA))
+            return(tibble(idRow = x, nameIndicies = NA))
           }
           indicies <- data$idIndicies[x] %>% flatten_chr() %>% str_c(collapse = ', ')
-          data_frame(idRow = x, nameIndicies = indicies)
+          tibble(idRow = x, nameIndicies = indicies)
         })
 
       data <-
@@ -2201,11 +2201,11 @@
         seq_along(data$idBenchmarks) %>%
         future_map_dfr(function(x){
           if (data$idBenchmarks[x] %>% flatten_chr() %>% length() == 0) {
-            return(data_frame(idRow = x, idTickersBenchmark = NA))
+            return(tibble(idRow = x, idTickersBenchmark = NA))
           }
           benchmarks <- data$idBenchmarks[x] %>% flatten_chr() %>% str_c(collapse = ', ')
 
-          data_frame(idRow = x, idTickersBenchmark = benchmarks)
+          tibble(idRow = x, idTickersBenchmark = benchmarks)
         })
 
       data <-
@@ -2259,7 +2259,7 @@ dictionary_finbox_companies <-
       "https://api.finbox.io/beta/companies" %>%
       jsonlite::fromJSON(flatten = TRUE) %>%
       .$data %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       purrr::set_names(c(
         'idTicker',
         'slugExchange',
@@ -2309,7 +2309,7 @@ dictionary_finbox_metrics <-
 
     df <-
       data$data[c("id", "datatype", "default_period")] %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       purrr::set_names(c('nameFinbox', 'typeData', 'periodDefault')) %>%
       mutate(idRow = 1:n())
 
@@ -2319,14 +2319,14 @@ dictionary_finbox_metrics <-
         null_value <-
           data$data$periods[[x]] %>% purrr::is_null()
         if (null_value) {
-          return(data_frame())
+          return(tibble())
         }
 
         periods <-
           data$data$periods[[x]] %>%
           stringr::str_c(collapse = ', ')
 
-        data_frame(idRow = x, periodData = periods)
+        tibble(idRow = x, periodData = periods)
       })
 
     df <-
@@ -2418,10 +2418,10 @@ tickers_metrics <-
     url %>%
     readr::read_lines() %>%
     jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-    as_data_frame()
+    as_tibble()
 
   df_names <-
-    data_frame(slugFinboxBase = names(data)) %>%
+    tibble(slugFinboxBase = names(data)) %>%
     mutate(
       periodFinbox =
         case_when(
@@ -2494,7 +2494,7 @@ tickers_metrics <-
     fromJSON()
 
   .parse_ticker_json_data_safe <-
-    purrr::possibly(.parse_ticker_json_data, data_frame())
+    purrr::possibly(.parse_ticker_json_data, tibble())
   all_data <-
     json_data %>%
     .parse_ticker_json_data_safe()
@@ -2544,7 +2544,7 @@ tickers_metrics <-
           value <- value %>% stringr::str_c(collapse = ', ')
         }
 
-        data_frame(idColumn = x, nameFinbox, value)
+        tibble(idColumn = x, nameFinbox, value)
       }) %>%
       suppressWarnings()
 
@@ -2620,7 +2620,7 @@ tickers_metrics <-
             df %>%
             purrr::set_names(actual_names)
 
-          data <- data_frame(nameTable = 'finql',
+          data <- tibble(nameTable = 'finql',
                              dataTable = list(df))
         }
 
@@ -2637,7 +2637,7 @@ tickers_metrics <-
                   list_data[[list_parts[x]]]
 
                 if (df_list %>% length() == 0) {
-                  return(data_frame())
+                  return(tibble())
                 }
 
                 df_models <-
@@ -2658,7 +2658,7 @@ tickers_metrics <-
 
                 df <-
                   df_list[1:3] %>%
-                  as_data_frame() %>%
+                  as_tibble() %>%
                   purrr::set_names(c('slugModel', 'nameModel', 'datetimeModel')) %>%
                   mutate(datetimeModel = datetimeModel %>% readr::parse_datetime()) %>%
                   bind_cols(df_models)
@@ -2667,15 +2667,15 @@ tickers_metrics <-
               }
 
               if (list_name == 'confidence') {
-                return(data_frame())
+                return(tibble())
               }
               if (list_name == 'ranges') {
                 df <-
-                  list_data[[list_parts[x]]]$price %>% as_data_frame() %>%
+                  list_data[[list_parts[x]]]$price %>% as_tibble() %>%
                   purrr::set_names(c('price52WeeekLow',
                                      'price52WeekHigh')) %>%
                   bind_cols(
-                    list_data[[list_parts[x]]]$upside %>% as_data_frame() %>%
+                    list_data[[list_parts[x]]]$upside %>% as_tibble() %>%
                       purrr::set_names(c('pctTo52WeekLow', 'pctTo52WeekhHigh'))
                   )
                 return(df)
@@ -2687,7 +2687,7 @@ tickers_metrics <-
               df <- df %>% flatten_df()
 
               if (df %>% nrow() == 0) {
-                return(data_frame())
+                return(tibble())
               }
 
 
@@ -2728,7 +2728,7 @@ tickers_metrics <-
           }
 
           data <-
-          data_frame(nameTable = 'models',
+          tibble(nameTable = 'models',
                        dataTable = list(df_pricing))
         }
 
@@ -2737,7 +2737,7 @@ tickers_metrics <-
             seq_along(list_parts) %>%
             future_map(function(x) {
               df_list <-
-                list_data[[list_parts[x]]] %>% as_data_frame()
+                list_data[[list_parts[x]]] %>% as_tibble()
 
               all_data <-
                 df_list %>% names() %>%
@@ -2763,7 +2763,7 @@ tickers_metrics <-
             list_dfs %>% purrr::reduce(left_join) %>% suppressMessages()
 
           data <-
-            data_frame(nameTable = list_cols[x],
+            tibble(nameTable = list_cols[x],
                        dataTable = list(data))
         }
 
@@ -2813,7 +2813,7 @@ tickers_metrics <-
             suppressMessages() %>%
             filter(!datePeriodEnd %>% is.na())
           data <-
-            data_frame(nameTable = nameData,
+            tibble(nameTable = nameData,
                        dataTable = list(df_values))
         }
 
@@ -2832,7 +2832,7 @@ tickers_metrics <-
           df_cols[[x]]
         list_data <-
           data[nameData][[nameData]] %>%
-          as_data_frame()
+          as_tibble()
 
         if (nameData == 'news') {
           list_data <-
@@ -2860,7 +2860,7 @@ tickers_metrics <-
         }
 
         data <-
-          data_frame(nameTable = nameData,
+          tibble(nameTable = nameData,
                      dataTable = list(list_data))
       })
 
@@ -2868,7 +2868,7 @@ tickers_metrics <-
       dfs %>%
       bind_rows(df_lists) %>%
       bind_rows(
-        data_frame(nameTable = 'description',
+        tibble(nameTable = 'description',
                    dataTable = list(df_description))
       )
     data
@@ -2887,7 +2887,7 @@ finbox_tickers <-
   function(tickers = c("VNO", "BXP"),
            assign_to_environment = TRUE) {
     .get_ticker_information_safe <-
-      purrr::possibly(.get_ticker_information, data_frame())
+      purrr::possibly(.get_ticker_information, tibble())
 
     all_data <-
       tickers %>%

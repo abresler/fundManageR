@@ -17,7 +17,7 @@ sec_closed_end_funds(only_most_recent = FALSE, years = 2014:2017,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function returns information on SEC registered

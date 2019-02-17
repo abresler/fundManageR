@@ -15,7 +15,7 @@ nareit_industry_tracker(nest_data = FALSE, return_wide = TRUE,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function acquires data on NAREIT

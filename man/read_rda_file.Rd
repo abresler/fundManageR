@@ -6,7 +6,7 @@
 \usage{
 
   read_rda_file(file = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
-  return_data_frame = TRUE)
+  return_tibble = TRUE)
 }
 \description{
 read RDA file

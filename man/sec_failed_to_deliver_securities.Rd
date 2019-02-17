@@ -19,7 +19,7 @@ sec_failed_to_deliver_securities(only_most_recent = TRUE, years = 2016,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function returns informato on equities

@@ -33,7 +33,7 @@ calculate_cash_flow_waterfall(dates = c("2015-03-11", "2015-11-20",
 \item{widen_waterfall}{\code{TRUE} returns waterfall in wide form}
 }
 \value{
-data_frame
+tibble
 }
 \description{
 This function performs waterfall calculations

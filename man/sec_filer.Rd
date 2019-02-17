@@ -57,8 +57,8 @@ Form 1-A data if any exists for a filer (default)}
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-where \code{nest_data} is \code{FALSE} a data_frame
+where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+where \code{nest_data} is \code{FALSE} a tibble
 }
 \description{
 This is function imports data

@@ -19,7 +19,7 @@ sec_broker_dealers(only_most_recent = TRUE, years = NULL,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function returns information about SEC registered

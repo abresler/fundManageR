@@ -1,6 +1,6 @@
 
 .get_dictionary_tradeview_types <- function() {
-  data_frame(
+  tibble(
     type = c(
       "All",
       "stock",
@@ -35,7 +35,7 @@
 
     data <-
       json_data[1:6] %>%
-      tibble::as_data_frame()
+      tibble::as_tibble()
 
     data
   }
@@ -115,7 +115,7 @@ tv_market_events <-
     data <-
       "https://chartevents-reuters.tradingview.com/events?minImportance=0&from=2019-01-15T11:00:00.000Z&to=2019-01-29T13:00:00.000Z&currencies=USD,EUR,JPY,AUD,DEM,GBP,CAD,FRF,ITL,NZD,ESP,MXN,CHF,TRL,ZAR" %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-      as_data_frame()
+      as_tibble()
 
     data <- data$result %>% as_tibble()
     dict_names <- .dictionary_market_event_names()
@@ -314,7 +314,7 @@ hot_list_slugs <- c(
       list('http://', domain_slug, tl_domain) %>%
       purrr::reduce(paste0)
     df <-
-      data_frame(urlReferer = url,
+      tibble(urlReferer = url,
                  userAgent = user_agent)
     return(df)
   }
@@ -362,7 +362,7 @@ get_tradeview_term <-
       data %>%
       mutate_at(c("symbol", "description"),
                 funs(. %>% str_replace_all("<em>|</em>", ""))) %>%
-      tibble::as_data_frame() %>%
+      tibble::as_tibble() %>%
       mutate(termSearch = term) %>%
       dplyr::select(termSearch, everything()) %>%
       mutate_if(is.character,
@@ -387,7 +387,7 @@ get_tradeview_term <-
     data <-
       data$data %>%
       select(1) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       dplyr::rename(idExchangeTicker = s) %>%
       tidyr::separate(
         idExchangeTicker,
@@ -418,10 +418,10 @@ get_tradeview_term <-
   function(urls,
            return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       .parse_region_security_url_safe <-
-        purrr::possibly(.parse_region_security_url, data_frame())
+        purrr::possibly(.parse_region_security_url, tibble())
       page_url <- res$url
       data <-
         page_url %>%
@@ -432,7 +432,7 @@ get_tradeview_term <-
         bind_rows(data)
     }
     failure <- function(msg) {
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x) {
@@ -532,7 +532,7 @@ tv_regions_tickers <-
 
     data <-
       json_data$fields %>%
-      as_data_frame()
+      as_tibble()
 
     data <-
       data %>%
@@ -557,7 +557,7 @@ tv_regions_tickers <-
           data$nameTW[[x]]
 
         if (field %>% purrr::is_null()) {
-          return(data_frame(idRow = x, dataField = NA))
+          return(tibble(idRow = x, dataField = NA))
         }
         class_field <-
           class(field)
@@ -582,11 +582,11 @@ tv_regions_tickers <-
 
           }
           d <-
-            tibble(idRow = x, dataField = list(field), classField = "data_frame")
+            tibble(idRow = x, dataField = list(field), classField = "tibble")
           return(d)
         }
 
-        data_frame(
+        tibble(
           idRow = x,
           dataField = list(field),
           classField = class_field
@@ -618,10 +618,10 @@ tv_regions_tickers <-
   function(urls,
            return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       .parse_metric_dictionary_url_safe <-
-        purrr::possibly(.parse_metric_dictionary_url, data_frame())
+        purrr::possibly(.parse_metric_dictionary_url, tibble())
       page_url <- res$url
       data <-
         page_url %>%
@@ -632,7 +632,7 @@ tv_regions_tickers <-
         bind_rows(data)
     }
     failure <- function(msg) {
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x) {
@@ -770,7 +770,7 @@ generate_tv_bond_query <-
 #' @import reticulate magrittr glue dplyr
 #' @examples
 tv_metric <-
-  function(filter = data_frame(left = 'market_cap_basic',
+  function(filter = tibble(left = 'market_cap_basic',
                                operation = 'nempty'),
            symbols = list(query = list(types = c('stock', 'fund', 'dr'))),
            metrics =c("change", "change_abs", "close", "description", "earnings_per_share_basic_ttm",
@@ -823,7 +823,7 @@ tv_metric <-
 
     json$close()
     data <-
-      json_data$data %>% as_data_frame() %>% unnest()
+      json_data$data %>% as_tibble() %>% unnest()
 
     data <- data %>%
       purrr::set_names(c('idExchangeTicker', 'value')) %>%
@@ -1022,7 +1022,7 @@ tv_metric_query <-
   function(region = c( 'america'),
            query =
              list(
-               filter = data_frame(left = 'market_cap_basic',
+               filter = tibble(left = 'market_cap_basic',
                                    operation = 'nempty'),
                symbols = list(query = list(types = c(
                  'stock', 'fund', 'dr'
@@ -1206,7 +1206,7 @@ tv_metric_query <-
 
     if (!region %>% str_to_lower() %>% str_detect("cfd")) {
       metrics <-
-        data_frame(nameTW = c('name', query$metrics) %>% unique()) %>%
+        tibble(nameTW = c('name', query$metrics) %>% unique()) %>%
         mutate(countItem = 1:n())
 
       data <-
@@ -1216,7 +1216,7 @@ tv_metric_query <-
     } else {
 
       metrics <-
-        data_frame(nameTW = c('name', query$columns) %>% unique()) %>%
+        tibble(nameTW = c('name', query$columns) %>% unique()) %>%
         mutate(countItem = 1:n())
 
       data <-
@@ -1467,7 +1467,7 @@ tv_metrics_data <-
   function(regions = c( 'america'),
            query =
              list(
-               filter = data_frame(left = 'market_cap_basic',
+               filter = tibble(left = 'market_cap_basic',
                                    operation = 'nempty'),
                symbols = list(query = list(types = c(
                  'stock', 'fund', 'dr'
@@ -1621,7 +1621,7 @@ tv_metrics_data <-
              ),
            return_message = TRUE) {
     .tv_metric_data_safe <-
-      purrr::possibly(.tv_metric_data, data_frame())
+      purrr::possibly(.tv_metric_data, tibble())
     regions %>%
       map_df(function(region){
         .tv_metric_data_safe(region = region, query = query, return_message = return_message)
@@ -1641,7 +1641,7 @@ tv_metrics_data <-
     data <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-      dplyr::as_data_frame() %>%
+      dplyr::as_tibble() %>%
       dplyr::select(-1) %>%
       purrr::set_names(c(
         'urlArticle',
@@ -1678,7 +1678,7 @@ tv_metrics_data <-
     data <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-      dplyr::as_data_frame() %>%
+      dplyr::as_tibble() %>%
       dplyr::select(-1) %>%
       purrr::set_names(c(
         'urlArticle',
@@ -1705,10 +1705,10 @@ tv_metrics_data <-
   function(urls,
            return_message = TRUE) {
     df <-
-      data_frame()
+      tibble()
     success <- function(res) {
       .parse_trading_view_news_url_safe <-
-        purrr::possibly(.parse_trading_view_news_url, data_frame())
+        purrr::possibly(.parse_trading_view_news_url, tibble())
       page_url <- res$url
       data <-
         page_url %>%
@@ -1719,7 +1719,7 @@ tv_metrics_data <-
         bind_rows(data)
     }
     failure <- function(msg) {
-      data_frame()
+      tibble()
     }
     urls %>%
       walk(function(x) {

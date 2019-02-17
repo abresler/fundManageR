@@ -11,11 +11,11 @@ dictionary_sec_form_codes()
 dictionary_sec_form_codes()
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 
-a \code{data_frame}
+a \code{tibble}
 
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns a

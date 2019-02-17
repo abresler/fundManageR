@@ -5,12 +5,12 @@
 #'
 #' @param data a \code{data frame}
 #'
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @import dplyr
 #' @family utility function
 #' @examples
-#' data_frame(nameFirm = 'Goldman Sachs', countSuperHeros = NA, countCriminals = 0, countFinedEmployees = 10) %>% drop_na_columns()
+#' tibble(nameFirm = 'Goldman Sachs', countSuperHeros = NA, countCriminals = 0, countFinedEmployees = 10) %>% drop_na_columns()
 drop_na_columns <-
   function(data) {
     data %>%
@@ -25,9 +25,9 @@ drop_na_columns <-
 #' column classes of a specified
 #' data frame.
 #'
-#' @param data a \code{data_frame}
+#' @param data a \code{tibble}
 #'
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @family utility function
 #' @export
 #' @import dplyr purrr
@@ -42,7 +42,7 @@ get_class_df <-
     class_df <-
       seq_along(class_data) %>%
       future_map_dfr(function(x) {
-        data_frame(nameColumn = names(data)[[x]],
+        tibble(nameColumn = names(data)[[x]],
                    typeColumn = class_data[[x]] %>% .[length(.)])
       })
 
@@ -55,15 +55,15 @@ get_class_df <-
 #' Tidys a data frame to return unified case names, autoparses logical columns
 #' and auto formats counts, amounts and values.
 #'
-#' @param data \code{data_frame}
+#' @param data \code{tibble}
 #' @param drop_na_columns \code{TRUE} drops NA columns
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @import dplyr stringr formattable purrr tidyr
 #' @family utility function
 #' @examples
 #' library(dplyr)
-#' data_frame(nameFund = "Blackstone Real Estate Fund IX", isNewFund = "N/A",
+#' tibble(nameFund = "Blackstone Real Estate Fund IX", isNewFund = "N/A",
 #' countAssets = 12000, amountAUM = 65000000, isRealEstateFund = 1) %>% tidy_column_formats(drop_na_columns = FALSE)
 tidy_column_formats <-
   function(data, drop_na_columns = TRUE) {
@@ -145,7 +145,7 @@ tidy_column_formats <-
 #' @param bind_to_original_df \code{TRUE} bind results to the original data frame in a nested column
 #' @param clean_column_formats \code{TRUE} clean the columns
 #'
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @import dplyr stringr formattable purrr tidyr
 #' @family utility function
@@ -206,7 +206,7 @@ tidy_column_relations <-
       mutate(idRow = 1:n()) %>%
       select(idRow, everything())
     df <-
-      data_frame()
+      tibble()
 
     if (columns_matching %>% length() > 0) {
       match <-
@@ -278,7 +278,7 @@ tidy_column_relations <-
                 df[[column]][[x]]
 
               if (value %>% purrr::is_null()) {
-                return(data_frame(idRow = x))
+                return(tibble(idRow = x))
               }
               columns_matching <-
                 names(value)[!names(value) %>% substr(nchar(.), nchar(.)) %>% readr::parse_number() %>% is.na() %>% suppressWarnings()] %>%
@@ -287,16 +287,16 @@ tidy_column_relations <-
                 suppressWarnings()
 
               if (column == "dataAllFilings") {
-                return(data_frame(idRow = x, countCols = value %>% ncol()))
+                return(tibble(idRow = x, countCols = value %>% ncol()))
               }
               if (columns_matching %>% length() == 0) {
-                return(data_frame(idRow = x))
+                return(tibble(idRow = x))
               }
-              data_frame(idRow = x, countCols = value %>% ncol())
+              tibble(idRow = x, countCols = value %>% ncol())
             })
 
           if (col_length_df %>% ncol() == 1) {
-            return(data_frame())
+            return(tibble())
           }
 
           df <-

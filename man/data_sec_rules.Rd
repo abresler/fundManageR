@@ -7,7 +7,7 @@
 data_sec_rules()
 }
 \value{
-a  \code{data_frame}
+a  \code{tibble}
 }
 \description{
 This function returns prefix

@@ -27,5 +27,5 @@ function(url = "http://www.economagic.com/em-cgi/data.exe/treas/pubdebt#Data") {
     html_nodes("font+ font") %>%
     html_text()
 
-  data_frame(data)
+  tibble(data)
     }

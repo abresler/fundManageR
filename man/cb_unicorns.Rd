@@ -10,7 +10,7 @@ cb_unicorns(return_message = TRUE)
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function returns information about startups whose valuation

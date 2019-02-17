@@ -15,7 +15,7 @@ nareit_mergers_acquisitions(pages = 32:33, nest_data = FALSE,
 \item{return_wide}{\code{TRUE} return data in wide form}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function OCRs data on NAREIT member

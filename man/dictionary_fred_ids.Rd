@@ -17,7 +17,7 @@ dictionary_fred_ids(fred_file = NULL, return_message = TRUE)
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function imports dictionaries for all possible FRED

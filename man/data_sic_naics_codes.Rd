@@ -10,7 +10,7 @@ data_sic_naics_codes(filter_duplicates = TRUE)
 \item{filter_duplicates}{\code{TRUE} removes duplicate entries}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns Standard Industrial Classification [SIC]

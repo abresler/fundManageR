@@ -7,7 +7,7 @@
 data_location_codes()
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 }
 \description{
 This function returns location codes

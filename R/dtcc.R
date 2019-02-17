@@ -3,7 +3,7 @@
 .get_dtcc_name_df <-
   function() {
     dtcc_name_df <-
-      data_frame(
+      tibble(
         nameDTCC = c(
           "DISSEMINATION_ID",
           "ORIGINAL_DISSEMINATION_ID",
@@ -344,7 +344,7 @@
       purrr::invoke(paste0, .)
 
     url_df <-
-      data_frame(dateData = date_actual,
+      tibble(dateData = date_actual,
                  urlData = urls)
     return(url_df)
   }
@@ -402,7 +402,7 @@
               description_df$idRow[[x]]
 
             if (description_df$descriptionUnderlyingAsset1[[x]] %>% str_count('\\.') == 0) {
-              return(data_frame(idRow = row_number))
+              return(tibble(idRow = row_number))
             }
 
             items <-
@@ -416,7 +416,7 @@
               items %>% length()
             if (count_items == 2) {
               df <-
-                data_frame(
+                tibble(
                   idRow = row_number,
                   item = c('idSubIndex', 'idSeries'),
                   values = items
@@ -427,7 +427,7 @@
 
             if (count_items == 3) {
               df <-
-                data_frame(
+                tibble(
                   idRow = row_number,
                   item = c('idIndex', 'idSubIndex', 'idSeries'),
                   values = items
@@ -438,7 +438,7 @@
 
             if (count_items == 4) {
               df <-
-                data_frame(
+                tibble(
                   idRow = row_number,
                   item = c('idIndex', 'idSubIndex', 'idSeries', 'idSubIndex1'),
                   values = items
@@ -449,7 +449,7 @@
 
             if (count_items == 5) {
               df <-
-                data_frame(
+                tibble(
                   idRow = row_number,
                   item = c(
                     'idIndex',
@@ -466,7 +466,7 @@
 
             if (count_items == 6) {
               df <-
-                data_frame(
+                tibble(
                   idRow = row_number,
                   item = c(
                     'idIndex',
@@ -484,7 +484,7 @@
 
             if (count_items == 7) {
               df <-
-                data_frame(
+                tibble(
                   idRow = row_number,
                   item = c(
                     'idIndex',
@@ -503,7 +503,7 @@
 
             if (count_items == 8) {
               df <-
-                data_frame(
+                tibble(
                   idRow = row_number,
                   item = c(
                     'idIndex',
@@ -557,7 +557,7 @@
           levels <-
             tax %>% str_count('\\:')
           if (levels == 0) {
-            return(data_frame(descriptionTaxonomy = tax))
+            return(tibble(descriptionTaxonomy = tax))
           }
           tax_items <-
             tax %>%
@@ -577,7 +577,7 @@
               )
 
             df_long <-
-              data_frame(value = tax_items, item = items[seq_along(tax_items)]) %>%
+              tibble(value = tax_items, item = items[seq_along(tax_items)]) %>%
               mutate(descriptionTaxonomy = tax)
 
             col_order <-
@@ -600,7 +600,7 @@
               )
 
             df_long <-
-              data_frame(value = tax_items, item = items[seq_along(tax_items)]) %>%
+              tibble(value = tax_items, item = items[seq_along(tax_items)]) %>%
               mutate(descriptionTaxonomy = tax)
 
             col_order <-
@@ -623,7 +623,7 @@
               )
 
             df_long <-
-              data_frame(value = tax_items, item = items[seq_along(tax_items)]) %>%
+              tibble(value = tax_items, item = items[seq_along(tax_items)]) %>%
               mutate(descriptionTaxonomy = tax)
 
             col_order <-
@@ -645,7 +645,7 @@
               )
 
             df_long <-
-              data_frame(value = tax_items, item = items[seq_along(tax_items)]) %>%
+              tibble(value = tax_items, item = items[seq_along(tax_items)]) %>%
               mutate(descriptionTaxonomy = tax)
 
             col_order <-
@@ -705,7 +705,7 @@
       suppressWarnings() %>%
       suppressMessages() %>%
       select(which(colMeans(is.na(.)) < 1)) %>%
-      as_data_frame()
+      as_tibble()
 
     con %>%
       unlink()
@@ -756,7 +756,7 @@
       })
 
     .download_dtcc_url_safe <-
-      purrr::possibly(.download_dtcc_url, data_frame())
+      purrr::possibly(.download_dtcc_url, tibble())
 
     all_df <-
       1:nrow(df_date) %>%
@@ -790,7 +790,7 @@
 # https://kgc0418-tdw-data-0.s3.amazonaws.com/gtr/static/gtr/html/tracker.html
 .get_dtcc_recent_schema_df <-
   function() {
-    data_frame(
+    tibble(
       idCSS = c(
         '#commoditiesSwapsGrid th',
         '#commoditiesOptionsGrid th',
@@ -888,13 +888,13 @@
 #' \item \code{FOREX}: Foreign Exchange
 #' \item \code{RATES}: Interest Rates
 #' }
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
 #'
-#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @return where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+#' where \code{nest_data} is \code{FALSE} a tibble
 #' @export
 #' @family DTCC
 #' @family real-time data
@@ -933,7 +933,7 @@ dtcc_recent_trades <-
     }
 
     .parse_most_recent_url_safe <-
-      purrr::possibly(.parse_most_recent_url, data_frame())
+      purrr::possibly(.parse_most_recent_url, tibble())
     all_data <-
       css_df$urlData %>%
       future_map_dfr(function(x) {
@@ -994,12 +994,12 @@ dtcc_recent_trades <-
     dtcc_df <-
       res[[1]]() %>%
       content(as = "parsed") %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       suppressWarnings() %>%
       suppressMessages()
 
     if (dtcc_df %>% nrow() == 0) {
-      return(data_frame())
+      return(tibble())
     }
 
     dtcc_df <-
@@ -1024,7 +1024,7 @@ dtcc_recent_trades <-
       ) %>%
       purrr::invoke(paste0, .)
     .get_c_url_data_safe <-
-      purrr::possibly(.get_c_url_data, data_frame())
+      purrr::possibly(.get_c_url_data, tibble())
     data <-
       dtcc_url %>%
       .get_c_url_data_safe()
@@ -1059,12 +1059,12 @@ dtcc_recent_trades <-
       purrr::invoke(paste0, .)
 
     df_types <-
-      data_frame(nameAsset, idAssetType = types,
+      tibble(nameAsset, idAssetType = types,
                  urlData = urls) %>%
       mutate(nameAsset = nameAsset %>% str_to_upper())
 
     .get_data_today_safe <-
-      purrr::possibly(.get_data_today, data_frame())
+      purrr::possibly(.get_data_today, tibble())
 
     if (!assets %>% is_null() | assets %>% length() > 0) {
       assets <-
@@ -1165,17 +1165,17 @@ dtcc_recent_trades <-
 #' }
 #' @note Use \code{\link{dtcc_recent_trades}} for most recent trades
 #' @references \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
-#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset and action
-#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @return where \code{nest_data} is \code{TRUE} a nested tibble by asset and action
+#' where \code{nest_data} is \code{FALSE} a tibble
 #' @param start_date date starting, must be in year-day-format
 #' @param end_date date ending, must be in year-month-day format
 #' @param include_today include today's trades
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return where \code{nest_data} is \code{TRUE} a nested data_frame by asset,
-#' where \code{nest_data} is \code{FALSE} a data_frame
+#' @return where \code{nest_data} is \code{TRUE} a nested tibble by asset,
+#' where \code{nest_data} is \code{FALSE} a tibble
 #' @export
 #' @family DTCC
 #' @family transaction data
@@ -1195,7 +1195,7 @@ dtcc_trades <-
            nest_data = TRUE,
            return_message = TRUE) {
     all_data <-
-      data_frame()
+      tibble()
 
     if (!assets %>% is_null()) {
       assets <-

@@ -13,9 +13,9 @@ company metadata, company properties, company contacts and more}
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-a \code{data_frame}
+a \code{tibble}
 
-data_frame
+tibble
 }
 \description{
 This function returns information about all active

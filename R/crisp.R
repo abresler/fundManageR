@@ -4,7 +4,7 @@
 #' CRSP index data
 #'
 #' @param include_summary_file \code{TRUE} (default) or \code{FALSE} to exclude
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @references \href{http://crsp.com}{The Center for Research in Security Prices}
 #' @export
 #' @import rvest dplyr tidyr stringr lubridate readr
@@ -46,7 +46,7 @@ crsp_files <-
     })
 
   crsp_urls <-
-    data_frame(nameFile = file_names, urlData = urls) %>%
+    tibble(nameFile = file_names, urlData = urls) %>%
     filter(urlData %>% str_detect(".xls")) %>%
     mutate(idRow = 1:n()) %>%
     mutate(isSummaryFile = ifelse(idRow < 4, TRUE, FALSE)) %>%
@@ -81,7 +81,7 @@ crsp_files <-
     if (is_index) {
     data <-
         data %>%
-        as_data_frame()
+        as_tibble()
     period_data <-
       data %>% select(3) %>% names() %>%
       str_split('\\ ') %>%
@@ -101,7 +101,7 @@ crsp_files <-
 
     data <-
       data[,!names(data) == ''] %>%
-      as_data_frame()
+      as_tibble()
 
     if ('Date' %in% names(data)) {
       data <-
@@ -141,7 +141,7 @@ crsp_files <-
 #' @references \href{http://crsp.com}{The Center for Research in Security Prices}
 #' @import rvest dplyr tidyr stringr lubridate readr purrr
 #' @importFrom rio import
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @export
 #' @family CRSP
 #' @family index constituents
@@ -154,7 +154,7 @@ crsp_indicies_constituents <-
       crsp_files() %>%
       filter(isSummaryFile == FALSE)
     .parse_crsp_index_url_safe <-
-      purrr::possibly(.parse_crsp_index_url, data_frame())
+      purrr::possibly(.parse_crsp_index_url, tibble())
     all_data <-
       url_df$urlData %>%
       future_map_dfr(function(x){
@@ -177,7 +177,7 @@ crsp_indicies_constituents <-
 #' @param return_wide \code{TRUE} return data in wide form
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://crsp.com}{The Center for Research in Security Prices}
 #' @export
 #' @import rvest dplyr tidyr stringr lubridate readr
@@ -194,7 +194,7 @@ crsp_indicies_returns <-
       crsp_files() %>%
       filter(isSummaryFile == TRUE)
     .parse_crsp_index_url_safe <-
-      purrr::possibly(.parse_crsp_index_url, data_frame())
+      purrr::possibly(.parse_crsp_index_url, tibble())
     all_data <-
       url_df$urlData %>%
       future_map_dfr(function(x){

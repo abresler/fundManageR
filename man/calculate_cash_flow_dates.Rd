@@ -33,7 +33,7 @@ calculate_cash_flow_dates(dates = c("2016-09-01", "2017-08-31",
 }}
 }
 \value{
-data_frame
+tibble
 }
 \description{
 This function returns a data frame of

@@ -17,7 +17,7 @@ nareit_state_info(include_reit_hq = TRUE, include_reit_holdings = TRUE,
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
 This function returns information about REIT owned

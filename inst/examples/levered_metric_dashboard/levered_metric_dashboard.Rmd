@@ -241,7 +241,7 @@ renderD3tree2({
     dplyr::slice(1:6) %>%
     dplyr::filter(!item == 'amountBasis') %>%
     dplyr::select(item, value) %>%
-    left_join(data_frame(
+    left_join(tibble(
       item = c(
         "amountPurchasePrice",
         "amountCapitalInvestment",

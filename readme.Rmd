@@ -108,7 +108,7 @@ fred_symbols(symbols = c("DGS10", "DGS2", "DGS30"))
 * `adv_managers_brochures` -- Retrieves and [OCRs](https://en.wikipedia.org/wiki/Optical_character_recognition) for SEC mandated annual [Uniform Requirements for the Investment Adviser Brochure and Brochure Supplements](https://www.sec.gov/about/forms/formadv-part2.pdf) for specified CRDs and/or company names.
 
 ### `visualize_` Functions 
-* `visualize_data_frame` -- This function allows the user to visualize a data frame object to better understand the structure and contents of a data frame.  The function utlizes the fantastic [listviewer](https://github.com/timelyportfolio/listviewer) package which wraps Jos de Jong's [JSON Editor](http://jsoneditoronline.org/) project
+* `visualize_tibble` -- This function allows the user to visualize a data frame object to better understand the structure and contents of a data frame.  The function utlizes the fantastic [listviewer](https://github.com/timelyportfolio/listviewer) package which wraps Jos de Jong's [JSON Editor](http://jsoneditoronline.org/) project
 
 
 ### Vignettes
@@ -146,7 +146,7 @@ ycombinator_alumni <-
   fundManageR::ycombinator_alumni()
 
 ycombinator_alumni %>% 
-  visualize_data_frame(edit = F) ## visualize it
+  visualize_tibble(edit = F) ## visualize it
 ```
 
 ##### IRR Calculation

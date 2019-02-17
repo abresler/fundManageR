@@ -10,14 +10,14 @@ drop_na_columns(data)
 \item{data}{a \code{data frame}}
 }
 \value{
-\code{data_frame}
+\code{tibble}
 }
 \description{
 This function drops NA
 columns from a specified data frame.
 }
 \examples{
-data_frame(nameFirm = 'Goldman Sachs', countSuperHeros = NA, countCriminals = 0, countFinedEmployees = 10) \%>\% drop_na_columns()
+tibble(nameFirm = 'Goldman Sachs', countSuperHeros = NA, countCriminals = 0, countFinedEmployees = 10) \%>\% drop_na_columns()
 }
 \seealso{
 Other utility function: \code{\link{get_class_df}},

@@ -8,7 +8,7 @@
 #'
 #' @param return_message \code{TRUE} return a message after data import
 #'
-#' @return a \code{data_frame}
+#' @return a \code{tibble}
 #' @export
 #' @family index constituents
 #' @import dplyr purrr tidyr stringr formattable rvest
@@ -25,7 +25,7 @@ sp500_constituents <-
       html_table(fill = TRUE) %>%
       .[[1]] %>%
       data.frame(stringsAsFactors = FALSE) %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       select(-3) %>%
       mutate_all(str_to_upper) %>%
       purrr::set_names(
@@ -83,7 +83,7 @@ sp500_constituents <-
 #' \code{\link{msci_indicies_constituents}}
 #' to specify indicies to extract constituents.
 #'
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @family MSCI
 #' @import dplyr purrr formattable tidyr stringr jsonlite
@@ -95,7 +95,7 @@ msci_indicies <-
       "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=" %>%
       fromJSON(simplifyDataFrame = TRUE) %>%
       .$indices %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       purrr::set_names(c(
         'dateIndexAsOf',
         'idTypeRebalance',
@@ -119,13 +119,13 @@ msci_indicies <-
 .parse_msci_json_constituent_url <- function(url = "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=701268",
                                             return_message = TRUE) {
   df <-
-    data_frame()
+    tibble()
   success <- function(res) {
     data <-
       res$url %>%
       fromJSON(simplifyDataFrame = TRUE) %>%
       .$constituents %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       purrr::set_names(c('pctWeight', 'nameCompany')) %>%
       mutate_all(str_to_upper) %>%
       select(nameCompany, pctWeight) %>%
@@ -150,7 +150,7 @@ msci_indicies <-
       bind_rows(data)
   }
   failure <- function(msg) {
-    data_frame()
+    tibble()
   }
   url %>%
     walk(function(x) {
@@ -171,7 +171,7 @@ msci_indicies <-
 #' @param return_message \code{TRUE} return a message after data import
 #' @param nest_data \code{TRUE} return nested data frame
 #' @references \href{http://msci.com}{MSCI Inc}
-#' @return nested \code{data_frame} or \code{data_frame} if \code{nest_data = FALSE}
+#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @family MSCI
 #' @family index constituents
 #' @export
@@ -214,7 +214,7 @@ msci_indicies_constituents <-
     }
 
     .parse_msci_json_constituent_url_safe <-
-      purrr::possibly(.parse_msci_json_constituent_url, data_frame())
+      purrr::possibly(.parse_msci_json_constituent_url, tibble())
 
     const_df <-
       index_df$urlIndexConstituents %>%
@@ -273,7 +273,7 @@ msci_indicies_constituents <-
 #' @param return_message \code{TRUE} return a message after data import
 #' @param return_wide \code{TRUE} return data in wide form
 #' @references \href{http://msci.com}{MSCI Inc}
-#' @return \code{data_frame}
+#' @return \code{tibble}
 #' @export
 #' @family MSCI
 #' @family index values
@@ -296,7 +296,7 @@ msci_realtime_index_values <-
 
     index_data <-
       json_data$xmfIndices$index %>%
-      as_data_frame() %>%
+      as_tibble() %>%
       mutate_all(str_to_upper) %>%
       purrr::set_names(
         c(
