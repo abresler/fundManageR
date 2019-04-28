@@ -2432,6 +2432,7 @@ sec_adv_manager_sitemap <-
 
 .parse_adv_manager_sitemap_df <-
   function(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=135952',
+           manager = NULL,
            return_wide = F) {
     idCRD <-
       url %>%
@@ -2472,11 +2473,13 @@ sec_adv_manager_sitemap <-
       page %>%
       .get_entity_manager_name()
 
-    if (name_entity_manager %>% is.na()) {
-      name_entity_manager <-
+    name_entity_manager <-
         page %>%
         html_nodes('.summary-displayname') %>%
         html_text()
+
+    if (length(manager) > 0) {
+      name_entity_manager <- manager
     }
 
     items <-
@@ -2487,7 +2490,7 @@ sec_adv_manager_sitemap <-
     values <-
       page %>%
       .get_html_node_attributes(node_css = '.sidebar a[href^=".."]',
-                               'href') %>%
+                                'href') %>%
       str_trim() %>%
       str_replace('../', '') %>%
       paste0(base_url,
@@ -2498,14 +2501,11 @@ sec_adv_manager_sitemap <-
       tibble(
         idCRD,
         nameSection = 'Registration',
-        urlADVSection = idCRD %>% paste0(
-          'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=',
-          .
-        )
+        urlADVSection = glue::glue('http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK={idCRD}') %>% as.character()
       ) %>%
       bind_rows(tibble(idCRD,
-                           nameSection = items,
-                           urlADVSection = values)) %>%
+                       nameSection = items,
+                       urlADVSection = values)) %>%
       left_join(.get_sec_sitemap_df()) %>%
       distinct() %>%
       dplyr::filter(!nameFunction %>% is.na()) %>%
@@ -2525,7 +2525,7 @@ sec_adv_manager_sitemap <-
         spread(idSection, urlADVSection)
 
     }
-    return(adv_data)
+    adv_data
   }
 
 .get_managers_adv_sitemap_adv <-
@@ -3573,33 +3573,38 @@ sec_adv_manager_sitemap <-
 
 # form_sections -----------------------------------------------------------
 .get_section_1_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/sections/iapd_AdvIdentifyingInfoSection.aspx?ORG_PK=165609&FLNG_PK=011CBE92000801870387C7310019743D056C8CC0') {
+  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvIdentifyingInfoSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0') {
     idCRD <-
       url %>%
       .get_pk_url_crd()
 
     get_node_item_df <- function() {
-      node_item_df <-
-        c(
-          'hasChangedLegalName',
-          'hasChangedBusinessName',
-          'isPrivateResidence',
-          'isOfficeOpenMondayFriday',
-          'isOfficeOpenOther',
-          'isPrivateResidence2'
-        ) %>%
-        .has_item_check_name() %>%
-        bind_rows(
-          c(
-            'hasMultipleWebsites',
-            'hasBooksOutsidePrimaryOffice',
-            'hasForeignFinancialRegulation',
-            'hasCIKNumber',
-            'hasAssetsOver1B'
-          ) %>%
-            .get_item_name_yes_no_df()
-        )
-      return(node_item_df)
+      items <- c("isUmbrellaADVFiling",
+                 'hasChangedLegalName',
+                 'hasChangedBusinessName',
+                 'isPrivateResidence',
+                 'isOfficeOpenMondayFriday',
+                 'isOfficeOpenOther',
+                 'isPrivateResidence2',
+                 "hasCompanySocialMediaAccounts",
+                 "hasNoCompanySocialMediaAccounts",
+                 "hasSection204Accounting",
+                 "hasNoSection204Accounting",
+                 "hasForeignRegulatoryRegistration",
+                 "hasNoForeignRegulatoryRegistration",
+                 "is1934Filer",
+                 "isNo1934Filer",
+                 "hasAUMOver1B",
+                 "hasNoAUMOver1B",
+                 "rangeAUM1Bto10B",
+                 "rangeAUM10Bto50B",
+                 "rangeAUMOver50B")
+
+      data <-
+        tibble(nameItem = items, valueItem = T) %>%
+        mutate(idRow = 1:n())
+
+      data
     }
 
     page <-
@@ -3613,7 +3618,7 @@ sec_adv_manager_sitemap <-
     .find_text_node_safe <-
       possibly(.find_text_node, NULL)
 
-    parse_node_df <-
+    .parse_node_df <-
       function(page) {
         check_nodes <-
           page %>%
@@ -3623,10 +3628,11 @@ sec_adv_manager_sitemap <-
 
         node_df <-
           tibble(nodeName = check_nodes) %>%
-          left_join(.get_check_box_value_df()) %>%
-          bind_cols(get_node_item_df()) %>%
+          left_join(.get_check_box_value_df(), by = "nodeName") %>%
+          mutate(idRow = 1:n()) %>%
+          left_join(get_node_item_df(), by = "idRow") %>%
           mutate(valueItem = T) %>%
-          dplyr::filter(isNodeChecked == T) %>%
+          dplyr::filter(isNodeChecked) %>%
           dplyr::select(nameItem, valueItem) %>%
           suppressMessages()
 
@@ -3640,7 +3646,7 @@ sec_adv_manager_sitemap <-
         return(node_df)
       }
 
-    parse_value_nodes <-
+    .parse_value_nodes <-
       function(page) {
         node_text <-
           page %>%
@@ -3760,10 +3766,10 @@ sec_adv_manager_sitemap <-
 
     section_data <-
       page %>%
-      parse_value_nodes() %>%
+      .parse_value_nodes() %>%
       mutate(idCRD, nameEntityManager = name_entity_manager) %>%
       left_join(page %>%
-                  parse_node_df() %>% mutate(idCRD, nameEntityManager = name_entity_manager)) %>%
+                  .parse_node_df() %>% mutate(idCRD, nameEntityManager = name_entity_manager)) %>%
       .select_start_vars() %>%
       suppressMessages()
 
@@ -3772,19 +3778,23 @@ sec_adv_manager_sitemap <-
       mutate_at(.vars = section_data %>%
                   dplyr::select(dplyr::matches("^address|^city|^state|^country")) %>%
                   names(),
-                funs(. %>% str_to_upper()))
+                list(. %>% str_to_upper())) %>%
+      mutate_if(is.character,
+                list(function(x){
+                  x %>% str_remove_all("Item 1.A.") %>% str_trim()
+                }))
 
     return(section_data)
   }
 
 .get_section_2_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSecRegistrationSection.aspx?ORG_PK=135952&FLNG_PK=00D23FD4000801840427FED005E328A5056C8CC0') {
+  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSecRegistrationSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0') {
     idCRD <-
       url %>%
       .get_pk_url_crd()
 
 
-    get_node_item_df <- function() {
+    get_node_item_df <- function(page) {
       node_item_df <-
         c(
           "hasAUMGreater100M",
@@ -3932,7 +3942,7 @@ sec_adv_manager_sitemap <-
 
         if (!check_nodes %>% length() == 3) {
           node_item_df <-
-            get_node_item_df()
+            get_node_item_df(page = page)
 
           if (check_nodes %>% length() == 56) {
             node_item_df <-
@@ -4026,7 +4036,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_3_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFormOfOrgSection.aspx?ORG_PK=162771&FLNG_PK=05F0FE9C0008018504231CD005F25E65056C8CC0') {
+  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFormOfOrgSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0') {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -4103,7 +4113,7 @@ sec_adv_manager_sitemap <-
 
 
 .get_section_4_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSuccessionsSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
+  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSuccessionsSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
@@ -4195,7 +4205,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_5_data <-
-  function(url = 'https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=162351&FLNG_PK=03EEBAB20008018D044A53E10076F3C9056C8CC0') {
+  function(url = "https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0") {
     section_name <-
       'section5AdvisoryBusinessInformation'
     idCRD <-
@@ -4211,9 +4221,11 @@ sec_adv_manager_sitemap <-
       .get_entity_manager_name()
 
     if (!'sitefuture_map_dfr' %>% exists()) {
+      url <-
+        glue::glue('http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRD}')
+
       sitefuture_map_dfr <-
-        .parse_adv_manager_sitemap_df(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=' %>%
-                                       paste0(idCRD))
+        .parse_adv_manager_sitemap_df(url =url, return_wide = F, manager = name_entity_manager)
     }
 
     is_new_iapd <- page %>% html_nodes('.QueryHeaderLabel') %>% html_text() %>% str_detect(" Amount of Regulatory Assets") %>% sum(na.rm = T) > 0
@@ -4225,604 +4237,66 @@ sec_adv_manager_sitemap <-
       stop(section_name %>% paste0(" does not exists for ", idCRD))
     }
 
-    .get_section_5_node_name_df <-
-      function() {
-        name_df <-
-          tibble(
-            fullnameItem =
-              c(
-                "rangeClientsZero",
-                "rangeClients1to10",
-                "rangeClients11to25",
-                "rangeClients26to100",
-                "rangeClientsOver100",
-                "rangeClientsIndividualNonHighNetWorthZero",
-                "rangeClientsIndividualNonHighNetWorth1to10pct",
-                "rangeClientsIndividualNonHighNetWorth11to25pct",
-                "rangeClientsIndividualNonHighNetWorth26to50pct",
-                "rangeClientsIndividualNonHighNetWorth51to75pct",
-                "rangeClientsIndividualNonHighNetWorth76to99pct",
-                "rangeClientsIndividualNonHighNetWorth100pct",
-                "rangeClientsIndividualHighNetWorthZero",
-                "rangeClientsIndividualHighNetWorth1to10pct",
-                "rangeClientsIndividualHighNetWorth11to25pct",
-                "rangeClientsIndividualHighNetWorth26to50pct",
-                "rangeClientsIndividualHighNetWorth51to75pct",
-                "rangeClientsIndividualHighNetWorth76to99pct",
-                "rangeClientsIndividualHighNetWorth100pct",
-                "rangeClientsBankThriftZero",
-                "rangeClientsBankThrift1to10pct",
-                "rangeClientsBankThrift11to25pct",
-                "rangeClientsBankThrift26to50pct",
-                "rangeClientsBankThrift51to75pct",
-                "rangeClientsBankThrift76to99pct",
-                "rangeClientsBankThrift100pct",
-                "rangeClientsInvestmentCompanyZero",
-                "rangeClientsInvestmentCompany1to10pct",
-                "rangeClientsInvestmentCompany11to25pct",
-                "rangeClientsInvestmentCompany26to50pct",
-                "rangeClientsInvestmentCompany51to75pct",
-                "rangeClientsInvestmentCompany76to99pct",
-                "rangeClientsInvestmentCompany100pct",
-                "rangeClientsBusinessDevelopmentCompanyZero",
-                "rangeClientsBusinessDevelopmentCompany1to10pct",
-                "rangeClientsBusinessDevelopmentCompany11to25pct",
-                "rangeClientsBusinessDevelopmentCompany26to50pct",
-                "rangeClientsBusinessDevelopmentCompany51to75pct",
-                "rangeClientsBusinessDevelopmentCompany76to99pct",
-                "rangeClientsBusinessDevelopmentCompany100pct",
-                "rangeClientsPooledInvestmentVehicleZero",
-                "rangeClientsPooledInvestmentVehicle1to10pct",
-                "rangeClientsPooledInvestmentVehicle11to25pct",
-                "rangeClientsPooledInvestmentVehicle26to50pct",
-                "rangeClientsPooledInvestmentVehicle51to75pct",
-                "rangeClientsPooledInvestmentVehicle76to99pct",
-                "rangeClientsPooledInvestmentVehicle100pct",
-                "rangeClientsPensionPlanZero",
-                "rangeClientsPensionPlan1to10pct",
-                "rangeClientsPensionPlan11to25pct",
-                "rangeClientsPensionPlan26to50pct",
-                "rangeClientsPensionPlan51to75pct",
-                "rangeClientsPensionPlan76to99pct",
-                "rangeClientsPensionPlan100pct",
-                "rangeClientsCharitableOrganizationZero",
-                "rangeClientsCharitableOrganization1to10pct",
-                "rangeClientsCharitableOrganization11to25pct",
-                "rangeClientsCharitableOrganization26to50pct",
-                "rangeClientsCharitableOrganization51to75pct",
-                "rangeClientsCharitableOrganization76to99pct",
-                "rangeClientsCharitableOrganization100pct",
-                "rangeClientsCorporationOtherZero",
-                "rangeClientsCorporationOther1to10pct",
-                "rangeClientsCorporationOther11to25pct",
-                "rangeClientsCorporationOther26to50pct",
-                "rangeClientsCorporationOther51to75pct",
-                "rangeClientsCorporationOther76to99pct",
-                "rangeClientsCorporationOther100pct",
-                "rangeClientsStateMunicipalGovernmentZero",
-                "rangeClientsStateMunicipalGovernment1to10pct",
-                "rangeClientsStateMunicipalGovernment11to25pct",
-                "rangeClientsStateMunicipalGovernment26to50pct",
-                "rangeClientsStateMunicipalGovernment51to75pct",
-                "rangeClientsStateMunicipalGovernment76to99pct",
-                "rangeClientsStateMunicipalGovernment100pct",
-                "rangeClientsInvestmentAdviserOtherZero",
-                "rangeClientsInvestmentAdviserOther1to10pct",
-                "rangeClientsInvestmentAdviserOther11to25pct",
-                "rangeClientsInvestmentAdviserOther26to50pct",
-                "rangeClientsInvestmentAdviserOther51to75pct",
-                "rangeClientsInvestmentAdviserOther76to99pct",
-                "rangeClientsInvestmentAdviserOther100pct",
-                "rangeClientsInsuranceCompanyZero",
-                "rangeClientsInsuranceCompany1to10pct",
-                "rangeClientsInsuranceCompany11to25pct",
-                "rangeClientsInsuranceCompany26to50pct",
-                "rangeClientsInsuranceCompany51to75pct",
-                "rangeClientsInsuranceCompany76to99pct",
-                "rangeClientsInsuranceCompany100pct",
-                "rangeClientsOtherZero",
-                "rangeClientsOther1to10pct",
-                "rangeClientsOther11to25pct",
-                "rangeClientsOther26to50pct",
-                "rangeClientsOther51to75pct",
-                "rangeClientsOther76to99pct",
-                "rangeClientsOther100pct",
-                "rangeAUMIndividualNonHighNetWorthZero",
-                "rangeAUMIndividualNonHighNetWorthUpto25pct",
-                "rangeAUMIndividualNonHighNetWorthUpto50pct",
-                "rangeAUMIndividualNonHighNetWorthUpto75pct",
-                "rangeAUMIndividualNonHighNetWorthOver75pct",
-                "rangeAUMIndividualHighNetWorthZero",
-                "rangeAUMIndividualHighNetWorthUpto25pct",
-                "rangeAUMIndividualHighNetWorthUpto50pct",
-                "rangeAUMIndividualHighNetWorthUpto75pct",
-                "rangeAUMIndividualHighNetWorthOver75pct",
-                "rangeAUMBankThriftZero",
-                "rangeAUMBankThriftUpto25pct",
-                "rangeAUMBankThriftUpto50pct",
-                "rangeAUMBankThriftUpto75pct",
-                "rangeAUMBankThriftOver75pct",
-                "rangeAUMInvestmentCompanyZero",
-                "rangeAUMInvestmentCompanyUpto25pct",
-                "rangeAUMInvestmentCompanyUpto50pct",
-                "rangeAUMInvestmentCompanyUpto75pct",
-                "rangeAUMInvestmentCompanyOver75pct",
-                "rangeAUMBusinessDevelopmentCompanyZero",
-                "rangeAUMBusinessDevelopmentCompanyUpto25pct",
-                "rangeAUMBusinessDevelopmentCompanyUpto50pct",
-                "rangeAUMBusinessDevelopmentCompanyUpto75pct",
-                "rangeAUMBusinessDevelopmentCompanyOver75pct",
-                "rangeAUMPooledInvestmentVehicleZero",
-                "rangeAUMPooledInvestmentVehicleUpto25pct",
-                "rangeAUMPooledInvestmentVehicleUpto50pct",
-                "rangeAUMPooledInvestmentVehicleUpto75pct",
-                "rangeAUMPooledInvestmentVehicleOver75pct",
-                "rangeAUMPensionPlanZero",
-                "rangeAUMPensionPlanUpto25pct",
-                "rangeAUMPensionPlanUpto50pct",
-                "rangeAUMPensionPlanUpto75pct",
-                "rangeAUMPensionPlanOver75pct",
-                "rangeAUMCharitableOrganizationZero",
-                "rangeAUMCharitableOrganizationUpto25pct",
-                "rangeAUMCharitableOrganizationUpto50pct",
-                "rangeAUMCharitableOrganizationUpto75pct",
-                "rangeAUMCharitableOrganizationOver75pct",
-                "rangeAUMCorporationOtherZero",
-                "rangeAUMCorporationOtherUpto25pct",
-                "rangeAUMCorporationOtherUpto50pct",
-                "rangeAUMCorporationOtherUpto75pct",
-                "rangeAUMCorporationOtherOver75pct",
-                "rangeAUMStateMunicipalGovernmentZero",
-                "rangeAUMStateMunicipalGovernmentUpto25pct",
-                "rangeAUMStateMunicipalGovernmentUpto50pct",
-                "rangeAUMStateMunicipalGovernmentUpto75pct",
-                "rangeAUMStateMunicipalGovernmentOver75pct",
-                "rangeAUMInvestmentAdviserOtherZero",
-                "rangeAUMInvestmentAdviserOtherUpto25pct",
-                "rangeAUMInvestmentAdviserOtherUpto50pct",
-                "rangeAUMInvestmentAdviserOtherUpto75pct",
-                "rangeAUMInvestmentAdviserOtherOver75pct",
-                "rangeAUMInsuranceCompanyZero",
-                "rangeAUMInsuranceCompanyUpto25pct",
-                "rangeAUMInsuranceCompanyUpto50pct",
-                "rangeAUMInsuranceCompanyUpto75pct",
-                "rangeAUMInsuranceCompanyOver75pct",
-                "rangeAUMOtherZero",
-                "rangeAUMOtherUpto25pct",
-                "rangeAUMOtherUpto50pct",
-                "rangeAUMOtherUpto75pct",
-                "rangeAUMOtherOver75pct",
-                "hasFeeAUM",
-                "hasFeeHourlyCharge",
-                "hasFeeSubscription",
-                "hasFeeFixed",
-                "hasFeeCommission",
-                "hasFeePerformance",
-                "hasFeeOther",
-                "hasSecuritiesPortfolioManagement.TRUE",
-                "hasSecuritiesPortfolioManagement.FALSE",
-                "hasFinancialPlanning",
-                "hasPortfolioManagementIndividualSmallBusiness",
-                "hasPortfolioManagementInvestmentCompanies",
-                "hasPortfolioManagementPooledInvestmentVehicles",
-                "hasPortfolioManagementInstitutionalClients",
-                "hasServicePensionConsulting",
-                "hasServiceInvestmentAdviserSelection",
-                "hasServicePeriodicalPublication",
-                "hasServiceSecurityRating",
-                "hasServiceMarketTiming",
-                "hasServiceEducationSeminars",
-                "hasServiceOther",
-                "rangeClientsFinancialPlanningZero",
-                "rangeClientsFinancialPlanning1to10",
-                "rangeClientsFinancialPlanning11to25",
-                "rangeClientsFinancialPlanning26to50",
-                "rangeClientsFinancialPlanning51to100",
-                "rangeClientsFinancialPlanning101to250",
-                "rangeClientsFinancialPlanning251to500",
-                "rangeClientsFinancialPlanningOver500",
-                "hasFeeWrapSponsor",
-                "hasFeeWrapPortfolioManager",
-                "isAdviserLimitedInvestmentTypes.TRUE",
-                "isAdviserLimitedInvestmentTypes.FALSE"
-              ),
-            nameItem =
-              c(
-                "rangeClients",
-                "rangeClients",
-                "rangeClients",
-                "rangeClients",
-                "rangeClients",
-                "rangeClientsIndividualNonHighNetWorth",
-                "rangeClientsIndividualNonHighNetWorth",
-                "rangeClientsIndividualNonHighNetWorth",
-                "rangeClientsIndividualNonHighNetWorth",
-                "rangeClientsIndividualNonHighNetWorth",
-                "rangeClientsIndividualNonHighNetWorth",
-                "rangeClientsIndividualNonHighNetWorth",
-                "rangeClientsIndividualHighNetWorth",
-                "rangeClientsIndividualHighNetWorth",
-                "rangeClientsIndividualHighNetWorth",
-                "rangeClientsIndividualHighNetWorth",
-                "rangeClientsIndividualHighNetWorth",
-                "rangeClientsIndividualHighNetWorth",
-                "rangeClientsIndividualHighNetWorth",
-                "rangeClientsBankThrift",
-                "rangeClientsBankThrift",
-                "rangeClientsBankThrift",
-                "rangeClientsBankThrift",
-                "rangeClientsBankThrift",
-                "rangeClientsBankThrift",
-                "rangeClientsBankThrift",
-                "rangeClientsInvestmentCompany",
-                "rangeClientsInvestmentCompany",
-                "rangeClientsInvestmentCompany",
-                "rangeClientsInvestmentCompany",
-                "rangeClientsInvestmentCompany",
-                "rangeClientsInvestmentCompany",
-                "rangeClientsInvestmentCompany",
-                "rangeClientsBusinessDevelopmentCompany",
-                "rangeClientsBusinessDevelopmentCompany",
-                "rangeClientsBusinessDevelopmentCompany",
-                "rangeClientsBusinessDevelopmentCompany",
-                "rangeClientsBusinessDevelopmentCompany",
-                "rangeClientsBusinessDevelopmentCompany",
-                "rangeClientsBusinessDevelopmentCompany",
-                "rangeClientsPooledInvestmentVehicle",
-                "rangeClientsPooledInvestmentVehicle",
-                "rangeClientsPooledInvestmentVehicle",
-                "rangeClientsPooledInvestmentVehicle",
-                "rangeClientsPooledInvestmentVehicle",
-                "rangeClientsPooledInvestmentVehicle",
-                "rangeClientsPooledInvestmentVehicle",
-                "rangeClientsPensionPlan",
-                "rangeClientsPensionPlan",
-                "rangeClientsPensionPlan",
-                "rangeClientsPensionPlan",
-                "rangeClientsPensionPlan",
-                "rangeClientsPensionPlan",
-                "rangeClientsPensionPlan",
-                "rangeClientsCharitableOrganization",
-                "rangeClientsCharitableOrganization",
-                "rangeClientsCharitableOrganization",
-                "rangeClientsCharitableOrganization",
-                "rangeClientsCharitableOrganization",
-                "rangeClientsCharitableOrganization",
-                "rangeClientsCharitableOrganization",
-                "rangeClientsCorporationOther",
-                "rangeClientsCorporationOther",
-                "rangeClientsCorporationOther",
-                "rangeClientsCorporationOther",
-                "rangeClientsCorporationOther",
-                "rangeClientsCorporationOther",
-                "rangeClientsCorporationOther",
-                "rangeClientsStateMunicipalGovernment",
-                "rangeClientsStateMunicipalGovernment",
-                "rangeClientsStateMunicipalGovernment",
-                "rangeClientsStateMunicipalGovernment",
-                "rangeClientsStateMunicipalGovernment",
-                "rangeClientsStateMunicipalGovernment",
-                "rangeClientsStateMunicipalGovernment",
-                "rangeClientsInvestmentAdviserOther",
-                "rangeClientsInvestmentAdviserOther",
-                "rangeClientsInvestmentAdviserOther",
-                "rangeClientsInvestmentAdviserOther",
-                "rangeClientsInvestmentAdviserOther",
-                "rangeClientsInvestmentAdviserOther",
-                "rangeClientsInvestmentAdviserOther",
-                "rangeClientsInsuranceCompany",
-                "rangeClientsInsuranceCompany",
-                "rangeClientsInsuranceCompany",
-                "rangeClientsInsuranceCompany",
-                "rangeClientsInsuranceCompany",
-                "rangeClientsInsuranceCompany",
-                "rangeClientsInsuranceCompany",
-                "rangeClientsOther",
-                "rangeClientsOther",
-                "rangeClientsOther",
-                "rangeClientsOther",
-                "rangeClientsOther",
-                "rangeClientsOther",
-                "rangeClientsOther",
-                "rangeAUMIndividualNonHighNetWorth",
-                "rangeAUMIndividualNonHighNetWorth",
-                "rangeAUMIndividualNonHighNetWorth",
-                "rangeAUMIndividualNonHighNetWorth",
-                "rangeAUMIndividualNonHighNetWorth",
-                "rangeAUMIndividualHighNetWorth",
-                "rangeAUMIndividualHighNetWorth",
-                "rangeAUMIndividualHighNetWorth",
-                "rangeAUMIndividualHighNetWorth",
-                "rangeAUMIndividualHighNetWorth",
-                "rangeAUMBankThrift",
-                "rangeAUMBankThrift",
-                "rangeAUMBankThrift",
-                "rangeAUMBankThrift",
-                "rangeAUMBankThrift",
-                "rangeAUMInvestmentCompany",
-                "rangeAUMInvestmentCompany",
-                "rangeAUMInvestmentCompany",
-                "rangeAUMInvestmentCompany",
-                "rangeAUMInvestmentCompany",
-                "rangeAUMBusinessDevelopmentCompany",
-                "rangeAUMBusinessDevelopmentCompany",
-                "rangeAUMBusinessDevelopmentCompany",
-                "rangeAUMBusinessDevelopmentCompany",
-                "rangeAUMBusinessDevelopmentCompany",
-                "rangeAUMPooledInvestmentVehicle",
-                "rangeAUMPooledInvestmentVehicle",
-                "rangeAUMPooledInvestmentVehicle",
-                "rangeAUMPooledInvestmentVehicle",
-                "rangeAUMPooledInvestmentVehicle",
-                "rangeAUMPensionPlan",
-                "rangeAUMPensionPlan",
-                "rangeAUMPensionPlan",
-                "rangeAUMPensionPlan",
-                "rangeAUMPensionPlan",
-                "rangeAUMCharitableOrganization",
-                "rangeAUMCharitableOrganization",
-                "rangeAUMCharitableOrganization",
-                "rangeAUMCharitableOrganization",
-                "rangeAUMCharitableOrganization",
-                "rangeAUMCorporationOther",
-                "rangeAUMCorporationOther",
-                "rangeAUMCorporationOther",
-                "rangeAUMCorporationOther",
-                "rangeAUMCorporationOther",
-                "rangeAUMStateMunicipalGovernment",
-                "rangeAUMStateMunicipalGovernment",
-                "rangeAUMStateMunicipalGovernment",
-                "rangeAUMStateMunicipalGovernment",
-                "rangeAUMStateMunicipalGovernment",
-                "rangeAUMInvestmentAdviserOther",
-                "rangeAUMInvestmentAdviserOther",
-                "rangeAUMInvestmentAdviserOther",
-                "rangeAUMInvestmentAdviserOther",
-                "rangeAUMInvestmentAdviserOther",
-                "rangeAUMInsuranceCompany",
-                "rangeAUMInsuranceCompany",
-                "rangeAUMInsuranceCompany",
-                "rangeAUMInsuranceCompany",
-                "rangeAUMInsuranceCompany",
-                "rangeAUMOther",
-                "rangeAUMOther",
-                "rangeAUMOther",
-                "rangeAUMOther",
-                "rangeAUMOther",
-                "hasFeeAUM",
-                "hasFeeHourlyCharge",
-                "hasFeeSubscription",
-                "hasFeeFixed",
-                "hasFeeCommission",
-                "hasFeePerformance",
-                "hasFeeOther",
-                "hasSecuritiesPortfolioManagement",
-                "hasSecuritiesPortfolioManagement",
-                "hasFinancialPlanning",
-                "hasPortfolioManagementIndividualSmallBusiness",
-                "hasPortfolioManagementInvestmentCompanies",
-                "hasPortfolioManagementPooledInvestmentVehicles",
-                "hasPortfolioManagementInstitutionalClients",
-                "hasServicePensionConsulting",
-                "hasServiceInvestmentAdviserSelection",
-                "hasServicePeriodicalPublication",
-                "hasServiceSecurityRating",
-                "hasServiceMarketTiming",
-                "hasServiceEducationSeminars",
-                "hasServiceOther",
-                "rangeClientsFinancialPlanning",
-                "rangeClientsFinancialPlanning",
-                "rangeClientsFinancialPlanning",
-                "rangeClientsFinancialPlanning",
-                "rangeClientsFinancialPlanning",
-                "rangeClientsFinancialPlanning",
-                "rangeClientsFinancialPlanning",
-                "rangeClientsFinancialPlanning",
-                "hasFeeWrapSponsor",
-                "hasFeeWrapPortfolioManager",
-                "isAdviserLimitedInvestmentTypes",
-                "isAdviserLimitedInvestmentTypes"
-              ),
-            valueItem =
-              c(
-                "Zero",
-                "1to10",
-                "11to25",
-                "26to100",
-                "Over100",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "1to10pct",
-                "11to25pct",
-                "26to50pct",
-                "51to75pct",
-                "76to99pct",
-                "100pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "Zero",
-                "Upto25pct",
-                "Upto50pct",
-                "Upto75pct",
-                "Over75pct",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "FALSE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "Zero",
-                "1to10",
-                "11to25",
-                "26to50",
-                "51to100",
-                "101to250",
-                "251to500",
-                "Over500",
-                "TRUE",
-                "TRUE",
-                "TRUE",
-                "FALSE"
-              )
-          )
-        return(name_df)
-      }
+    .get_section_5_node_name_df <- function() {
+      base <- "hasLessThan5Clients"
+      terms <- c("IndividualNonHighNetWorth", "IndividualHighNetWorth", "BankThrift", "PensionPlan",
+                 "ClientsCharitable","StateMunicipalGovernment","InvestmentAdviserOther","InsuranceCompany","SoverignWealthFund","CorporationOther","OtherAll")
+
+      ranges <- glue::glue("{base}{terms}") %>% as.character()
+      fees <-
+        c("hasFeeAUM",
+          "hasFeeHourlyCharge",
+          "hasFeeSubscription",
+          "hasFeeFixed",
+          "hasFeeCommission",
+          "hasFeePerformance",
+          "hasFeeOther",
+          "hasSecuritiesPortfolioManagement.TRUE",
+          "hasSecuritiesPortfolioManagement.FALSE",
+          "hasFinancialPlanning",
+          "hasPortfolioManagementIndividualSmallBusiness",
+          "hasPortfolioManagementInvestmentCompanies",
+          "hasPortfolioManagementPooledInvestmentVehicles",
+          "hasPortfolioManagementInstitutionalClients",
+          "hasServicePensionConsulting",
+          "hasServiceInvestmentAdviserSelection",
+          "hasServicePeriodicalPublication",
+          "hasServiceSecurityRating",
+          "hasServiceMarketTiming",
+          "hasServiceEducationSeminars",
+          "hasServiceOther",
+          "rangeClientsFinancialPlanningZero",
+          "rangeClientsFinancialPlanning1to10",
+          "rangeClientsFinancialPlanning11to25",
+          "rangeClientsFinancialPlanning26to50",
+          "rangeClientsFinancialPlanning51to100",
+          "rangeClientsFinancialPlanning101to250",
+          "rangeClientsFinancialPlanning251to500",
+          "rangeClientsFinancialPlanningOver500",
+          "hasFeeWrapSponsor.TRUE",
+          "hasFeeWrapSponsor.FALSE",
+          "hasInvestmentAdviceLimited.TRUE",
+          "hasInvestmentAdviceLimited.FALSE",
+          "hasDifferentClientReportMethod.TRUE",
+          "hasDifferentClientReportMethod.FALSE",
+          "hasAUMOther5D.TRUE",
+          "hasAUMOther5D.FALSE",
+          "hasSeperateAccountMargin.TRUE",
+          "hasSeperateAccountMargin.FALSE",
+          "hasSeperateAccountDervatives.TRUE",
+          "hasSeperateAccountDervatives.FALSE",
+          "hasCustodian10PCT.TRUE",
+          "hasCustodian10PCT.FALSE"
+        )
+
+      tibble(nameItem = c(ranges,fees)) %>%
+        separate(nameItem, into = c("nameItem", "valueItem"), sep = "\\.") %>%
+        mutate(valueItem = ifelse(is.na(valueItem), T, valueItem) %>% as.logical()) %>%
+        suppressWarnings() %>%
+        mutate(idRow = 1:n())
+    }
+
+
 
     section_exists <-
       'section5AdvisoryBusinessInformation' %in% sitefuture_map_dfr$idSection
@@ -4846,18 +4320,16 @@ sec_adv_manager_sitemap <-
               left_join(.get_check_box_value_df()) %>%
               suppressMessages()
 
-            if (!is_new_iapd) {
             client_summary_image_df <-
               client_summary_image_df %>%
-              bind_cols(.get_section_5_node_name_df()) %>%
-              dplyr::select(nameItem,
-                            fullnameItem,
-                            nameItem,
-                            valueItem,
-                            nodeName,
-                            isNodeChecked) %>%
+              mutate(idRow = 1:n()) %>%
+              left_join(
+                .get_section_5_node_name_df(),
+                by = "idRow"
+                ) %>%
+              select(-idRow) %>%
               suppressMessages() %>%
-              dplyr::filter(isNodeChecked == T) %>%
+              dplyr::filter(isNodeChecked) %>%
               dplyr::select(nameItem, valueItem)
 
             column_order <-
@@ -4873,11 +4345,7 @@ sec_adv_manager_sitemap <-
               mutate_at(.vars = client_summary_df %>% dplyr::select(dplyr::matches("^is|^has")) %>% names(),
                         .funs = as.logical)
 
-            } else {
-
-            }
-
-            return(client_summary_df)
+            client_summary_df
           }
 
         .find_text_node_safe <-
@@ -5092,7 +4560,7 @@ sec_adv_manager_sitemap <-
 
 
 .get_section_6_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvOtherBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
+  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvOtherBusinessSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
@@ -5105,13 +4573,19 @@ sec_adv_manager_sitemap <-
 
     get_node_item_df <-
       function() {
+        items <- c("isBrokerDealer", "isBrokerDealerRep", "isCommodityPoolOperator", "isFuturesMerchant", "isRealEstateBroker", "isInsuranceBroker", "isBank", "isTrustCompany", "isMunicipalAdvisor", "isSwapDealer", "isSwapParticipant", "isAccountingFirm", "isLawFirm", "hasOtherFinancialProducts",
+                   "hasOtherBusiness6a.TRUE", "hasNoOtherBusiness6a.TRUE",
+                   "isOtherBusinessPrimary.TRUE", "isOtherBusinessPrimary.FALSE",
+                   "hasOtherNonFinancialClientServices.TRUE", "hasNoOtherNonFinancialClientServices.TRUE")
         node_item_df <-
-          c(
-            'isBusinessActiveNonListedActivity',
-            'typeBusinessActiveNonListedActivity',
-            'hasProductNonInvestmentAdvice'
-          ) %>%
-          .get_item_name_yes_no_df()
+          tibble(nameItem = items) %>%
+          separate(nameItem,
+                   into = c("nameItem", "valueItem"),
+                   sep = "\\.") %>%
+          separate(nameItem, into = c("nameItem", "valueItem"), sep = "\\.") %>%
+          mutate(valueItem = ifelse(is.na(valueItem), T, valueItem) %>% as.logical()) %>%
+          suppressWarnings() %>%
+          mutate(idRow = 1:n())
         return(node_item_df)
       }
 
@@ -5125,14 +4599,16 @@ sec_adv_manager_sitemap <-
               html_attr('alt') %>%
               str_trim()
 
-            check_nodes <-
-              check_nodes[check_nodes %>% str_detect("Radio")]
 
             node_df <-
               tibble(nodeName = check_nodes) %>%
-              left_join(.get_check_box_value_df()) %>%
-              bind_cols(get_node_item_df()) %>%
-              dplyr::filter(isNodeChecked == T) %>%
+              left_join(.get_check_box_value_df(), by = "nodeName") %>%
+              mutate(idRow = 1:n()) %>%
+              left_join(
+                get_node_item_df(),
+                by = "idRow"
+              ) %>%
+              filter(isNodeChecked) %>%
               dplyr::select(nameItem, valueItem) %>%
               suppressMessages()
 
@@ -5170,11 +4646,12 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_7a_data <-
-  function(url = 'https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFinancialAffiliationsSection.aspx?ORG_PK=145652&FLNG_PK=01A04E4200080189047A8BA1003A6639056C8CC0',
+  function(url = "https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFinancialAffiliationsSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0",
            return_wide = T) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
+
     page <-
       url %>%
       .get_html_page()
