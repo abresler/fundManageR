@@ -50,6 +50,7 @@ Other SEC: \code{\link{data_rf_leis}},
   \code{\link{sec_municipal_advisors}},
   \code{\link{sec_securities_filing_counts}},
   \code{\link{sec_securities_metrics_by_exchange}},
+  \code{\link{sec_xbrl_periods}},
   \code{\link{securities_offerings}}
 
 Other real-time data: \code{\link{dtcc_recent_trades}},
@@ -78,6 +79,7 @@ Other entity search: \code{\link{adv_managers_current_period_summary}},
   \code{\link{sec_investment_companies}},
   \code{\link{sec_money_market_funds}},
   \code{\link{sec_municipal_advisors}},
+  \code{\link{sec_xbrl_periods}},
   \code{\link{securities_offerings}},
   \code{\link{ycombinator_alumni}}
 }

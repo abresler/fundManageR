@@ -27,7 +27,7 @@
 #' @import dplyr rvest glue tidyr stringr tibble
 #'
 #' @examples
-#' #' \dontrun{
+#' \dontrun{
 #' irei_entitites(filter_type = NULL)
 #' irei_entities(filter_type = c("Investment Managers", "Tax-exempt Funds"))
 #' }

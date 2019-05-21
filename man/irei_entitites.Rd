@@ -37,7 +37,7 @@ Acquires a list of IREI tracked entities
 from 14 different parts of the "Commercial Real Estate Jungle"
 }
 \examples{
-#' \dontrun{
+\dontrun{
 irei_entitites(filter_type = NULL)
 irei_entities(filter_type = c("Investment Managers", "Tax-exempt Funds"))
 }

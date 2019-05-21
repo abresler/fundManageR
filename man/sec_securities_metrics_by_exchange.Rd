@@ -57,6 +57,7 @@ Other SEC: \code{\link{data_rf_leis}},
   \code{\link{sec_money_market_funds}},
   \code{\link{sec_municipal_advisors}},
   \code{\link{sec_securities_filing_counts}},
+  \code{\link{sec_xbrl_periods}},
   \code{\link{securities_offerings}},
   \code{\link{us_public_companies}}
 
@@ -64,7 +65,8 @@ Other transaction data: \code{\link{dtcc_recent_trades}},
   \code{\link{dtcc_trades}},
   \code{\link{nareit_mergers_acquisitions}}
 
-Other public company data: \code{\link{sec_failed_to_deliver_securities}}
+Other public company data: \code{\link{sec_failed_to_deliver_securities}},
+  \code{\link{sec_xbrl_periods}}
 }
 \concept{SEC}
 \concept{public company data}
