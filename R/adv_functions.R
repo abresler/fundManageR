@@ -326,15 +326,9 @@
           .vars = data %>% dplyr::select(dplyr::matches("^count[A-Z]|^amount[A-Z]|idCRD")) %>%
             dplyr::select(-dplyr::matches("country")) %>%
             names(),
-          funs(. %>% as.numeric())
-        )
-      data <-
-        data %>%
-        mutate_at(
-          .vars = data %>% dplyr::select(dplyr::matches("^count[A-Z]")) %>%
-            dplyr::select(-dplyr::matches("country")) %>%
-            names(),
-          funs(. %>% formattable::comma(digits = 0))
+          list(function(x){
+            x %>% as.character() %>% parse_number() %>% formattable::comma(digits = 0)
+          })
         )
     }
     has_logical <-
@@ -355,11 +349,11 @@
 
       data <-
         data %>%
-        mutate_at(
-          .vars = data %>% dplyr::select(dplyr::matches("^amount")) %>%
-            names(),
-          funs(. %>% as.numeric() %>% formattable::currency(digits = 0))
-        )
+        mutate_at(.vars = data %>% dplyr::select(dplyr::matches("^amount")) %>%
+                    names(),
+                  list(function(x) {
+                    x %>% as.character() %>% parse_number() %>% formattable::currency(digits = 0)
+                  }))
     }
 
     has_pct <-
@@ -2415,14 +2409,14 @@ sec_adv_manager_sitemap <-
   }
 
 .get_sitemap_urls <-
-  function(site_future_map_dfr, section_name = 'section7BPrivateFundReporting') {
+  function(data, section_name = 'section7BPrivateFundReporting') {
     urls_exist <-
-      site_future_map_dfr %>%
+      data %>%
       dplyr::filter(idSection %in% section_name) %>%
       .$urlADVSection %>% length() > 0
     if (urls_exist) {
       urls <-
-        site_future_map_dfr %>%
+        data %>%
         dplyr::filter(idSection %in% section_name) %>%
         .$urlADVSection
       return(urls)
@@ -2720,9 +2714,9 @@ sec_adv_manager_sitemap <-
 
 
 .get_sitemap_filter_url <-
-  function(site_future_map_dfr, filter_name = 'sectionScheduleA') {
+  function(data, filter_name = 'sectionScheduleA') {
     urls <-
-      site_future_map_dfr %>%
+      data %>%
       dplyr::filter(idSection == filter_name) %>%
       .$urlADVSection
     return(urls)
@@ -7808,7 +7802,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_crd_sections_data <-
-  function(id_crd = 174130,
+  function(id_crd = 159127,
            all_sections = TRUE,
            score_threshold = .2,
            section_names = c(
@@ -7906,25 +7900,28 @@ sec_adv_manager_sitemap <-
 
         all_data <-
           1:nrow(data) %>%
-          future_map_dfr(function(x) {
+          map_dfr(function(x) {
             f <-
               data$nameFunction[[x]] %>% lazyeval::as_name() %>% eval()
+
             url <-
               data$urlADVSection[[x]]
             df_name <-
               data$nameData[[x]] %>%
+              str_remove_all("data_") %>%
               str_to_title() %>%
               paste0('data', .)
             nameADVPage <-
               data$nameSectionActual[[x]]
+            nameADVPage %>% message()
             paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% cat(fill = T)
+
             g <-
               f %>%
               list(quote(url)) %>%
               as.call()
 
-            assign(x = df_name, eval(g)) %>%
-              suppressWarnings()
+            assign(x = df_name, eval(g))
             data <-
               tibble(nameADVPage = nameADVPage,
                          dataTable = list(df_name %>% as_name() %>% eval()))
@@ -7942,16 +7939,15 @@ sec_adv_manager_sitemap <-
 
     all_data <-
       all_data %>%
-      mutate(isNULL = dataTable %>% map_lgl(purrr::is_null)) %>%
-      dplyr::filter(isNULL == F) %>%
+      mutate(isNULL = dataTable %>% map_dbl(length) == 0) %>%
+      dplyr::filter(!isNULL) %>%
       dplyr::select(-isNULL) %>%
-      mutate(countColumns = dataTable %>% map_dbl(ncol),
-             countRows = dataTable %>% map_dbl(nrow)) %>%
-      suppressWarnings() %>%
-      suppressMessages()
+      mutate(countCols = dataTable %>% map_dbl(ncol),
+             countRows = dataTable %>% map_dbl(nrow))
 
     name_entity_manager <-
       all_data %>%
+      select(-matches("count")) %>%
       unnest() %>%
       .$nameEntityManager %>%
       unique() %>%
@@ -7969,7 +7965,7 @@ sec_adv_manager_sitemap <-
       mutate(idCRD = id_crd,
              nameEntityManager = name_entity_manager) %>%
       dplyr::select(idCRD, nameEntityManager, nameADVPage, everything()) %>%
-      dplyr::filter(countColumns > 2) %>%
+      dplyr::filter(countCols > 2) %>%
       dplyr::filter(countRows > 0) %>%
       mutate(isDataWide = if_else(countRows == 1, T, F)) %>%
       mutate(isDataWide = if_else(nameADVPage %in% not_wide_tables, F, isDataWide))
@@ -7980,7 +7976,7 @@ sec_adv_manager_sitemap <-
         dplyr::filter(nameADVPage == 'Advisory Business Information') %>%
         dplyr::select(dataTable) %>%
         unnest() %>%
-        dplyr::select(dplyr::matches("amountAUMTotal")) %>% ncol == 1
+        dplyr::select(dplyr::matches("amountAUMTotal")) %>% ncol() == 1
 
       if (has_aum_total) {
         total_aum <-
@@ -7991,12 +7987,10 @@ sec_adv_manager_sitemap <-
           .$amountAUMTotal %>%
           formattable::currency(digits = 0)
         "Parsed " %>%
-          paste0(
-            name_entity_manager,
-            '\nThey have ',
-            total_aum,
-            ' in Total Assets Under Management'
-          ) %>% cat(fill = T)
+          paste0(name_entity_manager,
+                 '\nThey have ',
+                 total_aum,
+                 ' in Total Assets Under Management') %>% cat(fill = T)
       }
     }  else {
       "Parsed " %>%
@@ -8032,11 +8026,11 @@ sec_adv_manager_sitemap <-
             }
           widen_data <-
             all_data %>%
-            dplyr::filter(isDataWide == T)
+            dplyr::filter(isDataWide)
 
           widened_data <-
             1:nrow(widen_data) %>%
-            future_map_dfr(function(x) {
+            map_dfr(function(x) {
               data <-
                 widen_data %>%
                 select_nesting_vars() %>%
@@ -8061,7 +8055,8 @@ sec_adv_manager_sitemap <-
             ) %>%
             unite(item, nameItem, countItem, sep = '') %>%
             distinct() %>%
-            suppressWarnings()
+            suppressWarnings() %>%
+            mutate(value = value %>% str_trim())
 
           col_order <-
             c('idCRD', 'nameEntityManager', widened_data$item)
@@ -8076,7 +8071,8 @@ sec_adv_manager_sitemap <-
 
       manager_description_data <-
         all_data %>%
-        get_all_manager_description_data()
+        get_all_manager_description_data() %>%
+        mutate_if(is.character, str_trim)
 
       all_data <-
         tibble(
@@ -8422,7 +8418,7 @@ adv_managers_filings <-
       possibly(.get_search_crd_ids, tibble())
 
     crds <-
-      .get_search_crd_ids_safe(entity_names = entity_names,
+      .get_search_crd_ids(entity_names = entity_names,
                               crd_ids = crd_ids)
 
     .get_crd_sections_data_safe <-
@@ -8430,14 +8426,14 @@ adv_managers_filings <-
 
     all_data <-
       seq_along(crds) %>%
-      future_map_dfr(function(x) {
+      map_dfr(function(x) {
         .get_crd_sections_data(
           id_crd = crds[x],
           all_sections = all_sections,
           section_names = section_names,
           flatten_tables = flatten_tables
         )
-      }, .progress = T)
+      })
 
     .return_selected_adv_tables_safe <-
       possibly(.return_selected_adv_tables, tibble())
@@ -8450,7 +8446,7 @@ adv_managers_filings <-
 
     if (assign_all) {
       all_data %>%
-        .return_selected_adv_tables_safe(all_sections = TRUE,
+        .return_selected_adv_tables(all_sections = TRUE,
                                         gather_data = gather_data)
 
     }
