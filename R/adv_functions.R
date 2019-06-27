@@ -7947,7 +7947,6 @@ sec_adv_manager_sitemap <-
 
     name_entity_manager <-
       all_data %>%
-      select(-matches("count")) %>%
       unnest() %>%
       .$nameEntityManager %>%
       unique() %>%

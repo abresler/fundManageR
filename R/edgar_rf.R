@@ -9065,7 +9065,8 @@ parse_xml_tables <-
           form_tables <-
             page %>% xml_contents() %>% xml_name()
 
-          table_loc <- table %>% grep(form_tables)
+          table_loc <-
+            table %>% grep(form_tables)
           xml_nodes <-
             page %>%
             xml_contents() %>% .[[table_loc]]
@@ -9111,8 +9112,8 @@ parse_xml_tables <-
 
         json_data <-
           value_list %>%
-          jsonlite::toJSON(force = FALSE,dataframe = 'values') %>%
-          jsonlite::fromJSON(simplifyDataFrame = TRUE,flatten = TRUE)
+          jsonlite::toJSON(force = FALSE, dataframe = 'values') %>%
+          jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = TRUE)
 
         wrong_output <-
           json_data %>% class() == 'array'
