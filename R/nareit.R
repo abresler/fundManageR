@@ -1419,7 +1419,7 @@ nareit_property_msa <-
       json_data$features$geometry %>%
       as_tibble() %>%
       mutate(idLocation = 1:n()) %>%
-      unnest()
+      unnest_legacy()
 
     df_lat_lon <-
       df_lat_lon[c(TRUE, FALSE),] %>%
@@ -1513,7 +1513,7 @@ nareit_state_info <-
       json_data$features$geometry %>%
       as_tibble() %>%
       mutate(idLocation = 1:n()) %>%
-      unnest()
+      unnest_legacy()
 
     df_lat_lon <-
       df_lat_lon[c(TRUE, FALSE), ] %>%

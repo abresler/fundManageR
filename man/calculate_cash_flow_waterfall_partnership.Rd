@@ -28,7 +28,7 @@ calculate_cash_flow_waterfall_partnership(dates = c("2016-09-01",
 
 \item{gp_promote_share}{share of promote to general partner}
 
-\item{unnest_data}{unnest final results}
+\item{unnest_data}{unnest_legacy final results}
 
 \item{exclude_partnership_total}{exclude total columns}
 

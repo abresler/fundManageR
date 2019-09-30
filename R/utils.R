@@ -181,7 +181,7 @@ tidy_column_relations <-
     if ('dataAllFilings' %in% names(data)) {
       data <-
         data %>%
-        unnest() %>%
+        unnest_legacy() %>%
         tidy_column_formats()
 
       return(data)
@@ -190,7 +190,7 @@ tidy_column_relations <-
     if ('dataAssetXBRL' %in% names(data)) {
       data <-
         data %>%
-        unnest() %>%
+        unnest_legacy() %>%
         tidy_column_formats()
 
       return(data)
@@ -309,7 +309,7 @@ tidy_column_relations <-
 
           df <-
             df %>%
-            unnest()
+            unnest_legacy()
 
           has_dates <-
             names(df) %>% str_count("date") %>% sum() > 0

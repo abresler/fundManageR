@@ -2907,7 +2907,7 @@ finbox_tickers <-
             all_data %>%
             filter(nameTable == tables[[x]]) %>%
             dplyr::select(-nameTable) %>%
-            unnest()
+            unnest_legacy()
 
           table_name <- str_c('data', tables[[x]] %>% str_to_upper())
 

@@ -823,7 +823,7 @@ tv_metric <-
 
     json$close()
     data <-
-      json_data$data %>% as_tibble() %>% unnest()
+      json_data$data %>% as_tibble() %>% unnest_legacy()
 
     data <- data %>%
       purrr::set_names(c('idExchangeTicker', 'value')) %>%

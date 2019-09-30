@@ -1508,7 +1508,7 @@ calculate_cash_flow_waterfall <-
 #' @param promote_structure vector of the promote structure
 #' @param general_partner_pct ercentage of capital provided by general partner
 #' @param gp_promote_share share of promote to general partner
-#' @param unnest_data unnest final results
+#' @param unnest_data unnest_legacy final results
 #' @param exclude_partnership_total exclude total columns
 #' @param distribution_frequency frequency of distribution
 #' @param is_actual_360 \code{TRUE} is the rate of return actual 360
@@ -1752,7 +1752,7 @@ calculate_cash_flow_waterfall_partnership <-
     if (unnest_data) {
       data <-
         data %>%
-        unnest()
+        unnest_legacy()
     }
 
     return(data)

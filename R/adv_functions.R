@@ -812,7 +812,7 @@
                   df[[x]] %>%
                   flatten_df() %>%
                   dplyr::select(-dplyr::matches("detail")) %>%
-                  unnest()
+                  unnest_legacy()
                 finra_names <-
                   names(df_list)
 
@@ -885,7 +885,7 @@
             if (has_sanctions) {
               df_list <-
                 df_list %>%
-                unnest()
+                unnest_legacy()
 
               df_list <-
                 df_list %>%
@@ -7947,7 +7947,7 @@ sec_adv_manager_sitemap <-
 
     name_entity_manager <-
       all_data %>%
-      unnest() %>%
+      unnest_legacy() %>%
       .$nameEntityManager %>%
       unique() %>%
       .[[1]] %>%
@@ -7974,7 +7974,7 @@ sec_adv_manager_sitemap <-
         all_data %>%
         dplyr::filter(nameADVPage == 'Advisory Business Information') %>%
         dplyr::select(dataTable) %>%
-        unnest() %>%
+        unnest_legacy() %>%
         dplyr::select(dplyr::matches("amountAUMTotal")) %>% ncol() == 1
 
       if (has_aum_total) {
@@ -7982,7 +7982,7 @@ sec_adv_manager_sitemap <-
           all_data %>%
           dplyr::filter(nameADVPage == 'Advisory Business Information') %>%
           dplyr::select(dataTable) %>%
-          unnest() %>%
+          unnest_legacy() %>%
           .$amountAUMTotal %>%
           formattable::currency(digits = 0)
         "Parsed " %>%
@@ -8035,7 +8035,7 @@ sec_adv_manager_sitemap <-
                 select_nesting_vars() %>%
                 dplyr::select(-nameADVPage) %>%
                 slice(x) %>%
-                unnest() %>%
+                unnest_legacy() %>%
                 mutate_all(as.character) %>%
                 gather(nameItem, value, -c(idCRD, nameEntityManager))
               return(data)
@@ -8173,7 +8173,7 @@ sec_adv_manager_sitemap <-
         has_nested_list <-
           data_selected %>%
           dplyr::select(dataTable) %>%
-          unnest() %>%
+          unnest_legacy() %>%
           future_map(class) %>%
           as_tibble() %>%
           gather(column, valueCol) %>%
@@ -8187,7 +8187,7 @@ sec_adv_manager_sitemap <-
             dplyr::select(-countColumns) %>%
             dplyr::filter(nameTable == table_name) %>%
             dplyr::select(dataTable) %>%
-            unnest()
+            unnest_legacy()
 
           section_df <-
             .get_sec_sitemap_df() %>%
@@ -8237,7 +8237,7 @@ sec_adv_manager_sitemap <-
         if (has_nested_list) {
           has_no_count_col <-
             data_selected %>%
-            unnest() %>% names() %>% str_count('countColumns') %>% sum() == 0
+            unnest_legacy() %>% names() %>% str_count('countColumns') %>% sum() == 0
           if (has_no_count_col) {
             count_values <-
               data_selected %>%
@@ -8250,7 +8250,7 @@ sec_adv_manager_sitemap <-
           data_selected <-
             data_selected %>%
             dplyr::select(idRow, dataTable) %>%
-            unnest() %>%
+            unnest_legacy() %>%
             dplyr::select(idRow, nameTable, dataTable) %>%
             mutate(countColumn = map_dbl(dataTable, ncol)) %>%
             dplyr::filter(countColumn > 1) %>%
@@ -8283,7 +8283,7 @@ sec_adv_manager_sitemap <-
                   data_selected %>%
                   dplyr::filter(idTable == table_names[x]) %>%
                   dplyr::select(idCRD, dataTable) %>%
-                  unnest
+                  unnest_legacy
 
                 table_data <-
                   table_data %>%
@@ -8460,7 +8460,7 @@ adv_managers_filings <-
       data <-
         all_data %>%
         select(dataTable) %>%
-        unnest()
+        unnest_legacy()
 
       data <-
         data %>%

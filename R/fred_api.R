@@ -1211,7 +1211,7 @@ fred_symbols <-
     if (!nest_data) {
       all_data <-
         all_data %>%
-        unnest()
+        unnest_legacy()
     }
 
 
