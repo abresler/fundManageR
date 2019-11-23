@@ -20,8 +20,9 @@ in the S&P 500.
 sp500_constituents(return_message = TRUE)
 }
 \seealso{
-Other index constituents: \code{\link{crsp_indicies_constituents}},
-  \code{\link{msci_indicies_constituents}},
-  \code{\link{nareit_constituent_years}}
+Other index constituents: 
+\code{\link{crsp_indicies_constituents}()},
+\code{\link{msci_indicies_constituents}()},
+\code{\link{nareit_constituent_years}()}
 }
 \concept{index constituents}

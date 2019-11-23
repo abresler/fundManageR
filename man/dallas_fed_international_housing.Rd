@@ -4,11 +4,17 @@
 \alias{dallas_fed_international_housing}
 \title{Dallas Federal Reserve International House Price Database}
 \usage{
-dallas_fed_international_housing(indicies = NULL, nest_data = FALSE,
-  return_message = TRUE)
+dallas_fed_international_housing(
+  indicies = NULL,
+  nest_data = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{return_message}{}
+}
+\value{
+
 }
 \description{
 This retrieves data for the international house

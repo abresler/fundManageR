@@ -4,9 +4,16 @@
 \alias{edgar_ft_terms}
 \title{Title}
 \usage{
-edgar_ft_terms(search_terms = c("\\"Jared Kushner\\"",
-  "\\"EJF Capital\\"", "\\"Blackstone Real Estate\\""),
-  include_counts = TRUE, nest_data = FALSE, return_message = TRUE)
+edgar_ft_terms(
+  search_terms = c("\\"Jared Kushner\\"", "\\"EJF Capital\\"",
+    "\\"Blackstone Real Estate\\""),
+  include_counts = TRUE,
+  nest_data = FALSE,
+  return_message = TRUE
+)
+}
+\value{
+
 }
 \description{
 Title

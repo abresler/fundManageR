@@ -19,7 +19,8 @@ to specify indicies to extract constituents.
 msci_indicies()
 }
 \seealso{
-Other MSCI: \code{\link{msci_indicies_constituents}},
-  \code{\link{msci_realtime_index_values}}
+Other MSCI: 
+\code{\link{msci_indicies_constituents}()},
+\code{\link{msci_realtime_index_values}()}
 }
 \concept{MSCI}

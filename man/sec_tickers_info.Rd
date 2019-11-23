@@ -4,8 +4,7 @@
 \alias{sec_tickers_info}
 \title{Get Ticker SEC company information}
 \usage{
-sec_tickers_info(tickers = c("VNO", "NVDA", "FB"),
-  return_message = TRUE)
+sec_tickers_info(tickers = c("VNO", "NVDA", "FB"), return_message = TRUE)
 }
 \arguments{
 \item{tickers}{character vector of ticker symbols}

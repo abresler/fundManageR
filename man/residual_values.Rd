@@ -4,9 +4,15 @@
 \alias{residual_values}
 \title{Residual value calculations}
 \usage{
-residual_values(net_operating_income = 10, exit_cap_rate = 0.08,
-  cost_of_sale = 0.05, debt = 0, sale_date = Sys.Date(),
-  has_guarantee = F, return_message = T)
+residual_values(
+  net_operating_income = 10,
+  exit_cap_rate = 0.08,
+  cost_of_sale = 0.05,
+  debt = 0,
+  sale_date = Sys.Date(),
+  has_guarantee = F,
+  return_message = T
+)
 }
 \arguments{
 \item{net_operating_income}{vector of net operating incomes}
@@ -18,6 +24,9 @@ residual_values(net_operating_income = 10, exit_cap_rate = 0.08,
 \item{debt}{vector}
 
 \item{return_message}{}
+}
+\value{
+
 }
 \description{
 Residual value calculations

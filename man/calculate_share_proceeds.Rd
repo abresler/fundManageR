@@ -23,17 +23,18 @@ a share sale based upon specified inputs.
 calculate_share_proceeds(price = 9, shares = 150000)
 }
 \seealso{
-Other calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall_partnership}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_days_accrued_pref}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_leverage_metrics}},
-  \code{\link{calculate_loan_payment}},
-  \code{\link{calculate_residual_valuation_cap_rates}},
-  \code{\link{calculate_residual_valuation_ebitda_multiples}},
-  \code{\link{calculate_valuation_post_money}},
-  \code{\link{tidy_promote_structure}}
+Other calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_days_accrued_pref}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_leverage_metrics}()},
+\code{\link{calculate_loan_payment}()},
+\code{\link{calculate_residual_valuation_cap_rates}()},
+\code{\link{calculate_residual_valuation_ebitda_multiples}()},
+\code{\link{calculate_valuation_post_money}()},
+\code{\link{tidy_promote_structure}()}
 }
 \concept{calculation}

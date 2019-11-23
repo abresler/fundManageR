@@ -27,20 +27,23 @@ nareit_monthly_returns(return_wide = FALSE)
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
 }
 \seealso{
-Other NAREIT: \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_capital_raises}},
-  \code{\link{nareit_constituent_years}},
-  \code{\link{nareit_entities}},
-  \code{\link{nareit_industry_tracker}},
-  \code{\link{nareit_mergers_acquisitions}},
-  \code{\link{nareit_notable_properties}},
-  \code{\link{nareit_property_msa}},
-  \code{\link{nareit_state_info}}, \code{\link{reit_funds}}
+Other NAREIT: 
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_capital_raises}()},
+\code{\link{nareit_constituent_years}()},
+\code{\link{nareit_entities}()},
+\code{\link{nareit_industry_tracker}()},
+\code{\link{nareit_mergers_acquisitions}()},
+\code{\link{nareit_notable_properties}()},
+\code{\link{nareit_property_msa}()},
+\code{\link{nareit_state_info}()},
+\code{\link{reit_funds}()}
 
-Other index values: \code{\link{crsp_indicies_returns}},
-  \code{\link{fred_symbols}},
-  \code{\link{msci_realtime_index_values}},
-  \code{\link{nareit_annual_subsector_returns}}
+Other index values: 
+\code{\link{crsp_indicies_returns}()},
+\code{\link{fred_symbols}()},
+\code{\link{msci_realtime_index_values}()},
+\code{\link{nareit_annual_subsector_returns}()}
 }
 \concept{NAREIT}
 \concept{index values}

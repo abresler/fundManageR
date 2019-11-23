@@ -4,8 +4,11 @@
 \alias{crsp_indicies_returns}
 \title{CRSP monthly index returns}
 \usage{
-crsp_indicies_returns(return_wide = FALSE, nest_data = TRUE,
-  return_message = TRUE)
+crsp_indicies_returns(
+  return_wide = FALSE,
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{return_wide}{\code{TRUE} return data in wide form}
@@ -29,13 +32,15 @@ nest_data = FALSE, return_message = TRUE)
 \href{http://crsp.com}{The Center for Research in Security Prices}
 }
 \seealso{
-Other CRSP: \code{\link{crsp_files}},
-  \code{\link{crsp_indicies_constituents}}
+Other CRSP: 
+\code{\link{crsp_files}()},
+\code{\link{crsp_indicies_constituents}()}
 
-Other index values: \code{\link{fred_symbols}},
-  \code{\link{msci_realtime_index_values}},
-  \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_monthly_returns}}
+Other index values: 
+\code{\link{fred_symbols}()},
+\code{\link{msci_realtime_index_values}()},
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_monthly_returns}()}
 }
 \concept{CRSP}
 \concept{index values}

@@ -4,8 +4,12 @@
 \alias{finra_entities}
 \title{FINRA registered entities}
 \usage{
-finra_entities(entity_names = NULL, ocr_pdf = TRUE,
-  score_threshold = 0.2, return_message = TRUE)
+finra_entities(
+  entity_names = NULL,
+  ocr_pdf = TRUE,
+  score_threshold = 0.2,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{entity_names}{vector of names to search}
@@ -36,34 +40,40 @@ ocr_pdf = TRUE)
 \href{http://www.finra.org/}{FINRA}
 }
 \seealso{
-Other FINRA: \code{\link{adv_managers_metadata}},
-  \code{\link{finra_people}}
+Other FINRA: 
+\code{\link{adv_managers_metadata}()},
+\code{\link{finra_people}()}
 
-Other IAPD: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{adv_managers_periods_summaries}},
-  \code{\link{finra_people}}
+Other IAPD: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{adv_managers_periods_summaries}()},
+\code{\link{finra_people}()}
 
-Other entity search: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{adv_managers_periods_summaries}},
-  \code{\link{data_rf_leis}},
-  \code{\link{nareit_entities}}, \code{\link{reit_funds}},
-  \code{\link{rf_sec_13F_companies}},
-  \code{\link{sec_bankruptcies}},
-  \code{\link{sec_broker_dealers}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_cusips}}, \code{\link{sec_filer}},
-  \code{\link{sec_filing_entities}},
-  \code{\link{sec_investment_companies}},
-  \code{\link{sec_money_market_funds}},
-  \code{\link{sec_municipal_advisors}},
-  \code{\link{sec_xbrl_periods}},
-  \code{\link{securities_offerings}},
-  \code{\link{us_public_companies}},
-  \code{\link{ycombinator_alumni}}
+Other entity search: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{adv_managers_periods_summaries}()},
+\code{\link{data_rf_leis}()},
+\code{\link{nareit_entities}()},
+\code{\link{reit_funds}()},
+\code{\link{rf_sec_13F_companies}()},
+\code{\link{sec_bankruptcies}()},
+\code{\link{sec_broker_dealers}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_cusips}()},
+\code{\link{sec_filer}()},
+\code{\link{sec_filing_entities}()},
+\code{\link{sec_investment_companies}()},
+\code{\link{sec_money_market_funds}()},
+\code{\link{sec_municipal_advisors}()},
+\code{\link{sec_xbrl_periods}()},
+\code{\link{securities_offerings}()},
+\code{\link{us_public_companies}()},
+\code{\link{ycombinator_alumni}()}
 }
 \concept{FINRA}
 \concept{IAPD}

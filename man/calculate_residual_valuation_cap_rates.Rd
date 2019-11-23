@@ -4,9 +4,13 @@
 \alias{calculate_residual_valuation_cap_rates}
 \title{Residual value, capitalization rate method}
 \usage{
-calculate_residual_valuation_cap_rates(cap_rates = c(0.05, 0.0525, 0.06,
-  0.2), net_operating_income = "$27,500,000", cost_of_sale = "5\%",
-  debt_balance = "$350,000,000", return_wide = T)
+calculate_residual_valuation_cap_rates(
+  cap_rates = c(0.05, 0.0525, 0.06, 0.2),
+  net_operating_income = "$27,500,000",
+  cost_of_sale = "5\%",
+  debt_balance = "$350,000,000",
+  return_wide = T
+)
 }
 \arguments{
 \item{cap_rates}{vector of capitalization rates in percent or character form}
@@ -32,20 +36,22 @@ calculate_residual_valuation_cap_rates(cap_rates = c(.05, .0525, .06, .2),
 net_operating_income = "$27,500,000", cost_of_sale = "5\%",debt_balance = "$350,000,000", return_wide = T)
 }
 \seealso{
-Other calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall_partnership}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_days_accrued_pref}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_leverage_metrics}},
-  \code{\link{calculate_loan_payment}},
-  \code{\link{calculate_residual_valuation_ebitda_multiples}},
-  \code{\link{calculate_share_proceeds}},
-  \code{\link{calculate_valuation_post_money}},
-  \code{\link{tidy_promote_structure}}
+Other calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_days_accrued_pref}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_leverage_metrics}()},
+\code{\link{calculate_loan_payment}()},
+\code{\link{calculate_residual_valuation_ebitda_multiples}()},
+\code{\link{calculate_share_proceeds}()},
+\code{\link{calculate_valuation_post_money}()},
+\code{\link{tidy_promote_structure}()}
 
-Other residual value calculation: \code{\link{calculate_residual_valuation_ebitda_multiples}}
+Other residual value calculation: 
+\code{\link{calculate_residual_valuation_ebitda_multiples}()}
 }
 \concept{calculation}
 \concept{residual value calculation}

@@ -4,8 +4,7 @@
 \alias{dtcc_recent_trades}
 \title{DTCC most recent trades by product}
 \usage{
-dtcc_recent_trades(assets = NULL, nest_data = TRUE,
-  return_message = TRUE)
+dtcc_recent_trades(assets = NULL, nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
 \item{assets}{type of DTCC cleared financial product \itemize{
@@ -42,14 +41,17 @@ dtcc_recent_trades(assets = c('credits', 'equities', 'rates'))
 \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
 }
 \seealso{
-Other DTCC: \code{\link{dtcc_trades}}
+Other DTCC: 
+\code{\link{dtcc_trades}()}
 
-Other real-time data: \code{\link{msci_realtime_index_values}},
-  \code{\link{us_public_companies}}
+Other real-time data: 
+\code{\link{msci_realtime_index_values}()},
+\code{\link{us_public_companies}()}
 
-Other transaction data: \code{\link{dtcc_trades}},
-  \code{\link{nareit_mergers_acquisitions}},
-  \code{\link{sec_securities_metrics_by_exchange}}
+Other transaction data: 
+\code{\link{dtcc_trades}()},
+\code{\link{nareit_mergers_acquisitions}()},
+\code{\link{sec_securities_metrics_by_exchange}()}
 }
 \concept{DTCC}
 \concept{real-time data}

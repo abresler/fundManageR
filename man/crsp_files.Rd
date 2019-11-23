@@ -23,7 +23,8 @@ crsp_files()
 \href{http://crsp.com}{The Center for Research in Security Prices}
 }
 \seealso{
-Other CRSP: \code{\link{crsp_indicies_constituents}},
-  \code{\link{crsp_indicies_returns}}
+Other CRSP: 
+\code{\link{crsp_indicies_constituents}()},
+\code{\link{crsp_indicies_returns}()}
 }
 \concept{CRSP}

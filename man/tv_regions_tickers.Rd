@@ -4,10 +4,13 @@
 \alias{tv_regions_tickers}
 \title{Tradingview regions traded securities}
 \usage{
-tv_regions_tickers(regions = c("america", "uk", "australia", "brazil",
-  "canada", "euronext", "germany", "hongkong", "india", "japan", "mexico",
-  "newzealand", "russia", "singapore", "spain", "switzerland", "taiwan",
-  "turkey"), return_message = TRUE, nest_data = FALSE)
+tv_regions_tickers(
+  regions = c("america", "uk", "australia", "brazil", "canada", "euronext", "germany",
+    "hongkong", "india", "japan", "mexico", "newzealand", "russia", "singapore", "spain",
+    "switzerland", "taiwan", "turkey"),
+  return_message = TRUE,
+  nest_data = FALSE
+)
 }
 \arguments{
 \item{regions}{vector of regions \itemize{
@@ -33,6 +36,9 @@ tv_regions_tickers(regions = c("america", "uk", "australia", "brazil",
 }}
 
 \item{return_message}{if \code{TRUE} return message}
+}
+\value{
+
 }
 \description{
 Acquires ticker symbols for specified regions

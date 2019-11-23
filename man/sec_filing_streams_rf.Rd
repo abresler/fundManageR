@@ -4,12 +4,14 @@
 \alias{sec_filing_streams_rf}
 \title{SEC filing stream}
 \usage{
-sec_filing_streams_rf(filers = c("All", "Corporate Insider", "Companies",
-  "Investment Company"), filing_names = c("All", "Annual Reports",
-  "Quarterly Reports", "Current Reports", "Other Reports", "Registrations",
-  "Private Offerings", "Ownership", "Prospectuses", "Exemptions",
-  "Withdrawals", "Correspondence", "Proxy Statements", "Confidential"),
-  nest_data = TRUE, return_message = TRUE)
+sec_filing_streams_rf(
+  filers = c("All", "Corporate Insider", "Companies", "Investment Company"),
+  filing_names = c("All", "Annual Reports", "Quarterly Reports", "Current Reports",
+    "Other Reports", "Registrations", "Private Offerings", "Ownership", "Prospectuses",
+    "Exemptions", "Withdrawals", "Correspondence", "Proxy Statements", "Confidential"),
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{filing_names}{type of filing \itemize{
@@ -29,6 +31,9 @@ sec_filing_streams_rf(filers = c("All", "Corporate Insider", "Companies",
 }}
 
 \item{return_message}{return a message}
+}
+\value{
+
 }
 \description{
 This function returns the most recent SEC filings

@@ -4,11 +4,17 @@
 \alias{edgar_entities_cik}
 \title{SEC registered entity search}
 \usage{
-edgar_entities_cik(search_names = c("Rockwood", "BREA", "EJF"),
-  nest_data = FALSE, return_message = TRUE)
+edgar_entities_cik(
+  search_names = c("Rockwood", "BREA", "EJF"),
+  nest_data = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{return_message}{}
+}
+\value{
+
 }
 \description{
 SEC registered entity search

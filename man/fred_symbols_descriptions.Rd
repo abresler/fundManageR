@@ -4,8 +4,11 @@
 \alias{fred_symbols_descriptions}
 \title{FRED Symbols descriptions}
 \usage{
-fred_symbols_descriptions(symbols = c("DGS2", "DGS10"),
-  include_tags = FALSE, return_message = TRUE)
+fred_symbols_descriptions(
+  symbols = c("DGS2", "DGS10"),
+  include_tags = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{symbols}{vector of symbols}

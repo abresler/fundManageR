@@ -4,8 +4,12 @@
 \alias{tidy_column_relations}
 \title{Tidy nested and count columns}
 \usage{
-tidy_column_relations(data, column_keys = c("idCIK", "nameEntity"),
-  bind_to_original_df = FALSE, clean_column_formats = TRUE)
+tidy_column_relations(
+  data,
+  column_keys = c("idCIK", "nameEntity"),
+  bind_to_original_df = FALSE,
+  clean_column_formats = TRUE
+)
 }
 \arguments{
 \item{data}{\code{data frame}}
@@ -32,8 +36,9 @@ dataFilerRelatedParties \%>\%
 tidy_column_relations()
 }
 \seealso{
-Other utility function: \code{\link{drop_na_columns}},
-  \code{\link{get_class_df}},
-  \code{\link{tidy_column_formats}}
+Other utility function: 
+\code{\link{drop_na_columns}()},
+\code{\link{get_class_df}()},
+\code{\link{tidy_column_formats}()}
 }
 \concept{utility function}

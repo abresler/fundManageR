@@ -21,11 +21,12 @@ North American Industry Classification System [NAICS] identification.
 data_sic_naics_codes(filter_duplicates = TRUE)
 }
 \seealso{
-Other dictionary: \code{\link{data_location_codes}},
-  \code{\link{data_sec_rules}},
-  \code{\link{dictionary_fred_ids}},
-  \code{\link{dictionary_sec_filing_codes}},
-  \code{\link{dictionary_sec_form_codes}},
-  \code{\link{dictionary_sic_codes}}
+Other dictionary: 
+\code{\link{data_location_codes}()},
+\code{\link{data_sec_rules}()},
+\code{\link{dictionary_fred_ids}()},
+\code{\link{dictionary_sec_filing_codes}()},
+\code{\link{dictionary_sec_form_codes}()},
+\code{\link{dictionary_sic_codes}()}
 }
 \concept{dictionary}

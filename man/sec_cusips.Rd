@@ -4,8 +4,13 @@
 \alias{sec_cusips}
 \title{SEC CUSIPs}
 \usage{
-sec_cusips(only_most_recent = FALSE, years = 1996:2016,
-  quarters = NULL, nest_data = FALSE, return_message = TRUE)
+sec_cusips(
+  only_most_recent = FALSE,
+  years = 1996:2016,
+  quarters = NULL,
+  nest_data = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{only_most_recent}{\code{TRUE} search only the most recent period}
@@ -26,6 +31,8 @@ sec_cusips(only_most_recent = FALSE, years = 1996:2016,
 }
 \value{
 nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+
+
 }
 \description{
 This function returns information on all Committee on Uniform Securities Identification Procedures [CUSIP]
@@ -43,53 +50,60 @@ return_message = TRUE)
 \href{http://sec.gov}{The Securities and Exchange Commission}
 }
 \seealso{
-Other SEC: \code{\link{data_rf_leis}},
-  \code{\link{dictionary_sec_filing_codes}},
-  \code{\link{dictionary_sec_form_codes}},
-  \code{\link{dictionary_sic_codes}},
-  \code{\link{edgar_filing_streams}},
-  \code{\link{mmf_owned_debt_securities}},
-  \code{\link{recent_insider_trades}},
-  \code{\link{rf_sec_13F_companies}},
-  \code{\link{sec_bankruptcies}},
-  \code{\link{sec_broker_dealers}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_failed_to_deliver_securities}},
-  \code{\link{sec_filer}},
-  \code{\link{sec_filing_entities}},
-  \code{\link{sec_foia_requests}},
-  \code{\link{sec_investment_companies}},
-  \code{\link{sec_money_market_funds}},
-  \code{\link{sec_municipal_advisors}},
-  \code{\link{sec_securities_filing_counts}},
-  \code{\link{sec_securities_metrics_by_exchange}},
-  \code{\link{sec_xbrl_periods}},
-  \code{\link{securities_offerings}},
-  \code{\link{us_public_companies}}
+Other SEC: 
+\code{\link{data_rf_leis}()},
+\code{\link{dictionary_sec_filing_codes}()},
+\code{\link{dictionary_sec_form_codes}()},
+\code{\link{dictionary_sic_codes}()},
+\code{\link{edgar_filing_streams}()},
+\code{\link{mmf_owned_debt_securities}()},
+\code{\link{recent_insider_trades}()},
+\code{\link{rf_sec_13F_companies}()},
+\code{\link{sec_bankruptcies}()},
+\code{\link{sec_broker_dealers}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_failed_to_deliver_securities}()},
+\code{\link{sec_filer}()},
+\code{\link{sec_filing_entities}()},
+\code{\link{sec_foia_requests}()},
+\code{\link{sec_investment_companies}()},
+\code{\link{sec_money_market_funds}()},
+\code{\link{sec_municipal_advisors}()},
+\code{\link{sec_securities_filing_counts}()},
+\code{\link{sec_securities_metrics_by_exchange}()},
+\code{\link{sec_xbrl_periods}()},
+\code{\link{securities_offerings}()},
+\code{\link{us_public_companies}()}
 
-Other entity search: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{adv_managers_periods_summaries}},
-  \code{\link{data_rf_leis}}, \code{\link{finra_entities}},
-  \code{\link{nareit_entities}}, \code{\link{reit_funds}},
-  \code{\link{rf_sec_13F_companies}},
-  \code{\link{sec_bankruptcies}},
-  \code{\link{sec_broker_dealers}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_filer}},
-  \code{\link{sec_filing_entities}},
-  \code{\link{sec_investment_companies}},
-  \code{\link{sec_money_market_funds}},
-  \code{\link{sec_municipal_advisors}},
-  \code{\link{sec_xbrl_periods}},
-  \code{\link{securities_offerings}},
-  \code{\link{us_public_companies}},
-  \code{\link{ycombinator_alumni}}
+Other entity search: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{adv_managers_periods_summaries}()},
+\code{\link{data_rf_leis}()},
+\code{\link{finra_entities}()},
+\code{\link{nareit_entities}()},
+\code{\link{reit_funds}()},
+\code{\link{rf_sec_13F_companies}()},
+\code{\link{sec_bankruptcies}()},
+\code{\link{sec_broker_dealers}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_filer}()},
+\code{\link{sec_filing_entities}()},
+\code{\link{sec_investment_companies}()},
+\code{\link{sec_money_market_funds}()},
+\code{\link{sec_municipal_advisors}()},
+\code{\link{sec_xbrl_periods}()},
+\code{\link{securities_offerings}()},
+\code{\link{us_public_companies}()},
+\code{\link{ycombinator_alumni}()}
 
-Other securities search: \code{\link{mmf_owned_debt_securities}},
-  \code{\link{rf_sec_13F_companies}},
-  \code{\link{securities_offerings}}
+Other securities search: 
+\code{\link{mmf_owned_debt_securities}()},
+\code{\link{rf_sec_13F_companies}()},
+\code{\link{securities_offerings}()}
 }
 \concept{SEC}
 \concept{entity search}

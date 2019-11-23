@@ -4,8 +4,13 @@
 \alias{sec_form_ds}
 \title{SEC Form-D's}
 \usage{
-sec_form_ds(industries = NULL, form_years = NULL, months = NULL,
-  nest_data = FALSE, return_message = TRUE)
+sec_form_ds(
+  industries = NULL,
+  form_years = NULL,
+  months = NULL,
+  nest_data = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{industries}{industries to search options: \itemize{

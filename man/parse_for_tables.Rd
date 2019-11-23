@@ -4,16 +4,27 @@
 \alias{parse_for_tables}
 \title{Parse an EDGAR data frame for underlying tables}
 \usage{
-parse_for_tables(all_data, table_name_initial = "All Filings",
-  parse_all_filings = TRUE, parse_complete_text_filings = TRUE,
-  parse_form_d = TRUE, parse_13F = TRUE,
-  parse_small_offerings = TRUE, parse_form_3_4s = TRUE,
-  parse_asset_files = TRUE, parse_xbrl = TRUE,
-  assign_to_environment = FALSE, nest_data = TRUE,
-  return_message = TRUE)
+parse_for_tables(
+  all_data,
+  table_name_initial = "All Filings",
+  parse_all_filings = TRUE,
+  parse_complete_text_filings = TRUE,
+  parse_form_d = TRUE,
+  parse_13F = TRUE,
+  parse_small_offerings = TRUE,
+  parse_form_3_4s = TRUE,
+  parse_asset_files = TRUE,
+  parse_xbrl = TRUE,
+  assign_to_environment = FALSE,
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{return_message}{}
+}
+\value{
+
 }
 \description{
 Parse an EDGAR data frame for underlying tables

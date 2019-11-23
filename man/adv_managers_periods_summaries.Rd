@@ -4,9 +4,14 @@
 \alias{adv_managers_periods_summaries}
 \title{ADV managers periods data}
 \usage{
-adv_managers_periods_summaries(periods = c("2018-06"),
-  all_periods = FALSE, only_most_recent = FALSE,
-  include_exempt = TRUE, nest_data = FALSE, return_message = TRUE)
+adv_managers_periods_summaries(
+  periods = c("2018-06"),
+  all_periods = FALSE,
+  only_most_recent = FALSE,
+  include_exempt = TRUE,
+  nest_data = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{periods}{dates in year-month form}
@@ -36,39 +41,49 @@ adv_managers_periods_summaries(only_most_recent = TRUE)
 }
 }
 \seealso{
-Other IAPD: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{finra_entities}}, \code{\link{finra_people}}
+Other IAPD: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{finra_entities}()},
+\code{\link{finra_people}()}
 
-Other ADV: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}}
+Other ADV: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()}
 
-Other entity search: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{data_rf_leis}}, \code{\link{finra_entities}},
-  \code{\link{nareit_entities}}, \code{\link{reit_funds}},
-  \code{\link{rf_sec_13F_companies}},
-  \code{\link{sec_bankruptcies}},
-  \code{\link{sec_broker_dealers}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_cusips}}, \code{\link{sec_filer}},
-  \code{\link{sec_filing_entities}},
-  \code{\link{sec_investment_companies}},
-  \code{\link{sec_money_market_funds}},
-  \code{\link{sec_municipal_advisors}},
-  \code{\link{sec_xbrl_periods}},
-  \code{\link{securities_offerings}},
-  \code{\link{us_public_companies}},
-  \code{\link{ycombinator_alumni}}
+Other entity search: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{data_rf_leis}()},
+\code{\link{finra_entities}()},
+\code{\link{nareit_entities}()},
+\code{\link{reit_funds}()},
+\code{\link{rf_sec_13F_companies}()},
+\code{\link{sec_bankruptcies}()},
+\code{\link{sec_broker_dealers}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_cusips}()},
+\code{\link{sec_filer}()},
+\code{\link{sec_filing_entities}()},
+\code{\link{sec_investment_companies}()},
+\code{\link{sec_money_market_funds}()},
+\code{\link{sec_municipal_advisors}()},
+\code{\link{sec_xbrl_periods}()},
+\code{\link{securities_offerings}()},
+\code{\link{us_public_companies}()},
+\code{\link{ycombinator_alumni}()}
 
-Other fund data: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{reit_funds}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_money_market_funds}}
+Other fund data: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{reit_funds}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_money_market_funds}()}
 }
 \concept{ADV}
 \concept{IAPD}

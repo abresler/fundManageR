@@ -4,10 +4,13 @@
 \alias{tv_regions_metrics}
 \title{Tradingview searchable metrics by region}
 \usage{
-tv_regions_metrics(regions = c("america", "uk", "australia", "brazil",
-  "canada", "euronext", "germany", "hongkong", "india", "japan", "mexico",
-  "newzealand", "russia", "singapore", "spain", "switzerland", "taiwan",
-  "turkey"), return_message = TRUE, nest_data = FALSE)
+tv_regions_metrics(
+  regions = c("america", "uk", "australia", "brazil", "canada", "euronext", "germany",
+    "hongkong", "india", "japan", "mexico", "newzealand", "russia", "singapore", "spain",
+    "switzerland", "taiwan", "turkey"),
+  return_message = TRUE,
+  nest_data = FALSE
+)
 }
 \arguments{
 \item{regions}{vector of regions \itemize{
@@ -33,6 +36,9 @@ tv_regions_metrics(regions = c("america", "uk", "australia", "brazil",
 }}
 
 \item{return_message}{if \code{TRUE} return message}
+}
+\value{
+
 }
 \description{
 Get searchable metrics by region

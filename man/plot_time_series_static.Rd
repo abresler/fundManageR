@@ -4,10 +4,16 @@
 \alias{plot_time_series_static}
 \title{Plot ggplot time series}
 \usage{
-plot_time_series_static(data, date_start = NULL, date_end = NULL,
+plot_time_series_static(
+  data,
+  date_start = NULL,
+  date_end = NULL,
   transformations = c("mean", "median", "smooth"),
-  include_recessions = TRUE, x_breaks = 12, plot_labels = TRUE,
-  use_hrbr_theme = TRUE)
+  include_recessions = TRUE,
+  x_breaks = 12,
+  plot_labels = TRUE,
+  use_hrbr_theme = TRUE
+)
 }
 \arguments{
 \item{data}{a data frame}

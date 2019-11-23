@@ -4,8 +4,11 @@
 \alias{msci_indicies_constituents}
 \title{MSCI Indicies Constituents}
 \usage{
-msci_indicies_constituents(indicies = NULL, nest_data = TRUE,
-  return_message = TRUE)
+msci_indicies_constituents(
+  indicies = NULL,
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{indicies}{vector of indicies \itemize{
@@ -41,12 +44,14 @@ msci_indicies_constituents(indicies = NULL, nest_data = TRUE, return_message = T
 \href{http://msci.com}{MSCI Inc}
 }
 \seealso{
-Other MSCI: \code{\link{msci_indicies}},
-  \code{\link{msci_realtime_index_values}}
+Other MSCI: 
+\code{\link{msci_indicies}()},
+\code{\link{msci_realtime_index_values}()}
 
-Other index constituents: \code{\link{crsp_indicies_constituents}},
-  \code{\link{nareit_constituent_years}},
-  \code{\link{sp500_constituents}}
+Other index constituents: 
+\code{\link{crsp_indicies_constituents}()},
+\code{\link{nareit_constituent_years}()},
+\code{\link{sp500_constituents}()}
 }
 \concept{MSCI}
 \concept{index constituents}

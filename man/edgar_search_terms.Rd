@@ -4,17 +4,30 @@
 \alias{edgar_search_terms}
 \title{Title}
 \usage{
-edgar_search_terms(search_terms = NULL, parameter = NULL,
-  year_start = NULL, year_end = NULL,
-  table_name_initial = "All Filings", parse_all_filings = TRUE,
-  parse_complete_text_filings = FALSE, parse_form_d = FALSE,
-  parse_13F = FALSE, parse_small_offerings = FALSE,
-  parse_form_3_4s = FALSE, parse_asset_files = FALSE,
-  parse_xbrl = FALSE, assign_to_environment = TRUE, nest_data = TRUE,
-  return_message = TRUE)
+edgar_search_terms(
+  search_terms = NULL,
+  parameter = NULL,
+  year_start = NULL,
+  year_end = NULL,
+  table_name_initial = "All Filings",
+  parse_all_filings = TRUE,
+  parse_complete_text_filings = FALSE,
+  parse_form_d = FALSE,
+  parse_13F = FALSE,
+  parse_small_offerings = FALSE,
+  parse_form_3_4s = FALSE,
+  parse_asset_files = FALSE,
+  parse_xbrl = FALSE,
+  assign_to_environment = TRUE,
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{return_message}{}
+}
+\value{
+
 }
 \description{
 Title

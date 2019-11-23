@@ -4,8 +4,7 @@
 \alias{finra_people}
 \title{FINRA registered people}
 \usage{
-finra_people(search_name = NULL, ocr_pdf = TRUE,
-  return_message = TRUE)
+finra_people(search_name = NULL, ocr_pdf = TRUE, return_message = TRUE)
 }
 \arguments{
 \item{search_name}{vector of names to search}
@@ -35,14 +34,16 @@ finra_people(search_name = 'Llyod Blankfein', ocr_pdf = TRUE)
 \href{http://www.finra.org/}{FINRA}
 }
 \seealso{
-Other FINRA: \code{\link{adv_managers_metadata}},
-  \code{\link{finra_entities}}
+Other FINRA: 
+\code{\link{adv_managers_metadata}()},
+\code{\link{finra_entities}()}
 
-Other IAPD: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{adv_managers_periods_summaries}},
-  \code{\link{finra_entities}}
+Other IAPD: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{adv_managers_periods_summaries}()},
+\code{\link{finra_entities}()}
 }
 \concept{FINRA}
 \concept{IAPD}

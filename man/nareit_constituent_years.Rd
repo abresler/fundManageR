@@ -4,8 +4,12 @@
 \alias{nareit_constituent_years}
 \title{NAREIT index constituency data by year}
 \usage{
-nareit_constituent_years(years = 2010:2016, resolve_names = TRUE,
-  nest_data = TRUE, return_message = TRUE)
+nareit_constituent_years(
+  years = 2010:2016,
+  resolve_names = TRUE,
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{years}{vector of years to search starting in 1991}
@@ -30,19 +34,22 @@ nareit_constituent_years(years = 1991:2016, resolve_names = TRUE, nest_data = TR
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
 }
 \seealso{
-Other NAREIT: \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_capital_raises}},
-  \code{\link{nareit_entities}},
-  \code{\link{nareit_industry_tracker}},
-  \code{\link{nareit_mergers_acquisitions}},
-  \code{\link{nareit_monthly_returns}},
-  \code{\link{nareit_notable_properties}},
-  \code{\link{nareit_property_msa}},
-  \code{\link{nareit_state_info}}, \code{\link{reit_funds}}
+Other NAREIT: 
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_capital_raises}()},
+\code{\link{nareit_entities}()},
+\code{\link{nareit_industry_tracker}()},
+\code{\link{nareit_mergers_acquisitions}()},
+\code{\link{nareit_monthly_returns}()},
+\code{\link{nareit_notable_properties}()},
+\code{\link{nareit_property_msa}()},
+\code{\link{nareit_state_info}()},
+\code{\link{reit_funds}()}
 
-Other index constituents: \code{\link{crsp_indicies_constituents}},
-  \code{\link{msci_indicies_constituents}},
-  \code{\link{sp500_constituents}}
+Other index constituents: 
+\code{\link{crsp_indicies_constituents}()},
+\code{\link{msci_indicies_constituents}()},
+\code{\link{sp500_constituents}()}
 }
 \concept{NAREIT}
 \concept{index constituents}

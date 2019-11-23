@@ -3,7 +3,6 @@
 \docType{package}
 \name{fundManageR}
 \alias{fundManageR}
-\alias{fundManageR-package}
 \title{fundManageR}
 \description{
 Investment management toolkit for R

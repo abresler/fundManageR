@@ -4,11 +4,17 @@
 \alias{visualize_fred_time_series}
 \title{Plot any FRED time series}
 \usage{
-visualize_fred_time_series(series_id = "DGS2", use_random = FALSE,
-  fred_data_transformation = NULL, date_start = NULL,
-  date_end = NULL, plot_transformations = c("mean", "median",
-  "smooth"), use_hrbr_theme = FALSE, plot_labels = FALSE,
-  interactive = FALSE)
+visualize_fred_time_series(
+  series_id = "DGS2",
+  use_random = FALSE,
+  fred_data_transformation = NULL,
+  date_start = NULL,
+  date_end = NULL,
+  plot_transformations = c("mean", "median", "smooth"),
+  use_hrbr_theme = FALSE,
+  plot_labels = FALSE,
+  interactive = FALSE
+)
 }
 \arguments{
 \item{series_id}{any FRED series ID}

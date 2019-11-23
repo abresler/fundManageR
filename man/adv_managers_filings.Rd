@@ -4,13 +4,17 @@
 \alias{adv_managers_filings}
 \title{IAPD registered managers ADV data}
 \usage{
-adv_managers_filings(entity_names = NULL, crd_ids = NULL,
-  all_sections = TRUE, section_names = c("Registration",
-  "Identifying Information", "Organization", "Successions",
-  "Private Fund Reporting", "Direct Manager Owners",
-  "Indirect Manager Owners", "Other Manager Information",
-  "Manager Signatories"), flatten_tables = TRUE, gather_data = FALSE,
-  assign_to_environment = TRUE)
+adv_managers_filings(
+  entity_names = NULL,
+  crd_ids = NULL,
+  all_sections = TRUE,
+  section_names = c("Registration", "Identifying Information", "Organization",
+    "Successions", "Private Fund Reporting", "Direct Manager Owners",
+    "Indirect Manager Owners", "Other Manager Information", "Manager Signatories"),
+  flatten_tables = TRUE,
+  gather_data = FALSE,
+  assign_to_environment = TRUE
+)
 }
 \arguments{
 \item{entity_names}{vector entities you want to search}
@@ -52,39 +56,49 @@ adv_managers_filings(entity_names = c('Blackstone Real Estate'), crd_ids = NULL,
  assign_to_environment = TRUE)
 }
 \seealso{
-Other IAPD: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{adv_managers_periods_summaries}},
-  \code{\link{finra_entities}}, \code{\link{finra_people}}
+Other IAPD: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{adv_managers_periods_summaries}()},
+\code{\link{finra_entities}()},
+\code{\link{finra_people}()}
 
-Other ADV: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_periods_summaries}}
+Other ADV: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_periods_summaries}()}
 
-Other entity search: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{adv_managers_periods_summaries}},
-  \code{\link{data_rf_leis}}, \code{\link{finra_entities}},
-  \code{\link{nareit_entities}}, \code{\link{reit_funds}},
-  \code{\link{rf_sec_13F_companies}},
-  \code{\link{sec_bankruptcies}},
-  \code{\link{sec_broker_dealers}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_cusips}}, \code{\link{sec_filer}},
-  \code{\link{sec_filing_entities}},
-  \code{\link{sec_investment_companies}},
-  \code{\link{sec_money_market_funds}},
-  \code{\link{sec_municipal_advisors}},
-  \code{\link{sec_xbrl_periods}},
-  \code{\link{securities_offerings}},
-  \code{\link{us_public_companies}},
-  \code{\link{ycombinator_alumni}}
+Other entity search: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{adv_managers_periods_summaries}()},
+\code{\link{data_rf_leis}()},
+\code{\link{finra_entities}()},
+\code{\link{nareit_entities}()},
+\code{\link{reit_funds}()},
+\code{\link{rf_sec_13F_companies}()},
+\code{\link{sec_bankruptcies}()},
+\code{\link{sec_broker_dealers}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_cusips}()},
+\code{\link{sec_filer}()},
+\code{\link{sec_filing_entities}()},
+\code{\link{sec_investment_companies}()},
+\code{\link{sec_money_market_funds}()},
+\code{\link{sec_municipal_advisors}()},
+\code{\link{sec_xbrl_periods}()},
+\code{\link{securities_offerings}()},
+\code{\link{us_public_companies}()},
+\code{\link{ycombinator_alumni}()}
 
-Other fund data: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{adv_managers_periods_summaries}},
-  \code{\link{reit_funds}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_money_market_funds}}
+Other fund data: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{adv_managers_periods_summaries}()},
+\code{\link{reit_funds}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_money_market_funds}()}
 }
 \concept{ADV}
 \concept{IAPD}

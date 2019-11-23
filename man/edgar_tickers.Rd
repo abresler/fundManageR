@@ -6,6 +6,9 @@
 \usage{
 edgar_tickers()
 }
+\value{
+
+}
 \description{
 SEC listed public companys
 }

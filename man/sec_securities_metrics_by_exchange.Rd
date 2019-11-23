@@ -4,9 +4,13 @@
 \alias{sec_securities_metrics_by_exchange}
 \title{SEC quarterly securities transaction metrics}
 \usage{
-sec_securities_metrics_by_exchange(only_most_recent = FALSE,
-  years = 2016, months = NULL, nest_data = TRUE,
-  return_message = TRUE)
+sec_securities_metrics_by_exchange(
+  only_most_recent = FALSE,
+  years = 2016,
+  months = NULL,
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{only_most_recent}{\code{TRUE} search only the most recent period}
@@ -37,36 +41,40 @@ sec_securities_metrics_by_exchange(years = 2016)
 \href{http://sec.gov}{The Securities and Exchange Commission}
 }
 \seealso{
-Other SEC: \code{\link{data_rf_leis}},
-  \code{\link{dictionary_sec_filing_codes}},
-  \code{\link{dictionary_sec_form_codes}},
-  \code{\link{dictionary_sic_codes}},
-  \code{\link{edgar_filing_streams}},
-  \code{\link{mmf_owned_debt_securities}},
-  \code{\link{recent_insider_trades}},
-  \code{\link{rf_sec_13F_companies}},
-  \code{\link{sec_bankruptcies}},
-  \code{\link{sec_broker_dealers}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_cusips}},
-  \code{\link{sec_failed_to_deliver_securities}},
-  \code{\link{sec_filer}},
-  \code{\link{sec_filing_entities}},
-  \code{\link{sec_foia_requests}},
-  \code{\link{sec_investment_companies}},
-  \code{\link{sec_money_market_funds}},
-  \code{\link{sec_municipal_advisors}},
-  \code{\link{sec_securities_filing_counts}},
-  \code{\link{sec_xbrl_periods}},
-  \code{\link{securities_offerings}},
-  \code{\link{us_public_companies}}
+Other SEC: 
+\code{\link{data_rf_leis}()},
+\code{\link{dictionary_sec_filing_codes}()},
+\code{\link{dictionary_sec_form_codes}()},
+\code{\link{dictionary_sic_codes}()},
+\code{\link{edgar_filing_streams}()},
+\code{\link{mmf_owned_debt_securities}()},
+\code{\link{recent_insider_trades}()},
+\code{\link{rf_sec_13F_companies}()},
+\code{\link{sec_bankruptcies}()},
+\code{\link{sec_broker_dealers}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_cusips}()},
+\code{\link{sec_failed_to_deliver_securities}()},
+\code{\link{sec_filer}()},
+\code{\link{sec_filing_entities}()},
+\code{\link{sec_foia_requests}()},
+\code{\link{sec_investment_companies}()},
+\code{\link{sec_money_market_funds}()},
+\code{\link{sec_municipal_advisors}()},
+\code{\link{sec_securities_filing_counts}()},
+\code{\link{sec_xbrl_periods}()},
+\code{\link{securities_offerings}()},
+\code{\link{us_public_companies}()}
 
-Other transaction data: \code{\link{dtcc_recent_trades}},
-  \code{\link{dtcc_trades}},
-  \code{\link{nareit_mergers_acquisitions}}
+Other transaction data: 
+\code{\link{dtcc_recent_trades}()},
+\code{\link{dtcc_trades}()},
+\code{\link{nareit_mergers_acquisitions}()}
 
-Other public company data: \code{\link{sec_failed_to_deliver_securities}},
-  \code{\link{sec_xbrl_periods}}
+Other public company data: 
+\code{\link{sec_failed_to_deliver_securities}()},
+\code{\link{sec_xbrl_periods}()}
 }
 \concept{SEC}
 \concept{public company data}

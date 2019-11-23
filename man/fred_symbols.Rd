@@ -4,10 +4,15 @@
 \alias{fred_symbols}
 \title{Federal Reserve Economic Data time series tibble}
 \usage{
-fred_symbols(symbols = c("DGS2", "DGS10", "DGS30"),
-  transformations = c("default"), widen_data = F,
-  convert_date_time = TRUE, nest_data = TRUE,
-  include_metadata = TRUE, return_message = TRUE)
+fred_symbols(
+  symbols = c("DGS2", "DGS10", "DGS30"),
+  transformations = c("default"),
+  widen_data = F,
+  convert_date_time = TRUE,
+  nest_data = TRUE,
+  include_metadata = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{symbols}{fred symbols to search, see \href{https://fred.stlouisfed.org/tags/series}{FRED symbols} for options}
@@ -44,9 +49,10 @@ include_metadata = TRUE
 
 }
 \seealso{
-Other index values: \code{\link{crsp_indicies_returns}},
-  \code{\link{msci_realtime_index_values}},
-  \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_monthly_returns}}
+Other index values: 
+\code{\link{crsp_indicies_returns}()},
+\code{\link{msci_realtime_index_values}()},
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_monthly_returns}()}
 }
 \concept{index values}

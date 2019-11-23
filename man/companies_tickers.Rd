@@ -4,8 +4,11 @@
 \alias{companies_tickers}
 \title{Companies ticker symbols}
 \usage{
-companies_tickers(companies = c("Vornado", "Snap"),
-  include_trades = TRUE, return_message = TRUE)
+companies_tickers(
+  companies = c("Vornado", "Snap"),
+  include_trades = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{companies}{vector of comapnies}

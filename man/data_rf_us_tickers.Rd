@@ -9,6 +9,9 @@ data_rf_us_tickers(return_message = TRUE)
 \arguments{
 \item{return_message}{}
 }
+\value{
+
+}
 \description{
 Get United States publicly traded ticker data
 }

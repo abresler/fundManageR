@@ -4,8 +4,12 @@
 \alias{adv_managers_brochures}
 \title{OCR IAPD Managers Brochures}
 \usage{
-adv_managers_brochures(entity_names = NULL, crd_ids = NULL,
-  split_pages = TRUE, nest_data = FALSE)
+adv_managers_brochures(
+  entity_names = NULL,
+  crd_ids = NULL,
+  split_pages = TRUE,
+  nest_data = FALSE
+)
 }
 \arguments{
 \item{entity_names}{vector names of the companies you want to search}
@@ -15,6 +19,9 @@ adv_managers_brochures(entity_names = NULL, crd_ids = NULL,
 \item{split_pages}{\code{TRUE} split brochure into individual pages}
 
 \item{nest_data}{\code{TRUE} return nested data frame}
+}
+\value{
+
 }
 \description{
 This function OCRs a firm's brochure

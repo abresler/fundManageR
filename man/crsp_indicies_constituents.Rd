@@ -25,12 +25,14 @@ crsp_indicies_constituents(nest_data = FALSE, return_message = TRUE)
 \href{http://crsp.com}{The Center for Research in Security Prices}
 }
 \seealso{
-Other CRSP: \code{\link{crsp_files}},
-  \code{\link{crsp_indicies_returns}}
+Other CRSP: 
+\code{\link{crsp_files}()},
+\code{\link{crsp_indicies_returns}()}
 
-Other index constituents: \code{\link{msci_indicies_constituents}},
-  \code{\link{nareit_constituent_years}},
-  \code{\link{sp500_constituents}}
+Other index constituents: 
+\code{\link{msci_indicies_constituents}()},
+\code{\link{nareit_constituent_years}()},
+\code{\link{sp500_constituents}()}
 }
 \concept{CRSP}
 \concept{index constituents}

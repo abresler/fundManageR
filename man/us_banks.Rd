@@ -6,6 +6,9 @@
 \usage{
 us_banks()
 }
+\value{
+
+}
 \description{
 United States Bank
 }

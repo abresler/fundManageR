@@ -23,7 +23,8 @@ cb_unicorns(return_message = TRUE)
 \href{https://cbinsights/}{CB Insights}
 }
 \seealso{
-Other venture capital: \code{\link{calculate_valuation_post_money}},
-  \code{\link{ycombinator_alumni}}
+Other venture capital: 
+\code{\link{calculate_valuation_post_money}()},
+\code{\link{ycombinator_alumni}()}
 }
 \concept{venture capital}

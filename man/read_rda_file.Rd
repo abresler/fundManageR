@@ -4,9 +4,14 @@
 \alias{read_rda_file}
 \title{read RDA file}
 \usage{
+read_rda_file(
+ 
+    file = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
+  return_tibble = TRUE
+)
+}
+\value{
 
-  read_rda_file(file = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
-  return_tibble = TRUE)
 }
 \description{
 read RDA file

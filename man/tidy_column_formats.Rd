@@ -24,8 +24,9 @@ tibble(nameFund = "Blackstone Real Estate Fund IX", isNewFund = "N/A",
 countAssets = 12000, amountAUM = 65000000, isRealEstateFund = 1) \%>\% tidy_column_formats(drop_na_columns = FALSE)
 }
 \seealso{
-Other utility function: \code{\link{drop_na_columns}},
-  \code{\link{get_class_df}},
-  \code{\link{tidy_column_relations}}
+Other utility function: 
+\code{\link{drop_na_columns}()},
+\code{\link{get_class_df}()},
+\code{\link{tidy_column_relations}()}
 }
 \concept{utility function}

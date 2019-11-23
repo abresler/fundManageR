@@ -9,6 +9,9 @@ tickers_trades(tickers = c("PEI", "bxp"), return_message = TRUE)
 \arguments{
 \item{return_message}{}
 }
+\value{
+
+}
 \description{
 Tickers trades
 }

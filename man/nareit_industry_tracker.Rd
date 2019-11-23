@@ -4,8 +4,11 @@
 \alias{nareit_industry_tracker}
 \title{NAREIT quarterly industry tracking data}
 \usage{
-nareit_industry_tracker(nest_data = FALSE, return_wide = TRUE,
-  return_message = TRUE)
+nareit_industry_tracker(
+  nest_data = FALSE,
+  return_wide = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{nest_data}{\code{TRUE} return nested data frame}
@@ -28,14 +31,16 @@ nareit_industry_tracker(return_message = TRUE, return_wide = TRUE)
 }
 }
 \seealso{
-Other NAREIT: \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_capital_raises}},
-  \code{\link{nareit_constituent_years}},
-  \code{\link{nareit_entities}},
-  \code{\link{nareit_mergers_acquisitions}},
-  \code{\link{nareit_monthly_returns}},
-  \code{\link{nareit_notable_properties}},
-  \code{\link{nareit_property_msa}},
-  \code{\link{nareit_state_info}}, \code{\link{reit_funds}}
+Other NAREIT: 
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_capital_raises}()},
+\code{\link{nareit_constituent_years}()},
+\code{\link{nareit_entities}()},
+\code{\link{nareit_mergers_acquisitions}()},
+\code{\link{nareit_monthly_returns}()},
+\code{\link{nareit_notable_properties}()},
+\code{\link{nareit_property_msa}()},
+\code{\link{nareit_state_info}()},
+\code{\link{reit_funds}()}
 }
 \concept{NAREIT}

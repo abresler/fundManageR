@@ -4,11 +4,18 @@
 \alias{edgar_sic_filers}
 \title{SIC Cod Companies}
 \usage{
-edgar_sic_filers(sic_codes = c(3949, 3690, 3711), merge_names = TRUE,
-  return_message = TRUE, nest_data = FALSE)
+edgar_sic_filers(
+  sic_codes = c(3949, 3690, 3711),
+  merge_names = TRUE,
+  return_message = TRUE,
+  nest_data = FALSE
+)
 }
 \arguments{
 \item{nest_data}{}
+}
+\value{
+
 }
 \description{
 SIC Cod Companies

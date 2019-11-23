@@ -4,8 +4,14 @@
 \alias{tv_tickers_news}
 \title{Tradingview tickers news}
 \usage{
-tv_tickers_news(tickers = c("FB", "AAPL", "NFLX", "GOOG", "VNO", "EQR",
-  "BXP"), return_message = TRUE, nest_data = FALSE)
+tv_tickers_news(
+  tickers = c("FB", "AAPL", "NFLX", "GOOG", "VNO", "EQR", "BXP"),
+  return_message = TRUE,
+  nest_data = FALSE
+)
+}
+\value{
+
 }
 \description{
 Returns news data for specified tickers

@@ -4,14 +4,24 @@
 \alias{calculate_loan_payment}
 \title{Loan payment calculation}
 \usage{
-calculate_loan_payment(loan_start_date = "2016-06-01",
-  amount_initial_draw = 3000, is_interest_only = F,
-  interest_only_periods = 24, interest_rate = "10\%",
-  is_actual_360 = TRUE, amortization_years = 10,
-  amortization_months = 0, term_years = 10, term_months = 0,
-  pct_loan_fee = 0, balloon_year = 10,
-  override_monthly_interest = FALSE, interest_reserve_period = 0,
-  balloon_month = 0, return_annual_summary = F)
+calculate_loan_payment(
+  loan_start_date = "2016-06-01",
+  amount_initial_draw = 3000,
+  is_interest_only = F,
+  interest_only_periods = 24,
+  interest_rate = "10\%",
+  is_actual_360 = TRUE,
+  amortization_years = 10,
+  amortization_months = 0,
+  term_years = 10,
+  term_months = 0,
+  pct_loan_fee = 0,
+  balloon_year = 10,
+  override_monthly_interest = FALSE,
+  interest_reserve_period = 0,
+  balloon_month = 0,
+  return_annual_summary = F
+)
 }
 \arguments{
 \item{loan_start_date}{date loan starts in year, month, date form}
@@ -61,25 +71,27 @@ override_monthly_interest = FALSE, interest_reserve_period = 0, balloon_month = 
 return_annual_summary = F)
 }
 \seealso{
-Other leveraged finance calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall_partnership}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_leverage_metrics}}
+Other leveraged finance calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_leverage_metrics}()}
 
-Other calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall_partnership}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_days_accrued_pref}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_leverage_metrics}},
-  \code{\link{calculate_residual_valuation_cap_rates}},
-  \code{\link{calculate_residual_valuation_ebitda_multiples}},
-  \code{\link{calculate_share_proceeds}},
-  \code{\link{calculate_valuation_post_money}},
-  \code{\link{tidy_promote_structure}}
+Other calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_days_accrued_pref}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_leverage_metrics}()},
+\code{\link{calculate_residual_valuation_cap_rates}()},
+\code{\link{calculate_residual_valuation_ebitda_multiples}()},
+\code{\link{calculate_share_proceeds}()},
+\code{\link{calculate_valuation_post_money}()},
+\code{\link{tidy_promote_structure}()}
 }
 \concept{calculation}
 \concept{leveraged finance calculation}

@@ -4,8 +4,11 @@
 \alias{fred_terms_ids}
 \title{FRED Terms Series IDs}
 \usage{
-fred_terms_ids(search_terms = NULL, use_json_api = FALSE,
-  return_message = TRUE)
+fred_terms_ids(
+  search_terms = NULL,
+  use_json_api = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{search_terms}{vector of search terms}

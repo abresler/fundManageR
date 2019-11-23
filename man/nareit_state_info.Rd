@@ -4,8 +4,12 @@
 \alias{nareit_state_info}
 \title{NAREIT properties by state}
 \usage{
-nareit_state_info(include_reit_hq = TRUE, include_reit_holdings = TRUE,
-  nest_data = TRUE, return_message = TRUE)
+nareit_state_info(
+  include_reit_hq = TRUE,
+  include_reit_holdings = TRUE,
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{include_reit_hq}{\code{TRUE} include REIT headquarter locations}
@@ -32,19 +36,21 @@ nareit_state_info(include_reit_hq = TRUE, include_reit_holdings = TRUE, nest_dat
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
 }
 \seealso{
-Other NAREIT: \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_capital_raises}},
-  \code{\link{nareit_constituent_years}},
-  \code{\link{nareit_entities}},
-  \code{\link{nareit_industry_tracker}},
-  \code{\link{nareit_mergers_acquisitions}},
-  \code{\link{nareit_monthly_returns}},
-  \code{\link{nareit_notable_properties}},
-  \code{\link{nareit_property_msa}},
-  \code{\link{reit_funds}}
+Other NAREIT: 
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_capital_raises}()},
+\code{\link{nareit_constituent_years}()},
+\code{\link{nareit_entities}()},
+\code{\link{nareit_industry_tracker}()},
+\code{\link{nareit_mergers_acquisitions}()},
+\code{\link{nareit_monthly_returns}()},
+\code{\link{nareit_notable_properties}()},
+\code{\link{nareit_property_msa}()},
+\code{\link{reit_funds}()}
 
-Other property data: \code{\link{nareit_notable_properties}},
-  \code{\link{nareit_property_msa}}
+Other property data: 
+\code{\link{nareit_notable_properties}()},
+\code{\link{nareit_property_msa}()}
 }
 \concept{NAREIT}
 \concept{property data}

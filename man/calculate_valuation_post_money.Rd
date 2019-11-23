@@ -4,8 +4,11 @@
 \alias{calculate_valuation_post_money}
 \title{Post money valuation splits}
 \usage{
-calculate_valuation_post_money(pre_money_valuation = "$45,000,000",
-  percent_sold = "10\%", return_wide = T)
+calculate_valuation_post_money(
+  pre_money_valuation = "$45,000,000",
+  percent_sold = "10\%",
+  return_wide = T
+)
 }
 \arguments{
 \item{pre_money_valuation}{vector of of valuations in numeric or character}
@@ -25,21 +28,23 @@ ownership splits of an entity for specified inputs.
 calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold = "10\%", return_wide = T)
 }
 \seealso{
-Other calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall_partnership}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_days_accrued_pref}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_leverage_metrics}},
-  \code{\link{calculate_loan_payment}},
-  \code{\link{calculate_residual_valuation_cap_rates}},
-  \code{\link{calculate_residual_valuation_ebitda_multiples}},
-  \code{\link{calculate_share_proceeds}},
-  \code{\link{tidy_promote_structure}}
+Other calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_days_accrued_pref}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_leverage_metrics}()},
+\code{\link{calculate_loan_payment}()},
+\code{\link{calculate_residual_valuation_cap_rates}()},
+\code{\link{calculate_residual_valuation_ebitda_multiples}()},
+\code{\link{calculate_share_proceeds}()},
+\code{\link{tidy_promote_structure}()}
 
-Other venture capital: \code{\link{cb_unicorns}},
-  \code{\link{ycombinator_alumni}}
+Other venture capital: 
+\code{\link{cb_unicorns}()},
+\code{\link{ycombinator_alumni}()}
 }
 \concept{calculation}
 \concept{venture capital}

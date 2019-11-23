@@ -26,16 +26,19 @@ msci_realtime_index_values()
 \href{http://msci.com}{MSCI Inc}
 }
 \seealso{
-Other MSCI: \code{\link{msci_indicies_constituents}},
-  \code{\link{msci_indicies}}
+Other MSCI: 
+\code{\link{msci_indicies_constituents}()},
+\code{\link{msci_indicies}()}
 
-Other index values: \code{\link{crsp_indicies_returns}},
-  \code{\link{fred_symbols}},
-  \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_monthly_returns}}
+Other index values: 
+\code{\link{crsp_indicies_returns}()},
+\code{\link{fred_symbols}()},
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_monthly_returns}()}
 
-Other real-time data: \code{\link{dtcc_recent_trades}},
-  \code{\link{us_public_companies}}
+Other real-time data: 
+\code{\link{dtcc_recent_trades}()},
+\code{\link{us_public_companies}()}
 }
 \concept{MSCI}
 \concept{index values}

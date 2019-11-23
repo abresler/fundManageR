@@ -4,8 +4,11 @@
 \alias{nareit_mergers_acquisitions}
 \title{NAREIT merger and acquisitions}
 \usage{
-nareit_mergers_acquisitions(pages = 32:33, nest_data = FALSE,
-  return_message = TRUE)
+nareit_mergers_acquisitions(
+  pages = 32:33,
+  nest_data = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{nest_data}{\code{TRUE} return nested data frame}
@@ -27,19 +30,22 @@ nareit_mergers_acquisitions(nest_data = FALSE, return_message = TRUE)
 }
 }
 \seealso{
-Other NAREIT: \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_capital_raises}},
-  \code{\link{nareit_constituent_years}},
-  \code{\link{nareit_entities}},
-  \code{\link{nareit_industry_tracker}},
-  \code{\link{nareit_monthly_returns}},
-  \code{\link{nareit_notable_properties}},
-  \code{\link{nareit_property_msa}},
-  \code{\link{nareit_state_info}}, \code{\link{reit_funds}}
+Other NAREIT: 
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_capital_raises}()},
+\code{\link{nareit_constituent_years}()},
+\code{\link{nareit_entities}()},
+\code{\link{nareit_industry_tracker}()},
+\code{\link{nareit_monthly_returns}()},
+\code{\link{nareit_notable_properties}()},
+\code{\link{nareit_property_msa}()},
+\code{\link{nareit_state_info}()},
+\code{\link{reit_funds}()}
 
-Other transaction data: \code{\link{dtcc_recent_trades}},
-  \code{\link{dtcc_trades}},
-  \code{\link{sec_securities_metrics_by_exchange}}
+Other transaction data: 
+\code{\link{dtcc_recent_trades}()},
+\code{\link{dtcc_trades}()},
+\code{\link{sec_securities_metrics_by_exchange}()}
 }
 \concept{NAREIT}
 \concept{transaction data}

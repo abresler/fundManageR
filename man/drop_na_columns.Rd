@@ -20,8 +20,9 @@ columns from a specified data frame.
 tibble(nameFirm = 'Goldman Sachs', countSuperHeros = NA, countCriminals = 0, countFinedEmployees = 10) \%>\% drop_na_columns()
 }
 \seealso{
-Other utility function: \code{\link{get_class_df}},
-  \code{\link{tidy_column_formats}},
-  \code{\link{tidy_column_relations}}
+Other utility function: 
+\code{\link{get_class_df}()},
+\code{\link{tidy_column_formats}()},
+\code{\link{tidy_column_relations}()}
 }
 \concept{utility function}

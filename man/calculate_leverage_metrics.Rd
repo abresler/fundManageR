@@ -4,15 +4,28 @@
 \alias{calculate_leverage_metrics}
 \title{Leveraged return metrics}
 \usage{
-calculate_leverage_metrics(purchase_price = 0,
-  capitalized_acquisition_costs = 0, capital_investment = 0,
-  revenue = 0, expenses = 0, loan_to_cost = 0, interest_rate = 0,
-  borrow_capital_investment = F, borrow_capitalized_costs = T,
-  leverage_threshold = 0.95, is_interest_only = FALSE,
-  interest_only_periods = 0, is_actual_360 = TRUE,
-  amortization_years = 30, amortization_months = 0, term_years = 30,
-  term_months = 0, pct_loan_fee = 0, return_wide = T,
-  return_message = T)
+calculate_leverage_metrics(
+  purchase_price = 0,
+  capitalized_acquisition_costs = 0,
+  capital_investment = 0,
+  revenue = 0,
+  expenses = 0,
+  loan_to_cost = 0,
+  interest_rate = 0,
+  borrow_capital_investment = F,
+  borrow_capitalized_costs = T,
+  leverage_threshold = 0.95,
+  is_interest_only = FALSE,
+  interest_only_periods = 0,
+  is_actual_360 = TRUE,
+  amortization_years = 30,
+  amortization_months = 0,
+  term_years = 30,
+  term_months = 0,
+  pct_loan_fee = 0,
+  return_wide = T,
+  return_message = T
+)
 }
 \arguments{
 \item{purchase_price}{vector of purchase prices}
@@ -39,7 +52,7 @@ calculate_leverage_metrics(purchase_price = 0,
 
 \item{interest_only_periods}{count of interest only periods}
 
-\item{is_actual_360}{\code{TRUE} is interest calculated on actual 360 basis}
+\item{is_actual_360}{\code{TRUE} interest calculated on actual/360 basis}
 
 \item{amortization_years}{amortization in years}
 
@@ -54,8 +67,6 @@ calculate_leverage_metrics(purchase_price = 0,
 \item{return_wide}{\code{TRUE} return data in wide form}
 
 \item{return_message}{\code{TRUE} return a message after data import}
-
-\item{is_actual_360}{\code{TRUE} interest calculated on actual/360 basis}
 }
 \value{
 a \code{tibble}
@@ -77,25 +88,27 @@ amortization_months = 0, term_years = 10, term_months = 0, pct_loan_fee = 0, ret
 return_message = TRUE)
 }
 \seealso{
-Other calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall_partnership}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_days_accrued_pref}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_loan_payment}},
-  \code{\link{calculate_residual_valuation_cap_rates}},
-  \code{\link{calculate_residual_valuation_ebitda_multiples}},
-  \code{\link{calculate_share_proceeds}},
-  \code{\link{calculate_valuation_post_money}},
-  \code{\link{tidy_promote_structure}}
+Other calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_days_accrued_pref}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_loan_payment}()},
+\code{\link{calculate_residual_valuation_cap_rates}()},
+\code{\link{calculate_residual_valuation_ebitda_multiples}()},
+\code{\link{calculate_share_proceeds}()},
+\code{\link{calculate_valuation_post_money}()},
+\code{\link{tidy_promote_structure}()}
 
-Other leveraged finance calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall_partnership}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_loan_payment}}
+Other leveraged finance calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_loan_payment}()}
 }
 \concept{calculation}
 \concept{leveraged finance calculation}

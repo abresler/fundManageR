@@ -30,35 +30,41 @@ nareit_entities(parse_member_data = TRUE, return_message = TRUE)
 \href{http://nareit.org}{National Association of Real Estate Investment Trusts}
 }
 \seealso{
-Other NAREIT: \code{\link{nareit_annual_subsector_returns}},
-  \code{\link{nareit_capital_raises}},
-  \code{\link{nareit_constituent_years}},
-  \code{\link{nareit_industry_tracker}},
-  \code{\link{nareit_mergers_acquisitions}},
-  \code{\link{nareit_monthly_returns}},
-  \code{\link{nareit_notable_properties}},
-  \code{\link{nareit_property_msa}},
-  \code{\link{nareit_state_info}}, \code{\link{reit_funds}}
+Other NAREIT: 
+\code{\link{nareit_annual_subsector_returns}()},
+\code{\link{nareit_capital_raises}()},
+\code{\link{nareit_constituent_years}()},
+\code{\link{nareit_industry_tracker}()},
+\code{\link{nareit_mergers_acquisitions}()},
+\code{\link{nareit_monthly_returns}()},
+\code{\link{nareit_notable_properties}()},
+\code{\link{nareit_property_msa}()},
+\code{\link{nareit_state_info}()},
+\code{\link{reit_funds}()}
 
-Other entity search: \code{\link{adv_managers_current_period_summary}},
-  \code{\link{adv_managers_filings}},
-  \code{\link{adv_managers_metadata}},
-  \code{\link{adv_managers_periods_summaries}},
-  \code{\link{data_rf_leis}}, \code{\link{finra_entities}},
-  \code{\link{reit_funds}},
-  \code{\link{rf_sec_13F_companies}},
-  \code{\link{sec_bankruptcies}},
-  \code{\link{sec_broker_dealers}}, \code{\link{sec_ciks}},
-  \code{\link{sec_closed_end_funds}},
-  \code{\link{sec_cusips}}, \code{\link{sec_filer}},
-  \code{\link{sec_filing_entities}},
-  \code{\link{sec_investment_companies}},
-  \code{\link{sec_money_market_funds}},
-  \code{\link{sec_municipal_advisors}},
-  \code{\link{sec_xbrl_periods}},
-  \code{\link{securities_offerings}},
-  \code{\link{us_public_companies}},
-  \code{\link{ycombinator_alumni}}
+Other entity search: 
+\code{\link{adv_managers_current_period_summary}()},
+\code{\link{adv_managers_filings}()},
+\code{\link{adv_managers_metadata}()},
+\code{\link{adv_managers_periods_summaries}()},
+\code{\link{data_rf_leis}()},
+\code{\link{finra_entities}()},
+\code{\link{reit_funds}()},
+\code{\link{rf_sec_13F_companies}()},
+\code{\link{sec_bankruptcies}()},
+\code{\link{sec_broker_dealers}()},
+\code{\link{sec_ciks}()},
+\code{\link{sec_closed_end_funds}()},
+\code{\link{sec_cusips}()},
+\code{\link{sec_filer}()},
+\code{\link{sec_filing_entities}()},
+\code{\link{sec_investment_companies}()},
+\code{\link{sec_money_market_funds}()},
+\code{\link{sec_municipal_advisors}()},
+\code{\link{sec_xbrl_periods}()},
+\code{\link{securities_offerings}()},
+\code{\link{us_public_companies}()},
+\code{\link{ycombinator_alumni}()}
 }
 \concept{NAREIT}
 \concept{entity search}

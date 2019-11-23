@@ -9,6 +9,9 @@ sic_filing_count(sic = 800, return_message = TRUE)
 \arguments{
 \item{return_message}{}
 }
+\value{
+
+}
 \description{
 Title
 }

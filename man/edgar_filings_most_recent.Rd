@@ -4,16 +4,27 @@
 \alias{edgar_filings_most_recent}
 \title{Most recent EDGAR filings by type}
 \usage{
-edgar_filings_most_recent(forms = c("All", "10-D", "10-K"),
-  table_name_initial = "Recent Filings", parse_all_filings = TRUE,
-  parse_form_d = FALSE, parse_complete_text_filings = FALSE,
-  parse_13F = FALSE, parse_small_offerings = FALSE,
-  parse_form_3_4s = FALSE, parse_asset_files = FALSE,
-  parse_xbrl = FALSE, assign_to_environment = TRUE,
-  nest_data = FALSE, return_message = TRUE)
+edgar_filings_most_recent(
+  forms = c("All", "10-D", "10-K"),
+  table_name_initial = "Recent Filings",
+  parse_all_filings = TRUE,
+  parse_form_d = FALSE,
+  parse_complete_text_filings = FALSE,
+  parse_13F = FALSE,
+  parse_small_offerings = FALSE,
+  parse_form_3_4s = FALSE,
+  parse_asset_files = FALSE,
+  parse_xbrl = FALSE,
+  assign_to_environment = TRUE,
+  nest_data = FALSE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{return_message}{}
+}
+\value{
+
 }
 \description{
 Most recent EDGAR filings by type

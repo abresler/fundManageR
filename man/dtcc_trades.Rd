@@ -4,8 +4,14 @@
 \alias{dtcc_trades}
 \title{DTCC trades by date and product}
 \usage{
-dtcc_trades(assets = NULL, include_today = FALSE, start_date = NULL,
-  end_date = NULL, nest_data = TRUE, return_message = TRUE)
+dtcc_trades(
+  assets = NULL,
+  include_today = FALSE,
+  start_date = NULL,
+  end_date = NULL,
+  nest_data = TRUE,
+  return_message = TRUE
+)
 }
 \arguments{
 \item{assets}{type of DTCC cleared financial product \itemize{
@@ -57,11 +63,13 @@ dtcc_trades(assets = c('credits', 'equities'), include_today = TRUE, start_date 
 \href{http://dtcc.com}{The Depository Trust & Clearing Corporation}
 }
 \seealso{
-Other DTCC: \code{\link{dtcc_recent_trades}}
+Other DTCC: 
+\code{\link{dtcc_recent_trades}()}
 
-Other transaction data: \code{\link{dtcc_recent_trades}},
-  \code{\link{nareit_mergers_acquisitions}},
-  \code{\link{sec_securities_metrics_by_exchange}}
+Other transaction data: 
+\code{\link{dtcc_recent_trades}()},
+\code{\link{nareit_mergers_acquisitions}()},
+\code{\link{sec_securities_metrics_by_exchange}()}
 }
 \concept{DTCC}
 \concept{transaction data}

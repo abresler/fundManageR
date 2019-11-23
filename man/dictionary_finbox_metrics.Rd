@@ -6,6 +6,9 @@
 \usage{
 dictionary_finbox_metrics()
 }
+\value{
+
+}
 \description{
 Get Searchable FinBOX metrics
 }

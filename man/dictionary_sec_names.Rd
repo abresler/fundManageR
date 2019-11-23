@@ -6,6 +6,9 @@
 \usage{
 dictionary_sec_names()
 }
+\value{
+
+}
 \description{
 SEC Name Dictionary
 }

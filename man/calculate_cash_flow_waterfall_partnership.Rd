@@ -4,16 +4,23 @@
 \alias{calculate_cash_flow_waterfall_partnership}
 \title{Partnership waterfall and cash flows}
 \usage{
-calculate_cash_flow_waterfall_partnership(dates = c("2016-09-01",
-  "2017-08-31"), cash_flows = c(-1500000, 1.05e+08),
-  working_capital = 2e+05, promote_structure = c("20 over 12",
-  "30 over 20", "50 over 3.5x", "100 over 10x"),
-  assign_to_environment = TRUE, general_partner_pct = 0.05,
-  gp_promote_share = 1, unnest_data = FALSE,
-  exclude_partnership_total = FALSE, distribution_frequency = NA,
-  is_actual_360 = TRUE, widen_promote_structure = FALSE,
-  bind_to_cf = FALSE, remove_zero_cols = TRUE,
-  widen_waterfall = FALSE)
+calculate_cash_flow_waterfall_partnership(
+  dates = c("2016-09-01", "2017-08-31"),
+  cash_flows = c(-1500000, 1.05e+08),
+  working_capital = 2e+05,
+  promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
+  assign_to_environment = TRUE,
+  general_partner_pct = 0.05,
+  gp_promote_share = 1,
+  unnest_data = FALSE,
+  exclude_partnership_total = FALSE,
+  distribution_frequency = NA,
+  is_actual_360 = TRUE,
+  widen_promote_structure = FALSE,
+  bind_to_cf = FALSE,
+  remove_zero_cols = TRUE,
+  widen_waterfall = FALSE
+)
 }
 \arguments{
 \item{dates}{vector of dates in year-month-day format}
@@ -62,32 +69,35 @@ widen_promote_structure = FALSE, bind_to_cf = FALSE, remove_zero_cols = TRU,
 widen_waterfall = FALSE)
 }
 \seealso{
-Other calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_days_accrued_pref}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_leverage_metrics}},
-  \code{\link{calculate_loan_payment}},
-  \code{\link{calculate_residual_valuation_cap_rates}},
-  \code{\link{calculate_residual_valuation_ebitda_multiples}},
-  \code{\link{calculate_share_proceeds}},
-  \code{\link{calculate_valuation_post_money}},
-  \code{\link{tidy_promote_structure}}
+Other calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_days_accrued_pref}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_leverage_metrics}()},
+\code{\link{calculate_loan_payment}()},
+\code{\link{calculate_residual_valuation_cap_rates}()},
+\code{\link{calculate_residual_valuation_ebitda_multiples}()},
+\code{\link{calculate_share_proceeds}()},
+\code{\link{calculate_valuation_post_money}()},
+\code{\link{tidy_promote_structure}()}
 
-Other leveraged finance calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{calculate_leverage_metrics}},
-  \code{\link{calculate_loan_payment}}
+Other leveraged finance calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{calculate_leverage_metrics}()},
+\code{\link{calculate_loan_payment}()}
 
-Other partnership calculation: \code{\link{calculate_cash_flow_dates}},
-  \code{\link{calculate_cash_flow_waterfall}},
-  \code{\link{calculate_cash_flows_returns}},
-  \code{\link{calculate_days_accrued_pref}},
-  \code{\link{calculate_irr_periods}},
-  \code{\link{tidy_promote_structure}}
+Other partnership calculation: 
+\code{\link{calculate_cash_flow_dates}()},
+\code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flows_returns}()},
+\code{\link{calculate_days_accrued_pref}()},
+\code{\link{calculate_irr_periods}()},
+\code{\link{tidy_promote_structure}()}
 }
 \concept{calculation}
 \concept{leveraged finance calculation}
