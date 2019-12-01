@@ -2829,7 +2829,7 @@ sec_xbrl_periods <-
             all_data %>%
             slice(x) %>%
             select(yearData, quarterData, periodData, dataTable) %>%
-            unnest_legacy()
+            unnest()
 
           df_data <-
             df_data %>%

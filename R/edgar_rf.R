@@ -4652,7 +4652,7 @@ sec_filer <-
           all_data %>%
           filter(nameTable %in% c('Filings', 'CIK Filings')) %>%
           select(dataTable) %>%
-          unnest_legacy() %>%
+          unnest() %>%
           distinct()
 
 
@@ -4787,7 +4787,7 @@ sec_filer <-
                   all_data %>%
                   filter(nameTable == 'Subsidiaries') %>%
                   select(dataTable) %>%
-                  unnest_legacy()
+                  unnest()
 
                 if ('pctSubsidiaryOwned' %in% names(ad_sub_df)) {
                   sub_df <-
@@ -4885,7 +4885,7 @@ sec_filer <-
             all_data %>%
             filter(nameTable == table_name_df$nameTable[[x]]) %>%
             select(dplyr::matches(c('idCIK|nameEntity|dataTable'))) %>%
-            unnest_legacy() %>%
+            unnest() %>%
             suppressWarnings() %>%
             remove_duplicate_columns()
 
@@ -4913,7 +4913,7 @@ sec_filer <-
                 table %>%
                 mutate(is_null_col) %>%
                 filter(!is_null_col) %>%
-                unnest_legacy() %>%
+                unnest() %>%
                 remove_duplicate_columns() %>%
                 select(which(colMeans(is.na(.)) < 1)) %>%
                 # tidy_column_formats() %>%
@@ -4946,7 +4946,7 @@ sec_filer <-
               if (df_name %in% 'dataFilerTextFilings') {
                 table <-
                   df_data %>%
-                  unnest_legacy() %>%
+                  unnest() %>%
                   select(which(colMeans(is.na(.)) < 1)) %>%
                   tidy_column_formats() %>%
                   distinct()
@@ -4975,7 +4975,7 @@ sec_filer <-
                   df_data %>%
                   remove_duplicate_columns() %>%
                   # select(dplyr::matches("data")) %>%
-                  unnest_legacy()
+                  unnest()
 
                 select_cols <-
                   tibble(nameData = names(df_data)) %>%
@@ -15015,7 +15015,7 @@ parse_for_tables <-
       all_filings <-
         all_filings %>%
         select(dplyr::matches("idCIK|data")) %>%
-        unnest_legacy() %>%
+        unnest() %>%
         distinct()
 
       all_tables <-
@@ -15130,7 +15130,7 @@ parse_for_tables <-
             all_tables %>%
             slice(x) %>%
             select(dataTable) %>%
-            unnest_legacy()
+            unnest()
 
           df_name <-
             table_name_df %>% slice(x) %>% .$nameDF
@@ -15892,7 +15892,7 @@ edgar_search_terms <-
             all_tables %>%
             filter(nameTable == table_name_df$nameTable[[x]]) %>%
             select(dplyr::matches(c('idCIK|nameEntity|dataTable'))) %>%
-            unnest_legacy() %>%
+            unnest() %>%
             suppressWarnings()
 
           has_unnest <-
@@ -15909,7 +15909,7 @@ edgar_search_terms <-
               table <-
                 df_data %>%
                 select(one_of(c(base_names, df_data_name))) %>%
-                unnest_legacy() %>%
+                unnest() %>%
                 select(which(
                   colMeans(is.na(.)) < 1
                 ))
@@ -15927,7 +15927,7 @@ edgar_search_terms <-
             if (has_unnest) {
               df_data <-
                 df_data %>%
-                unnest_legacy()
+                unnest()
 
               select_cols <- tibble(nameData = names(df_data)) %>%
                 mutate(idColumn = 1:n()) %>%

@@ -35,7 +35,7 @@ calculate_cash_flow_waterfall_partnership(
 
 \item{gp_promote_share}{share of promote to general partner}
 
-\item{unnest_data}{unnest_legacy final results}
+\item{unnest_data}{unnest final results}
 
 \item{exclude_partnership_total}{exclude total columns}
 
