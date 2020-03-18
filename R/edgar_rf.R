@@ -1247,7 +1247,9 @@ data_location_codes <-
   function() {
     countries <-
       "http://rankandfiled.com/static/export/edgar_state_country.csv" %>%
-      parse_rank_and_filed_data(column_names = c('codeLocation', 'nameLocation'))
+      data.table::fread() %>%
+      as_tibble() %>%
+      setNames(c('codeLocation', 'nameLocation'))
     countries
   }
 
