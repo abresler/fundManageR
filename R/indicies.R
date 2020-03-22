@@ -36,10 +36,12 @@ sp500_constituents <-
           'nameIndustryGICS',
           'locationHeadquarters' ,
           'dateAdded',
-          'idCIK'
+          'idCIK',
+          "yearFounded"
         )
       ) %>%
       mutate(dateAdded = dateAdded %>% lubridate::ymd(),
+        yearFounded = readr::parse_number(yearFounded),
              nameIndex = "S&P 500")
 
     ticker <-
@@ -196,17 +198,7 @@ msci_indicies_constituents <-
     index_df <-
       msci_indicies()
 
-    if (!indicies %>% is_null()) {
-      index_options <-
-        index_df$nameIndex
-      if (indicies %in% index_options %>% sum(na.rm = T) == 0) {
-        stop(list(
-          "Indexes can only be:\n",
-          paste(index_options, collapse = "\n")
-        ) %>%
-          purrr::invoke(paste0, .))
-      }
-
+    if (length(indicies) >0 ) {
       index_df <-
         index_df %>%
         filter(nameIndex %>%  str_detect(indicies %>% paste0(collapse = "|")))
@@ -224,7 +216,7 @@ msci_indicies_constituents <-
 
     const_df <-
       const_df %>%
-      left_join(index_df) %>%
+      left_join(index_df, by = "urlIndexConstituents") %>%
       suppressMessages() %>%
       group_by(idIndex) %>%
       mutate(rankCompanyIndex = 1:n()) %>%
@@ -291,18 +283,22 @@ msci_realtime_index_values <-
     json_data <-
       raw %>% substr(18, nchar(raw) - 1) %>%
       fromJSON()
+
     current_year <-
       Sys.Date() %>% lubridate::year()
 
     index_data <-
       json_data$xmfIndices$index %>%
       as_tibble() %>%
-      mutate_all(str_to_upper) %>%
+      mutate_all(str_to_upper)
+
+    index_data <- index_data %>%
       purrr::set_names(
         c(
           "datetimeData",
           "valueIndexClosePrevious",
           "pctChange",
+          "pctYearToDate",
           "valueIndex",
           "valueChange",
           "nameIndex",

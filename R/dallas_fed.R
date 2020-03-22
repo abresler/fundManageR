@@ -29,7 +29,7 @@
         x %>% str_to_lower %>% str_split('\\ ') %>% flatten_chr() %>% .[[1]]
       tibble(yearData = year,
                  nameQuarter = quarter) %>%
-        left_join(df_quarters) %>%
+        left_join(df_quarters,by = "nameQuarter") %>%
         mutate(
           dateData = list(yearData, dateEnd) %>% purrr::reduce(paste0) %>% lubridate::ymd(),
           periodData = list(yearData, ".", idQuarter) %>% purrr::reduce(paste0)
@@ -100,7 +100,7 @@
           'South Korea',
           'United Kingdom'
         ) %>% str_to_upper()
-      )) %>%
+      ),by = "nameCountry") %>%
       mutate(nameCountry = ifelse(nameCountryActual %>% is.na(),nameCountry, nameCountryActual)) %>%
       select(-nameCountryActual) %>%
       left_join(
@@ -109,10 +109,10 @@
           select(nameCountry = country.name.en, idISO3c = iso3c, nameContinent = continent) %>%
           mutate(nameCountry = nameCountry %>% str_replace("Republic of Korea", "South Korea"),
                  nameCountry = nameCountry %>% str_replace("United Kingdom of Great Britain and Northern Ireland", "United Kingdom")) %>%
-          mutate_all(str_to_upper)
+          mutate_all(str_to_upper),
+        by = "nameCountry"
       ) %>%
       select(codeIndex, periodData, nameContinent, idISO3c, nameCountry, everything()) %>%
-      suppressMessages() %>%
       mutate(urlData = url)
 
     df_quarters <-
@@ -123,7 +123,7 @@
       )
 
     data <- data %>%
-      left_join(df_quarters) %>%
+      left_join(df_quarters, by = "idQuarter") %>%
       mutate(
         dateData = list(yearData, dateEnd) %>% purrr::reduce(paste0) %>% lubridate::ymd(),
         periodData = list(yearData, ".", idQuarter) %>% purrr::reduce(paste0)
@@ -176,7 +176,7 @@ dallas_fed_international_housing <-
 
     data <-
       data %>%
-      left_join(df_index) %>%
+      left_join(df_index, by = "codeIndex") %>%
       select(nameIndex, everything()) %>%
       suppressMessages() %>%
       suppressWarnings()

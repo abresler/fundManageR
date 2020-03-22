@@ -65,7 +65,7 @@
 #' @examples
 #' us_inflation(base_year = 1913)
 us_inflation <-
-  function(base_year = 1913) {
+  memoise::memoise(function(base_year = 1913) {
     if (base_year == 1913) {
       "Getting US inflation data from 1913" %>% cat(fill = T)
       data <- .get_1913_inflation()
@@ -73,4 +73,4 @@ us_inflation <-
     }
       "Getting US inflation data from 1800" %>% cat(fill = T)
       data <- .get_1800_inflation()
-  }
+  })

@@ -22,7 +22,17 @@ dictionary_fdic_names <-
                         "SPECGRP", "SPECGRPN", "TRACT", "CSA", "CSA_NO", "CSA_FLG", "CBSA",
                         "CBSA_NO", "CBSA_METRO_NAME", "CBSA_METRO", "CBSA_METRO_FLG",
                         "CBSA_MICRO_FLG", "CBSA_DIV", "CBSA_DIV_NO", "CBSA_DIV_FLG",
-                        "CB"),
+                        "CB","idFDIC",
+      "CHANGEC6",
+"CHANGEC7",
+"CHANGEC8",
+"CHANGEC9",
+"CHANGEC10",
+"CHANGEC11",
+"CHANGEC12",
+"CHANGEC13",
+"CHANGEC14",
+"CHANGEC15"),
            nameActual = c("nameState", "idCertificate", "idDocket", "isActiveBank", "addressStreet", "amountAssetsMillions", "classCharterFDIC",
                           "codeChange1", "codeChange2", "codeChange3", "codeChange4", "codeChange5", "idCharter",
                           "agencyCharter", "isConservatorship", "city", "idCLCode", "idCMSA", "nameCMSA",
@@ -45,7 +55,7 @@ dictionary_fdic_names <-
                           "idAssetTotalCode", "typeAssetCode", "hasTractPowers", "nameCSA", "idCSA", "hasCSAFlag", "nameCBSA",
                           "idCBSA", "nameCBSA2", "idCBSAMetro", "hasCBSA",
                           "hasCBSAMicroFlag", "nameCBSADiv", "idCBSADiv", "hasCBSADiv",
-                          "isCommunityBank")
+                          "isCommunityBank", "idFDIC")
 
     )
   }
@@ -67,7 +77,7 @@ dictionary_fdic_names <-
 
         if (no_name) {
           glue::glue("Missing {fdic_name} in dictionary") %>% message()
-          return(UNINUM)
+          return(fdic_name)
         }
         df_gov_names %>%
           filter(nameFDIC  == fdic_name) %>%
@@ -196,17 +206,72 @@ dictionary_fdic_names <-
 
   }
 
-#' United States Bank
+#' United States Bank Data
+#'
+#' Information about United States Banks as monitored by the FDIC
 #'
 #' @return
 #' @export
 #'
 #' @examples
-us_banks <- function() {
-  data <-
-    "https://cg-8f5302ff-11ad-4d26-a9b9-7c7ebcd6f322.s3-us-gov-west-1.amazonaws.com/downloads/institutions.csv" %>%
-    read_csv() %>%
-    .assign_fdic_names()
+us_banks <-
+  memoise::memoise(function() {
+    data <-
+      "https://cg-8f5302ff-11ad-4d26-a9b9-7c7ebcd6f322.s3-us-gov-west-1.amazonaws.com/downloads/institutions.csv" %>%
+      read_csv() %>%
+      dplyr::select(which(colMeans(is.na(.)) < 1)) %>%
+      .assign_fdic_names()
+
+  date_cols <- data %>% select(matches("date")) %>% names()
+
+  if (length(date_cols) > 0) {
+    data <- data %>%
+      mutate_at(date_cols, mdy)
+  }
+
+  log_cols <-
+    data %>% select(matches("^is|^has")) %>% select_if(is.character) %>% names()
+
+  if (length(log_cols) > 0) {
+    data <- data %>%
+      mutate_at(log_cols,
+        list(function(x) {
+          case_when(x == "N" ~ F,
+            x == "Y" ~ T)
+        }))
+  }
+
+  log_cols <-
+    data %>% select(matches("^is|^has")) %>% select_if(is.numeric) %>% names()
+
+  if (length(log_cols) > 0) {
+    data <-
+      data %>%
+      mutate_at(log_cols,
+        as.logical)
+  }
+
+  id_cols <- data %>% select(matches("^id[A-Z]")) %>% select_if(is.numeric) %>% names()
+
+  if (length(id_cols)  > 0) {
+    data <- data %>%
+      mutate_at(id_cols,
+        list(function(x) {
+          case_when(x == 0 ~ NA_real_,
+            TRUE ~ as.numeric(x))
+        }))
+  }
+
+  data <- data %>%
+    select(one_of(
+      c(
+        "idFDIC",
+        "idFederalReserve",
+        "nameInstitution",
+        "nameBankHoldingCompany",
+        "dateEstablished"
+      )
+    ), everything())
 
   data
-}
+})

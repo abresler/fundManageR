@@ -112,8 +112,12 @@
 #' tv_market_events(return_message = TRUE)
 tv_market_events <-
   function(return_message = TRUE) {
+
+    url <-
+      glue("https://chartevents-reuters.tradingview.com/events?minImportance=0&from={Sys.Date()}T00:00:00.000Z&to={Sys.Date()+720}T13:00:00.000Z&currencies=USD,EUR,JPY,AUD,DEM,GBP,CAD,FRF,ITL,NZD,ESP,MXN,CHF,TRL,ZAR") %>%
+      as.character()
     data <-
-      "https://chartevents-reuters.tradingview.com/events?minImportance=0&from=2019-01-15T11:00:00.000Z&to=2019-01-29T13:00:00.000Z&currencies=USD,EUR,JPY,AUD,DEM,GBP,CAD,FRF,ITL,NZD,ESP,MXN,CHF,TRL,ZAR" %>%
+      url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
       as_tibble()
 
@@ -352,8 +356,8 @@ get_tradeview_term <-
 
     r <- reticulate::import("requests")
     resp <- r$get(url = url,
-                  headers = headers,
-                  params = params)
+      headers = headers,
+      params = params)
     data <-
       resp$text %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE)
@@ -1670,6 +1674,8 @@ tv_metrics_data <-
       url %>% str_replace_all("https://news-headlines.tradingview.com/headlines/yahoo/symbol/",
                               '')
 
+    ticker <- url_parse(url) %>% select(query) %>% str_split("proSymbol=") %>% flatten_chr() %>% .[[2]]
+
     if (return_message) {
       glue::glue("Acquiring Tradingview news for {ticker}") %>%
         cat(fill = T)
@@ -1678,13 +1684,17 @@ tv_metrics_data <-
     data <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
+      as_tibble()
+
+    data <- data %>%
       dplyr::as_tibble() %>%
       dplyr::select(-1) %>%
       purrr::set_names(c(
         'urlArticle',
         'titleArticle',
         'descriptionArticle',
-        'datetimePublished'
+        'datetimePublished',
+        "sourceArticle"
       )) %>%
       mutate(
         idTicker = ticker,
@@ -1750,7 +1760,7 @@ tv_tickers_news <-
            return_message = TRUE,
            nest_data = FALSE) {
     urls <-
-      glue::glue("https://news-headlines.tradingview.com/headlines/yahoo/symbol/{tickers}")
+      glue::glue("https://news-headlines.tradingview.com/headlines/yahoo/?category=stock&locale=en&proSymbol={tickers}")
 
     all_data <-
       urls %>%

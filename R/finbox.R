@@ -1190,6 +1190,7 @@
 
 
   }
+
 .get_finbox_base_names <- function() {
   df_finbox <- tibble(
     nameFinbox = c(
@@ -2331,10 +2332,8 @@ dictionary_finbox_metrics <-
 
     df <-
       df %>%
-      left_join(df_periods) %>%
-      suppressWarnings() %>%
-      dplyr::select(-idRow) %>%
-      suppressMessages()
+      left_join(df_periods, by = "idRow") %>%
+      dplyr::select(-idRow)
 
     df_metrics <- .finbox_metric_names()
 

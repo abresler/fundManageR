@@ -2,7 +2,7 @@
 % Please edit documentation in R/government_data.R
 \name{us_banks}
 \alias{us_banks}
-\title{United States Bank}
+\title{United States Bank Data}
 \usage{
 us_banks()
 }
@@ -10,5 +10,5 @@ us_banks()
 
 }
 \description{
-United States Bank
+Information about United States Banks as monitored by the FDIC
 }

@@ -4,12 +4,12 @@
 \alias{crsp_indicies_constituents}
 \title{CRSP index constituents}
 \usage{
-crsp_indicies_constituents(nest_data = TRUE, return_message = TRUE)
+crsp_indicies_constituents(return_message = TRUE)
 }
 \arguments{
-\item{nest_data}{\code{TRUE} return nested data frame}
-
 \item{return_message}{\code{TRUE} return a message after data import}
+
+\item{nest_data}{\code{TRUE} return nested data frame}
 }
 \value{
 nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}

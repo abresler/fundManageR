@@ -300,13 +300,13 @@
 .generate_dtcc_dump_urls <-
   function(date = "2016-01-07",
            assets = NULL) {
-    if (assets %>% is_null()) {
+    if (length(assets) == 0) {
       assets <-
         c('COMMODITIES', 'credits', 'equities', 'forex', 'rates') %>%
         str_to_upper()
     }
 
-    if (!assets %>% is_null()) {
+    if (length(assets) > 0) {
       actual_assets <-
         c('COMMODITIES', 'credits', 'equities', 'forex', 'rates') %>%
         str_to_upper()
@@ -735,15 +735,17 @@
 .get_data_dtcc_assets_days <-
   function(assets = NULL,
            start_date = "2017-01-21",
-           end_date = Sys.Date(),
+           end_date =  "2017-01-22",
            nest_data = TRUE,
            return_message = TRUE) {
     start_date <-
       start_date %>%
+      as.character() %>%
       readr::parse_date()
 
     end_date <-
       end_date %>%
+      as.character() %>%
       readr::parse_date()
 
     days <-
@@ -915,7 +917,7 @@ dtcc_recent_trades <-
     css_df <-
       .get_dtcc_recent_schema_df()
 
-    if (!assets %>% is_null()) {
+    if (length(assets) > 0 ) {
       assets_options <-
         css_df$nameAsset %>% unique()
       if (assets %>% str_to_lower() %in% assets_options %>% sum() == 0) {
@@ -1066,7 +1068,7 @@ dtcc_recent_trades <-
     .get_data_today_safe <-
       purrr::possibly(.get_data_today, tibble())
 
-    if (!assets %>% is_null() | assets %>% length() > 0) {
+    if (length(assets) == 0 | assets %>% length() > 0) {
       assets <-
         assets %>% str_to_upper()
       assets_options <-
@@ -1197,7 +1199,7 @@ dtcc_trades <-
     all_data <-
       tibble()
 
-    if (!assets %>% is_null()) {
+    if (length(assets) > 0) {
       assets <-
         assets %>% str_to_upper()
     }
@@ -1229,8 +1231,8 @@ dtcc_trades <-
       }
     }
 
-    if (!start_date %>% is_null()) {
-      if (end_date %>% is_null()) {
+    if (length(start_date) > 0) {
+      if (length(end_date) == 0) {
         end_date <-
           Sys.Date()
       }

@@ -1363,8 +1363,7 @@ fred_symbols_descriptions <-
 
     data <-
       df_urls %>%
-      left_join(data) %>%
-      suppressMessages()
+      left_join(data , by = "urlSeries")
 
     data
   }
@@ -1393,13 +1392,16 @@ plot_time_series <-
       stop("Transformations can only be mean, median, or smooth")
     }
 
-    if (!date_start %>% purrr::is_null()) {
+    data <- data %>%
+      unnest_legacy()
+
+    if (length(date_start) > 0) {
       data <-
         data %>%
         filter(dateData >= date_start)
     }
 
-    if (!date_end %>% purrr::is_null()) {
+    if (length(date_end) > 0) {
       data <-
         data %>%
         filter(dateData <= date_end)
@@ -1437,20 +1439,20 @@ plot_time_series <-
 
     is_percent <- type %>% stringr::str_detect('PERCENT')
 
-    if (!fred_data_transformation %>% is_null()) {
+    if (length(fred_data_transformation) > 0) {
       sub_title <-
         list(sub_title,
-             '\nFRED Transformation of ',
-             fred_data_transformation) %>%
+          '\nFRED Transformation of ',
+          fred_data_transformation) %>%
         purrr::reduce(paste0)
     }
 
     if ('nameSource' %in% names(data)) {
       caption_text <-
         list("Source data from ",
-             data$nameSource %>% unique,
-             '\n',
-             'via FRED from fundManageR') %>%
+          data$nameSource %>% unique,
+          '\n',
+          'via FRED from fundManageR') %>%
         purrr::reduce(paste0)
     } else {
       caption_text <-
@@ -1666,11 +1668,10 @@ visualize_fred_time_series <-
     }
 
     fred_df <-
-      fred_symbol(
+      .fred_symbol(
         symbol = series_id,
         transformation = fred_data_transformation,
-        nest_data = FALSE,
-        return_wide = FALSE
+        widen_data = F
       ) %>%
       suppressWarnings() %>%
       suppressMessages()
