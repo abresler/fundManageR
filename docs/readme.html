@@ -8,21 +8,29 @@
 
 <title>fundManageR • fundManageR</title>
 
-<!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-<!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/united/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<!-- jquery -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!-- Bootstrap -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/united/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="bootstrap-toc.css">
+<script src="bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
-<!-- sticky kit -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script>
+<!-- headroom.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="pkgdown.css" rel="stylesheet">
@@ -30,7 +38,9 @@
 
 
 
+
 <meta property="og:title" content="fundManageR" />
+
 
 
 
@@ -44,9 +54,10 @@
 <![endif]-->
 
 
+
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-title-body">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -60,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">fundManageR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.22302</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.03</span>
       </span>
     </div>
 
@@ -94,7 +105,6 @@
   <a href="reference/index.html">Reference</a>
 </li>
       </ul>
-      
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/abresler/fundmanageR">
@@ -127,6 +137,7 @@
 </div><!--/.navbar -->
 
       
+
       </header>
 
 <div class="row">
@@ -175,18 +186,18 @@
 <a href="#package-dependencies" class="anchor"></a>Package Dependencies</h3>
 <p>In order for this package to work you need the packages listed below must be installed. You can run the code snippet to install them if necessary.</p>
 <p>For <code>pdftools</code> you may need to follow the installation instructions <a href="https://github.com/ropensci/pdftools">here</a>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1">packages &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb1-2" title="2"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"curl"</span>, <span class="st">"curlconverter"</span>, <span class="st">"dplyr"</span>, <span class="st">"formattable"</span>, <span class="st">"httr"</span>, <span class="st">"jsonlite"</span>, <span class="st">'devtools'</span>,</a>
-<a class="sourceLine" id="cb1-3" title="3">    <span class="st">"lazyeval"</span>, <span class="st">"lubridate"</span>, <span class="st">"magrittr"</span>, <span class="st">"pdftools"</span>, <span class="st">"purrr"</span>, <span class="st">"readr"</span>,  <span class="st">'quantmod'</span>,</a>
-<a class="sourceLine" id="cb1-4" title="4">    <span class="st">"readxl"</span>, <span class="st">"rvest"</span>, <span class="st">"stringi"</span>, <span class="st">"stringr"</span>, <span class="st">"tibble"</span>, <span class="st">"tidyr"</span>, <span class="st">'tidyverse'</span>,</a>
-<a class="sourceLine" id="cb1-5" title="5">    <span class="st">"xml2"</span>, <span class="st">""</span>)</a>
-<a class="sourceLine" id="cb1-6" title="6"></a>
-<a class="sourceLine" id="cb1-7" title="7"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/lapply">lapply</a></span>(packages, install.packages)</a></code></pre></div>
+<div class="sourceCode" id="cb1"><html><pre class="r"><span class="no">packages</span> <span class="kw">&lt;-</span>
+  <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"curl"</span>, <span class="st">"curlconverter"</span>, <span class="st">"dplyr"</span>, <span class="st">"formattable"</span>, <span class="st">"httr"</span>, <span class="st">"jsonlite"</span>, <span class="st">'devtools'</span>,
+    <span class="st">"lazyeval"</span>, <span class="st">"lubridate"</span>, <span class="st">"magrittr"</span>, <span class="st">"pdftools"</span>, <span class="st">"purrr"</span>, <span class="st">"readr"</span>,  <span class="st">'quantmod'</span>,
+    <span class="st">"readxl"</span>, <span class="st">"rvest"</span>, <span class="st">"stringi"</span>, <span class="st">"stringr"</span>, <span class="st">"tibble"</span>, <span class="st">"tidyr"</span>, <span class="st">'tidyverse'</span>,
+    <span class="st">"xml2"</span>, <span class="st">""</span>)
+
+<span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span>(<span class="no">packages</span>, <span class="no">install.packages</span>)</pre></html></div>
 <div id="package-installation" class="section level4">
 <h4 class="hasAnchor">
 <a href="#package-installation" class="anchor"></a><strong>Package Installation</strong>
 </h4>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">devtools<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/devtools/topics/reexports">install_github</a></span>(<span class="st">"abresler/fundManageR"</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><html><pre class="r"><span class="kw pkg">devtools</span><span class="kw ns">::</span><span class="fu"><a href="https://devtools.r-lib.org//reference/remote-reexports.html">install_github</a></span>(<span class="st">"abresler/fundManageR"</span>)</pre></html></div>
 </div>
 <div id="package-idioms" class="section level4">
 <h4 class="hasAnchor">
@@ -234,12 +245,12 @@
 <div id="parallel-computing" class="section level2">
 <h2 class="hasAnchor">
 <a href="#parallel-computing" class="anchor"></a>Parallel Computing</h2>
-<p>This package now supports parallel computing for all iterative functions. In order to utilize this just run `<code><a href="https://www.rdocumentation.org/packages/future/topics/plan">future::plan</a></code> with your selected method.</p>
+<p>This package now supports parallel computing for all iterative functions. In order to utilize this just run `<code><a href="https://rdrr.io/pkg/future/man/plan.html">future::plan</a></code> with your selected method.</p>
 <p>For example to use muiltiprocess.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(fundManageR)</a>
-<a class="sourceLine" id="cb3-2" title="2"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(future)</a>
-<a class="sourceLine" id="cb3-3" title="3"><span class="kw"><a href="https://www.rdocumentation.org/packages/future/topics/plan">plan</a></span>(multiprocess) </a>
-<a class="sourceLine" id="cb3-4" title="4"><span class="kw"><a href="reference/fred_symbols.html">fred_symbols</a></span>(<span class="dt">symbols =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"DGS10"</span>, <span class="st">"DGS2"</span>, <span class="st">"DGS30"</span>))</a></code></pre></div>
+<div class="sourceCode" id="cb3"><html><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">fundManageR</span>)
+<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">future</span>)
+<span class="fu"><a href="https://rdrr.io/pkg/future/man/plan.html">plan</a></span>(<span class="no">multiprocess</span>)
+<span class="fu"><a href="reference/fred_symbols.html">fred_symbols</a></span>(<span class="kw">symbols</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"DGS10"</span>, <span class="st">"DGS2"</span>, <span class="st">"DGS30"</span>))</pre></html></div>
 <div id="adv-api" class="section level3">
 <h3 class="hasAnchor">
 <a href="#adv-api" class="anchor"></a>ADV API</h3>
@@ -255,7 +266,7 @@
 <li>
 <code>adv_managers_metadata</code> – Retrieves metadata for specified search name or CRD ID; fastest way to search for managers you may wish to explore further.</li>
 <li>
-<code>adv_managers_filings</code> – Retrieves detailed ADV filing for specified <a href="http://www.finra.org/industry/crd">Central Registration Depository ID</a> [CRD] and/or company name by by specified ADV section.</li>
+<code>adv_managers_filings</code> – Retrieves detailed ADV filing for specified <a href="http://www.finra.org/industry/crd">Central Registration Depository ID</a> <br><span class="math display"><em>C</em><em>R</em><em>D</em></span><br> and/or company name by by specified ADV section.</li>
 <li>
 <code>adv_managers_brochures</code> – Retrieves and <a href="https://en.wikipedia.org/wiki/Optical_character_recognition">OCRs</a> for SEC mandated annual <a href="https://www.sec.gov/about/forms/formadv-part2.pdf">Uniform Requirements for the Investment Adviser Brochure and Brochure Supplements</a> for specified CRDs and/or company names.</li>
 </ul>
@@ -289,46 +300,46 @@
 <div id="most-recent-adv-summary-data" class="section level4">
 <h4 class="hasAnchor">
 <a href="#most-recent-adv-summary-data" class="anchor"></a>Most Recent ADV Summary Data</h4>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(fundManageR)</a>
-<a class="sourceLine" id="cb4-2" title="2">recent_period_summary &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb4-3" title="3"><span class="st">  </span><span class="kw"><a href="reference/adv_managers_current_period_summary.html">adv_managers_current_period_summary</a></span>(<span class="dt">file_directory =</span> <span class="ot">NULL</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><html><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">fundManageR</span>)
+<span class="no">recent_period_summary</span> <span class="kw">&lt;-</span>
+  <span class="fu"><a href="reference/adv_managers_current_period_summary.html">adv_managers_current_period_summary</a></span>(<span class="kw">file_directory</span> <span class="kw">=</span> <span class="kw">NULL</span>)</pre></html></div>
 </div>
 <div id="detailed-manager-search" class="section level4">
 <h4 class="hasAnchor">
 <a href="#detailed-manager-search" class="anchor"></a>Detailed Manager Search</h4>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1">test_manager &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb5-2" title="2"><span class="st">  </span>fundManageR<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/fundManageR/topics/adv_managers_filings">adv_managers_filings</a></span>(</a>
-<a class="sourceLine" id="cb5-3" title="3">    <span class="dt">search_names =</span> <span class="st">'EJF Capital'</span>,</a>
-<a class="sourceLine" id="cb5-4" title="4">    <span class="dt">crd_ids =</span> <span class="dv">156663</span>,</a>
-<a class="sourceLine" id="cb5-5" title="5">    <span class="dt">all_sections =</span> T,</a>
-<a class="sourceLine" id="cb5-6" title="6">    <span class="dt">assign_to_environment =</span> T</a>
-<a class="sourceLine" id="cb5-7" title="7">  )</a></code></pre></div>
+<div class="sourceCode" id="cb5"><html><pre class="r"><span class="no">test_manager</span> <span class="kw">&lt;-</span>
+  <span class="kw pkg">fundManageR</span><span class="kw ns">::</span><span class="fu"><a href="reference/adv_managers_filings.html">adv_managers_filings</a></span>(
+    <span class="kw">search_names</span> <span class="kw">=</span> <span class="st">'EJF Capital'</span>,
+    <span class="kw">crd_ids</span> <span class="kw">=</span> <span class="fl">156663</span>,
+    <span class="kw">all_sections</span> <span class="kw">=</span> <span class="no">T</span>,
+    <span class="kw">assign_to_environment</span> <span class="kw">=</span> <span class="no">T</span>
+  )</pre></html></div>
 </div>
 <div id="ycombinator-alumni" class="section level4">
 <h4 class="hasAnchor">
 <a href="#ycombinator-alumni" class="anchor"></a>YCombinator Alumni</h4>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">ycombinator_alumni &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb6-2" title="2"><span class="st">  </span>fundManageR<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/fundManageR/topics/ycombinator_alumni">ycombinator_alumni</a></span>()</a>
-<a class="sourceLine" id="cb6-3" title="3"></a>
-<a class="sourceLine" id="cb6-4" title="4">ycombinator_alumni <span class="op">%&gt;%</span><span class="st"> </span></a>
-<a class="sourceLine" id="cb6-5" title="5"><span class="st">  </span><span class="kw"><a href="reference/visualize_tibble.html">visualize_tibble</a></span>(<span class="dt">edit =</span> F) <span class="co">## visualize it</span></a></code></pre></div>
+<div class="sourceCode" id="cb6"><html><pre class="r"><span class="no">ycombinator_alumni</span> <span class="kw">&lt;-</span>
+  <span class="kw pkg">fundManageR</span><span class="kw ns">::</span><span class="fu"><a href="reference/ycombinator_alumni.html">ycombinator_alumni</a></span>()
+
+<span class="no">ycombinator_alumni</span> <span class="kw">%&gt;%</span>
+  <span class="fu"><a href="reference/visualize_tibble.html">visualize_tibble</a></span>(<span class="kw">edit</span> <span class="kw">=</span> <span class="no">F</span>) <span class="co">## visualize it</span></pre></html></div>
 <div id="irr-calculation" class="section level5">
 <h5 class="hasAnchor">
 <a href="#irr-calculation" class="anchor"></a>IRR Calculation</h5>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(dplyr)</a>
-<a class="sourceLine" id="cb7-2" title="2">dates &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb7-3" title="3"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"2015-10-09"</span>, <span class="st">"2016-09-26"</span>) <span class="op">%&gt;%</span><span class="st"> </span>lubridate<span class="op">::</span><span class="kw"><a href="http://lubridate.tidyverse.org/reference/ymd.html">ymd</a></span>()</a>
-<a class="sourceLine" id="cb7-4" title="4"></a>
-<a class="sourceLine" id="cb7-5" title="5">land_purchase_price &lt;-</a>
-<a class="sourceLine" id="cb7-6" title="6"><span class="st">  </span><span class="dv">-1000000</span> <span class="op">%&gt;%</span><span class="st"> </span>formattable<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/formattable/topics/currency">currency</a></span>()</a>
-<a class="sourceLine" id="cb7-7" title="7"></a>
-<a class="sourceLine" id="cb7-8" title="8">land_sale_price &lt;-</a>
-<a class="sourceLine" id="cb7-9" title="9"><span class="st">  </span><span class="dv">1300000</span> <span class="op">%&gt;%</span><span class="st"> </span>formattable<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/formattable/topics/currency">currency</a></span>()</a>
-<a class="sourceLine" id="cb7-10" title="10"></a>
-<a class="sourceLine" id="cb7-11" title="11">cash_flows &lt;-<span class="st"> </span></a>
-<a class="sourceLine" id="cb7-12" title="12"><span class="st">  </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(land_purchase_price, land_sale_price)</a>
-<a class="sourceLine" id="cb7-13" title="13"></a>
-<a class="sourceLine" id="cb7-14" title="14">fundManageR<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/fundManageR/topics/calculate_irr_periods">calculate_irr_periods</a></span>(<span class="dt">dates =</span> dates, <span class="dt">cash_flows =</span> cash_flows, <span class="dt">return_wide =</span> T)</a></code></pre></div>
+<div class="sourceCode" id="cb7"><html><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">dplyr</span>)
+<span class="no">dates</span> <span class="kw">&lt;-</span>
+  <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"2015-10-09"</span>, <span class="st">"2016-09-26"</span>) <span class="kw">%&gt;%</span> <span class="kw pkg">lubridate</span><span class="kw ns">::</span><span class="fu"><a href="http://lubridate.tidyverse.org/reference/ymd.html">ymd</a></span>()
+
+<span class="no">land_purchase_price</span> <span class="kw">&lt;-</span>
+  -<span class="fl">1000000</span> <span class="kw">%&gt;%</span> <span class="kw pkg">formattable</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/formattable/man/currency.html">currency</a></span>()
+
+<span class="no">land_sale_price</span> <span class="kw">&lt;-</span>
+  <span class="fl">1300000</span> <span class="kw">%&gt;%</span> <span class="kw pkg">formattable</span><span class="kw ns">::</span><span class="fu"><a href="https://rdrr.io/pkg/formattable/man/currency.html">currency</a></span>()
+
+<span class="no">cash_flows</span> <span class="kw">&lt;-</span>
+  <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="no">land_purchase_price</span>, <span class="no">land_sale_price</span>)
+
+<span class="kw pkg">fundManageR</span><span class="kw ns">::</span><span class="fu"><a href="reference/calculate_irr_periods.html">calculate_irr_periods</a></span>(<span class="kw">dates</span> <span class="kw">=</span> <span class="no">dates</span>, <span class="kw">cash_flows</span> <span class="kw">=</span> <span class="no">cash_flows</span>, <span class="kw">return_wide</span> <span class="kw">=</span> <span class="no">T</span>)</pre></html></div>
 </div>
 </div>
 </div>
@@ -337,7 +348,14 @@
 
   </div>
 
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
+  </div>
+
 </div>
+
 
 
       <footer>
@@ -346,13 +364,16 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
+
       </footer>
    </div>
 
   
 
+
   </body>
 </html>
+
 

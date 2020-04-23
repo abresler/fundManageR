@@ -8,21 +8,29 @@
 
 <title>Tradeview region metrics — tv_metrics_data • fundManageR</title>
 
-<!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-<!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/united/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<!-- jquery -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!-- Bootstrap -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/united/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
-<!-- sticky kit -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script>
+<!-- headroom.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -30,10 +38,10 @@
 
 
 
-<meta property="og:title" content="Tradeview region metrics — tv_metrics_data" />
 
+<meta property="og:title" content="Tradeview region metrics — tv_metrics_data" />
 <meta property="og:description" content="Get data for trade view query" />
-<meta name="twitter:card" content="summary" />
+
 
 
 
@@ -47,9 +55,10 @@
 <![endif]-->
 
 
+
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -63,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fundManageR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.22302</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.03</span>
       </span>
     </div>
 
@@ -97,7 +106,6 @@
   <a href="../reference/index.html">Reference</a>
 </li>
       </ul>
-      
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/abresler/fundmanageR">
@@ -130,6 +138,7 @@
 </div><!--/.navbar -->
 
       
+
       </header>
 
 <div class="row">
@@ -141,55 +150,50 @@
     </div>
 
     <div class="ref-description">
-    
     <p>Get data for trade view query</p>
-    
     </div>
 
-    <pre class="usage"><span class='fu'>tv_metrics_data</span>(<span class='kw'>regions</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"america"</span>), <span class='kw'>query</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/list'>list</a></span>(<span class='kw'>filter</span> <span class='kw'>=</span>
-  <span class='fu'>tibble</span>(<span class='kw'>left</span> <span class='kw'>=</span> <span class='st'>"market_cap_basic"</span>, <span class='kw'>operation</span> <span class='kw'>=</span> <span class='st'>"nempty"</span>), <span class='kw'>symbols</span> <span class='kw'>=</span>
-  <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/list'>list</a></span>(<span class='kw'>query</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/list'>list</a></span>(<span class='kw'>types</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"stock"</span>, <span class='st'>"fund"</span>, <span class='st'>"dr"</span>))), <span class='kw'>metrics</span> <span class='kw'>=</span>
-  <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"subtype"</span>, <span class='st'>"name"</span>, <span class='st'>"beta_5_year"</span>, <span class='st'>"earnings_release_date"</span>,
-  <span class='st'>"earnings_per_share_forecast_next_fq"</span>, <span class='st'>"operating_margin"</span>,
-  <span class='st'>"return_on_equity"</span>, <span class='st'>"current_ratio"</span>, <span class='st'>"debt_to_assets"</span>,
-  <span class='st'>"price_revenue_ttm"</span>, <span class='st'>"amount_recent"</span>, <span class='st'>"market_cap_basic"</span>, <span class='st'>"ebitda"</span>,
-  <span class='st'>"fundamental_currency_code"</span>, <span class='st'>"total_assets"</span>, <span class='st'>"current_session"</span>,
-  <span class='st'>"earnings_per_share_fq"</span>, <span class='st'>"earnings_per_share_forecast_fq"</span>,
-  <span class='st'>"earnings_release_next_time"</span>, <span class='st'>"cash_ratio"</span>, <span class='st'>"yield_upcoming"</span>, <span class='st'>"sector"</span>,
-  <span class='st'>"basic_eps_net_income"</span>, <span class='st'>"price_book_ratio"</span>, <span class='st'>"quick_ratio"</span>, <span class='st'>"net_debt"</span>,
-  <span class='st'>"total_shares_outstanding_fundamental"</span>, <span class='st'>"enterprise_value_fq"</span>,
-  <span class='st'>"beta_3_year"</span>, <span class='st'>"total_capital"</span>, <span class='st'>"earnings_per_share_diluted_ttm"</span>,
-  <span class='st'>"last_annual_eps"</span>, <span class='st'>"revenue_fq"</span>, <span class='st'>"ex_dividend_date_recent"</span>,
-  <span class='st'>"price_earnings_ttm"</span>, <span class='st'>"debt_to_equity"</span>, <span class='st'>"pre_tax_margin"</span>,
-  <span class='st'>"debt_to_equity_fq"</span>, <span class='st'>"number_of_employees"</span>, <span class='st'>"total_current_assets"</span>,
-  <span class='st'>"last_annual_revenue"</span>, <span class='st'>"revenue_forecast_fq"</span>,      <span class='st'>"industry"</span>,
-  <span class='st'>"return_on_assets"</span>, <span class='st'>"return_of_invested_capital_percent_ttm"</span>,
-  <span class='st'>"return_on_invested_capital"</span>, <span class='st'>"gross_profit"</span>, <span class='st'>"dividends_paid"</span>,
-  <span class='st'>"preferred_dividends"</span>, <span class='st'>"earnings_release_next_date"</span>, <span class='st'>"dividends_yield"</span>,
-  <span class='st'>"price_sales_ratio"</span>, <span class='st'>"yield_recent"</span>, <span class='st'>"ex_dividend_date_upcoming"</span>,
-  <span class='st'>"total_shares_outstanding"</span>, <span class='st'>"price_earnings_to_growth_ttm"</span>,
-  <span class='st'>"price_book_fq"</span>, <span class='st'>"enterprise_value_ebitda_ttm"</span>, <span class='st'>"rtc"</span>, <span class='st'>"amount_upcoming"</span>,
-  <span class='st'>"average_volume"</span>, <span class='st'>"revenue_per_employee"</span>, <span class='st'>"after_tax_margin"</span>,
-  <span class='st'>"net_income"</span>, <span class='st'>"earnings_release_time"</span>,      <span class='st'>"type"</span>,
-  <span class='st'>"dividends_per_share_fq"</span>, <span class='st'>"payment_date_upcoming"</span>,
-  <span class='st'>"gross_margin_percent_ttm"</span>, <span class='st'>"earnings_per_share_basic_ttm"</span>,
-  <span class='st'>"price_free_cash_flow_ttm"</span>, <span class='st'>"long_term_capital"</span>, <span class='st'>"total_debt"</span>, <span class='st'>"country"</span>,
-  <span class='st'>"total_revenue"</span>, <span class='st'>"gross_margin"</span>, <span class='st'>"number_of_shareholders"</span>, <span class='st'>"beta_1_year"</span>,
-  <span class='st'>"goodwill"</span>, <span class='st'>"expected_annual_dividends"</span>, <span class='st'>"revenue_forecast_next_fq"</span>,
-  <span class='st'>"payment_date_recent"</span>, <span class='st'>"low"</span>, <span class='st'>"volume"</span>, <span class='st'>"pre_change_abs"</span>, <span class='st'>"gap"</span>, <span class='st'>"open"</span>,
-  <span class='st'>"volume"</span>, <span class='st'>"pre_change_abs"</span>, <span class='st'>"time"</span>, <span class='st'>"change_from_open"</span>, <span class='st'>"low"</span>, <span class='st'>"high"</span>,
-  <span class='st'>"close"</span>, <span class='st'>"volume"</span>,      <span class='st'>"change_abs"</span>, <span class='st'>"open"</span>, <span class='st'>"change_from_open"</span>,
-  <span class='st'>"change_abs"</span>, <span class='st'>"time"</span>, <span class='st'>"change"</span>, <span class='st'>"pre_change_abs"</span>, <span class='st'>"time"</span>, <span class='st'>"gap"</span>, <span class='st'>"high"</span>,
-  <span class='st'>"open"</span>, <span class='st'>"change_from_open"</span>, <span class='st'>"change_abs"</span>, <span class='st'>"low"</span>, <span class='st'>"close"</span>, <span class='st'>"change"</span>,
-  <span class='st'>"change_abs"</span>, <span class='st'>"close"</span>, <span class='st'>"time"</span>, <span class='st'>"change"</span>, <span class='st'>"pre_change"</span>, <span class='st'>"close"</span>, <span class='st'>"high"</span>,
-  <span class='st'>"gap"</span>, <span class='st'>"change"</span>, <span class='st'>"open"</span>, <span class='st'>"high"</span>, <span class='st'>"pre_change"</span>, <span class='st'>"pre_change"</span>,
-  <span class='st'>"pre_change_abs"</span>, <span class='st'>"gap"</span>, <span class='st'>"pre_change"</span>, <span class='st'>"change_from_open"</span>, <span class='st'>"low"</span>,
-  <span class='st'>"volume"</span>, <span class='st'>"relative_volume"</span>, <span class='st'>"type"</span>, <span class='st'>"subtype"</span>, <span class='st'>"eps_surprise_fq"</span>,
-  <span class='st'>"market_cap_calc"</span>, <span class='st'>"exchange"</span>, <span class='st'>"price_sales"</span>, <span class='st'>"eps_surprise_percent_fq"</span>),
-       <span class='kw'>sort</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/list'>list</a></span>(<span class='kw'>sortBy</span> <span class='kw'>=</span> <span class='st'>"market_cap_basic"</span>, <span class='kw'>sortOrder</span> <span class='kw'>=</span> <span class='st'>"desc"</span>),
-  <span class='kw'>options</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/list'>list</a></span>(<span class='kw'>lang</span> <span class='kw'>=</span> <span class='st'>"eng"</span>), <span class='kw'>range</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='fl'>0</span>, <span class='fl'>1.5e+13</span>)),
-  <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
-    
+    <pre class="usage"><span class='fu'>tv_metrics_data</span>(
+  <span class='kw'>regions</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"america"</span>),
+  <span class='kw'>query</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>filter</span> <span class='kw'>=</span> <span class='fu'>tibble</span>(<span class='kw'>left</span> <span class='kw'>=</span> <span class='st'>"market_cap_basic"</span>, <span class='kw'>operation</span> <span class='kw'>=</span> <span class='st'>"nempty"</span>),
+    <span class='kw'>symbols</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>query</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>types</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"stock"</span>, <span class='st'>"fund"</span>, <span class='st'>"dr"</span>))), <span class='kw'>metrics</span> <span class='kw'>=</span>
+    <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"subtype"</span>, <span class='st'>"name"</span>, <span class='st'>"beta_5_year"</span>, <span class='st'>"earnings_release_date"</span>,
+    <span class='st'>"earnings_per_share_forecast_next_fq"</span>, <span class='st'>"operating_margin"</span>, <span class='st'>"return_on_equity"</span>,
+    <span class='st'>"current_ratio"</span>, <span class='st'>"debt_to_assets"</span>, <span class='st'>"price_revenue_ttm"</span>, <span class='st'>"amount_recent"</span>,
+    <span class='st'>"market_cap_basic"</span>, <span class='st'>"ebitda"</span>, <span class='st'>"fundamental_currency_code"</span>, <span class='st'>"total_assets"</span>,
+    <span class='st'>"current_session"</span>, <span class='st'>"earnings_per_share_fq"</span>, <span class='st'>"earnings_per_share_forecast_fq"</span>,
+    <span class='st'>"earnings_release_next_time"</span>, <span class='st'>"cash_ratio"</span>, <span class='st'>"yield_upcoming"</span>, <span class='st'>"sector"</span>,
+    <span class='st'>"basic_eps_net_income"</span>, <span class='st'>"price_book_ratio"</span>, <span class='st'>"quick_ratio"</span>, <span class='st'>"net_debt"</span>,
+    <span class='st'>"total_shares_outstanding_fundamental"</span>, <span class='st'>"enterprise_value_fq"</span>, <span class='st'>"beta_3_year"</span>,
+    <span class='st'>"total_capital"</span>, <span class='st'>"earnings_per_share_diluted_ttm"</span>, <span class='st'>"last_annual_eps"</span>, <span class='st'>"revenue_fq"</span>,
+    <span class='st'>"ex_dividend_date_recent"</span>, <span class='st'>"price_earnings_ttm"</span>, <span class='st'>"debt_to_equity"</span>, <span class='st'>"pre_tax_margin"</span>,
+    <span class='st'>"debt_to_equity_fq"</span>, <span class='st'>"number_of_employees"</span>, <span class='st'>"total_current_assets"</span>,
+    <span class='st'>"last_annual_revenue"</span>, <span class='st'>"revenue_forecast_fq"</span>,      <span class='st'>"industry"</span>, <span class='st'>"return_on_assets"</span>,
+    <span class='st'>"return_of_invested_capital_percent_ttm"</span>, <span class='st'>"return_on_invested_capital"</span>,
+    <span class='st'>"gross_profit"</span>, <span class='st'>"dividends_paid"</span>, <span class='st'>"preferred_dividends"</span>,
+    <span class='st'>"earnings_release_next_date"</span>, <span class='st'>"dividends_yield"</span>, <span class='st'>"price_sales_ratio"</span>, <span class='st'>"yield_recent"</span>,
+    <span class='st'>"ex_dividend_date_upcoming"</span>, <span class='st'>"total_shares_outstanding"</span>,
+    <span class='st'>"price_earnings_to_growth_ttm"</span>, <span class='st'>"price_book_fq"</span>, <span class='st'>"enterprise_value_ebitda_ttm"</span>,
+    <span class='st'>"rtc"</span>, <span class='st'>"amount_upcoming"</span>, <span class='st'>"average_volume"</span>, <span class='st'>"revenue_per_employee"</span>,
+    <span class='st'>"after_tax_margin"</span>, <span class='st'>"net_income"</span>, <span class='st'>"earnings_release_time"</span>,      <span class='st'>"type"</span>,
+    <span class='st'>"dividends_per_share_fq"</span>, <span class='st'>"payment_date_upcoming"</span>, <span class='st'>"gross_margin_percent_ttm"</span>,
+    <span class='st'>"earnings_per_share_basic_ttm"</span>, <span class='st'>"price_free_cash_flow_ttm"</span>, <span class='st'>"long_term_capital"</span>,
+    <span class='st'>"total_debt"</span>, <span class='st'>"country"</span>, <span class='st'>"total_revenue"</span>, <span class='st'>"gross_margin"</span>, <span class='st'>"number_of_shareholders"</span>,
+    <span class='st'>"beta_1_year"</span>, <span class='st'>"goodwill"</span>, <span class='st'>"expected_annual_dividends"</span>, <span class='st'>"revenue_forecast_next_fq"</span>,
+    <span class='st'>"payment_date_recent"</span>, <span class='st'>"low"</span>, <span class='st'>"volume"</span>, <span class='st'>"pre_change_abs"</span>, <span class='st'>"gap"</span>, <span class='st'>"open"</span>, <span class='st'>"volume"</span>,
+    <span class='st'>"pre_change_abs"</span>, <span class='st'>"time"</span>, <span class='st'>"change_from_open"</span>, <span class='st'>"low"</span>, <span class='st'>"high"</span>, <span class='st'>"close"</span>, <span class='st'>"volume"</span>,
+    <span class='st'>"change_abs"</span>, <span class='st'>"open"</span>, <span class='st'>"change_from_open"</span>, <span class='st'>"change_abs"</span>, <span class='st'>"time"</span>, <span class='st'>"change"</span>,
+    <span class='st'>"pre_change_abs"</span>, <span class='st'>"time"</span>, <span class='st'>"gap"</span>, <span class='st'>"high"</span>, <span class='st'>"open"</span>, <span class='st'>"change_from_open"</span>, <span class='st'>"change_abs"</span>,
+    <span class='st'>"low"</span>, <span class='st'>"close"</span>, <span class='st'>"change"</span>, <span class='st'>"change_abs"</span>, <span class='st'>"close"</span>, <span class='st'>"time"</span>, <span class='st'>"change"</span>, <span class='st'>"pre_change"</span>,
+    <span class='st'>"close"</span>, <span class='st'>"high"</span>, <span class='st'>"gap"</span>, <span class='st'>"change"</span>, <span class='st'>"open"</span>, <span class='st'>"high"</span>, <span class='st'>"pre_change"</span>, <span class='st'>"pre_change"</span>,
+    <span class='st'>"pre_change_abs"</span>, <span class='st'>"gap"</span>, <span class='st'>"pre_change"</span>, <span class='st'>"change_from_open"</span>, <span class='st'>"low"</span>, <span class='st'>"volume"</span>,
+    <span class='st'>"relative_volume"</span>, <span class='st'>"type"</span>, <span class='st'>"subtype"</span>, <span class='st'>"eps_surprise_fq"</span>, <span class='st'>"market_cap_calc"</span>,
+    <span class='st'>"exchange"</span>, <span class='st'>"price_sales"</span>, <span class='st'>"eps_surprise_percent_fq"</span>),      <span class='kw'>sort</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>sortBy</span> <span class='kw'>=</span>
+    <span class='st'>"market_cap_basic"</span>, <span class='kw'>sortOrder</span> <span class='kw'>=</span> <span class='st'>"desc"</span>), <span class='kw'>options</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span>(<span class='kw'>lang</span> <span class='kw'>=</span> <span class='st'>"eng"</span>), <span class='kw'>range</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>0</span>,
+    <span class='fl'>1.5e+13</span>)),
+  <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
+
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
@@ -232,23 +236,23 @@
       <td></td>
     </tr>
     </table>
+
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
     
 
-    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='co'># NOT RUN {</span>
-<span class='fu'>tv_metrics_data</span>(<span class='kw'>regions</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>( <span class='st'>'america'</span>))
-<span class='co'># }</span></pre>
-  </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-            
-      <li><a href="#examples">Examples</a></li>
-    </ul>
 
+
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><span class='fu'>tv_metrics_data</span>(<span class='kw'>regions</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>( <span class='st'>'america'</span>))</pre>
+  </div>
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
+
 
       <footer>
       <div class="copyright">
@@ -256,13 +260,16 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
+
       </footer>
    </div>
 
   
 
+
   </body>
 </html>
+
 

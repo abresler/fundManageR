@@ -58,13 +58,13 @@ sec_xbrl_periods(only_most_recent = TRUE, only_all = TRUE, assign_to_environment
 }
 \seealso{
 Other SEC: 
-\code{\link{data_rf_leis}()},
 \code{\link{dictionary_sec_filing_codes}()},
 \code{\link{dictionary_sec_form_codes}()},
 \code{\link{dictionary_sic_codes}()},
 \code{\link{edgar_filing_streams}()},
 \code{\link{mmf_owned_debt_securities}()},
 \code{\link{recent_insider_trades}()},
+\code{\link{rf_leis}()},
 \code{\link{rf_sec_13F_companies}()},
 \code{\link{sec_bankruptcies}()},
 \code{\link{sec_broker_dealers}()},
@@ -92,10 +92,10 @@ Other entity search:
 \code{\link{adv_managers_filings}()},
 \code{\link{adv_managers_metadata}()},
 \code{\link{adv_managers_periods_summaries}()},
-\code{\link{data_rf_leis}()},
 \code{\link{finra_entities}()},
 \code{\link{nareit_entities}()},
 \code{\link{reit_funds}()},
+\code{\link{rf_leis}()},
 \code{\link{rf_sec_13F_companies}()},
 \code{\link{sec_bankruptcies}()},
 \code{\link{sec_broker_dealers}()},

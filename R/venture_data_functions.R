@@ -47,8 +47,8 @@ ycombinator_alumni <-
                 funs(ifelse(. == "", NA, .))) %>%
       left_join(tibble(
         idSeasonYC = c('w', 's'),
-        nameSeasonYC = c('Winter', 'Summer')
-      )) %>%
+        nameSeasonYC = c('Winter', 'Summer'),
+      ),  by = "idSeasonYC") %>%
       mutate(
         description = descriptionCompany %>% str_to_upper(),
         isAcquiredCompany = description %>% str_detect("ACQUIRED|WE SOLD|SOLD TO")
@@ -141,66 +141,72 @@ cb_unicorns <-
       "https://www.cbinsights.com/research-unicorn-companies" %>%
       read_html()
 
-    companies <-
-      page %>%
-      html_nodes('td:nth-child(1)') %>%
-      html_text() %>%
-      stringr::str_replace('\n\t','') %>%
-      gsub("^ *|(?<= ) | *$", "", ., perl = TRUE)
+    data <-
+      page %>% html_table(fill = T) %>% first() %>%
+      as_tibble() %>%
+      set_names(
+        c(
+          "nameCompany",
+          "amountValuation",
+          "dateJoined",
+          "country",
+          "industry",
+          "namesInvestors"
+        )
+      ) %>%
+      filter(!is.na(nameCompany)) %>%
+      mutate(
+        amountValuation = readr::parse_number(amountValuation) * 1000000000,
+        dateJoined  = lubridate::mdy(dateJoined)
+      ) %>%
+      mutate(id = 1:n(),
+             amountValuation = currency(amountValuation, digits = 0),
+      ) %>%
+      select(id, everything())
+
+    data <- data %>%
+      separate(nameCompany,
+               into = c("nameCompany", "nameDBA"),
+               sep = "\\(") %>%
+      mutate(nameDBA = nameDBA %>% str_remove_all("\\)")) %>%
+      mutate_if(is.character, str_trim)
+
+    df_investors <-
+      data %>%
+      select(id, namesInvestors) %>%
+      separate_rows(namesInvestors, sep = "\\,") %>%
+      mutate_if(is.character, str_squish) %>%
+      filter(namesInvestors != "") %>%
+      group_by(id) %>%
+      summarise(
+        countInvestors = n(),
+        namesInvestors = unique(namesInvestors) %>% sort() %>% str_c(collapse = " | ")
+      )
+
+    data <-
+      data %>%
+      select(-namesInvestors) %>%
+      left_join(df_investors, by = "id") %>%
+      mutate_if(is.character, str_to_upper)
+
+
 
     company_urls <-
       page %>%
       html_nodes('td:nth-child(1) a') %>%
       html_attr('href') %>%
-      str_replace_all('https://www.cbinsights.com/company/https://www.cbinsights.com/company/',
-                      'https://www.cbinsights.com/company/')
+      str_replace_all(
+        'https://www.cbinsights.com/company/https://www.cbinsights.com/company/',
+        'https://www.cbinsights.com/company/'
+      )
 
-    valuation_billions <-
-      page %>%
-      html_nodes('td:nth-child(2)') %>%
-      html_text() %>%
-      readr::parse_number() %>%
-      formattable::currency(digits = 2)
 
-    date_joined <-
-      page %>%
-      html_nodes('td:nth-child(3)') %>%
-      html_text() %>%
-      lubridate::mdy()
-
-    country <-
-      page %>%
-      html_nodes('td:nth-child(4)') %>%
-      html_text()
-
-    industry <-
-      page %>%
-      html_nodes('td:nth-child(5)') %>%
-      html_text()
-
-    investors <-
-      page %>%
-      html_nodes('td:nth-child(6)') %>%
-      html_text()
-
-    unicorn_df <-
-      tibble(
-      nameCompany = companies %>% stringr::str_to_upper(),
-      amountValuationBillions = valuation_billions,
-      dateJoined = date_joined,
-      countryCompany = country %>% stringr::str_to_upper(),
-      nameIndustry = industry %>% stringr::str_to_upper(),
-      nameInvestors = investors %>% stringr::str_to_upper(),
-      urlCompanyCBInsights = company_urls
-    )
+    data <- data %>%
+      mutate(urlCBInsights = company_urls)
 
     if (return_message) {
-      list("You acquired data on ",
-           unicorn_df %>% nrow() %>% formattable::comma(digits = 0),
-           ' unicorns with a total private market valuation of $',
-           unicorn_df$amountValuationBillions %>% sum %>% formattable::currency(),
-           ' Billion') %>%
-        cat(fill = T)
+      total <- data$amountValuation %>% sum()
+      glue("Acquired data on {nrow(data)} companies with a private market valuation of {total}") %>% cat(fill = T)
     }
-    return(unicorn_df)
+    data
   }

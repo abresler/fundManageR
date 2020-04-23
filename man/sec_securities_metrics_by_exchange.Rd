@@ -5,10 +5,10 @@
 \title{SEC quarterly securities transaction metrics}
 \usage{
 sec_securities_metrics_by_exchange(
-  only_most_recent = FALSE,
-  years = 2016,
+  only_most_recent = T,
+  years = NULL,
   months = NULL,
-  nest_data = TRUE,
+  nest_data = F,
   return_message = TRUE
 )
 }
@@ -42,13 +42,13 @@ sec_securities_metrics_by_exchange(years = 2016)
 }
 \seealso{
 Other SEC: 
-\code{\link{data_rf_leis}()},
 \code{\link{dictionary_sec_filing_codes}()},
 \code{\link{dictionary_sec_form_codes}()},
 \code{\link{dictionary_sic_codes}()},
 \code{\link{edgar_filing_streams}()},
 \code{\link{mmf_owned_debt_securities}()},
 \code{\link{recent_insider_trades}()},
+\code{\link{rf_leis}()},
 \code{\link{rf_sec_13F_companies}()},
 \code{\link{sec_bankruptcies}()},
 \code{\link{sec_broker_dealers}()},

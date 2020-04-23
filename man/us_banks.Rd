@@ -12,3 +12,6 @@ us_banks()
 \description{
 Information about United States Banks as monitored by the FDIC
 }
+\examples{
+us_banks()
+}

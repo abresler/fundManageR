@@ -21,13 +21,11 @@
 sec_ciks <-
   function(return_message = TRUE) {
     url <-
-      'https://www.sec.gov/edgar/NYU/cik.coleft.c'
+      "https://www.sec.gov/Archives/edgar/cik-lookup-data.txt"
 
     cik_data <-
       url %>%
-      readr::read_table(col_names = F, progress = FALSE) %>%
-      suppressMessages() %>%
-      suppressWarnings()
+      readr::read_table(col_names = F, progress = FALSE)
 
     cik_data <-
       cik_data %>%
@@ -70,7 +68,7 @@ sec_ciks <-
 # FOIA --------------------------------------------------------------------
 
 
-get_foia_url_df <-
+.get_foia_url_df <-
   function() {
     page <-
       'https://www.sec.gov/foia/docs/foia-logs.htm' %>%
@@ -78,7 +76,8 @@ get_foia_url_df <-
 
     slugs <-
       page %>%
-      html_nodes('.medium-9 a') %>%
+      html_nodes('td:nth-child(1) a ')
+      html_nodes('.views-field-extension a') %>%
       html_attr('href') %>%
       str_replace_all('http://www.sec.gov', '')
 
@@ -110,7 +109,7 @@ get_foia_url_df <-
     return(url_df)
   }
 
-parse_foia_url_df <-
+.parse_foia_url_df <-
   function(url = 'http://www.sec.gov/foia/logs/foia-log-fy2013.csv',
            return_message = TRUE) {
     data <-
@@ -231,7 +230,7 @@ sec_foia_requests <-
            nest_data = TRUE,
            return_message = TRUE) {
     url_df <-
-      get_foia_url_df()
+      .get_foia_url_df()
 
     if (!'search_years' %>% exists()) {
       urls <-
@@ -244,7 +243,7 @@ sec_foia_requests <-
     }
 
     parse_foia_url_df_safe <-
-      purrr::possibly(parse_foia_url_df, NULL)
+      purrr::possibly(.parse_foia_url_df, NULL)
 
     all_data <-
       urls %>%
@@ -285,31 +284,37 @@ sec_foia_requests <-
 
 # cusip -------------------------------------------------------------------
 
-get_cusip_url_df <-
+.get_cusip_url_df <-
   function() {
     page <-
       "https://www.sec.gov/divisions/investment/13flists.htm" %>%
       read_html()
 
+
     periods <-
       page %>%
-      html_nodes("#main-content a") %>%
+      html_nodes("#block-secgov-content a") %>%
       html_text() %>%
       str_replace_all("Current List ", '') %>%
       str_replace_all('\\(|\\)', '') %>%
-      str_replace_all('Third', '3rd') %>%
-      str_replace_all('First', '1st') %>%
-      str_replace_all('Second', '2nd') %>%
-      str_replace_all('Fourth', '4th')
+      str_replace_all('Third|third', '3rd') %>%
+      str_replace_all('First|first', '1st') %>%
+      str_replace_all('Second|second', '2nd') %>%
+      str_replace_all('Fourth|fourth', '4th')
 
     urls <-
       page %>%
-      html_nodes("#main-content a") %>%
+      html_nodes("#block-secgov-content a") %>%
       html_attr('href') %>%
       paste0('https://www.sec.gov', .)
 
-    url_df <-
+    data <-
       tibble(namePeriod = periods, urlSEC = urls) %>%
+      mutate_all(str_squish) %>%
+      filter(namePeriod != "")
+
+    url_df <-
+      data %>%
       separate(namePeriod,
                sep = '\\ ',
                into = c('idPeriod', 'quarter', 'yearData')) %>%
@@ -411,14 +416,12 @@ get_cusip_url_df <-
       left_join(tibble(
         periodData = "2016q3",
         areaTable = c("113.14286-64.42471-727.78378-520.05405")
-      )) %>%
-      suppressWarnings() %>%
-      suppressMessages()
+      ))
 
-    return(url_df)
+    url_df
   }
 
-parse_sec_cusip_url <-
+.parse_sec_cusip_url <-
   function(url = "https://www.sec.gov/divisions/investment/13f/13flist2016q3.pdf",
            start_page = 3,
            table_area = "113.14286-64.42471-727.78378-520.05405",
@@ -609,7 +612,7 @@ sec_cusips <-
            return_message = TRUE) {
     is_blank <-
       (only_most_recent == F &
-         years %>% is_null() & quarters %>% is_null())
+         length(years) == 0  & length(quarters) == 0)
 
     if (is_blank) {
       stop("Please enter years and/or quarters or select only most recent")
@@ -620,7 +623,7 @@ sec_cusips <-
     )
 
     url_df <-
-      get_cusip_url_df()
+      .get_cusip_url_df()
 
     is_current <-
       only_most_recent == TRUE
@@ -633,7 +636,7 @@ sec_cusips <-
       urls_df <-
         url_df %>%
         filter(yearData %in% years)
-      if (!quarters %>% is_null()) {
+      if (length(quarters) > 0) {
         if (quarters %in% 1:4 %>% sum() == 0) {
           stop("Quarters can only be 1, 2, 3, or 4")
         }
@@ -644,7 +647,7 @@ sec_cusips <-
     }
 
     parse_sec_cusip_url_safe <-
-      purrr::possibly(parse_sec_cusip_url, tibble())
+      purrr::possibly(.parse_sec_cusip_url, tibble())
 
     all_data <-
       1:nrow(urls_df) %>%
@@ -686,32 +689,30 @@ sec_cusips <-
 
 # closed_end_funds --------------------------------------------------------
 
-get_closed_end_fund_url_df <-
+.get_closed_end_fund_url_df <-
   function() {
     page <-
       "https://www.sec.gov/opa/data/opendatasetsshtmlclosed-end-investment_company.html" %>%
       read_html()
 
+
     urls <-
-      page %>%
-      html_nodes('.medium-9 a:nth-child(1)') %>%
+      page %>% html_nodes('.views-field-field-display-title a') %>%
       html_attr('href') %>%
       paste0('https://www.sec.gov', .)
+    urls <- urls[urls %>% str_detect("csv")]
+    years <- page %>% html_nodes('.views-field-field-display-title a') %>% html_text() %>% unique() %>% as.numeric()
 
-    years <-
-      urls %>% str_replace_all("https://www.sec.gov/open/datasets/closed-end_investment_company|.csv",
-                               '') %>%
-      readr::parse_number()
 
-    years[[1]] <-
-      Sys.Date() %>% lubridate::year()
-
-    tibble(yearData = years,
+    data <-
+      tibble(yearData = years,
                urlData = urls)
+
+    data
 
   }
 
-parse_closed_end_fund_url <-
+.parse_closed_end_fund_url <-
   function(url = "https://www.sec.gov/open/datasets/closed-end_investment_company.csv",
            return_message = TRUE) {
     df <-
@@ -719,8 +720,6 @@ parse_closed_end_fund_url <-
       read_csv() %>%
       slice(-1) %>%
       mutate_all(str_to_upper) %>%
-      suppressWarnings() %>%
-      suppressMessages() %>%
       select(1:10) %>%
       purrr::set_names(
         c(
@@ -805,15 +804,14 @@ parse_closed_end_fund_url <-
 #' sec_closed_end_funds(years = 2015:2017)
 #' }
 sec_closed_end_funds <-
-  function(only_most_recent = FALSE,
-           years = 2014:2017,
-           nest_data = TRUE,
+  function(only_most_recent = T,
+           years =NULL,
+           nest_data = F,
            return_message = TRUE) {
     url_df <-
-      get_closed_end_fund_url_df() %>%
-      suppressWarnings()
+      .get_closed_end_fund_url_df()
 
-    if (!years %>% is_null()) {
+    if (length(years) > 0) {
       urls  <-
         url_df %>%
         filter(yearData %in% years) %>%
@@ -825,7 +823,7 @@ sec_closed_end_funds <-
         FALSE
     }
 
-    if (years %>% is_null() & (!only_most_recent)) {
+    if (length(years) >0 & (!only_most_recent)) {
       urls <-
         url_df$urlData
     }
@@ -838,13 +836,20 @@ sec_closed_end_funds <-
     }
 
     parse_closed_end_fund_url_safe <-
-      purrr::possibly(parse_closed_end_fund_url, tibble())
+      purrr::possibly(.parse_closed_end_fund_url, tibble())
 
     all_data <-
       urls %>%
       future_map_dfr(function(x) {
         parse_closed_end_fund_url_safe(url = x, return_message = TRUE)
-      })
+      }) %>%
+      mutate_if(is.character,
+                list(function(x){
+                  case_when(
+                    x == "[NULL]" ~ NA_character_,
+                    TRUE ~ x
+                  )
+                }))
 
     all_data <-
       all_data %>%
@@ -854,11 +859,9 @@ sec_closed_end_funds <-
       suppressMessages()
 
     if (return_message) {
-      list(
-        "Acquired ",
-        all_data %>% nrow() %>% formattable::comma(digits = 0),
-        ' Closed End Funds'
-      ) %>%
+      list("Acquired ",
+           all_data %>% nrow() %>% formattable::comma(digits = 0),
+           ' Closed End Funds') %>%
         purrr::invoke(paste0, .) %>%
         cat(fill = T)
     }
@@ -868,8 +871,7 @@ sec_closed_end_funds <-
         all_data %>%
         nest(-yearData, .key = dataClosedEndFunds)
     }
-
-    return(all_data)
+    all_data
   }
 
 
@@ -993,7 +995,7 @@ sec_investment_companies <-
 
 # money_market_funds ------------------------------------------------------
 
-get_mmf_url_df <-
+.get_mmf_url_df <-
   function() {
     page <-
       "https://www.sec.gov/opa/data/opendatasets-mmfhtml.html" %>%
@@ -1001,29 +1003,28 @@ get_mmf_url_df <-
 
     slugs <-
       page %>%
-      html_nodes('p:nth-child(3) em a') %>%
+      html_nodes('.views-field-field-display-title a') %>%
       html_attr('href')
 
     urls_csv <-
       slugs[slugs %>% str_detect(".csv")] %>%
       paste0('https://www.sec.gov', .)
 
-    csv_dates <-
-      urls_csv %>%
-      str_replace_all('https://www.sec.gov/open/datasets/mmf|.csv|\\-', '')
+    urls_csv %>% str_extract("(\\d)")
 
-    if (csv_dates[csv_dates %>% length()] == '') {
-      csv_dates[csv_dates %>% length()] <-
-        "201301"
-    }
+    dates <- urls_csv %>% str_split("/mmf|/mm-") %>% flatten_chr()
+    dates <-
+      dates[dates %>% str_detect(".csv")] %>% str_remove_all(".csv|\\-|\\_0")
 
-    csv_dates <-
-      list(csv_dates, "01") %>%
-      purrr::invoke(paste0, .) %>%
-      lubridate::ymd()
+    dates <-
+      case_when(dates == "" ~ "201301",
+              TRUE ~ dates) %>%
+      str_c("01") %>%
+      ymd()
 
-    tibble(dateData = csv_dates,
-               urlData = urls_csv) %>%
+    dates <- dates %m+% months(1) - 1
+    tibble(dateData = dates,
+           urlData = urls_csv) %>%
       mutate(
         yearData = dateData %>% lubridate::year(),
         monthData = dateData %>% lubridate::month()
@@ -1031,7 +1032,7 @@ get_mmf_url_df <-
 
   }
 
-parse_mmf_url <-
+.parse_mmf_url <-
   function(url = "https://www.sec.gov/open/datasets/mmf-2016-09.csv",
            return_message = TRUE) {
     df <-
@@ -1146,19 +1147,19 @@ sec_money_market_funds <-
   function(only_most_recent = TRUE,
            years = NULL,
            months = NULL,
-           nest_data = TRUE,
+           nest_data = F,
            return_message = TRUE) {
     missing <-
-      only_most_recent == F & (years %>% is_null())
+      only_most_recent == F & (length(years) ==0)
     if (missing) {
       stop("Please enter a years or only most recent")
     }
 
     parse_mmf_url_safe <-
-      purrr::possibly(parse_mmf_url, tibble())
+      purrr::possibly(.parse_mmf_url, tibble())
 
     mmf_url_df <-
-      get_mmf_url_df()
+      .get_mmf_url_df()
 
     if (only_most_recent) {
       urls <-
@@ -1184,7 +1185,7 @@ sec_money_market_funds <-
         mmf_url_df %>%
         filter(yearData %in% years)
 
-      if (!months %>% is_null()) {
+      if (length(months) > 0) {
         url_df <-
           url_df %>%
           filter(monthData %in% months)
@@ -1252,7 +1253,7 @@ sec_money_market_funds <-
 
 # bankruptcies ------------------------------------------------------------
 
-parse_bankruptcy_url <-
+.parse_bankruptcy_url <-
   function(url = "https://www.sec.gov/open/datasets/public_company_bankruptcy_cases.csv",
            return_message = TRUE) {
     df <-
@@ -1336,7 +1337,7 @@ sec_bankruptcies <-
                  urlData = url_data)
 
     parse_bankruptcy_url_safe <-
-      purrr::possibly(parse_bankruptcy_url, tibble())
+      purrr::possibly(.parse_bankruptcy_url, tibble())
 
     all_data <-
       url_df$urlData %>%
@@ -1383,7 +1384,7 @@ sec_bankruptcies <-
 
 # broker_dealers ----------------------------------------------------------
 
-get_broker_data_urls <-
+.get_broker_data_urls <-
   function() {
     page <-
       "https://www.sec.gov/foia/docs/bd-archive.htm" %>%
@@ -1391,27 +1392,59 @@ get_broker_data_urls <-
 
     slugs <-
       page %>%
-      html_nodes('#main-content a') %>%
+      html_nodes('a') %>%
       html_attr('href')
+
+    slugs <- slugs[slugs %>% str_detect("bd")]
+    slugs <- slugs %>%
+      discard(function(x){
+        is.na(x)
+      })
 
     url_data <-
       'https://www.sec.gov' %>%
       paste0(slugs)
 
+    urls <- url_data[url_data %>% str_detect(".txt")]
+
     periods <-
       slugs %>%
-      str_replace_all('/foia/bdreports/bd|.txt', '') %>%
-      lubridate::mdy()
+      str_split("/bd") %>%
+      flatten_chr()
 
-    tibble(dateData = periods,
-               urlData = url_data) %>%
+    periods <-
+      periods[periods %>% str_detect(".txt")] %>%
+      str_remove_all(".txt|_0")
+
+
+    data <-
+      tibble(dateData = periods,
+             urlData = urls) %>%
+      mutate(
+        chars = nchar(dateData),
+        dateData = case_when(chars == 7 ~ dateData %>% substr(1, 6),
+                             TRUE ~ dateData),
+        chars = nchar(dateData),
+        month = dateData %>% substr(1, 2),
+        day =  dateData %>% substr(3, 4),
+        year = dateData %>% substr(5, 6),
+        year = case_when(year == "" ~ lag(year, 1),
+                         TRUE ~ year)
+      ) %>%
+      unite(date, year, month, day, sep = "-") %>%
+      mutate(date = ymd(date)) %>%
+      select(-dateData) %>%
+      rename(dateData = date) %>%
+      select(dateData, urlData) %>%
       mutate(
         yearData = dateData %>% lubridate::year(),
         monthData = dateData %>% lubridate::month()
       )
+
+    data
   }
 
-parse_brokers_url <-
+.parse_brokers_url <-
   function(url = "https://www.sec.gov/foia/bdreports/bd120116.txt",
            return_message = TRUE) {
     df <-
@@ -1494,16 +1527,16 @@ sec_broker_dealers <-
            nest_data = FALSE,
            return_message = TRUE) {
     missing <-
-      only_most_recent == F & (years %>% is_null())
+      only_most_recent == F & (length(years) == 0)
     if (missing) {
       stop("Please enter a years or only most recent")
     }
 
     parse_brokers_url_safe <-
-      purrr::possibly(parse_brokers_url, tibble())
+      purrr::possibly(.parse_brokers_url, tibble())
 
     broker_df <-
-      get_broker_data_urls()
+      .get_broker_data_urls()
 
     if (only_most_recent) {
       urls <-
@@ -1529,7 +1562,7 @@ sec_broker_dealers <-
         broker_df %>%
         filter(yearData %in% years)
 
-      if (!months %>% is_null()) {
+      if (length(months) > 0) {
         url_df <-
           url_df %>%
           filter(monthData %in% months)
@@ -1580,7 +1613,7 @@ sec_broker_dealers <-
 
 # municipal_dealers -------------------------------------------------------
 
-parse_municpal_dealer_url <-
+.parse_municpal_dealer_url <-
   function(url = "https://www.sec.gov/foia/muniadvisors/ma120116.zip",
            return_message = TRUE) {
     df <-
@@ -1606,7 +1639,7 @@ parse_municpal_dealer_url <-
 
   }
 
-get_muni_advisor_urls <-
+.get_muni_advisor_urls <-
   function() {
     page <-
       "https://www.sec.gov/foia/docs/muniadvisors-archive.htm" %>%
@@ -1614,7 +1647,7 @@ get_muni_advisor_urls <-
 
     slugs <-
       page %>%
-      html_nodes('#main-content a') %>%
+      html_nodes('#block-secgov-content a') %>%
       html_attr('href')
 
     slugs <-
@@ -1668,16 +1701,16 @@ sec_municipal_advisors <-
            nest_data = FALSE,
            return_message = TRUE) {
     missing <-
-      only_most_recent == F & (years %>% is_null())
+      only_most_recent == F & (length(years) == 0)
     if (missing) {
       stop("Please enter a years or only most recent")
     }
 
     parse_municpal_dealer_url_safe <-
-      purrr::possibly(parse_municpal_dealer_url, tibble())
+      purrr::possibly(.parse_municpal_dealer_url, tibble())
 
     muni_df <-
-      get_muni_advisor_urls()
+      .get_muni_advisor_urls()
 
     if (only_most_recent) {
       urls <-
@@ -1703,7 +1736,7 @@ sec_municipal_advisors <-
         muni_df %>%
         filter(yearData %in% years)
 
-      if (!months %>% is_null()) {
+      if (length(months) > 0) {
         url_df <-
           url_df %>%
           filter(monthData %in% months)
@@ -1756,7 +1789,7 @@ sec_municipal_advisors <-
 
 # fail_to_deliver ---------------------------------------------------------
 
-parse_fail_to_deliver_url <-
+.parse_fail_to_deliver_url <-
   function(url = "https://www.sec.gov/foia/failsreports/cnsfails201611b.zip",
            return_message = TRUE) {
     td <-
@@ -1789,7 +1822,7 @@ parse_fail_to_deliver_url <-
         dateSettlement = dateSettlement %>% lubridate::ymd(),
         amountPrice = amountPrice %>% readr::parse_number(),
         countShares = countShares %>% readr::parse_number(),
-        valueTransaction = amountPrice * countShares,
+        amountTransaction = amountPrice * countShares,
         urlData = url
       ) %>%
       suppressWarnings() %>%
@@ -1807,15 +1840,15 @@ parse_fail_to_deliver_url <-
     return(df)
   }
 
-get_fail_to_deliver_urls <-
+.get_fail_to_deliver_urls <-
   function() {
     page <-
-      "https://www.sec.gov/foia/docs/failsdata-archive.htm" %>%
+      "https://www.sec.gov/data/foiadocsfailsdatahtm" %>%
       read_html()
 
     slugs <-
       page %>%
-      html_nodes('li a') %>%
+      html_nodes('.views-field-field-display-title a') %>%
       html_attr('href')
 
     urls <-
@@ -1823,40 +1856,42 @@ get_fail_to_deliver_urls <-
 
     periods <-
       slugs %>%
-      str_replace_all(
-        'https://www.sec.gov/foia/failsreports/cnsp_sec_fails_|https://www.sec.gov/foia/failsreports/cnsfails2|.zip|foia/failsreports/cnsp_sec_fails_|/foia/failsreports/cnsfails|/',
-        ''
-      )
+      str_split("/") %>%
+      flatten_chr()
 
-    url_df <-
-      tibble(period = periods, urlData = urls) %>%
-      mutate(char = period %>% substr(stop = period %>% nchar(), start = period %>% nchar())) %>%
-      left_join(tibble(char = c('a', 'b'), day = c("01", "15"))) %>%
-      left_join(tibble(
-        char = c("1", "2", "3", "4"),
-        monthday = c('0331', '0630', '0930', '1231')
-      )) %>%
-      mutate(period = period %>% str_replace_all('\\q', '')) %>%
-      suppressMessages()
+    periods <- periods[periods %>% str_detect("zip")] %>%
+      str_remove_all(".zip") %>%
+      str_remove_all("_|cnsfails|cnspsecfails|cnspsecfails") %>%
+      str_remove_all("cnspsecfails")
 
-    url_df <-
-      url_df %>%
-      mutate(
-        idPeriod = period %>% substr(start = 1, stop = (period %>% nchar() - 1)),
-        idPeriod = ifelse(
-          monthday %>% is.na(),
-          idPeriod %>% paste0(day),
-          idPeriod %>% paste0(monthday)
-        )
-      ) %>%
-      select(dateData = idPeriod, urlData) %>%
+    periods <-
+      periods %>%
+      str_replace_all("q1", "03") %>%
+      str_replace_all("q2", "06") %>%
+      str_replace_all("q3", "09") %>%
+      str_replace_all("q4", "12")
+
+
+    periods <- case_when(
+      periods %>% str_detect("b$") ~ periods %>%
+        str_remove_all("b$") %>%
+        str_c("01"),
+      periods %>% str_detect("a$|a0$") ~ periods %>%
+        str_remove_all("a$|a0$") %>%
+        str_c("15"),
+      TRUE ~ periods %>% str_c("01")
+    )
+
+     periods <- periods %>%  ymd()
+
+
+    tibble(dateData = periods, urlData = urls) %>%
       mutate(
         dateData = dateData %>% lubridate::ymd(),
         monthData = dateData %>% lubridate::month(),
         yearData = dateData %>% lubridate::year()
       )
 
-    return(url_df)
   }
 
 #' SEC failed to deliver securities
@@ -1886,19 +1921,19 @@ sec_failed_to_deliver_securities <-
   function(only_most_recent = TRUE,
            years = 2016,
            months = NULL,
-           nest_data = TRUE,
+           nest_data = F,
            return_message = TRUE) {
     missing <-
-      only_most_recent == F & (years %>% is_null())
+      only_most_recent == F & (length(years) == 0)
     if (missing) {
       stop("Please enter a years or only most recent")
     }
 
     parse_fail_to_deliver_url_safe <-
-      purrr::possibly(parse_fail_to_deliver_url, tibble())
+      purrr::possibly(.parse_fail_to_deliver_url, tibble())
 
     urls_df <-
-      get_fail_to_deliver_urls()
+      .get_fail_to_deliver_urls()
 
     if (only_most_recent) {
       urls <-
@@ -1975,7 +2010,7 @@ sec_failed_to_deliver_securities <-
 
 # market_structure --------------------------------------------------------
 
-get_market_structure_url_df <-
+.get_market_structure_url_df <-
   function() {
     page <-
       "https://www.sec.gov/opa/data/market-structure/marketstructuredownloadshtml-by_security.html" %>%
@@ -1983,45 +2018,49 @@ get_market_structure_url_df <-
 
     slugs <-
       page %>%
-      html_nodes('.medium-9 a') %>%
+      html_nodes('a') %>%
       html_attr('href')
+
+    slugs <-slugs[slugs %>% str_detect("zip")] %>%
+      discard(function(x){
+        is.na(x)
+      })
 
     urls <-
       slugs %>%
-      map_chr(function(x) {
-        if (x %>% str_detect("http")) {
-          return(x)
-        } else {
-          x %>% paste0('https://www.sec.gov', .)
-        }
-      })
+      str_c("https://www.sec.gov",.)
 
     periods <-
       slugs %>%
-      str_replace_all(
-        'http://www.sec.gov/files/individual_security|http://www.sec.gov/marketstructure/data_uploads/|/files/individual_security_|.zip|individual_security|,0|\\q|\\_',
-        ''
+      str_split("/") %>%
+      flatten_chr() %>%
+      keep(function(x){
+        x %>% str_detect("zip")
+      }) %>%
+      str_remove_all("individual_security_|.zip")
+
+
+    data <-
+      tibble(period = periods, urlData = urls) %>%
+      separate(period,
+               sep = "\\_",
+               into = c("yearData", "quarterData")) %>%
+      mutate(
+        yearData = as.numeric(yearData),
+        quarterData = quarterData %>% str_replace_all("q10", "q1") %>% str_to_upper,
+        dateData = case_when(
+          quarterData == "Q1" ~ glue::glue("{yearData}-03-31"),
+          quarterData == "Q2" ~ glue::glue("{yearData}-06-30"),
+          quarterData == "Q3" ~ glue::glue("{yearData}-09-30"),
+          quarterData == "Q4" ~ glue::glue("{yearData}-12-31"),
+        ) %>% ymd()
       )
 
-    url_df <-
-      tibble(period = periods, urlData = urls) %>%
-      mutate(char = period %>% substr(stop = period %>% nchar(), start = period %>% nchar())) %>%
-      left_join(tibble(
-        char = c("1", "2", "3", "4"),
-        monthday = c('0331', '0630', '0930', '1231')
-      )) %>%
-      mutate(
-        idPeriod = period %>% substr(start = 1, stop = (period %>% nchar() - 1)),
-        idPeriod = idPeriod %>% paste0(monthday) %>% lubridate::ymd()
-      ) %>%
-      suppressMessages() %>%
-      select(dateData = idPeriod, urlData)
-
-    return(url_df)
+    data
   }
 
-parse_market_structure_url <-
-  function(url = "https://www.sec.gov/files/individual_security_2016_q3.zip",
+.parse_market_structure_url <-
+  function(url = "https://www.sec.gov/files/node/add/data_distribution/individual_security_2019_q4.zip",
            return_message = TRUE) {
     td <-
       tempdir()
@@ -2033,9 +2072,13 @@ parse_market_structure_url <-
 
     con <-
       unzip(tf, exdir = td)
+
     csv_loc <-
-      con[con %>% str_detect('.csv')] %>%
-      .[[1]]
+      con %>%
+      keep(function(x){
+        x %>% str_detect("csv")
+      })
+
     df <-
       csv_loc %>%
       read_csv() %>%
@@ -2069,9 +2112,7 @@ parse_market_structure_url <-
         .funs = funs(. %>% str_to_upper())
       ) %>%
       mutate(urlData = url,
-             dateTrading = dateTrading %>% lubridate::ymd()) %>%
-      suppressMessages() %>%
-      suppressWarnings()
+             dateTrading = dateTrading %>% lubridate::ymd())
 
     con %>%
       unlink()
@@ -2082,7 +2123,7 @@ parse_market_structure_url <-
         cat(fill = T)
     }
 
-    return(df)
+   df
   }
 
 #' SEC quarterly securities transaction metrics
@@ -2110,22 +2151,22 @@ parse_market_structure_url <-
 #' sec_securities_metrics_by_exchange(years = 2016)
 #' }
 sec_securities_metrics_by_exchange <-
-  function(only_most_recent = FALSE,
-           years = 2016,
+  function(only_most_recent = T,
+           years = NULL,
            months = NULL,
-           nest_data = TRUE,
+           nest_data = F,
            return_message = TRUE) {
     missing <-
-      only_most_recent == F & (years %>% is_null())
+      only_most_recent == F & (length(years) == 0)
     if (missing) {
       stop("Please enter a years or only most recent")
     }
 
     parse_market_structure_url_safe <-
-      purrr::possibly(parse_market_structure_url, tibble())
+      purrr::possibly(.parse_market_structure_url, tibble())
 
     urls_df <-
-      get_market_structure_url_df() %>%
+      .get_market_structure_url_df() %>%
       mutate(
         yearData = dateData %>% lubridate::year(),
         monthData = dateData %>% lubridate::month()
@@ -2156,7 +2197,7 @@ sec_securities_metrics_by_exchange <-
         urls_df %>%
         filter(yearData %in% years)
 
-      if (!months %>% is_null()) {
+      if (length(months) > 0) {
         url_df <-
           url_df %>%
           filter(monthData %in% months)
@@ -2169,7 +2210,7 @@ sec_securities_metrics_by_exchange <-
 
     if (only_most_recent) {
       urls_df <-
-        get_market_structure_url_df()
+        .get_market_structure_url_df()
 
       urls <-
         urls_df %>% slice(1) %>% .$urlData
@@ -2221,7 +2262,7 @@ sec_securities_metrics_by_exchange <-
 # xbrl --------------------------------------------------------------------
 
 # Note: The SEC website folder http://www.sec.gov/Archives/edgar/data/{cik}/{accession}/ will always contain all the files for a given submission, where {accession} is the adsh with the ‘-‘characters removed.
-get_xbrl_name_df <-
+.get_xbrl_name_df <-
   function() {
     tibble(
       nameSEC = c(
@@ -2352,7 +2393,7 @@ get_xbrl_name_df <-
     )
   }
 
-get_xbrl_url_df <-
+.get_xbrl_url_df <-
   function() {
     page <-
       "https://www.sec.gov/dera/data/financial-statement-data-sets.html" %>%
@@ -2387,7 +2428,7 @@ get_xbrl_url_df <-
     return(url_df)
   }
 
-read_xbrl_file <-
+.read_xbrl_file <-
   function(path = './tag.txt') {
     path %>%
       readr::read_tsv() %>%
@@ -2395,7 +2436,7 @@ read_xbrl_file <-
       suppressMessages()
   }
 
-parse_xbrl_url <-
+.parse_xbrl_url <-
   function(url = "http://www.sec.gov/data/financial-statements/2016q3.zip",
            only_all = TRUE,
            return_message = TRUE) {
@@ -2430,7 +2471,7 @@ parse_xbrl_url <-
       suppressMessages()
 
     read_xbrl_file_safe <-
-      purrr::possibly(read_xbrl_file, tibble())
+      purrr::possibly(.read_xbrl_file, tibble())
 
     tmp <-
       tempfile()
@@ -2440,12 +2481,12 @@ parse_xbrl_url <-
       unzip(tmp)
 
     name_xbrl <-
-      get_xbrl_name_df()
+      .get_xbrl_name_df()
 
     con <- con[con %>% str_detect("txt")]
     sub <-
       con[con %>% str_detect('sub')] %>%
-      read_xbrl_file
+      .read_xbrl_file
 
     sub_names <-
       name_xbrl %>%
@@ -2526,7 +2567,7 @@ parse_xbrl_url <-
 
     pre <-
       con[con %>% str_detect('pre')] %>%
-      read_xbrl_file()
+      .read_xbrl_file()
 
     pre_names <-
       name_xbrl %>%
@@ -2577,7 +2618,7 @@ parse_xbrl_url <-
 
     num <-
       con[con %>% str_detect('num')] %>%
-      read_xbrl_file()
+      .read_xbrl_file()
 
     num_names <-
       name_xbrl %>%
@@ -2619,7 +2660,7 @@ parse_xbrl_url <-
 
     tag <-
       con[con %>% str_detect('tag')] %>%
-      read_xbrl_file()
+      .read_xbrl_file()
 
     tag_names <-
       name_xbrl %>%
@@ -2763,11 +2804,11 @@ sec_xbrl_periods <-
            assign_to_environment = TRUE,
            return_message = TRUE) {
     url_df <-
-      get_xbrl_url_df() %>%
+      .get_xbrl_url_df() %>%
       arrange(desc(yearData), desc(quarterData))
 
     has_years <-
-      (!years %>% purrr::is_null())
+      (length(years) > 0)
     if (has_years) {
       url_df <-
         url_df %>%
@@ -2775,7 +2816,7 @@ sec_xbrl_periods <-
     }
 
     has_quarter <-
-      (!quarters %>% purrr::is_null())
+      (length(quarters) > 0)
     if (has_quarter) {
       url_df <-
         url_df %>%
@@ -2784,7 +2825,7 @@ sec_xbrl_periods <-
 
     if (only_most_recent) {
       url_df <-
-        get_xbrl_url_df() %>%
+        .get_xbrl_url_df() %>%
         arrange(desc(yearData), desc(quarterData)) %>%
         slice(1)
     }
@@ -2793,7 +2834,7 @@ sec_xbrl_periods <-
       url_df$urlSEC
 
     parse_xbrl_url_safe <-
-      purrr::possibly(parse_xbrl_url, tibble())
+      purrr::possibly(.parse_xbrl_url, tibble())
 
     all_data <-
       urls %>%
@@ -2812,7 +2853,7 @@ sec_xbrl_periods <-
         mutate(nameDF =
                  list('xbrl', nameTable %>% str_replace_all('\\ ', '')) %>% purrr::invoke(paste0, .))
 
-      if (!tables %>% is_null()) {
+      if (length(tables) > 0) {
         all_data <-
           all_data %>%
           filter(nameTable %>% str_detect(tables))

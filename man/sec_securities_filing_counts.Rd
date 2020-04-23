@@ -21,13 +21,13 @@ sec_securities_filing_counts()
 }
 \seealso{
 Other SEC: 
-\code{\link{data_rf_leis}()},
 \code{\link{dictionary_sec_filing_codes}()},
 \code{\link{dictionary_sec_form_codes}()},
 \code{\link{dictionary_sic_codes}()},
 \code{\link{edgar_filing_streams}()},
 \code{\link{mmf_owned_debt_securities}()},
 \code{\link{recent_insider_trades}()},
+\code{\link{rf_leis}()},
 \code{\link{rf_sec_13F_companies}()},
 \code{\link{sec_bankruptcies}()},
 \code{\link{sec_broker_dealers}()},

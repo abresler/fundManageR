@@ -8,21 +8,29 @@
 
 <title>SEC filer — sec_filer • fundManageR</title>
 
-<!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-<!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/united/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<!-- jquery -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!-- Bootstrap -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/united/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
-<!-- sticky kit -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script>
+<!-- headroom.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -30,14 +38,14 @@
 
 
 
-<meta property="og:title" content="SEC filer — sec_filer" />
 
+<meta property="og:title" content="SEC filer — sec_filer" />
 <meta property="og:description" content="This is function imports data
 for a specified SEC filing entity.  An
 SEC filing entity can be a person, public company or
 private filer.  This function requires that the entity has a
 Central Index Key [CIK]." />
-<meta name="twitter:card" content="summary" />
+
 
 
 
@@ -51,9 +59,10 @@ Central Index Key [CIK]." />
 <![endif]-->
 
 
+
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -67,7 +76,7 @@ Central Index Key [CIK]." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">fundManageR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.22302</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.5.03</span>
       </span>
     </div>
 
@@ -101,7 +110,6 @@ Central Index Key [CIK]." />
   <a href="../reference/index.html">Reference</a>
 </li>
       </ul>
-      
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/abresler/fundmanageR">
@@ -134,35 +142,44 @@ Central Index Key [CIK]." />
 </div><!--/.navbar -->
 
       
+
       </header>
 
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>SEC filer</h1>
-    <small class="dont-index">Source: <a href='https://github.com/abresler/fundManageR/blob/master/R/edgar_rf.R'><code>R/edgar_rf.R</code></a></small>
+    <small class="dont-index">Source: <a href='https://github.com/abresler/fundManageR/blob/master/R/sec_2.R'><code>R/sec_2.R</code></a></small>
     <div class="hidden name"><code>sec_filer.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    
     <p>This is function imports data
 for a specified SEC filing entity.  An
 SEC filing entity can be a person, public company or
 private filer.  This function requires that the entity has a
 Central Index Key [CIK].</p>
-    
     </div>
 
-    <pre class="usage"><span class='fu'>sec_filer</span>(<span class='kw'>entity_names</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>tickers</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>ciks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>tables</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>nest_data</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>parse_all_filing_url_data</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>parse_xbrl</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>parse_subsidiaries</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>parse_13F</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>parse_asset_files</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>parse_small_offerings</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>parse_complete_text_filings</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>parse_form_d</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>parse_form_3_4s</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>assign_to_environment</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
-  <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)</pre>
-    
+    <pre class="usage"><span class='fu'>sec_filer</span>(
+  <span class='kw'>entity_names</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>tickers</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>ciks</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>tables</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>nest_data</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_all_filing_url_data</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_xbrl</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_subsidiaries</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_13F</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_asset_files</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_small_offerings</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_complete_text_filings</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_form_d</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>parse_form_3_4s</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>assign_to_environment</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>
+)</pre>
+
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
@@ -233,73 +250,80 @@ Form 1-A data if any exists for a filer (default)</p></td>
       <td><p><code>TRUE</code> return a message after data import</p></td>
     </tr>
     </table>
-    
+
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>where <code>nest_data</code> is <code>TRUE</code> a nested tibble by asset,
 where <code>nest_data</code> is <code>FALSE</code> a tibble</p>
-    
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>The function acquires information for the
 specified tables and will auto parse forms if the filer has them and
 the user activates these parameters.</p>
-    
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p>Other SEC: <code><a href='data_rf_leis.html'>data_rf_leis</a></code>,
-  <code><a href='dictionary_sec_filing_codes.html'>dictionary_sec_filing_codes</a></code>,
-  <code><a href='dictionary_sec_form_codes.html'>dictionary_sec_form_codes</a></code>,
-  <code><a href='dictionary_sic_codes.html'>dictionary_sic_codes</a></code>,
-  <code><a href='edgar_filing_streams.html'>edgar_filing_streams</a></code>,
-  <code><a href='mmf_owned_debt_securities.html'>mmf_owned_debt_securities</a></code>,
-  <code><a href='recent_insider_trades.html'>recent_insider_trades</a></code>,
-  <code><a href='rf_sec_13F_companies.html'>rf_sec_13F_companies</a></code>,
-  <code><a href='sec_bankruptcies.html'>sec_bankruptcies</a></code>,
-  <code><a href='sec_broker_dealers.html'>sec_broker_dealers</a></code>, <code><a href='sec_ciks.html'>sec_ciks</a></code>,
-  <code><a href='sec_closed_end_funds.html'>sec_closed_end_funds</a></code>,
-  <code><a href='sec_cusips.html'>sec_cusips</a></code>,
-  <code><a href='sec_failed_to_deliver_securities.html'>sec_failed_to_deliver_securities</a></code>,
-  <code><a href='sec_filing_entities.html'>sec_filing_entities</a></code>,
-  <code><a href='sec_foia_requests.html'>sec_foia_requests</a></code>,
-  <code><a href='sec_investment_companies.html'>sec_investment_companies</a></code>,
-  <code><a href='sec_money_market_funds.html'>sec_money_market_funds</a></code>,
-  <code><a href='sec_municipal_advisors.html'>sec_municipal_advisors</a></code>,
-  <code><a href='sec_securities_filing_counts.html'>sec_securities_filing_counts</a></code>,
-  <code><a href='sec_securities_metrics_by_exchange.html'>sec_securities_metrics_by_exchange</a></code>,
-  <code><a href='securities_offerings.html'>securities_offerings</a></code>,
-  <code><a href='us_public_companies.html'>us_public_companies</a></code></p>
-<p>Other Rank and Filed: <code><a href='data_rf_leis.html'>data_rf_leis</a></code>,
-  <code><a href='mmf_owned_debt_securities.html'>mmf_owned_debt_securities</a></code>,
-  <code><a href='recent_insider_trades.html'>recent_insider_trades</a></code>,
-  <code><a href='rf_sec_13F_companies.html'>rf_sec_13F_companies</a></code>,
-  <code><a href='sec_filing_entities.html'>sec_filing_entities</a></code>,
-  <code><a href='securities_offerings.html'>securities_offerings</a></code>,
-  <code><a href='us_public_companies.html'>us_public_companies</a></code></p>
-<p>Other entity search: <code><a href='adv_managers_current_period_summary.html'>adv_managers_current_period_summary</a></code>,
-  <code><a href='adv_managers_filings.html'>adv_managers_filings</a></code>,
-  <code><a href='adv_managers_metadata.html'>adv_managers_metadata</a></code>,
-  <code><a href='adv_managers_periods_summaries.html'>adv_managers_periods_summaries</a></code>,
-  <code><a href='data_rf_leis.html'>data_rf_leis</a></code>, <code><a href='finra_entities.html'>finra_entities</a></code>,
-  <code><a href='nareit_entities.html'>nareit_entities</a></code>, <code><a href='reit_funds.html'>reit_funds</a></code>,
-  <code><a href='rf_sec_13F_companies.html'>rf_sec_13F_companies</a></code>,
-  <code><a href='sec_bankruptcies.html'>sec_bankruptcies</a></code>,
-  <code><a href='sec_broker_dealers.html'>sec_broker_dealers</a></code>, <code><a href='sec_ciks.html'>sec_ciks</a></code>,
-  <code><a href='sec_closed_end_funds.html'>sec_closed_end_funds</a></code>,
-  <code><a href='sec_cusips.html'>sec_cusips</a></code>,
-  <code><a href='sec_filing_entities.html'>sec_filing_entities</a></code>,
-  <code><a href='sec_investment_companies.html'>sec_investment_companies</a></code>,
-  <code><a href='sec_money_market_funds.html'>sec_money_market_funds</a></code>,
-  <code><a href='sec_municipal_advisors.html'>sec_municipal_advisors</a></code>,
-  <code><a href='securities_offerings.html'>securities_offerings</a></code>,
-  <code><a href='us_public_companies.html'>us_public_companies</a></code>,
-  <code><a href='ycombinator_alumni.html'>ycombinator_alumni</a></code></p>
-<p>Other fund search: <code><a href='sec_investment_companies.html'>sec_investment_companies</a></code></p></div>
-    
+    <div class='dont-index'><p>Other SEC: 
+<code><a href='dictionary_sec_filing_codes.html'>dictionary_sec_filing_codes</a>()</code>,
+<code><a href='dictionary_sec_form_codes.html'>dictionary_sec_form_codes</a>()</code>,
+<code><a href='dictionary_sic_codes.html'>dictionary_sic_codes</a>()</code>,
+<code><a href='edgar_filing_streams.html'>edgar_filing_streams</a>()</code>,
+<code><a href='mmf_owned_debt_securities.html'>mmf_owned_debt_securities</a>()</code>,
+<code><a href='recent_insider_trades.html'>recent_insider_trades</a>()</code>,
+<code><a href='rf_leis.html'>rf_leis</a>()</code>,
+<code><a href='rf_sec_13F_companies.html'>rf_sec_13F_companies</a>()</code>,
+<code><a href='sec_bankruptcies.html'>sec_bankruptcies</a>()</code>,
+<code><a href='sec_broker_dealers.html'>sec_broker_dealers</a>()</code>,
+<code><a href='sec_ciks.html'>sec_ciks</a>()</code>,
+<code><a href='sec_closed_end_funds.html'>sec_closed_end_funds</a>()</code>,
+<code><a href='sec_cusips.html'>sec_cusips</a>()</code>,
+<code><a href='sec_failed_to_deliver_securities.html'>sec_failed_to_deliver_securities</a>()</code>,
+<code><a href='sec_filing_entities.html'>sec_filing_entities</a>()</code>,
+<code><a href='sec_foia_requests.html'>sec_foia_requests</a>()</code>,
+<code><a href='sec_investment_companies.html'>sec_investment_companies</a>()</code>,
+<code><a href='sec_money_market_funds.html'>sec_money_market_funds</a>()</code>,
+<code><a href='sec_municipal_advisors.html'>sec_municipal_advisors</a>()</code>,
+<code><a href='sec_securities_filing_counts.html'>sec_securities_filing_counts</a>()</code>,
+<code><a href='sec_securities_metrics_by_exchange.html'>sec_securities_metrics_by_exchange</a>()</code>,
+<code><a href='sec_xbrl_periods.html'>sec_xbrl_periods</a>()</code>,
+<code><a href='securities_offerings.html'>securities_offerings</a>()</code>,
+<code><a href='us_public_companies.html'>us_public_companies</a>()</code></p>
+<p>Other Rank and Filed: 
+<code><a href='mmf_owned_debt_securities.html'>mmf_owned_debt_securities</a>()</code>,
+<code><a href='recent_insider_trades.html'>recent_insider_trades</a>()</code>,
+<code><a href='rf_leis.html'>rf_leis</a>()</code>,
+<code><a href='rf_sec_13F_companies.html'>rf_sec_13F_companies</a>()</code>,
+<code><a href='sec_filing_entities.html'>sec_filing_entities</a>()</code>,
+<code><a href='securities_offerings.html'>securities_offerings</a>()</code>,
+<code><a href='us_public_companies.html'>us_public_companies</a>()</code></p>
+<p>Other entity search: 
+<code><a href='adv_managers_current_period_summary.html'>adv_managers_current_period_summary</a>()</code>,
+<code><a href='adv_managers_filings.html'>adv_managers_filings</a>()</code>,
+<code><a href='adv_managers_metadata.html'>adv_managers_metadata</a>()</code>,
+<code><a href='adv_managers_periods_summaries.html'>adv_managers_periods_summaries</a>()</code>,
+<code><a href='finra_entities.html'>finra_entities</a>()</code>,
+<code><a href='nareit_entities.html'>nareit_entities</a>()</code>,
+<code><a href='reit_funds.html'>reit_funds</a>()</code>,
+<code><a href='rf_leis.html'>rf_leis</a>()</code>,
+<code><a href='rf_sec_13F_companies.html'>rf_sec_13F_companies</a>()</code>,
+<code><a href='sec_bankruptcies.html'>sec_bankruptcies</a>()</code>,
+<code><a href='sec_broker_dealers.html'>sec_broker_dealers</a>()</code>,
+<code><a href='sec_ciks.html'>sec_ciks</a>()</code>,
+<code><a href='sec_closed_end_funds.html'>sec_closed_end_funds</a>()</code>,
+<code><a href='sec_cusips.html'>sec_cusips</a>()</code>,
+<code><a href='sec_filing_entities.html'>sec_filing_entities</a>()</code>,
+<code><a href='sec_investment_companies.html'>sec_investment_companies</a>()</code>,
+<code><a href='sec_money_market_funds.html'>sec_money_market_funds</a>()</code>,
+<code><a href='sec_municipal_advisors.html'>sec_municipal_advisors</a>()</code>,
+<code><a href='sec_xbrl_periods.html'>sec_xbrl_periods</a>()</code>,
+<code><a href='securities_offerings.html'>securities_offerings</a>()</code>,
+<code><a href='us_public_companies.html'>us_public_companies</a>()</code>,
+<code><a href='ycombinator_alumni.html'>ycombinator_alumni</a>()</code></p>
+<p>Other fund search: 
+<code><a href='sec_investment_companies.html'>sec_investment_companies</a>()</code></p></div>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><span class='co'># NOT RUN {</span>
-<span class='fu'>sec_filer</span>(<span class='kw'>entity_names</span> <span class='kw'>=</span> <span class='st'>'HLT Holdco'</span>, <span class='kw'>tickers</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>'FB'</span>),
+    <pre class="examples"><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
+<span class='fu'>sec_filer</span>(<span class='kw'>entity_names</span> <span class='kw'>=</span> <span class='st'>'HLT Holdco'</span>, <span class='kw'>tickers</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>'FB'</span>),
 <span class='kw'>nest_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>parse_subsidiaries</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>parse_all_filing_url_data</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
 <span class='kw'>parse_13F</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>assign_to_environment</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
 <span class='kw'>return_message</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
@@ -310,24 +334,15 @@ the user activates these parameters.</p>
 
 <span class='co'>#XBRL Example</span>
 
-<span class='co'># }</span></pre>
+}</pre>
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      <li><a href="#arguments">Arguments</a></li>
-      
-      <li><a href="#value">Value</a></li>
-
-      <li><a href="#details">Details</a></li>
-
-      <li><a href="#see-also">See also</a></li>
-      
-      <li><a href="#examples">Examples</a></li>
-    </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
+
 
       <footer>
       <div class="copyright">
@@ -335,13 +350,16 @@ the user activates these parameters.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.9000.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
+
       </footer>
    </div>
 
   
 
+
   </body>
 </html>
+
 

@@ -25,10 +25,10 @@ Other entity search:
 \code{\link{adv_managers_filings}()},
 \code{\link{adv_managers_metadata}()},
 \code{\link{adv_managers_periods_summaries}()},
-\code{\link{data_rf_leis}()},
 \code{\link{finra_entities}()},
 \code{\link{nareit_entities}()},
 \code{\link{reit_funds}()},
+\code{\link{rf_leis}()},
 \code{\link{sec_bankruptcies}()},
 \code{\link{sec_broker_dealers}()},
 \code{\link{sec_ciks}()},
@@ -45,13 +45,13 @@ Other entity search:
 \code{\link{ycombinator_alumni}()}
 
 Other SEC: 
-\code{\link{data_rf_leis}()},
 \code{\link{dictionary_sec_filing_codes}()},
 \code{\link{dictionary_sec_form_codes}()},
 \code{\link{dictionary_sic_codes}()},
 \code{\link{edgar_filing_streams}()},
 \code{\link{mmf_owned_debt_securities}()},
 \code{\link{recent_insider_trades}()},
+\code{\link{rf_leis}()},
 \code{\link{sec_bankruptcies}()},
 \code{\link{sec_broker_dealers}()},
 \code{\link{sec_ciks}()},
@@ -71,9 +71,9 @@ Other SEC:
 \code{\link{us_public_companies}()}
 
 Other Rank and Filed: 
-\code{\link{data_rf_leis}()},
 \code{\link{mmf_owned_debt_securities}()},
 \code{\link{recent_insider_trades}()},
+\code{\link{rf_leis}()},
 \code{\link{sec_filer}()},
 \code{\link{sec_filing_entities}()},
 \code{\link{securities_offerings}()},
