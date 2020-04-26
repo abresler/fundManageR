@@ -4,7 +4,17 @@
 \alias{edgar_tickers}
 \title{SEC listed public companys}
 \usage{
-edgar_tickers()
+edgar_tickers(
+  include_ticker_information = F,
+  join_sic = T,
+  snake_names = F,
+  return_message = T
+)
+}
+\arguments{
+\item{include_ticker_information}{if \code{TRUE} returns ticker information}
+
+\item{return_message}{}
 }
 \value{
 

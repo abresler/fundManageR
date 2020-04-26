@@ -4,10 +4,23 @@
 \alias{sic_filing_count}
 \title{SIC Counts}
 \usage{
-sic_filing_count(sic = 800, return_message = TRUE)
+sic_filing_count(
+  sic = NULL,
+  join_sic = T,
+  snake_names = F,
+  use_all_sice_codes = F,
+  return_message = T,
+  unformat = F
+)
 }
 \arguments{
+\item{sic}{vector of SIC codes}
+
+\item{use_all_sice_codes}{uses all SIC codes}
+
 \item{return_message}{}
+
+\item{join_sec}{if \code{TRUE} joins SIC data}
 }
 \value{
 

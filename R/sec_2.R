@@ -1,3 +1,161 @@
+#' Munge a tibble
+#'
+#' @param data a \code{tibble}
+#' @param snake_names if \code{TRUE} returns snake case names
+#' @param unformat if \code{TRUE} no formattable digits
+#' @param convert_case if \code{TRUE} normalizes non url character columns to upper
+#' @param amount_digits formattable digits
+#' @param include_address if \code{TRUE} builds addresses
+#'
+#' @return
+#' @export
+#'
+#' @examples
+munge_tbl <-
+  function(data, snake_names = F, unformat = F, convert_case = T,
+           amount_digits = 2,
+           include_address = T) {
+
+    data <- data %>%
+      mutate_if(is.character,
+                list(function(x) {
+                  x %>% str_squish()
+                })) %>%
+      mutate_if(is.character,
+                list(function(x) {
+                  case_when(x == "" ~ NA_character_,
+                            TRUE ~ x)
+                }))
+
+    is_has <-
+      data %>%
+      select_if(is.character) %>%
+      dplyr::select(dplyr::matches("^is|^has")) %>% names()
+
+
+    if (length(is_has) > 0) {
+      data <- data %>%
+        mutate_at(is_has,
+                  list(function(x){
+                    case_when(x %in% c("Y", "YES", "TRUE", "1") ~ TRUE,
+                              TRUE ~ FALSE)
+                  }))
+    }
+
+    to_num <-
+      data %>%
+      select_if(is.character) %>%
+      select(matches("amount|price|value|ratio|count[A-Z]|number|shares")) %>%
+      names()
+
+    if (length(to_num) > 0) {
+      data <- data %>%
+        mutate_at(to_num, readr::parse_number)
+    }
+
+    if (convert_case) {
+      to_upper <-
+        data %>% select_if(is.character) %>%
+        select(-matches("^url")) %>%
+        names()
+      data <- data %>%
+        mutate_at(to_upper,
+                  str_to_upper)
+    }
+
+    if (!unformat) {
+      pct_names <-
+        data %>%
+        select_if(is.numeric) %>%
+        select(matches("^percent|^pct")) %>% names()
+      count_names <-
+        data %>%
+        select_if(is.numeric) %>%
+        select(matches("^count|^number")) %>% names()
+
+      amt_names <-
+        data %>%
+        select_if(is.numeric) %>%
+        select(matches("^amount|^amt|^price|^earnings")) %>% names()
+
+
+      if (length(pct_names) > 0) {
+        data <- data %>%
+          mutate_at(pct_names,
+                    list(function(x){
+                      x %>% percent(digits = 2)
+                    }))
+      }
+
+      if (length(amt_names) > 0) {
+        data <- data %>%
+          mutate_at(pct_names,
+                    list(function(x){
+                      x %>% currency(digits = amount_digits)
+                    }))
+      }
+
+      if (length(count_names) > 0) {
+        data <- data %>%
+          mutate_at(count_names,
+                    list(function(x){
+                      x %>% comma(digits = 0)
+                    }))
+      }
+    }
+
+    address_parts <-
+      data %>% select(matches("address|city|state|country|zipcode")) %>% names()
+
+    if (length(address_parts) > 0 && include_address) {
+      end_slug <- tibble(part = address_parts %>% str_remove_all("addressStreet|state|city|zipcode")) %>%
+        count(part, sort = T) %>%
+        filter(n == max(n)) %>%
+        pull(part)
+
+
+      parts <- address_parts[address_parts %>% str_detect(end_slug)]
+      new_col <- glue("location{end_slug}") %>% as.character()
+      city_state <- glue("cityState{end_slug}") %>% as.character()
+      address <- parts[parts %>% str_detect("addressStreet")]
+      address1 <- parts[parts %>% str_detect("addressStreet1")]
+      address2 <- parts[parts %>% str_detect("addressStreet2")]
+      city <- parts[parts %>% str_detect("city")]
+      state <- parts[parts %>% str_detect("state")]
+      zip <- parts[parts %>% str_detect("zip")]
+      country <- parts[parts %>% str_detect("country")]
+      df_locs <-
+        data %>%
+        select(one_of(address, address1, address2, city, state, zip, country)) %>%
+        distinct() %>%
+        unite(!!sym(city_state),
+              city,
+              state,
+              sep = ", ",
+              ,
+              remove = F) %>%
+        unite(
+          !!sym(new_col),
+          c(address, city_state, zip, country),
+          sep = " ",
+          remove = F
+        )
+
+      join_cols <- names(df_locs)[names(df_locs) %in% names(data)]
+      data <-
+        data %>%
+        left_join(df_locs, by = join_cols)
+    }
+
+    if (snake_names) {
+      data <-
+        data %>%
+        janitor::clean_names()
+    }
+
+    data
+  }
+
 # filers ------------------------------------------------------------------
 .get_cik_url_df <-
   function(cik = 1138621) {
@@ -12081,6 +12239,9 @@ dictionary_sec_rules <-
 
 #' SEC listed public companys
 #'
+#' @param include_ticker_information if \code{TRUE} returns ticker information
+#' @param return_message
+#'
 #' @return
 #' @export
 #' @import jsonlite dplyr purrr stringr dplyr
@@ -12088,23 +12249,48 @@ dictionary_sec_rules <-
 #' @examples
 #' edgar_tickers()
 edgar_tickers <-
-  function() {
+  function(include_ticker_information = F,
+           join_sic = T,
+           snake_names = F,
+
+           return_message = T) {
     json_data <-
       "https://www.sec.gov/data/company_tickers.json" %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = F)
 
     data <-
       seq_along(json_data) %>%
-      map_dfr(function(x){
+      map_dfr(function(x) {
         json_data[[x]] %>% flatten_dfr()
       }) %>%
-      setNames(c(
-        'idCIK',
-        'idTicker',
-        "nameCompany"
-      )) %>%
+      setNames(c('idCIK',
+                 'idTicker',
+                 "nameCompany")) %>%
       distinct() %>%
       mutate(nameCompany = nameCompany %>% str_to_upper())
+
+    if (include_ticker_information) {
+      "\n\nAcquiring ticker information\n\n" %>% cat(fill = T)
+      sec_tickers_info_safe <-
+        possibly(sec_tickers_info, tibble())
+
+      df_tickers <-
+        sec_tickers_info(tickers = data$idTicker, return_message = return_message, join_sic = join_sic, unformat = T, snake_names = F, convert_case = T, include_address = T)
+
+      df_tickers <-
+        df_tickers %>%
+        rename(nameCompanyTicker = nameCompany,
+               idCIKTicker = idCIK)
+
+      data <-
+        data %>%
+        left_join(
+          df_tickers, by = "idTicker"
+        )
+
+    }
+
+    data %>% munge_tbl(snake_names = snake_names)
 
     data
   }
@@ -12235,24 +12421,51 @@ cik_filing_counts <-
   }
 
 
+
 #' SIC Counts
 #'
-#' @param sic
+#' @param sic vector of SIC codes
+#' @param join_sec if \code{TRUE} joins SIC data
+#' @param use_all_sice_codes uses all SIC codes
 #' @param return_message
+#'
 #'
 #' @return
 #' @export
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
 #' @examples
 sic_filing_count <-
-  function(sic = 800,
-           return_message = TRUE) {
-
+  function(sic = NULL, join_sic = T, snake_names = F,
+           use_all_sice_codes = F,
+           return_message = T,
+           unformat = F) {
+    if (use_all_sice_codes) {
+      sic <-
+        dictionary_sic_codes() %>%
+        pull(idSIC)
+    }
+    if (length(sic) == 0) {
+      "Enter SIC Codes"
+    }
     .sic_filing_count_safe <- possibly(.sic_filing_count, tibble())
-    sic %>%
+
+    data <-
+      sic %>%
       future_map_dfr(function(x){
         .sic_filing_count_safe(sic = x, return_message = return_message)
       })
+
+    if (join_sic) {
+      data <-
+        data %>%
+        left_join(dictionary_sic_codes(), by = "idSIC")
+    }
+
+    data <-
+      data %>%
+      munge_tbl(snake_names = snake_names, unformat = F)
+
+    data
   }
 
 
@@ -12307,14 +12520,15 @@ sic_filing_count <-
 #' dictionary_sic_codes()
 
 dictionary_sic_codes <-
-  function() {
+  memoise::memoise(function() {
     page <-
       "https://www.sec.gov/info/edgar/siccodes.htm" %>%
       read_html()
 
     page %>% html_table(fill = T) %>% first() %>% as_tibble() %>%
-      setNames(c("idSIC", "nameOfficeAD", "nameIndustry"))
-  }
+      setNames(c("idSIC", "nameOfficeAD", "nameIndustry")) %>%
+      munge_tbl(convert_case = T)
+  })
 
 # Form Descriptions
 
@@ -14811,8 +15025,14 @@ edgar_entities_cik <-
       future_map_dfr(function(x) {
         .sec_entity_safe(search_term = x, return_message = return_message)
       }) %>%
-      select(which(colMeans(is.na(.)) < 1)) %>%
-      mutate(nameEntity = nameEntityLegal %>% str_to_upper() %>% str_replace_all('\\.|\\,', '') %>% str_trim())
+      select(which(colMeans(is.na(.)) < 1))
+
+
+    if (data %>% hasName("nameEntity")) {
+      all_data <-
+        all_data %>%
+        mutate(nameEntity = nameEntityLegal %>% str_to_upper() %>% str_replace_all('\\.|\\,', '') %>% str_trim())
+    }
 
     all_data <-
       all_data %>%
@@ -14947,7 +15167,7 @@ edgar_entities_cik <-
         slugCIK = cik,
         idCIK = readr::parse_number(as.character(cik)),
         idSIC = SIC,
-        stateIncorporatd = state.inc,
+        stateIncorporated = state.inc,
         monthDayFiscalYearEnd = fiscal.year.end
       ) %>%
       bind_cols(df_city_state)
@@ -15019,6 +15239,12 @@ edgar_entities_cik <-
 #' sec_tickers_info(tickers = c("BXP", "AVB", "AAPL"))
 sec_tickers_info <-
   function(tickers = c("VNO", "NVDA", "FB"),
+           join_sic = T,
+           snake_names = F,
+           unformat = F,
+           convert_case = T,
+           amount_digits = 2,
+           include_address = T,
            return_message = TRUE) {
     all_data <-
       tickers %>%
@@ -15026,6 +15252,21 @@ sec_tickers_info <-
         .sec_ticker_info(ticker = x, return_message = return_message)
       }) %>%
       dplyr::select(which(colMeans(is.na(.)) < 1))
+
+    if (join_sic) {
+      all_data <-
+        all_data %>%
+        left_join(dictionary_sic_codes(), by = "idSIC")
+    }
+
+    all_data %>%
+      munge_tbl(
+        snake_names = snake_names,
+        unformat = unformat,
+        convert_case = convert_case,
+        amount_digits = amount_digits,
+        include_address = include_address
+      )
 
     all_data
   }
