@@ -1,3 +1,208 @@
+.build_address <-
+  function(data, end_slug, end_slugs, address_parts, return_message = T) {
+
+    if (return_message) {
+      glue("Building location for {end_slug}") %>% message()
+    }
+
+    parts <-
+      address_parts[address_parts %>% str_detect(end_slug)]
+
+    remove_parts <-
+      end_slugs[!end_slugs %in% end_slug] %>% str_c(collapse = "|")
+
+    if (!end_slug %>% str_detect("Mailing|Alternate|Alt") & remove_parts != "") {
+      parts <-
+        parts %>% str_remove_all(remove_parts)
+    }
+
+    parts <- parts[parts %>% str_detect(end_slug)]
+    new_col <- glue("location{end_slug}") %>% as.character()
+
+    if (data %>% hasName(new_col)) {
+      return(data)
+    }
+
+    city_state <- glue("cityState{end_slug}") %>% as.character()
+    address <-
+      parts[parts %>% str_detect("addressStreet|address_street")]
+    if (length(address) > 0)  {
+      address <- address[[1]]
+    }
+    address1 <- parts[parts %>% str_detect("addressStreet1|address_street_1")]
+    if (length(address1) > 0)  {
+      address1 <- address1[[1]]
+    }
+
+
+    address2 <- parts[parts %>% str_detect("addressStreet2|address_street_2")]
+
+    if (length(address2) > 0)  {
+      address2 <- address2[[1]]
+    }
+
+    city <- parts[parts %>% str_detect("city|City")]
+
+    if (length(city) > 0)  {
+      city <- city[[1]]
+    }
+
+
+    state <- parts[parts %>% str_detect("state|State")]
+
+    if (length(state) > 0)  {
+      state <- state[[1]]
+    }
+
+
+    zip <-
+      parts[parts %>% str_detect("zip")]
+    zip <- zip[!zip %>% str_detect("zipcode4|zip4")]
+
+    if (length(zip) > 0)  {
+      zip <- zip[[1]]
+    }
+
+
+    country <- parts[parts %>% str_detect("country")]
+
+    if (length(country) > 0)  {
+      country <- country[[1]]
+    }
+
+    df_locs <-
+      data %>%
+      select(one_of(address, address1, address2, city, state, zip, country)) %>%
+      distinct()
+
+    if (length(city) + length(state) == 2) {
+      df_locs <-
+        df_locs %>%
+        unite(!!sym(city_state),
+              city,
+              state,
+              sep = ", ",
+              ,
+              remove = F) %>%
+        filter(!!sym(city_state) != "NA, NA")
+
+      df_locs <-
+        df_locs %>%
+        mutate_if(is.character,
+                  list(function(x) {
+                    x %>% coalesce("")
+                  })) %>%
+        unite(
+          !!sym(new_col),
+          c(address, city_state, zip, country),
+          sep = " ",
+          remove = F
+        ) %>%
+        mutate_at(new_col, str_squish) %>%
+        mutate_if(is.character,
+                  list(function(x) {
+                    case_when(x == "" ~ NA_character_,
+                              TRUE ~ x)
+                  }))
+
+    } else {
+      df_locs <-
+        df_locs %>%
+        mutate_if(is.character,
+                  list(function(x) {
+                    x %>% coalesce("")
+                  })) %>%
+        unite(
+          !!sym(new_col),
+          c(address, city, state, zip, country),
+          sep = " ",
+          remove = F
+        ) %>%
+        mutate_at(new_col, str_squish) %>%
+        mutate_if(is.character,
+                  list(function(x) {
+                    case_when(x == "" ~ NA_character_,
+                              TRUE ~ x)
+                  }))
+    }
+
+
+    join_cols <- names(df_locs)[names(df_locs) %in% names(data)]
+
+    data <-
+      data %>%
+      left_join(df_locs, by = join_cols)
+
+    data
+  }
+
+
+
+#' Build Address from tibble
+#'
+#'
+#' @param data \code{tibble}
+#' @param return_message if \code{TRUE} returns a message
+#' @param address_search_slugs vector of slugs identifying address features - defaults to `c("^address", "^streetAddress", "^city", "^state", "^codeState", "^codeCountry", "^country", "^zipcode")`
+#' @param include_snake_versions `TRUE` includes snaked version of names
+#' @param part_threshold minimum number of matches
+#' @param snake_names if \code{TRUE} snakes names
+#'
+#' @return
+#' @export
+#'
+#' @examples
+build_address <-
+  function(data,
+           address_search_slugs = c("^address", "^streetAddress", "^city", "^state", "^codeState", "^codeCountry", "^country", "^zipcode"),
+           include_snake_versions = T,
+           part_threshold = 3,
+           snake_names = F,
+           return_message = T) {
+
+    if (include_snake_versions) {
+      clean_n <- address_search_slugs %>% make_clean_names()
+      clean_n <- glue("^{clean_n}") %>% as.character()
+      address_search_slugs <- c(address_search_slugs,clean_n)  %>% unique()
+    }
+
+
+    address_slugs <-
+      str_c(address_search_slugs, collapse = "|")
+
+    address_parts <-
+      data %>% select(matches(address_slugs)) %>% names()
+
+    if (length(address_parts) == 0) {
+      return(data)
+    }
+    end_slugs <-
+      tibble(part = address_parts %>%
+               str_remove_all(address_slugs)) %>%
+      count(part, sort = T) %>%
+      filter(n >= part_threshold) %>%
+      pull(part)
+
+    end_slugs %>%
+      walk(function(x) {
+        data <<-
+          .build_address(
+            data = data,
+            end_slug = x,
+            end_slugs = end_slugs,
+            address_parts = address_parts,
+            return_message = return_message
+          )
+      })
+
+    if (snake_names) {
+      data <- data %>% clean_names()
+    }
+
+    data
+  }
+
+
 #' Munge a tibble
 #'
 #' @param data a \code{tibble}
@@ -104,47 +309,12 @@ munge_tbl <-
       }
     }
 
-    address_parts <-
-      data %>% select(matches("address|city|state|country|zipcode")) %>% names()
-
-    if (length(address_parts) > 0 && include_address) {
-      end_slug <- tibble(part = address_parts %>% str_remove_all("addressStreet|state|city|zipcode")) %>%
-        count(part, sort = T) %>%
-        filter(n == max(n)) %>%
-        pull(part)
 
 
-      parts <- address_parts[address_parts %>% str_detect(end_slug)]
-      new_col <- glue("location{end_slug}") %>% as.character()
-      city_state <- glue("cityState{end_slug}") %>% as.character()
-      address <- parts[parts %>% str_detect("addressStreet")]
-      address1 <- parts[parts %>% str_detect("addressStreet1")]
-      address2 <- parts[parts %>% str_detect("addressStreet2")]
-      city <- parts[parts %>% str_detect("city")]
-      state <- parts[parts %>% str_detect("state")]
-      zip <- parts[parts %>% str_detect("zip")]
-      country <- parts[parts %>% str_detect("country")]
-      df_locs <-
-        data %>%
-        select(one_of(address, address1, address2, city, state, zip, country)) %>%
-        distinct() %>%
-        unite(!!sym(city_state),
-              city,
-              state,
-              sep = ", ",
-              ,
-              remove = F) %>%
-        unite(
-          !!sym(new_col),
-          c(address, city_state, zip, country),
-          sep = " ",
-          remove = F
-        )
-
-      join_cols <- names(df_locs)[names(df_locs) %in% names(data)]
+    if (include_address) {
       data <-
         data %>%
-        left_join(df_locs, by = join_cols)
+        build_address()
     }
 
     if (snake_names) {
@@ -534,7 +704,7 @@ munge_tbl <-
                   funs(. %>% formattable::currency(digits = 0))) %>%
         mutate_at(.vars = offering_data %>% select(dplyr::matches("^count")) %>% names,
                   funs(. %>% formattable::comma(digits = 0))) %>%
-        suppressWarnings()
+        mutate_if(is.numeric, as.numeric)
     } else {
       offering_data <-
         offering_data %>%
@@ -3190,7 +3360,8 @@ sec_filer <-
       mutate_at(.vars = all_data %>% select(dplyr::matches("amount|price")) %>% names(),
                 funs(. %>% formattable::currency(digits = 2))) %>%
       mutate_at(.vars = all_data %>% select(dplyr::matches("count")) %>% names(),
-                funs(. %>% formattable::comma(digits = 0)))
+                funs(. %>% formattable::comma(digits = 0))) %>%
+      mutate_if(is.numeric, as.numeric)
 
     if (return_message) {
       list(
@@ -12290,7 +12461,7 @@ edgar_tickers <-
 
     }
 
-    data %>% munge_tbl(snake_names = snake_names)
+    data <- data %>% munge_tbl(snake_names = snake_names)
 
     data
   }
