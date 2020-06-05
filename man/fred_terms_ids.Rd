@@ -6,7 +6,8 @@
 \usage{
 fred_terms_ids(
   search_terms = NULL,
-  use_json_api = FALSE,
+  use_json_api = TRUE,
+  snake_names = F,
   return_message = TRUE
 )
 }

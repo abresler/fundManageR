@@ -162,9 +162,8 @@ parse_table_node <-
     }
     df <-
       df_att %>%
-      left_join(df_series) %>%
-      left_join(df_tags) %>%
-      suppressMessages()
+      left_join(df_series, by = "countItemPage") %>%
+      left_join(df_tags,by = "countItemPage")
 
     return(df)
   }
@@ -266,10 +265,10 @@ get_fred_page_count <-
               "https://fred.stlouisfed.org/graph/graph-data.php?id={idSeries}"
             ) %>% as.character()
           ) %>%
-          left_join(df_table) %>%
-          suppressMessages()
+          left_join(df_table, by = "countItemPage")
         table_df
-      })
+      }) %>%
+      mutate_if(is.character, str_squish)
 
     df_items <-
       df_items %>%
@@ -284,7 +283,7 @@ get_fred_page_count <-
     df_items <-
       df_items %>%
       mutate(isDiscontinued = nameSeries %>% str_detect("DISCONTINUED")) %>%
-      select(numberPage,countItemPage, isDiscontinued, everything())
+      select(numberPage, countItemPage, isDiscontinued, everything())
 
     df_items
   }
@@ -340,7 +339,7 @@ get_fred_page_count <-
       glue::glue("https://fred.stlouisfed.org/search?st={term_slug}&pageID=1")
 
     df_urls <-
-      search_url %>% .parse_fred_ft_slug_count() %>% suppressWarnings() %>%
+      search_url %>% .parse_fred_ft_slug_count() %>%
       mutate(termSearch = search_term) %>%
       select(termSearch, everything())
 
@@ -358,9 +357,8 @@ get_fred_page_count <-
 
     all_data <-
       df_data %>%
-      left_join(df_urls) %>%
-      select(termSearch, numberPage, everything()) %>%
-      suppressMessages()
+      left_join(df_urls,by = c("numberPage", "urlPage")) %>%
+      select(termSearch, numberPage, everything())
 
     if (return_message) {
       glue::glue("Found {nrow(all_data)} FRED series for {search_term}") %>% cat(fill = T)
@@ -700,6 +698,13 @@ dictionary_fred_ids <-
     all_data <-
       json_urls %>%
       .parse_fred_search(return_message = return_message)
+
+
+    char_names <- all_data %>% select_if(is.character) %>% select(-matches("period|url|term")) %>% names()
+
+    all_data <- all_data %>%
+      mutate_at(char_names, str_to_upper)
+
     all_data
   }
 
@@ -723,7 +728,8 @@ dictionary_fred_ids <-
 #' fred_terms_ids(search_terms = c("China Debt", "China Housing"))
 fred_terms_ids <-
   function(search_terms = NULL,
-           use_json_api = FALSE,
+           use_json_api = TRUE,
+           snake_names = F,
            return_message = TRUE) {
     if (purrr::is_null(search_terms)) {
       stop("Please enter search terms")
@@ -733,7 +739,12 @@ fred_terms_ids <-
       .fred_terms_ids_json_safe <-
         purrr::possibly(.fred_terms_ids_json, tibble())
       all_data <-
-        .fred_terms_ids_json_safe(search_terms = search_terms, return_message = return_message)
+        .fred_terms_ids_json_safe(search_terms = search_terms, return_message = return_message) %>%
+        mutate_if(is.character, str_squish)
+
+      if (snake_names) {
+        all_data <- janitor::clean_names(dat = all_data)
+      }
       return(all_data)
 
     }
@@ -742,7 +753,12 @@ fred_terms_ids <-
       purrr::possibly(.fred_terms_ids_html, tibble())
 
     all_data <-
-      .fred_terms_ids_html_safe(search_terms = search_terms, return_message = return_message)
+      .fred_terms_ids_html_safe(search_terms = search_terms, return_message = return_message) %>%
+      mutate_if(is.character, str_squish)
+
+    if (snake_names) {
+      all_data <- janitor::clean_names(dat = all_data)
+    }
 
     all_data
   }
@@ -1104,6 +1120,13 @@ fred_tags <-
       data %>%
       select(dateData, value)
 
+    char_cols <- data %>% select_if(is.character) %>% select(-matches("url")) %>% names()
+
+    data <- data %>%
+      mutate_at(char_cols, list(function(x){
+        x %>% str_to_upper() %>% str_squish()
+      }))
+
     df_meta <-
       data %>%
       select(-one_of("dateData", "value")) %>%
@@ -1115,8 +1138,7 @@ fred_tags <-
         mutate(idSymbol = symbol)
       df_meta <-
         df_meta %>%
-        left_join(df_m) %>%
-        suppressMessages()
+        left_join(df_m, by = "idSymbol")
     }
 
     if (widen_data) {
@@ -1205,6 +1227,11 @@ fred_symbols <-
           return_message = return_message
         )
       })
+
+    if (all_data %>% hasName("dataFRED")) {
+      all_data <- all_data %>%
+        mutate(countObservations = dataFRED %>% map_dbl(nrow))
+    }
 
 
 
