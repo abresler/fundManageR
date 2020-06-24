@@ -904,22 +904,39 @@ fred_tags <-
         ) %>%
         mutate(pctIRRIndex = pctIRRIndex * 100,
                ratioIndex = ratioIndex %>% as.numeric())
+
+      df_irr <- df_irr %>%
+        mutate(
+          countObservations = obs,
+          valueInitial = value_first,
+          valueRecent = value_last,
+          isIncrease = value_last > value_first,
+          valueChange = value_change,
+          datePeak = date_peak,
+          valuePeak = value_peak,
+          dateTrough = date_trough,
+          valueTrough = value_trough,
+          ratioPeak = valueRecent / valuePeak,
+          ratioTrough = valueRecent / valueTrough
+        )
+    } else {
+     df_irr <-
+       tibble(
+         countObservations = obs,
+         valueInitial = value_first,
+         valueRecent = value_last,
+         isIncrease = value_last > value_first,
+         valueChange = value_change,
+         datePeak = date_peak,
+         valuePeak = value_peak,
+         dateTrough = date_trough,
+         valueTrough = value_trough,
+         ratioPeak = valueRecent / valuePeak,
+         ratioTrough = valueRecent / valueTrough
+       )
     }
 
-    df_irr %>%
-      mutate(
-        countObservations = obs,
-        valueInitial = value_first,
-        valueRecent = value_last,
-        isIncrease = value_last > value_first,
-        valueChange = value_change,
-        datePeak = date_peak,
-        valuePeak = value_peak,
-        dateTrough = date_trough,
-        valueTrough = value_trough,
-        ratioPeak = valueRecent / valuePeak,
-        ratioTrough = valueRecent / valueTrough
-      )
+    df_irr
   }
 
 
@@ -1114,7 +1131,9 @@ fred_tags <-
     data <-
       data %>%
       filter(!is.na(value)) %>%
-      mutate(urlSeries = glue::glue("https://fred.stlouisfed.org/series/{symbol}") %>% as.character())
+      mutate(
+        urlSeries = glue::glue("https://fred.stlouisfed.org/series/{symbol}") %>% as.character()
+      )
 
     df_data <-
       data %>%
@@ -1123,14 +1142,15 @@ fred_tags <-
     char_cols <- data %>% select_if(is.character) %>% select(-matches("url")) %>% names()
 
     data <- data %>%
-      mutate_at(char_cols, list(function(x){
+      mutate_at(char_cols, list(function(x) {
         x %>% str_to_upper() %>% str_squish()
       }))
 
     df_meta <-
       data %>%
       select(-one_of("dateData", "value")) %>%
-      distinct()
+      distinct(
+      )
 
     if (include_metadata) {
       df_m <-
