@@ -251,6 +251,7 @@ munge_tbl <-
       data %>%
       select_if(is.character) %>%
       select(matches("amount|price|value|ratio|count[A-Z]|number|shares")) %>%
+      select(-matches("country|county")) %>%
       names()
 
     if (length(to_num) > 0) {
@@ -259,12 +260,13 @@ munge_tbl <-
     }
 
     if (convert_case) {
-      to_upper <-
+      upper_cols <-
         data %>% select_if(is.character) %>%
         select(-matches("^url")) %>%
         names()
-      data <- data %>%
-        mutate_at(to_upper,
+      data <-
+        data %>%
+        mutate_at(upper_cols,
                   str_to_upper)
     }
 
@@ -321,6 +323,11 @@ munge_tbl <-
       data <-
         data %>%
         janitor::clean_names()
+    }
+
+    if (unformat) {
+      data <- data %>%
+        mutate_if(is.numeric, as.numeric)
     }
 
     data
