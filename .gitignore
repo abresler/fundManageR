@@ -2,12 +2,3 @@
 .Rhistory
 .RData
 .Ruserdata
-packrat/
-.Rprofile
-.httr-oauth
-.DS_Store
-test/
-old/
-.Rprofile
-rsconnect/
-dev/
