@@ -2419,13 +2419,13 @@ sec_securities_metrics_by_exchange <-
       separate(
         idPeriod,
         into = c('yearData', 'quarterData'),
-        sep = '\\q',
+        sep = 'q',
         remove = FALSE
       ) %>%
       mutate_at(.vars = c('yearData', 'quarterData'),
                 funs(. %>% as.numeric()))
 
-    return(url_df)
+    url_df
   }
 
 .read_xbrl_file <-
