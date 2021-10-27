@@ -855,8 +855,12 @@ calculate_cash_flow_waterfall <-
            remove_zero_cols = TRUE,
            widen_waterfall = FALSE) {
     options(scipen = 999999)
-    dates <-
-      readr::parse_date(dates)
+
+    if (class(dates)  != "Date") {
+      dates <-
+        readr::parse_date(dates)
+    }
+
     cf_data <-
       calculate_cash_flow_dates(
         dates = dates,
@@ -1376,10 +1380,12 @@ calculate_cash_flow_waterfall <-
               ebCapitalMultiple,
               toPromote,
               toCapital
-            )
+            ) %>%
+            mutate_if(is.numeric, as.numeric)
 
           waterfall_df <-
             waterfall_df %>%
+            mutate_if(is.numeric, as.numeric) %>%
             bind_rows(period_waterfall) %>%
             distinct()
 
@@ -1477,13 +1483,22 @@ calculate_cash_flow_waterfall <-
 
       waterfall_df <-
         waterfall_df %>%
+        mutate_if(is.numeric, as.numeric) %>%
         mutate_at(
           .vars = numeric_cols,
           .funs = function(x)
             if_else(x %>% is.na, 0, x)
-        ) %>%
-        mutate_at(.vars = numeric_cols,
-          .funs = currency)
+        )
+
+      currency_vars <- waterfall_df %>%
+        select_if(is.numeric) %>%
+        select(-c(idPeriod, tierWaterfall)) %>%
+        names()
+
+      waterfall_df <-
+        waterfall_df %>%
+        mutate_at(currency_vars, formattable::currency)
+
     }
 
     waterfall_df <-
@@ -1603,10 +1618,8 @@ calculate_cash_flow_waterfall_partnership <-
       mutate_at(.vars = c('toCF', 'toGP', 'toLP'),
                 .funs = currency) %>%
       arrange(idPeriod, tierWaterfall) %>%
-      left_join(promote_name_df) %>%
-      dplyr::select(idPeriod:tierWaterfall, nameTier, everything()) %>%
-      suppressMessages() %>%
-      suppressWarnings()
+      left_join(promote_name_df, by = "tierWaterfall") %>%
+      dplyr::select(idPeriod:tierWaterfall, nameTier, everything())
 
     cash_check <-
       ((entity_waterfall$toCF %>% sum()) + (entity_waterfall$toGP %>% sum())  + (entity_waterfall$toLP %>% sum())
@@ -1620,8 +1633,9 @@ calculate_cash_flow_waterfall_partnership <-
       entity_waterfall %>%
       dplyr::select(date, toCF) %>%
       group_by(date) %>%
-      summarise(totalCF = sum(toCF) %>% formattable::currency()) %>%
-      ungroup()
+      summarise(totalCF = sum(as.numeric(toCF))) %>%
+      ungroup() %>%
+      mutate(totalCF = totalCF %>% currency())
 
     gp_cf <-
       entity_waterfall %>%
@@ -1755,5 +1769,5 @@ calculate_cash_flow_waterfall_partnership <-
         unnest()
     }
 
-    return(data)
+    data
   }
