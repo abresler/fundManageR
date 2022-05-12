@@ -12604,7 +12604,7 @@ cik_filing_counts <-
 #'
 #' @param sic vector of SIC codes
 #' @param join_sec if \code{TRUE} joins SIC data
-#' @param use_all_sice_codes uses all SIC codes
+#' @param use_all_sic_codes uses all SIC codes
 #' @param return_message
 #'
 #'
@@ -12614,10 +12614,10 @@ cik_filing_counts <-
 #' @examples
 sic_filing_count <-
   function(sic = NULL, join_sic = T, snake_names = F,
-           use_all_sice_codes = F,
+           use_all_sic_codes = F,
            return_message = T,
            unformat = F) {
-    if (use_all_sice_codes) {
+    if (use_all_sic_codes) {
       sic <-
         dictionary_sic_codes() %>%
         pull(idSIC)
@@ -13955,9 +13955,29 @@ edgar_search_terms <-
 .parse_most_recent_stream <-
   function(url = "https://www.sec.gov/cgi-bin/browse-edgar?company=&CIK=&type=&owner=include&count=100&action=getcurrent",
            return_message = TRUE) {
-    page <-
-      url %>%
-      xml2::read_html()
+    cookies = c(
+      'ak_bmsc' = 'BA09B9B7E282820D33A847AB6A4F577C~000000000000000000000000000000~YAAQEIXYF9KjfYuAAQAAtA9NkA/Asr69IqJoGtc80iFGaJxeyP/fnqUjhwOkojONIdc3b8zucr8+he1KdbmavGbRp6Bg53ClwHiw0u8kKwNbaufzhSpP74TwvSUfZhrK4Xk1CBHIR1BGudopKt6ds20EpWSCAos3IxzOKIGoGqBOHSIatGivOOcRK/l79CSBT8c7hvz/dF/jvduX42v4cOr5ff1p973FSHh6Pag8I+do5iiJJ9gch1a241qP1XOoz68SyvRYr77owlIoLuSvHiVhJzwVAnu0xZQxGWTWxAjvRPO4oY+p9asvti0DnuqL4VBnBqZFFTuq1Kdj3alR/dtzSU0EhLP7ij8Q6yU/P1jL4hwxnvUWKxSXkNho9DYUrVmOMvk+tYIMvpdj2+yH2fvz6n1JMXt1ovIq27f0SA==',
+      'bm_sv' = 'F8C2F590FCEE07B36615FEA14209764D~YAAQEIXYFw2mfYuAAQAAsmpNkA/mkbJEFnhI9pVm9obV/qxGm3cqtAprkBZr42oLuRJF1PuYuEl9UZP/1QFAo0Uzy+Y8qQri6/BCoEczGMA36G2JWqz2WnV44Jux4vUP8sCpnBCeTYRFkAJWS8tpuawox2wws0IanSoClmvxL9eeP0R88baDAhujCikpQhG1/4WH6zUQpVsmStrp3IMBtoOjU5BVjB2W/ql7/Elb9D2dwEqQheWrqQYUorOY~1'
+    )
+
+    headers = c(
+      `authority` = 'www.sec.gov',
+      `accept` = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+      `accept-language` = 'en-US,en;q=0.9',
+      `cache-control` = 'no-cache',
+      `pragma` = 'no-cache',
+      `sec-fetch-dest` = 'document',
+      `sec-fetch-mode` = 'navigate',
+      `sec-fetch-site` = 'none',
+      `sec-fetch-user` = '?1',
+      `sec-gpc` = '1',
+      `upgrade-insecure-requests` = '1',
+      `user-agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36'
+    )
+
+    res <- httr::GET(url = url, httr::add_headers(.headers=headers), httr::set_cookies(.cookies = cookies))
+
+    page <- res %>% xml2::read_html()
 
     url_directory <-
       page %>%
@@ -14950,9 +14970,30 @@ edgar_filing_streams <-
 .guess_page_ongoing <-
   function(url = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1184765&type=&dateb=&owner=include&start=0&count=100",
            override = FALSE) {
-    page <-
-      url %>%
-      read_html()
+    cookies = c(
+      'ak_bmsc' = 'BA09B9B7E282820D33A847AB6A4F577C~000000000000000000000000000000~YAAQEIXYF9KjfYuAAQAAtA9NkA/Asr69IqJoGtc80iFGaJxeyP/fnqUjhwOkojONIdc3b8zucr8+he1KdbmavGbRp6Bg53ClwHiw0u8kKwNbaufzhSpP74TwvSUfZhrK4Xk1CBHIR1BGudopKt6ds20EpWSCAos3IxzOKIGoGqBOHSIatGivOOcRK/l79CSBT8c7hvz/dF/jvduX42v4cOr5ff1p973FSHh6Pag8I+do5iiJJ9gch1a241qP1XOoz68SyvRYr77owlIoLuSvHiVhJzwVAnu0xZQxGWTWxAjvRPO4oY+p9asvti0DnuqL4VBnBqZFFTuq1Kdj3alR/dtzSU0EhLP7ij8Q6yU/P1jL4hwxnvUWKxSXkNho9DYUrVmOMvk+tYIMvpdj2+yH2fvz6n1JMXt1ovIq27f0SA==',
+      'bm_sv' = 'F8C2F590FCEE07B36615FEA14209764D~YAAQEIXYFw2mfYuAAQAAsmpNkA/mkbJEFnhI9pVm9obV/qxGm3cqtAprkBZr42oLuRJF1PuYuEl9UZP/1QFAo0Uzy+Y8qQri6/BCoEczGMA36G2JWqz2WnV44Jux4vUP8sCpnBCeTYRFkAJWS8tpuawox2wws0IanSoClmvxL9eeP0R88baDAhujCikpQhG1/4WH6zUQpVsmStrp3IMBtoOjU5BVjB2W/ql7/Elb9D2dwEqQheWrqQYUorOY~1'
+    )
+
+    headers = c(
+      `authority` = 'www.sec.gov',
+      `accept` = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+      `accept-language` = 'en-US,en;q=0.9',
+      `cache-control` = 'no-cache',
+      `pragma` = 'no-cache',
+      `sec-fetch-dest` = 'document',
+      `sec-fetch-mode` = 'navigate',
+      `sec-fetch-site` = 'none',
+      `sec-fetch-user` = '?1',
+      `sec-gpc` = '1',
+      `upgrade-insecure-requests` = '1',
+      `user-agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36'
+    )
+
+    res <-
+      httr::GET(url = url, httr::add_headers(.headers=headers), httr::set_cookies(.cookies = cookies))
+
+    page <- res %>% xml2::read_html()
 
     page_count <-
       url %>% str_split('start=') %>%

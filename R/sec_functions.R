@@ -20,15 +20,37 @@
 #' sec_ciks(return_message = TRUE)
 sec_ciks <-
   function(return_message = TRUE) {
-    url <-
-      "https://www.sec.gov/Archives/edgar/cik-lookup-data.txt"
 
-    cik_data <-
-      url %>%
-      readr::read_table(col_names = F, progress = FALSE)
+    cookies = c(
+      'ak_bmsc' = 'BA09B9B7E282820D33A847AB6A4F577C~000000000000000000000000000000~YAAQEIXYF9KjfYuAAQAAtA9NkA/Asr69IqJoGtc80iFGaJxeyP/fnqUjhwOkojONIdc3b8zucr8+he1KdbmavGbRp6Bg53ClwHiw0u8kKwNbaufzhSpP74TwvSUfZhrK4Xk1CBHIR1BGudopKt6ds20EpWSCAos3IxzOKIGoGqBOHSIatGivOOcRK/l79CSBT8c7hvz/dF/jvduX42v4cOr5ff1p973FSHh6Pag8I+do5iiJJ9gch1a241qP1XOoz68SyvRYr77owlIoLuSvHiVhJzwVAnu0xZQxGWTWxAjvRPO4oY+p9asvti0DnuqL4VBnBqZFFTuq1Kdj3alR/dtzSU0EhLP7ij8Q6yU/P1jL4hwxnvUWKxSXkNho9DYUrVmOMvk+tYIMvpdj2+yH2fvz6n1JMXt1ovIq27f0SA==',
+      'bm_sv' = 'F8C2F590FCEE07B36615FEA14209764D~YAAQEIXYFw2mfYuAAQAAsmpNkA/mkbJEFnhI9pVm9obV/qxGm3cqtAprkBZr42oLuRJF1PuYuEl9UZP/1QFAo0Uzy+Y8qQri6/BCoEczGMA36G2JWqz2WnV44Jux4vUP8sCpnBCeTYRFkAJWS8tpuawox2wws0IanSoClmvxL9eeP0R88baDAhujCikpQhG1/4WH6zUQpVsmStrp3IMBtoOjU5BVjB2W/ql7/Elb9D2dwEqQheWrqQYUorOY~1'
+    )
 
-    cik_data <-
-      cik_data %>%
+    headers = c(
+      `authority` = 'www.sec.gov',
+      `accept` = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+      `accept-language` = 'en-US,en;q=0.9',
+      `cache-control` = 'no-cache',
+      `pragma` = 'no-cache',
+      `sec-fetch-dest` = 'document',
+      `sec-fetch-mode` = 'navigate',
+      `sec-fetch-site` = 'none',
+      `sec-fetch-user` = '?1',
+      `sec-gpc` = '1',
+      `upgrade-insecure-requests` = '1',
+      `user-agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36'
+    )
+
+    res <- httr::GET(url = 'https://www.sec.gov/Archives/edgar/cik-lookup-data.txt', httr::add_headers(.headers=headers), httr::set_cookies(.cookies = cookies))
+
+    page <- res %>% rvest::read_html()
+    entities <- page %>%
+      html_nodes("p") %>%
+      html_text()
+
+    entities <- entities %>% str_split("\n") %>% flatten_chr()
+    data <-
+      tibble(X1 = entities) %>%
       tidyr::separate(X1,
                       into = c('nameIssuer', 'codeCIK'),
                       sep = '\\:[0][0]') %>%
@@ -55,13 +77,12 @@ sec_ciks <-
     if (return_message) {
       "You returned " %>%
         paste0(
-          cik_data %>% nrow %>% formattable::comma(digits = 0),
+          data %>% nrow %>% formattable::comma(digits = 0),
           ' entities with registered CIK codes'
         ) %>%
         cat(fill = T)
     }
-
-    return(cik_data)
+    data
   }
 
 
@@ -1319,7 +1340,7 @@ sec_bankruptcies <-
 
     url_data <-
       page %>%
-      html_nodes('.medium-9 a:nth-child(1)') %>%
+      html_nodes('.views-field-field-display-title a') %>%
       html_attr('href') %>%
       paste0("https://www.sec.gov", .)
 
@@ -1439,7 +1460,8 @@ sec_bankruptcies <-
       mutate(
         yearData = dateData %>% lubridate::year(),
         monthData = dateData %>% lubridate::month()
-      )
+      ) %>%
+      filter(!is.na(dateData))
 
     data
   }
