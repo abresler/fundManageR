@@ -25,9 +25,6 @@ residual_values(
 
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 Residual value calculations
 }

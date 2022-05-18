@@ -26,9 +26,6 @@ munge_tbl(
 
 \item{include_address}{if \code{TRUE} builds addresses}
 }
-\value{
-
-}
 \description{
 Munge a tibble
 }

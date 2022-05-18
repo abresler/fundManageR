@@ -14,9 +14,6 @@ edgar_sic_filers(
 \arguments{
 \item{nest_data}{}
 }
-\value{
-
-}
 \description{
 SIC Cod Companies
 }

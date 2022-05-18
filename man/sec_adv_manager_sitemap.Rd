@@ -6,9 +6,6 @@
 \usage{
 sec_adv_manager_sitemap()
 }
-\value{
-
-}
 \description{
 Returns data frame of SEC ADV sitemap
 }

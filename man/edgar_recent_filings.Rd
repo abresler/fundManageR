@@ -23,9 +23,6 @@ edgar_recent_filings(
 \arguments{
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 Most recent EDGAR filings by type
 }

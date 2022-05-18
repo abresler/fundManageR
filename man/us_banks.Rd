@@ -6,9 +6,6 @@
 \usage{
 us_banks()
 }
-\value{
-
-}
 \description{
 Information about United States Banks as monitored by the FDIC
 }

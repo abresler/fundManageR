@@ -27,9 +27,6 @@ build_address(
 
 \item{return_message}{if \code{TRUE} returns a message}
 }
-\value{
-
-}
 \description{
 Build Address from tibble
 }

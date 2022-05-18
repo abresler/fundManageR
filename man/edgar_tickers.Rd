@@ -16,9 +16,6 @@ edgar_tickers(
 
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 SEC listed public companys
 }

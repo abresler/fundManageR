@@ -9,9 +9,6 @@ dictionary_finbox_companies(return_message = TRUE)
 \arguments{
 \item{return_message}{if \code{TRUE} return a message}
 }
-\value{
-
-}
 \description{
 Returns companies with FinBOXIO data
 }

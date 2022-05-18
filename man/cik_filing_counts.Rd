@@ -11,9 +11,6 @@ cik_filing_counts(cik, return_message = T)
 
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 CIK Filing Counts
 }

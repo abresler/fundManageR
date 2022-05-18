@@ -32,9 +32,6 @@ sec_filing_streams_rf(
 
 \item{return_message}{return a message}
 }
-\value{
-
-}
 \description{
 This function returns the most recent SEC filings
 for specified filer type by filing type.

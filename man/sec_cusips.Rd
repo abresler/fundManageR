@@ -31,8 +31,6 @@ sec_cusips(
 }
 \value{
 nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
-
-
 }
 \description{
 This function returns information on all Committee on Uniform Securities Identification Procedures [CUSIP]

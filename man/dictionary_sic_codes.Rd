@@ -6,9 +6,6 @@
 \usage{
 dictionary_sic_codes()
 }
-\value{
-
-}
 \description{
 SIC Code dictionary
 }

@@ -16,9 +16,6 @@ generate_tv_bond_query(
 \arguments{
 \item{column_names}{if not \code{NULL} vector of column names}
 }
-\value{
-
-}
 \description{
 Default Bond query metric
 }

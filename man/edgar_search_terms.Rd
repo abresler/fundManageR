@@ -26,9 +26,6 @@ edgar_search_terms(
 \arguments{
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 EDGAR Search for Terms
 }

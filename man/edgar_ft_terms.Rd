@@ -12,9 +12,6 @@ edgar_ft_terms(
   return_message = TRUE
 )
 }
-\value{
-
-}
 \description{
 Title
 }

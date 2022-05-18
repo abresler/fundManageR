@@ -37,9 +37,6 @@ tv_regions_tickers(
 
 \item{return_message}{if \code{TRUE} return message}
 }
-\value{
-
-}
 \description{
 Acquires ticker symbols for specified regions
 }

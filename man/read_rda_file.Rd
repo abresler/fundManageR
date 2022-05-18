@@ -10,9 +10,6 @@ read_rda_file(
   return_tibble = TRUE
 )
 }
-\value{
-
-}
 \description{
 read RDA file
 }

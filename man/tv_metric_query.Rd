@@ -6,9 +6,6 @@
 \usage{
 tv_metric_query()
 }
-\value{
-
-}
 \description{
 Generate default TV query metric
 }

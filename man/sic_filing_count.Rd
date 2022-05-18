@@ -8,7 +8,7 @@ sic_filing_count(
   sic = NULL,
   join_sic = T,
   snake_names = F,
-  use_all_sice_codes = F,
+  use_all_sic_codes = F,
   return_message = T,
   unformat = F
 )
@@ -16,14 +16,11 @@ sic_filing_count(
 \arguments{
 \item{sic}{vector of SIC codes}
 
-\item{use_all_sice_codes}{uses all SIC codes}
+\item{use_all_sic_codes}{uses all SIC codes}
 
 \item{return_message}{}
 
 \item{join_sec}{if \code{TRUE} joins SIC data}
-}
-\value{
-
 }
 \description{
 SIC Counts

@@ -18,9 +18,6 @@ tickers_metrics(
 \arguments{
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 finbox ticker metrics
 }

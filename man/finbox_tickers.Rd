@@ -11,9 +11,6 @@ finbox_tickers(tickers = c("VNO", "BXP"), assign_to_environment = TRUE)
 
 \item{assign_to_environment}{}
 }
-\value{
-
-}
 \description{
 Finbox ticker data
 }

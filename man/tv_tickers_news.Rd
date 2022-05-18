@@ -10,9 +10,6 @@ tv_tickers_news(
   nest_data = FALSE
 )
 }
-\value{
-
-}
 \description{
 Returns news data for specified tickers
 }

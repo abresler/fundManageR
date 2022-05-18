@@ -9,9 +9,6 @@ pcaob_auditors(include_denied_firms = T)
 \arguments{
 \item{include_denied_firms}{adds PCAOB denied firm feature}
 }
-\value{
-
-}
 \description{
 PCAOB Audit Relationships
 }

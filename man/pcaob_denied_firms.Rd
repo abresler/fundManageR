@@ -6,9 +6,6 @@
 \usage{
 pcaob_denied_firms()
 }
-\value{
-
-}
 \description{
 Firms Denying PCAOB Audits
 }

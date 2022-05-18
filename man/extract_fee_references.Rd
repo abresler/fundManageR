@@ -11,9 +11,6 @@ extract_fee_references(data, word_threshhold = 5, print_sentences = TRUE)
 
 \item{print_sentences}{if \code{TRUE} prints fee reference data}
 }
-\value{
-
-}
 \description{
 Extract fee references
 }

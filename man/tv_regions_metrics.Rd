@@ -37,9 +37,6 @@ tv_regions_metrics(
 
 \item{return_message}{if \code{TRUE} return message}
 }
-\value{
-
-}
 \description{
 Get searchable metrics by region
 }

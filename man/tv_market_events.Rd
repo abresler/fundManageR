@@ -9,9 +9,6 @@ tv_market_events(return_message = TRUE)
 \arguments{
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 Returns a list of global financial
 and economics events

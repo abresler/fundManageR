@@ -18,9 +18,6 @@ tv_metric(
 \arguments{
 \item{range}{}
 }
-\value{
-
-}
 \description{
 Generate tradeview metric query
 }

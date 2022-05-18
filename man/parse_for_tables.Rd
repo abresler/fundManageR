@@ -23,9 +23,6 @@ parse_for_tables(
 \arguments{
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 Parse an EDGAR data frame for underlying tables
 }

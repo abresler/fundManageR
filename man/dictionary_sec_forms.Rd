@@ -6,9 +6,6 @@
 \usage{
 dictionary_sec_forms()
 }
-\value{
-
-}
 \description{
 SEC form dictionary
 }

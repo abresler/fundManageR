@@ -20,9 +20,6 @@ adv_managers_brochures(
 
 \item{nest_data}{\code{TRUE} return nested data frame}
 }
-\value{
-
-}
 \description{
 This function OCRs a firm's brochure
 required for Part 2A of the Form-ADV

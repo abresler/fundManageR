@@ -9,9 +9,6 @@ edgar_entities_cik(search_names, nest_data = FALSE, return_message = TRUE)
 \arguments{
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 SEC registered entity search
 }

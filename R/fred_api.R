@@ -1318,7 +1318,7 @@ fred_symbols <-
   if (include_tags) {
   categories <-
     page %>%
-    html_nodes(".fg-cat-lnk-gtm") %>% html_text() %>% str_trim()
+    html_nodes(".fg-related-category-link-gtm") %>% html_text() %>% str_trim()
 
   df_cat <-
     tibble(nameCategory = categories) %>%
@@ -1382,6 +1382,10 @@ fred_symbols <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
+    df <-
+      df %>%
+      mutate_if(is.character, str_squish)
+
     df
   }
 
@@ -1408,9 +1412,12 @@ fred_symbols_descriptions <-
       .parse_fred_description_urls(urls = df_urls$urlSeries, return_message = return_message,
                                    include_tags = include_tags)
 
-    data <-
-      df_urls %>%
-      left_join(data , by = "urlSeries")
+
+    if (data %>% hasName("urlSeries")) {
+      data <-
+        df_urls %>%
+        left_join(data , by = "urlSeries")
+    }
 
     data
   }

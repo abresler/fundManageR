@@ -13,9 +13,6 @@ dallas_fed_international_housing(
 \arguments{
 \item{return_message}{}
 }
-\value{
-
-}
 \description{
 This retrieves data for the international house
 price database maintained by the Dallas FED
