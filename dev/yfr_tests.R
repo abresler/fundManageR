@@ -1,0 +1,5 @@
+library(yfR)
+yf_get_available_collections(print_description = TRUE)
+yfR::yf_get(tickers = "LMT", first_date = "1980-01-01")
+z <- yfR::yf_get(tickers = "PLTR", first_date = "2021-01-01")
+z |> asbviz::hc_xy(x = "ref_date", y = "price_close", group = "ticker", type = "point", use_stock = F, sort_y = T, fits = c("loess"), lag_periods = 90)
