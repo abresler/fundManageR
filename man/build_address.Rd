@@ -6,8 +6,8 @@
 \usage{
 build_address(
   data,
-  address_search_slugs = c("^address", "^streetAddress", "^city", "^state",
-    "^codeState", "^codeCountry", "^country", "^zipcode"),
+  address_search_slugs = c("^address", "^streetAddress", "^city", "^state", "^codeState",
+    "^codeCountry", "^country", "^zipcode"),
   include_snake_versions = T,
   part_threshold = 3,
   snake_names = F,

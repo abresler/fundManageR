@@ -6,9 +6,9 @@
 \usage{
 tv_metrics_data(
   regions = c("america"),
-  query = list(filter = tibble(left = "market_cap_basic", operation = "nempty"),
-    symbols = list(query = list(types = c("stock", "fund", "dr"))), metrics =
-    c("subtype", "name", "beta_5_year", "earnings_release_date",
+  query = list(filter = tibble(left = "market_cap_basic", operation = "nempty"), symbols
+    = list(query = list(types = c("stock", "fund", "dr"))), metrics = c("subtype",
+    "name", "beta_5_year", "earnings_release_date",
     "earnings_per_share_forecast_next_fq", "operating_margin", "return_on_equity",
     "current_ratio", "debt_to_assets", "price_revenue_ttm", "amount_recent",
     "market_cap_basic", "ebitda", "fundamental_currency_code", "total_assets",

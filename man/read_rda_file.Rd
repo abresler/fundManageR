@@ -5,8 +5,8 @@
 \title{read RDA file}
 \usage{
 read_rda_file(
- 
-    file = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
+  file =
+    "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
   return_tibble = TRUE
 )
 }
