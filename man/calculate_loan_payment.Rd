@@ -73,16 +73,16 @@ return_annual_summary = F)
 \seealso{
 Other leveraged finance calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_irr_periods}()},
 \code{\link{calculate_leverage_metrics}()}
 
 Other calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_days_accrued_pref}()},
 \code{\link{calculate_irr_periods}()},

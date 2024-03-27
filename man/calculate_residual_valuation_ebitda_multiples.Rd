@@ -37,8 +37,8 @@ calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20
 \seealso{
 Other calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_days_accrued_pref}()},
 \code{\link{calculate_irr_periods}()},

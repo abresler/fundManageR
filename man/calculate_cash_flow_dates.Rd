@@ -50,8 +50,8 @@ working_capital = 125000, remove_cumulative_cols = TRUE, include_final_day = TRU
 }
 \seealso{
 Other calculation: 
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_days_accrued_pref}()},
 \code{\link{calculate_irr_periods}()},
@@ -64,16 +64,16 @@ Other calculation:
 \code{\link{tidy_promote_structure}()}
 
 Other leveraged finance calculation: 
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_irr_periods}()},
 \code{\link{calculate_leverage_metrics}()},
 \code{\link{calculate_loan_payment}()}
 
 Other partnership calculation: 
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_days_accrued_pref}()},
 \code{\link{calculate_irr_periods}()},

@@ -36,8 +36,8 @@ calculate_days_accrued_pref(pct_pref = .1, is_actual_360 = T, days = 31, equity_
 \seealso{
 Other calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_irr_periods}()},
 \code{\link{calculate_leverage_metrics}()},
@@ -50,8 +50,8 @@ Other calculation:
 
 Other partnership calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_irr_periods}()},
 \code{\link{tidy_promote_structure}()}

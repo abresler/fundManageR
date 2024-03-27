@@ -2,10 +2,19 @@
 % Please edit documentation in R/fundManageR-package.R
 \docType{package}
 \name{fundManageR}
+\alias{fundManageR-package}
 \alias{fundManageR}
 \title{fundManageR}
 \description{
 Investment management toolkit for R
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/abresler/fundManageR}
+  \item Report bugs at \url{https://github.com/abresler/fundManageR/issues}
+}
+
 }
 \author{
 Alex Bresler (abresler@asbcllc.com)

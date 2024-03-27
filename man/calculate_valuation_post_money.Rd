@@ -30,8 +30,8 @@ calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold
 \seealso{
 Other calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_days_accrued_pref}()},
 \code{\link{calculate_irr_periods}()},

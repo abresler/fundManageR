@@ -50,8 +50,8 @@ return_percentage = FALSE, return_df = TRUE, return_wide = TRUE, return_message 
 \seealso{
 Other calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_days_accrued_pref}()},
 \code{\link{calculate_leverage_metrics}()},
@@ -64,16 +64,16 @@ Other calculation:
 
 Other leveraged finance calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_leverage_metrics}()},
 \code{\link{calculate_loan_payment}()}
 
 Other partnership calculation: 
 \code{\link{calculate_cash_flow_dates}()},
-\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flow_waterfall}()},
+\code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_cash_flows_returns}()},
 \code{\link{calculate_days_accrued_pref}()},
 \code{\link{tidy_promote_structure}()}

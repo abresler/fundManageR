@@ -27,8 +27,8 @@ msci_realtime_index_values()
 }
 \seealso{
 Other MSCI: 
-\code{\link{msci_indicies_constituents}()},
-\code{\link{msci_indicies}()}
+\code{\link{msci_indicies}()},
+\code{\link{msci_indicies_constituents}()}
 
 Other index values: 
 \code{\link{crsp_indicies_returns}()},
