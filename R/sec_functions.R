@@ -461,7 +461,7 @@ sec_foia_requests <-
 
     df_metadata <-
       url %>%
-      tabulizer::extract_metadata() %>%
+      tabulapdf::extract_metadata() %>%
       flatten_df()
 
     if ('modified' %in% names(df_metadata)) {
@@ -488,11 +488,11 @@ sec_foia_requests <-
     if (table_area %>% is.na()) {
       tables <-
         url %>%
-        tabulizer::extract_tables(start_page:df_metadata$pages)
+        tabulapdf::extract_tables(start_page:df_metadata$pages)
     } else {
       tables <-
         url %>%
-        tabulizer::extract_tables(start_page:df_metadata$pages,
+        tabulapdf::extract_tables(start_page:df_metadata$pages,
                        area = list(table_area))
     }
 
@@ -610,7 +610,7 @@ sec_foia_requests <-
 #' @param nest_data \code{TRUE} return nested data frame
 #' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
-#' @import purrr stringr dplyr rvest formattable tidyr xml2 tabulizer
+#' @import purrr stringr dplyr rvest formattable tidyr xml2 tabulapdf
 #' @importFrom lubridate mdy
 #' @importFrom readr read_csv
 #' @return

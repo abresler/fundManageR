@@ -43,7 +43,7 @@
         res$url
       df_metadata <-
         url %>%
-        tabulizer::extract_metadata() %>%
+        tabulapdf::extract_metadata() %>%
         flatten_df()
 
       year_data <-
@@ -82,7 +82,7 @@
 
       tables <-
         url %>%
-        tabulizer::extract_tables(1:df_metadata$pages)
+        tabulapdf::extract_tables(1:df_metadata$pages)
 
       all_data <-
         seq_along(tables) %>%
@@ -325,7 +325,7 @@
 #' @export
 #' @family NAREIT
 #' @family index constituents
-#' @import purrr stringr dplyr rvest formattable lubridate tidyr readr curl tabulizer
+#' @import purrr stringr dplyr rvest formattable lubridate tidyr readr curl tabulapdf
 #' @examples
 #' nareit_constituent_years(years = 1991:2016, resolve_names = TRUE, nest_data = TRUE, return_message = TRUE)
 nareit_constituent_years <-
@@ -2199,7 +2199,7 @@ nareit_mergers_acquisitions <-
 
     tables <-
       url %>%
-      tabulizer::extract_tables(pages = pages)
+      tabulapdf::extract_tables(pages = pages)
 
     all_data <-
       seq_along(tables) %>%

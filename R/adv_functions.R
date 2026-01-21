@@ -1,6 +1,388 @@
 # parsing -----------------------------------------------------------------
+#
+# SEC IAPD API CHANGES (2024-2025)
+# ================================
+# The SEC completely rebuilt the Investment Adviser Public Disclosure (IAPD)
+# website from ASP.NET to an Angular Single Page Application. As a result:
+#
+# 1. HTML scraping no longer works (old pages removed)
+# 2. New REST API available at: https://api.adviserinfo.sec.gov/
+# 3. The API returns JSON with limited data fields compared to the old HTML pages
+#
+# AVAILABLE SECTIONS (via new API):
+# - Registration (basic firm info, SEC number, filing dates)
+# - Identifying Information (address data)
+# - SEC Reporting (registration status by jurisdiction)
+# - Notice Filings (state notice filing status)
+# - Brochures (Part 2 brochure details)
+# - Accountant Surprise Exams
+# - Other Names (DBA names)
+# - Client Relationship Summary (CRS)
+# - Organization Scope (SEC/State registration flags)
+# - Relying Advisors (umbrella registrations)
+# - Compilation Data (report metadata)
+# - Exempt Reporting Advisers
+#
+# NO LONGER AVAILABLE (from old HTML scraping):
+# - Detailed Form ADV Item responses (Items 1-12)
+# - Schedule A (direct owners)
+# - Schedule B (indirect owners)
+# - Schedule D (additional details)
+# - Private Fund Reporting details
+# - Direct/Indirect Manager Owners
+# - Manager Signatories
+#
+# For detailed Form ADV data, users should:
+# - Download the full ADV PDF from: adviserinfo.sec.gov/reports/ADV/{CRD}/PDF/{CRD}.pdf
+# - Use SEC EDGAR bulk data files
+# - Access the IAPD website directly
+#
+
+# New SEC IAPD API function (SEC rebuilt their website in 2024-2025)
+.get_iapd_api_data <-
+  function(id_crd = 105378) {
+    url <- glue::glue("https://api.adviserinfo.sec.gov/search/firm/{id_crd}?hl=true&nrows=12&r=25&sort=score+desc&wt=json")
+
+    response <- tryCatch({
+      httr::GET(
+        url,
+        httr::add_headers(
+          "Accept" = "application/json",
+          "Origin" = "https://adviserinfo.sec.gov",
+          "Referer" = "https://adviserinfo.sec.gov/",
+          "User-Agent" = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+        )
+      )
+    }, error = function(e) {
+      return(NULL)
+    })
+
+    if (is.null(response) || httr::status_code(response) != 200) {
+      return(NULL)
+    }
+
+    json_data <- httr::content(response, as = "text", encoding = "UTF-8") %>%
+      jsonlite::fromJSON(flatten = FALSE)
+
+    hits_data <- json_data$hits$hits
+
+    # Check for empty results
+    if (is.null(hits_data)) {
+      return(NULL)
+    }
+
+    # Handle both data.frame and list structures from jsonlite
+    if (is.data.frame(hits_data)) {
+      if (nrow(hits_data) == 0) {
+        return(NULL)
+      }
+      # For data frame, access _source column from first row
+      source_data <- hits_data$`_source`[1, , drop = FALSE]
+      # If _source is a nested data frame, convert to list
+      if (is.data.frame(source_data)) {
+        source_data <- as.list(source_data)
+      }
+      # Get iacontent from the nested structure
+      iacontent_raw <- hits_data$`_source`$iacontent[1]
+    } else if (is.list(hits_data) && length(hits_data) > 0) {
+      source_data <- hits_data[[1]]$`_source`
+      iacontent_raw <- source_data$iacontent
+    } else {
+      return(NULL)
+    }
+
+    # Parse the nested iacontent JSON string
+    if (!is.null(iacontent_raw) && nchar(iacontent_raw) > 0) {
+      iacontent <- tryCatch({
+        jsonlite::fromJSON(iacontent_raw, flatten = FALSE)
+      }, error = function(e) NULL)
+      source_data$iacontent_parsed <- iacontent
+    }
+
+    return(source_data)
+  }
+
+# Get basic manager info from new API
+.get_manager_info_from_api <-
+  function(id_crd) {
+    api_data <- .get_iapd_api_data(id_crd)
+
+    if (is.null(api_data)) {
+      return(tibble())
+    }
+
+    basic_info <- api_data$iacontent_parsed$basicInformation
+
+    tibble(
+      idCRD = as.numeric(basic_info$firmId %||% id_crd),
+      nameEntityManager = basic_info$firmName %||% NA_character_,
+      idSEC = basic_info$iaSECNumber %||% NA_character_,
+      typeIDSEC = basic_info$iaSECNumberType %||% NA_character_,
+      statusIA = basic_info$iaScope %||% NA_character_,
+      dateADVFiling = basic_info$advFilingDate %||% NA_character_,
+      hasPDF = basic_info$hasPdf == "Y"
+    )
+  }
+
+# Parse all available sections from the new SEC IAPD API
+.parse_api_sections_data <-
+  function(id_crd, api_data = NULL) {
+    if (is.null(api_data)) {
+      api_data <- .get_iapd_api_data(id_crd)
+    }
+
+    if (is.null(api_data) || is.null(api_data$iacontent_parsed)) {
+      return(list())
+    }
+
+    parsed <- api_data$iacontent_parsed
+    basic_info <- parsed$basicInformation
+    nameEntityManager <- basic_info$firmName %||% NA_character_
+
+    results <- list()
+
+    # Registration / Basic Info
+    results$dataRegistration <- tibble(
+      idCRD = as.numeric(basic_info$firmId %||% id_crd),
+      nameEntityManager = nameEntityManager,
+      idSEC = basic_info$iaSECNumber %||% NA_character_,
+      idSECFull = paste0(basic_info$iaSECNumberType %||% "", "-", basic_info$iaSECNumber %||% "") %>%
+        str_remove("^-$"),
+      statusIA = basic_info$iaScope %||% NA_character_,
+      dateADVFiling = basic_info$advFilingDate %||% NA_character_,
+      hasPDF = (basic_info$hasPdf %||% "N") == "Y",
+      urlPDF = glue::glue("https://adviserinfo.sec.gov/reports/ADV/{id_crd}/PDF/{id_crd}.pdf") %>% as.character()
+    )
+
+    # Other Names
+    if (!is.null(basic_info$otherNames) && length(basic_info$otherNames) > 0) {
+      results$dataOtherNames <- tibble(
+        idCRD = as.numeric(id_crd),
+        nameEntityManager = nameEntityManager,
+        nameOther = basic_info$otherNames
+      )
+    }
+
+    # Address Information
+    if (!is.null(parsed$iaFirmAddressDetails)) {
+      addr <- parsed$iaFirmAddressDetails$officeAddress
+      if (!is.null(addr)) {
+        results$dataAddress <- tibble(
+          idCRD = as.numeric(id_crd),
+          nameEntityManager = nameEntityManager,
+          addressStreet1 = addr$street1 %||% NA_character_,
+          addressStreet2 = addr$street2 %||% NA_character_,
+          addressCity = addr$city %||% NA_character_,
+          addressState = addr$state %||% NA_character_,
+          addressCountry = addr$country %||% NA_character_,
+          addressPostalCode = addr$postalCode %||% NA_character_
+        )
+      }
+    }
+
+    # Registration Status
+    if (!is.null(parsed$registrationStatus) && length(parsed$registrationStatus) > 0) {
+      reg_status <- parsed$registrationStatus
+      if (is.data.frame(reg_status)) {
+        results$dataRegistrationStatus <- reg_status %>%
+          as_tibble() %>%
+          mutate(
+            idCRD = as.numeric(id_crd),
+            nameEntityManager = nameEntityManager
+          ) %>%
+          rename(
+            nameJurisdiction = secJurisdiction,
+            statusRegistration = status,
+            dateEffective = effectiveDate
+          ) %>%
+          dplyr::select(idCRD, nameEntityManager, everything())
+      }
+    }
+
+    # Notice Filings
+    if (!is.null(parsed$noticeFilings) && length(parsed$noticeFilings) > 0) {
+      notice <- parsed$noticeFilings
+      if (is.data.frame(notice)) {
+        results$dataNoticeFilings <- notice %>%
+          as_tibble() %>%
+          mutate(
+            idCRD = as.numeric(id_crd),
+            nameEntityManager = nameEntityManager
+          ) %>%
+          rename(
+            nameJurisdiction = jurisdiction,
+            statusNotice = status,
+            dateEffective = effectiveDate
+          ) %>%
+          dplyr::select(idCRD, nameEntityManager, everything())
+      }
+    }
+
+    # Organization Scope Status Flags
+    if (!is.null(parsed$orgScopeStatusFlags)) {
+      flags <- parsed$orgScopeStatusFlags
+      results$dataOrgScopeFlags <- tibble(
+        idCRD = as.numeric(id_crd),
+        nameEntityManager = nameEntityManager,
+        isSECRegistered = (flags$isSECRegistered %||% "N") == "Y",
+        isStateRegistered = (flags$isStateRegistered %||% "N") == "Y",
+        isERARegistered = (flags$isERARegistered %||% "N") == "Y",
+        isSECERARegistered = (flags$isSECERARegistered %||% "N") == "Y",
+        isStateERARegistered = (flags$isStateERARegistered %||% "N") == "Y"
+      )
+    }
+
+    # Accountant Surprise Exams
+    if (!is.null(parsed$accountantSurpriseExams) && length(parsed$accountantSurpriseExams) > 0) {
+      exams <- parsed$accountantSurpriseExams
+      if (is.data.frame(exams)) {
+        results$dataAccountantExams <- exams %>%
+          as_tibble() %>%
+          mutate(
+            idCRD = as.numeric(id_crd),
+            nameEntityManager = nameEntityManager
+          ) %>%
+          rename(
+            nameAccountantFirm = accountantFirmName,
+            dateFilingSurpriseExam = filingDate,
+            statusFile = fileStatus
+          ) %>%
+          dplyr::select(idCRD, nameEntityManager, everything())
+      }
+    }
+
+    # Brochures
+    if (!is.null(parsed$brochures)) {
+      brochures <- parsed$brochures
+      results$dataBrochures <- tibble(
+        idCRD = as.numeric(id_crd),
+        nameEntityManager = nameEntityManager,
+        isExemptPart2 = (brochures$part2ExemptFlag %||% "N") == "Y"
+      )
+
+      if (!is.null(brochures$brochuredetails) && length(brochures$brochuredetails) > 0) {
+        broch_details <- brochures$brochuredetails
+        if (is.data.frame(broch_details)) {
+          results$dataBrochureDetails <- broch_details %>%
+            as_tibble() %>%
+            mutate(
+              idCRD = as.numeric(id_crd),
+              nameEntityManager = nameEntityManager
+            ) %>%
+            rename(
+              idBrochureVersion = brochureVersionID,
+              nameBrochure = brochureName,
+              dateSubmitted = dateSubmitted
+            ) %>%
+            dplyr::select(idCRD, nameEntityManager, everything())
+        }
+      }
+    }
+
+    # CRS Info
+    if (!is.null(basic_info$crs)) {
+      crs <- basic_info$crs
+      results$dataCRS <- tibble(
+        idCRD = as.numeric(id_crd),
+        nameEntityManager = nameEntityManager,
+        typeCRS = crs$crsType %||% NA_character_,
+        idFileCRS = crs$fileId %||% NA_character_,
+        urlCRS = glue::glue("https://adviserinfo.sec.gov/crs/crs_{id_crd}.pdf") %>% as.character()
+      )
+    }
+
+    # Relying Advisors (umbrella registration)
+    if (!is.null(parsed$relyingAdvisors) && length(parsed$relyingAdvisors) > 0) {
+      relying <- parsed$relyingAdvisors
+      if (is.data.frame(relying)) {
+        results$dataRelyingAdvisors <- relying %>%
+          as_tibble() %>%
+          mutate(
+            idCRD = as.numeric(id_crd),
+            nameEntityManager = nameEntityManager
+          ) %>%
+          rename_with(~ case_when(
+            . == "firmId" ~ "idCRDRelying",
+            . == "name" ~ "nameRelyingAdvisor",
+            . == "status" ~ "statusRelyingAdvisor",
+            . == "nameStatus" ~ "statusRelyingAdvisorName",
+            TRUE ~ .
+          )) %>%
+          dplyr::select(idCRD, nameEntityManager, everything())
+      }
+    }
+
+    # Compilation Data (report generation info)
+    if (!is.null(parsed$compilationData) && length(parsed$compilationData) > 0) {
+      comp <- parsed$compilationData
+      if (is.data.frame(comp)) {
+        results$dataCompilation <- comp %>%
+          as_tibble() %>%
+          mutate(
+            idCRD = as.numeric(id_crd),
+            nameEntityManager = nameEntityManager
+          ) %>%
+          rename_with(~ case_when(
+            . == "editionID" ~ "idEdition",
+            . == "type" ~ "typeCompilation",
+            . == "generatedOn" ~ "dateGenerated",
+            TRUE ~ .
+          )) %>%
+          dplyr::select(idCRD, nameEntityManager, everything())
+      }
+    }
+
+    # Exempt Reporting Advisers
+    if (!is.null(parsed$exemptReportingAdvisers) && length(parsed$exemptReportingAdvisers) > 0) {
+      era <- parsed$exemptReportingAdvisers
+      if (is.data.frame(era) && nrow(era) > 0) {
+        results$dataExemptReportingAdvisers <- era %>%
+          as_tibble() %>%
+          mutate(
+            idCRD = as.numeric(id_crd),
+            nameEntityManager = nameEntityManager
+          ) %>%
+          dplyr::select(idCRD, nameEntityManager, everything())
+      }
+    }
+
+    return(results)
+  }
+
+# Wrapper function for API-based section retrieval
+.get_api_section_data <-
+  function(url, id_crd = NULL) {
+    # Extract CRD from URL if not provided
+    if (is.null(id_crd)) {
+      id_crd <- url %>%
+        str_extract("[0-9]+") %>%
+        as.numeric()
+    }
+
+    if (is.na(id_crd)) {
+      return(tibble())
+    }
+
+    # Get all API data
+    api_data <- .get_iapd_api_data(id_crd)
+
+    if (is.null(api_data)) {
+      return(tibble())
+    }
+
+    # Parse all sections
+    sections <- .parse_api_sections_data(id_crd, api_data)
+
+    # Return registration data as default (most commonly needed)
+    if (!is.null(sections$dataRegistration)) {
+      return(sections$dataRegistration)
+    }
+
+    return(tibble())
+  }
+
 .get_html_page <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=160080') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=160080') {
     page <-
       url %>% curl::curl() %>% xml2::read_html()
 
@@ -408,42 +790,65 @@
 
 
 
+
+# api ---------------------------------------------------------------------
+
+.parse_crd_json <- function(url = "https://api.adviserinfo.sec.gov/search/firm/138854") {
+  json_data <-
+    url |>
+    jsonlite::fromJSON(
+      flatten = TRUE,
+      simplifyVector = TRUE,
+      simplifyDataFrame = TRUE
+    )
+
+  data <- json_data$hits$hits$`_source.iacontent` |> as.character() |> jsonlite::fromJSON(simplifyDataFrame = T, flatten = T)
+
+  names(data)
+
+  data
+
+}
+
 # sec_adv_data ------------------------------------------------------------
 
 .parse_sec_manager_pdf_url <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/Part2Brochures.aspx?ORG_PK=135952') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=156663') {
+    # Extract CRD from URL
+    idCRD <- url %>%
+      str_extract("ORG_PK=([0-9]+)") %>%
+      str_remove("ORG_PK=") %>%
+      as.numeric()
+
+    # If URL is in old format (adviserinfo.sec.gov/firm/brochure/CRD), convert it
+    if (str_detect(url, "adviserinfo.sec.gov/firm/brochure")) {
+      idCRD <- url %>%
+        str_extract("[0-9]+$") %>%
+        as.numeric()
+      url <- glue::glue("https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK={idCRD}")
+    }
+
     page <-
       url %>%
-      .get_html_page
+      .get_html_page()
 
-    idCRD <-
-      url %>%
-      .get_pk_url_crd()
-
+    # Extract entity name from firm summary page
     nameEntityBrochure <-
       page %>%
-      .get_html_node_text(node_css = 'td:nth-child(1) a') %>%
+      .get_html_node_text(node_css = '#ctl00_cphMain_landing_lblActiveOrgName') %>%
       str_trim()
 
-    dateBrochureSubmitted <-
-      page %>%
-      .get_html_node_text(node_css = 'td:nth-child(2)') %>%
-      str_trim() %>%
-      lubridate::mdy() %>%
-      suppressWarnings()
-
-    dateLastConfirmed <-
-      page %>%
-      .get_html_node_text(node_css = 'td:nth-child(3)') %>%
-      str_trim() %>%
-      lubridate::mdy() %>%
-      suppressWarnings()
-
+    # Extract brochure PDF URL
     urlPDFManagerADVBrochure <-
       page %>%
-      .get_html_node_attributes(node_css = 'td:nth-child(1) a',
+      .get_html_node_attributes(node_css = '#ctl00_cphMain_landing_p2BrochureLink',
                                html_attribute = 'href',
-                               base_url = 'http://www.adviserinfo.sec.gov')
+                               base_url = 'https://files.adviserinfo.sec.gov')
+
+    # Dates are not available on the firm summary page
+    # They would require accessing additional pages or the API
+    dateBrochureSubmitted <- NA
+    dateLastConfirmed <- NA
 
     pdf_data <-
       tibble(
@@ -453,7 +858,6 @@
         dateBrochureSubmitted,
         dateLastConfirmed
       )
-
 
     if (pdf_data %>% nrow > 1) {
       pdf_data <-
@@ -475,7 +879,7 @@
 
 
 .get_url_crd <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=135952') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=135952') {
     idCRD <-
       url %>%
       str_split('\\?ORG_PK=') %>%
@@ -487,13 +891,13 @@
 
 
 .get_manager_sec_page <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=156663') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=156663') {
     httr::set_config(httr::config(ssl_verifypeer = 0L))
     page_status <-
       url %>%
       GET()
 
-    if (page_status$url == 'http://www.adviserinfo.sec.gov/IAPD/SearchNoResult.aspx') {
+    if (page_status$url == 'https://files.adviserinfo.sec.gov/IAPD/SearchNoResult.aspx') {
       idCRD <-
         url %>%
         .get_url_crd()
@@ -662,7 +1066,7 @@
         .get_html_node_attributes(
           node_css = '#aspnetForm > div.container-fluid > div > nav > ul > li:nth-child(7) > a',
           html_attribute = 'href',
-          base_url = 'http://www.adviserinfo.sec.gov'
+          base_url = 'https://files.adviserinfo.sec.gov'
         )
 
       manager_df <-
@@ -689,7 +1093,7 @@
           .get_html_node_attributes(
             node_css = '#aspnetForm > div.container-fluid > div > nav > ul > li:nth-child(8) > a',
             html_attribute = 'href',
-            base_url = 'http://www.adviserinfo.sec.gov'
+            base_url = 'https://files.adviserinfo.sec.gov'
           )
 
         if (!'nameEntityManager' %in% names(manager_df)) {
@@ -752,7 +1156,7 @@ adv_managers_metadata <-
 
     if (!crd_ids %>% purrr::is_null()) {
       crd_urls <-
-        'https://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>%
+        'https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>%
         paste0(crd_ids)
     }
 
@@ -802,7 +1206,7 @@ adv_managers_metadata <-
   }
 
 .get_manager_sec_adv_actual_url <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=146629') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=146629') {
     page <-
       url %>%
       GET()
@@ -814,7 +1218,7 @@ adv_managers_metadata <-
 
 
 .get_url_primary_key <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/sections/iapd_AdvIdentifyingInfoSection.aspx?ORG_PK=146629&FLNG_PK=01285F220008018901086F5100319405056C8CC0') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/sections/iapd_AdvIdentifyingInfoSection.aspx?ORG_PK=146629&FLNG_PK=01285F220008018901086F5100319405056C8CC0') {
     url_primary_key <-
       url %>%
       str_split(pattern = 'FLNG_PK=') %>%
@@ -1068,7 +1472,7 @@ sec_adv_manager_sitemap <-
 
 
 .parse_adv_manager_sitemap_df <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=135952',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=135952',
            manager = NULL,
            return_wide = F) {
     idCRD <-
@@ -1088,18 +1492,40 @@ sec_adv_manager_sitemap <-
         suppressWarnings()
     }
 
-    actual_url <-
-      url %>%
-      .get_manager_sec_adv_actual_url()
+    # Ensure URL uses files.adviserinfo.sec.gov domain (old ASP.NET pages still work there)
+    # Only replace if not already using files. subdomain
+    if (!str_detect(url, "files\\.adviserinfo\\.sec\\.gov")) {
+      url <- url %>%
+        str_replace("www\\.adviserinfo\\.sec\\.gov", "files.adviserinfo.sec.gov") %>%
+        str_replace("(?<!files\\.)adviserinfo\\.sec\\.gov", "files.adviserinfo.sec.gov")
+    }
+    url <- url %>% str_replace("^http://", "https://")
 
-    url_primary_key <-
-      actual_url %>%
-      .get_url_primary_key()
+    # Try HTML scraping first from files.adviserinfo.sec.gov (detailed Form ADV data)
+    actual_url <- tryCatch({
+      url %>% .get_manager_sec_adv_actual_url()
+    }, error = function(e) url)
 
-    page <-
-      actual_url %>%
-      .get_html_page()
+    url_primary_key <- tryCatch({
+      actual_url %>% .get_url_primary_key()
+    }, error = function(e) NA)
 
+    page <- tryCatch({
+      actual_url %>% .get_html_page()
+    }, error = function(e) NULL)
+
+    if (is.null(page)) {
+      # Return empty tibble with correct structure if page fetch fails
+      return(tibble(
+        idCRD = integer(),
+        nameEntityManager = character(),
+        nameSectionActual = character(),
+        idSection = character(),
+        nameData = character(),
+        nameFunction = character(),
+        urlADVSection = character()
+      ))
+    }
     base_url <-
       actual_url %>%
       str_split('sections|Sections') %>%
@@ -1110,10 +1536,23 @@ sec_adv_manager_sitemap <-
       page %>%
       .get_entity_manager_name()
 
-    name_entity_manager <-
+    # Fallback selector for new website
+    if (length(name_entity_manager) == 0 || is.na(name_entity_manager[1])) {
+      name_entity_manager <-
         page %>%
         html_nodes('.summary-displayname') %>%
         html_text()
+    }
+
+    # If still empty, use API data
+    if (length(name_entity_manager) == 0) {
+      api_info <- tryCatch(.get_manager_info_from_api(idCRD), error = function(e) tibble())
+      if (nrow(api_info) > 0) {
+        name_entity_manager <- api_info$nameEntityManager[1]
+      } else {
+        name_entity_manager <- NA_character_
+      }
+    }
 
     if (length(manager) > 0) {
       name_entity_manager <- manager
@@ -1134,11 +1573,29 @@ sec_adv_manager_sitemap <-
              .) %>%
       unique()
 
+    # If no items found via HTML, fall back to API-based sitemap
+    if (length(items) == 0 || all(is.na(items))) {
+      sitemap_df <- .get_sec_sitemap_df()
+      adv_data <- sitemap_df %>%
+        mutate(
+          idCRD = idCRD,
+          nameEntityManager = if (length(name_entity_manager) > 0) name_entity_manager[1] else NA_character_,
+          urlADVSection = glue::glue("https://api.adviserinfo.sec.gov/search/firm/{idCRD}#section={idSection}") %>% as.character()
+        ) %>%
+        dplyr::filter(!nameFunction %>% is.na()) %>%
+        dplyr::select(idCRD, nameEntityManager, nameSectionActual, idSection, nameData, nameFunction, urlADVSection)
+
+      if (return_wide) {
+        adv_data <- adv_data %>% spread(idSection, urlADVSection)
+      }
+      return(adv_data)
+    }
+
     adv_data <-
       tibble(
         idCRD,
         nameSection = 'Registration',
-        urlADVSection = glue::glue('http://www.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK={idCRD}') %>% as.character()
+        urlADVSection = glue::glue('https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK={idCRD}') %>% as.character()
       ) %>%
       bind_rows(tibble(idCRD,
                        nameSection = items,
@@ -1147,7 +1604,7 @@ sec_adv_manager_sitemap <-
       distinct() %>%
       dplyr::filter(!nameFunction %>% is.na()) %>%
       dplyr::select(-nameSection) %>%
-      mutate(nameEntityManager = name_entity_manager,
+      mutate(nameEntityManager = if (length(name_entity_manager) > 0) name_entity_manager[1] else NA_character_,
              idRow = 1:n()) %>%
       group_by(idSection) %>%
       dplyr::filter(idRow == min(idRow)) %>%
@@ -1176,7 +1633,7 @@ sec_adv_manager_sitemap <-
 
     if (!purrr::is_null(idCRDs)) {
       urls <-
-        glue::glue("https://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRDs}") %>% as.character()
+        glue::glue("https://files.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRDs}") %>% as.character()
     }
 
     if (!purrr::is_null(entity_names)) {
@@ -1345,7 +1802,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_pk_url_crd <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvPrivateFundReportingSection.aspx?ORG_PK=162351&FLNG_PK=052DAAB400080184043CE66005E35E29056C8CC0') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvPrivateFundReportingSection.aspx?ORG_PK=162351&FLNG_PK=052DAAB400080184043CE66005E35E29056C8CC0') {
     idCRD <-
       url %>%
       str_split('=') %>%
@@ -2393,10 +2850,14 @@ sec_adv_manager_sitemap <-
               ) %>% str_to_upper()
             )
         }
-        if (business_data_df$idLEI == 'A legal entity identifier') {
-          business_data_df <-
-            business_data_df %>%
-            dplyr::select(-idLEI)
+        # Check if idLEI column exists and contains placeholder text
+        if ('idLEI' %in% names(business_data_df)) {
+          if (nrow(business_data_df) > 0 && !is.na(business_data_df$idLEI[1]) &&
+              business_data_df$idLEI[1] == 'A legal entity identifier') {
+            business_data_df <-
+              business_data_df %>%
+              dplyr::select(-idLEI)
+          }
         }
         return(business_data_df)
       }
@@ -2425,7 +2886,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_2_data <-
-  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSecRegistrationSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSecRegistrationSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0') {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -2673,7 +3134,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_3_data <-
-  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFormOfOrgSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFormOfOrgSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0') {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -2750,7 +3211,7 @@ sec_adv_manager_sitemap <-
 
 
 .get_section_4_data <-
-  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSuccessionsSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSuccessionsSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
@@ -2842,7 +3303,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_5_data <-
-  function(url = "https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0") {
+  function(url = "https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvAdvisoryBusinessSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0") {
     section_name <-
       'section5AdvisoryBusinessInformation'
     idCRD <-
@@ -2859,7 +3320,7 @@ sec_adv_manager_sitemap <-
 
     if (!'sitefuture_map_dfr' %>% exists()) {
       url <-
-        glue::glue('http://www.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRD}')
+        glue::glue('https://files.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRD}')
 
       sitefuture_map_dfr <-
         .parse_adv_manager_sitemap_df(url =url, return_wide = F, manager = name_entity_manager)
@@ -2967,10 +3428,12 @@ sec_adv_manager_sitemap <-
               select(-idRow) %>%
               suppressMessages() %>%
               dplyr::filter(isNodeChecked) %>%
-              dplyr::select(nameItem, valueItem)
+              dplyr::filter(!is.na(nameItem)) %>%
+              dplyr::select(nameItem, valueItem) %>%
+              distinct()
 
             column_order <-
-              client_summary_image_df$nameItem
+              client_summary_image_df$nameItem %>% unique()
 
             client_summary_df <-
               client_summary_image_df %>%
@@ -3040,9 +3503,13 @@ sec_adv_manager_sitemap <-
           }) %>%
           spread(nameItem, value) %>%
           dplyr::select(one_of(employee_node_df$nameItem)) %>%
-          mutate_at(.vars = 'pctClientsNonUS',
-                    .funs = funs(. / 100)) %>%
           suppressWarnings()
+
+        # Convert pctClientsNonUS to decimal if column exists
+        if ('pctClientsNonUS' %in% names(employee_count_df)) {
+          employee_count_df <- employee_count_df %>%
+            mutate(pctClientsNonUS = pctClientsNonUS / 100)
+        }
 
         node_text <-
           page %>%
@@ -3197,7 +3664,7 @@ sec_adv_manager_sitemap <-
 
 
 .get_section_6_data <-
-  function(url = 'https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvOtherBusinessSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvOtherBusinessSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
@@ -3283,7 +3750,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_7a_data <-
-  function(url = "https://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFinancialAffiliationsSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0",
+  function(url = "https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFinancialAffiliationsSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0",
            return_wide = T) {
     idCRD <-
       url %>%
@@ -3386,7 +3853,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_7b_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvPrivateFundReportingSection.aspx?ORG_PK=162351&FLNG_PK=052DAAB400080184043CE66005E35E29056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvPrivateFundReportingSection.aspx?ORG_PK=162351&FLNG_PK=052DAAB400080184043CE66005E35E29056C8CC0',
            return_wide = F,
            return_message = T) {
     idCRD <-
@@ -3495,7 +3962,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_8_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvClientTransSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvClientTransSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
@@ -3548,10 +4015,13 @@ sec_adv_manager_sitemap <-
             section_data <-
               tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
-              bind_cols(get_node_item_df()) %>%
+              mutate(idRow = 1:n()) %>%
+              left_join(get_node_item_df() %>% mutate(idRow = 1:n()), by = "idRow") %>%
               dplyr::filter(isNodeChecked == T) %>%
+              dplyr::filter(!is.na(nameItem)) %>%
               mutate(nameEntityManager = name_entity_manager) %>%
               dplyr::select(nameEntityManager, nameItem, valueItem) %>%
+              distinct() %>%
               suppressMessages()
 
             if (return_wide) {
@@ -3789,7 +4259,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_10_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvControlPersonsSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvControlPersonsSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0') {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -3863,7 +4333,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_11_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvDisciplinarySection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvDisciplinarySection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0',
            return_wide = T) {
     idCRD <-
       url %>%
@@ -3961,7 +4431,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_12_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSmallBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSmallBusinessSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0') {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -4065,7 +4535,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_schedule_a_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleASection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleASection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
            return_wide = F) {
     idCRD <-
       url %>%
@@ -4276,7 +4746,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_schedule_b_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleBSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleBSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0',
            return_wide = F) {
     idCRD <-
       url %>%
@@ -4570,7 +5040,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_schedule_d_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleDSection.aspx?ORG_PK=284340&FLNG_PK=0573726A0008018802C736510026C985056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleDSection.aspx?ORG_PK=284340&FLNG_PK=0573726A0008018802C736510026C985056C8CC0',
            join_data = F,
            return_wide = F) {
     idCRD <-
@@ -5416,7 +5886,10 @@ sec_adv_manager_sitemap <-
               )
             ) %>%
             mutate(nameEntityManager = name_entity_manager,
-                   countColumns = dataTable %>% map_dbl(ncol))
+                   countColumns = dataTable %>% map_dbl(function(x) {
+                     if (is.null(x) || !is.data.frame(x)) return(0)
+                     ncol(x)
+                   }))
         }
 
         return(section_data)
@@ -5461,7 +5934,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_manager_signatory_data <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSignatureSection.aspx?ORG_PK=160489&FLNG_PK=02FF0ECC00080185033F257005F016CD056C8CC0') {
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSignatureSection.aspx?ORG_PK=160489&FLNG_PK=02FF0ECC00080185033F257005F016CD056C8CC0') {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -5492,6 +5965,8 @@ sec_adv_manager_sitemap <-
             str_replace_all('&', 'AND') %>%
             unique()
         }
+        signature_df <- tibble(nameEntityManagerSignatory = NA_character_)
+
         if (nodes %>% length() == 3) {
           item_names <-
             c('nameEntityManagerSignatory',
@@ -5515,6 +5990,22 @@ sec_adv_manager_sitemap <-
                        value = nodes) %>%
             spread(item, value)
         }
+
+        if (nodes %>% length() >= 4) {
+          # Handle case with more than 3 nodes - use first 3
+          item_names <-
+            c('nameEntityManagerSignatory',
+              'dateADVFiling',
+              'titleSignatory')
+
+          signature_df <-
+            tibble(item = item_names,
+                       value = nodes[1:3]) %>%
+            spread(item, value) %>%
+            mutate(dateADVFiling = dateADVFiling %>% lubridate::mdy()) %>%
+            suppressWarnings()
+        }
+
         rm(nodes)
         rm(page)
         return(signature_df)
@@ -5529,7 +6020,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_section_drp <-
-  function(url = 'http://www.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvDrpSection.aspx?ORG_PK=103863&FLNG_PK=05CBF6920008018902B1D9910035D515056C8CC0',
+  function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvDrpSection.aspx?ORG_PK=103863&FLNG_PK=05CBF6920008018902B1D9910035D515056C8CC0',
            return_wide = F) {
     idCRD <-
       url %>%
@@ -6459,13 +6950,213 @@ sec_adv_manager_sitemap <-
              "Other Manager Information",
              "Manager Signatories"
            ),
-           flatten_tables = TRUE) {
-    data <-
-      .get_managers_adv_sitemap_adv(idCRDs = id_crd, score_threshold = score_threshold) %>%
-      distinct() %>%
-      dplyr::filter(!idSection %>% str_detect('section12SmallBusiness')) %>%
-      suppressWarnings() %>%
-      suppressMessages()
+           flatten_tables = TRUE,
+           use_html_scraping = TRUE) {
+
+    # Try HTML scraping from files.adviserinfo.sec.gov FIRST (detailed Form ADV data)
+    # This is the preferred method as it provides complete Form ADV sections
+    if (use_html_scraping) {
+      paste0('Scraping HTML from files.adviserinfo.sec.gov for CRD: ', id_crd) %>% message()
+
+      data <- tryCatch({
+        .get_managers_adv_sitemap_adv(idCRDs = id_crd, score_threshold = score_threshold) %>%
+          distinct()
+      }, error = function(e) {
+        message(paste0('Error in sitemap: ', e$message))
+        tibble()
+      })
+
+      message(paste0('Sitemap returned ', nrow(data), ' rows'))
+
+      # Check if we got valid sitemap data with URLs
+      if (nrow(data) > 0 && "urlADVSection" %in% names(data)) {
+        # Verify a URL actually works before proceeding
+        test_url <- data$urlADVSection[1]
+        message(paste0('Testing URL: ', test_url))
+        test_page <- tryCatch({
+          test_url %>% .get_html_page()
+        }, error = function(e) {
+          message(paste0('Error loading page: ', e$message))
+          NULL
+        })
+
+        if (!is.null(test_page)) {
+          # HTML scraping is working, continue with scraping logic below
+          paste0('HTML scraping successful for CRD: ', id_crd) %>% message()
+
+          # Check if idSection exists and filter
+          if ("idSection" %in% names(data) && nrow(data) > 0) {
+            data <- data %>%
+              dplyr::filter(!idSection %>% str_detect('section12SmallBusiness')) %>%
+              suppressWarnings() %>%
+              suppressMessages()
+          }
+
+          # Continue to the HTML scraping section below
+          goto_html_scraping <- TRUE
+        } else {
+          paste0('HTML page not accessible, falling back to API for CRD: ', id_crd) %>% message()
+          goto_html_scraping <- FALSE
+          data <- tibble()
+        }
+      } else {
+        message(paste0('No urlADVSection in data or empty data'))
+        goto_html_scraping <- FALSE
+      }
+    } else {
+      goto_html_scraping <- FALSE
+      data <- tibble()
+    }
+
+    # If HTML scraping didn't work, try API as fallback
+    if (!goto_html_scraping || nrow(data) == 0) {
+      api_data <- tryCatch({
+        .get_iapd_api_data(id_crd)
+      }, error = function(e) NULL)
+
+      if (!is.null(api_data) && !is.null(api_data$iacontent_parsed)) {
+        # Use new API-based data extraction
+        paste0('Using SEC IAPD API fallback for CRD: ', id_crd) %>% message()
+
+        api_sections <- .parse_api_sections_data(id_crd, api_data)
+        basic_info <- api_data$iacontent_parsed$basicInformation
+        nameEntityManager <- basic_info$firmName %||% NA_character_
+
+        # Build result in expected format (using nameTable for legacy compatibility)
+        results <- list()
+
+      # Registration data
+      if (!is.null(api_sections$dataRegistration)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Registration",
+          dataTable = list(api_sections$dataRegistration)
+        )))
+      }
+
+      # Address/Identifying Information
+      if (!is.null(api_sections$dataAddress)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Identifying Information",
+          dataTable = list(api_sections$dataAddress)
+        )))
+      }
+
+      # Registration Status
+      if (!is.null(api_sections$dataRegistrationStatus)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "SEC Reporting",
+          dataTable = list(api_sections$dataRegistrationStatus)
+        )))
+      }
+
+      # Notice Filings
+      if (!is.null(api_sections$dataNoticeFilings)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Notice Filings",
+          dataTable = list(api_sections$dataNoticeFilings)
+        )))
+      }
+
+      # Brochures
+      if (!is.null(api_sections$dataBrochureDetails)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Brochures",
+          dataTable = list(api_sections$dataBrochureDetails)
+        )))
+      }
+
+      # Accountant Exams
+      if (!is.null(api_sections$dataAccountantExams)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Accountant Surprise Exams",
+          dataTable = list(api_sections$dataAccountantExams)
+        )))
+      }
+
+      # Other Names
+      if (!is.null(api_sections$dataOtherNames)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Other Names",
+          dataTable = list(api_sections$dataOtherNames)
+        )))
+      }
+
+      # CRS
+      if (!is.null(api_sections$dataCRS)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Client Relationship Summary",
+          dataTable = list(api_sections$dataCRS)
+        )))
+      }
+
+      # Org Scope Flags
+      if (!is.null(api_sections$dataOrgScopeFlags)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Organization Scope",
+          dataTable = list(api_sections$dataOrgScopeFlags)
+        )))
+      }
+
+      # Relying Advisors (umbrella registration)
+      if (!is.null(api_sections$dataRelyingAdvisors)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Relying Advisors",
+          dataTable = list(api_sections$dataRelyingAdvisors)
+        )))
+      }
+
+      # Compilation Data
+      if (!is.null(api_sections$dataCompilation)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Compilation Data",
+          dataTable = list(api_sections$dataCompilation)
+        )))
+      }
+
+      # Exempt Reporting Advisers
+      if (!is.null(api_sections$dataExemptReportingAdvisers)) {
+        results <- c(results, list(tibble(
+          idCRD = id_crd,
+          nameEntityManager = nameEntityManager,
+          nameTable = "Exempt Reporting Advisers",
+          dataTable = list(api_sections$dataExemptReportingAdvisers)
+        )))
+      }
+
+      if (length(results) > 0) {
+        all_data <- bind_rows(results)
+        return(all_data)
+      }
+    }
+
+    # Return empty tibble if both methods failed
+    return(tibble())
+    }
+
+    # HTML SCRAPING PATH (when goto_html_scraping is TRUE)
+    # data variable was already populated above when goto_html_scraping was set
 
     section_null <-
       section_names %>% purrr::is_null()
@@ -6588,16 +7279,19 @@ sec_adv_manager_sitemap <-
       mutate(countCols = dataTable %>% map_dbl(ncol),
              countRows = dataTable %>% map_dbl(nrow))
 
-    name_entity_manager <-
-      all_data %>%
-      unnest() %>%
-      .$nameEntityManager %>%
-      unique() %>%
-      .[[1]] %>%
-      suppressWarnings()
+    # Get the entity manager name from the first row's dataTable
+    name_entity_manager <- tryCatch({
+      first_data <- all_data$dataTable[[1]]
+      if ('nameEntityManager' %in% names(first_data)) {
+        first_data$nameEntityManager[[1]]
+      } else {
+        NA_character_
+      }
+    }, error = function(e) NA_character_)
 
-    name_entity_manager <-
-      name_entity_manager[!name_entity_manager %>% is.na]
+    if (is.na(name_entity_manager) || length(name_entity_manager) == 0) {
+      name_entity_manager <- "Unknown"
+    }
 
     not_wide_tables <-
       c('Indirect Manager Owners')
@@ -6617,7 +7311,7 @@ sec_adv_manager_sitemap <-
         all_data %>%
         dplyr::filter(nameADVPage == 'Advisory Business Information') %>%
         dplyr::select(dataTable) %>%
-        unnest() %>%
+        unnest(cols = dataTable) %>%
         dplyr::select(dplyr::matches("amountAUMTotal")) %>% ncol() == 1
 
       if (has_aum_total) {
@@ -6625,7 +7319,7 @@ sec_adv_manager_sitemap <-
           all_data %>%
           dplyr::filter(nameADVPage == 'Advisory Business Information') %>%
           dplyr::select(dataTable) %>%
-          unnest() %>%
+          unnest(cols = dataTable) %>%
           .$amountAUMTotal %>%
           formattable::currency(digits = 0)
         "Parsed " %>%
@@ -6678,7 +7372,7 @@ sec_adv_manager_sitemap <-
                 select_nesting_vars() %>%
                 dplyr::select(-nameADVPage) %>%
                 slice(x) %>%
-                unnest() %>%
+                unnest(cols = dataTable) %>%
                 mutate_all(as.character) %>%
                 gather(nameItem, value, -c(idCRD, nameEntityManager))
               return(data)
@@ -6716,20 +7410,20 @@ sec_adv_manager_sitemap <-
         get_all_manager_description_data() %>%
         mutate_if(is.character, str_trim)
 
-      all_data <-
-        tibble(
-          idCRD = id_crd,
-          nameEntityManager = name_entity_manager,
-          nameTable = 'Manager Description',
-          dataTable = list(manager_description_data)
-        ) %>%
-        bind_rows(
-          all_data %>% dplyr::filter(isDataWide == F) %>%
-            dplyr::select(idCRD, nameEntityManager,
-                          nameTable = nameADVPage,
-                          dataTable)
-        ) %>%
-        dplyr::select(idCRD, nameEntityManager, nameTable, dataTable)
+      # Return flat Manager Description data directly
+      # Non-wide tables are available in dataTablesNonFlat attribute
+      non_wide_data <- all_data %>%
+        dplyr::filter(isDataWide == F) %>%
+        dplyr::select(idCRD, nameEntityManager,
+                      nameTable = nameADVPage,
+                      dataTable)
+
+      all_data <- manager_description_data
+
+      # Attach non-wide tables as an attribute for access if needed
+      if (nrow(non_wide_data) > 0) {
+        attr(all_data, "dataTablesNonFlat") <- non_wide_data
+      }
     }
     gc()
 
@@ -6816,7 +7510,7 @@ sec_adv_manager_sitemap <-
         has_nested_list <-
           data_selected %>%
           dplyr::select(dataTable) %>%
-          unnest() %>%
+          unnest(cols = dataTable) %>%
           future_map(class) %>%
           as_tibble() %>%
           gather(column, valueCol) %>%
@@ -6830,7 +7524,7 @@ sec_adv_manager_sitemap <-
             dplyr::select(-countColumns) %>%
             dplyr::filter(nameTable == table_name) %>%
             dplyr::select(dataTable) %>%
-            unnest()
+            unnest(cols = dataTable)
 
           section_df <-
             .get_sec_sitemap_df() %>%
@@ -6880,7 +7574,7 @@ sec_adv_manager_sitemap <-
         if (has_nested_list) {
           has_no_count_col <-
             data_selected %>%
-            unnest() %>% names() %>% str_count('countColumns') %>% sum() == 0
+            unnest(cols = dataTable) %>% names() %>% str_count('countColumns') %>% sum() == 0
           if (has_no_count_col) {
             count_values <-
               data_selected %>%
@@ -6893,7 +7587,7 @@ sec_adv_manager_sitemap <-
           data_selected <-
             data_selected %>%
             dplyr::select(idRow, dataTable) %>%
-            unnest() %>%
+            unnest(cols = dataTable) %>%
             dplyr::select(idRow, nameTable, dataTable) %>%
             mutate(countColumn = map_dbl(dataTable, ncol)) %>%
             dplyr::filter(countColumn > 1) %>%
@@ -7086,6 +7780,15 @@ adv_managers_filings <-
     assign_all <-
       section_names %>% length() > 1 & assign_to_environment
 
+    # When flatten_tables is TRUE and all_data is a flat tibble (no dataTable column),
+    # return the flat data directly
+    is_flat_data <- flatten_tables && !('dataTable' %in% names(all_data))
+
+    if (is_flat_data) {
+      # Return flat Manager Description data directly
+      return(all_data)
+    }
+
     if (assign_all) {
       all_data %>%
         .return_selected_adv_tables(all_sections = TRUE,
@@ -7096,14 +7799,14 @@ adv_managers_filings <-
     if (only_1) {
       table_name <-
         list('manager',
-             all_data$nameADVPage %>% str_replace_all('\\ ', '')) %>%
+             all_data$nameTable %>% str_replace_all('\\ ', '')) %>%
         purrr::reduce(paste0) %>%
         unique()
 
       data <-
         all_data %>%
         select(dataTable) %>%
-        unnest()
+        unnest(cols = dataTable)
 
       data <-
         data %>%
@@ -7198,7 +7901,7 @@ return(all_data)
           html_nodes('a[href*="Part2Brochures.aspx"]') %>%
           html_attr('href') %>%
           unique() %>%
-          paste0('https://www.adviserinfo.sec.gov', .)
+          paste0('https://files.adviserinfo.sec.gov', .)
 
         brochure_page <-
           brochure_url %>%
@@ -7213,7 +7916,7 @@ return(all_data)
             brochure_page %>%
             html_nodes('.main td a') %>%
             html_attr('href') %>%
-            paste0('https://www.adviserinfo.sec.gov', .)
+            paste0('https://files.adviserinfo.sec.gov', .)
         } else {
           url_brochure_pdf <-
             NA
