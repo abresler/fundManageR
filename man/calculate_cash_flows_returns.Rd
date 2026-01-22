@@ -56,6 +56,9 @@ working_capital = 125000, remove_cumulative_cols = T, distribution_frequency = '
 }
 \seealso{
 Other calculation: 
+\code{\link{calculate_average_payment}()},
+\code{\link{calculate_basis}()},
+\code{\link{calculate_capitalization}()},
 \code{\link{calculate_cash_flow_dates}()},
 \code{\link{calculate_cash_flow_waterfall}()},
 \code{\link{calculate_cash_flow_waterfall_partnership}()},
@@ -67,15 +70,22 @@ Other calculation:
 \code{\link{calculate_residual_valuation_ebitda_multiples}()},
 \code{\link{calculate_share_proceeds}()},
 \code{\link{calculate_valuation_post_money}()},
+\code{\link{get_data_monthly_periods}()},
 \code{\link{tidy_promote_structure}()}
 
 Other leveraged finance calculation: 
+\code{\link{calculate_average_payment}()},
+\code{\link{calculate_basis}()},
+\code{\link{calculate_capitalization}()},
 \code{\link{calculate_cash_flow_dates}()},
 \code{\link{calculate_cash_flow_waterfall}()},
 \code{\link{calculate_cash_flow_waterfall_partnership}()},
 \code{\link{calculate_irr_periods}()},
+\code{\link{calculate_leverage_metric}()},
 \code{\link{calculate_leverage_metrics}()},
-\code{\link{calculate_loan_payment}()}
+\code{\link{calculate_loan_payment}()},
+\code{\link{get_data_monthly_periods}()},
+\code{\link{pmt}()}
 
 Other partnership calculation: 
 \code{\link{calculate_cash_flow_dates}()},

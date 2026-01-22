@@ -4,8 +4,34 @@
 \alias{adv_period_urls}
 \title{Get ADV summary filing urls for all available periods}
 \usage{
-adv_period_urls()
+adv_period_urls(use_api = TRUE)
+}
+\arguments{
+\item{use_api}{If \code{TRUE} (default), fetch URLs from data.gov API.
+If \code{FALSE}, generate URLs based on date patterns (may include
+unavailable files).}
+}
+\value{
+A \code{tibble} with columns:
+  \itemize{
+    \item typeReport - Type of report (REGISTERED or EXEMPT)
+    \item periodReport - Month and year of the report
+    \item urlZip - URL to download the file
+    \item isExempt - Whether this is exempt adviser data
+    \item baseNameURL - Base filename
+    \item dateData - Date of the data
+    \item quarterData - Quarter number
+    \item yearData - Year
+    \item periodData - Period in YYYY-MM format
+  }
 }
 \description{
-#' @return
+Fetches URLs for SEC Form ADV summary data files from the data.gov API.
+The SEC provides monthly data files for both registered and exempt
+investment advisers.
+}
+\examples{
+\dontrun{
+adv_period_urls()
+}
 }

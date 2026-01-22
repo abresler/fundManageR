@@ -1,3 +1,15 @@
+#' Parse string to currency value
+#'
+#' Converts a character string containing currency notation to a
+#' numeric currency value using formattable.
+#'
+#' @param x Character string containing a currency value (e.g., "$1,000,000")
+#'
+#' @return A \code{formattable::currency} object
+#' @keywords internal
+#' @family parsing
+#' @importFrom readr parse_number
+#' @importFrom formattable currency
 parse_for_currency_value <-
   function(x) {
     value <-
@@ -7,6 +19,19 @@ parse_for_currency_value <-
     return(value)
   }
 
+#' Parse string to percentage value
+#'
+#' Converts a character string containing a percentage to a
+#' formattable percent object. Automatically handles both decimal
+#' (0.05) and whole number (5%) representations.
+#'
+#' @param x Character or numeric value representing a percentage
+#'
+#' @return A \code{formattable::percent} object
+#' @keywords internal
+#' @family parsing
+#' @importFrom readr parse_number
+#' @importFrom formattable percent
 parse_for_percentage <-
   function(x) {
     value <-
@@ -24,6 +49,17 @@ parse_for_percentage <-
     return(value)
   }
 
+#' Parse string to numeric multiple
+#'
+#' Extracts a numeric value from a string representing a multiple
+#' (e.g., "10x" becomes 10).
+#'
+#' @param x Character or numeric value representing a multiple
+#'
+#' @return A numeric value
+#' @keywords internal
+#' @family parsing
+#' @importFrom readr parse_number
 parse_multiple <-
   function(x) {
     value <-
@@ -33,6 +69,22 @@ parse_multiple <-
     return(value)
   }
 
+#' Single cap rate valuation calculation
+#'
+#' Calculates property valuation and equity distribution using the
+#' capitalization rate method for a single scenario. This is an internal
+#' helper function used by \code{\link{calculate_residual_valuation_cap_rates}}.
+#'
+#' @param cap_rate Capitalization rate as decimal or percentage string
+#' @param net_operating_income Net operating income in numeric or currency string format
+#' @param cost_of_sale Cost of sale as decimal or percentage string
+#' @param debt_balance Outstanding debt balance in numeric or currency string format
+#' @param return_wide If \code{TRUE}, return data in wide format; if \code{FALSE}, return long format
+#'
+#' @return A \code{tibble} containing valuation metrics including gross/net valuation,
+#'   cost of sale, debt repayment, and equity distribution
+#' @keywords internal
+#' @family residual value calculation
 cap_rate_valuation <-
   function(cap_rate = .0615,
            net_operating_income = "$27,500,000",
@@ -94,15 +146,15 @@ cap_rate_valuation <-
       value_df <-
         value_df %>%
         dplyr::select(-amountValuationNet) %>%
-        gather(
-          item,
-          value,
-          -c(
+        pivot_longer(
+          cols = -c(
             pctCapRate,
             amountNetOperatingIncome,
             amountDebtBalance,
             pctCostSale
-          )
+          ),
+          names_to = "item",
+          values_to = "value"
         ) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
@@ -110,6 +162,22 @@ cap_rate_valuation <-
     return(value_df)
   }
 
+#' Single EBITDA multiple valuation calculation
+#'
+#' Calculates entity valuation and equity distribution using the
+#' EBITDA multiple method for a single scenario. This is an internal
+#' helper function used by \code{\link{calculate_residual_valuation_ebitda_multiples}}.
+#'
+#' @param ebitda_multiple EBITDA multiple as numeric value
+#' @param ebitda EBITDA in numeric or currency string format
+#' @param cost_of_sale Cost of sale as decimal or percentage string
+#' @param debt_balance Outstanding debt balance in numeric or currency string format
+#' @param return_wide If \code{TRUE}, return data in wide format; if \code{FALSE}, return long format
+#'
+#' @return A \code{tibble} containing valuation metrics including gross/net valuation,
+#'   cost of sale, debt repayment, and equity distribution
+#' @keywords internal
+#' @family residual value calculation
 ebtida_multiple_value <-
   function(ebitda_multiple = 10,
            ebitda = "$27,500,000",
@@ -171,14 +239,16 @@ ebtida_multiple_value <-
       value_df <-
         value_df %>%
         dplyr::select(-amountValuationNet) %>%
-        gather(item,
-               value,
-               -c(
-                 multipleEBITDA,
-                 amountEBITDA,
-                 amountDebtBalance,
-                 pctCostSale
-               )) %>%
+        pivot_longer(
+          cols = -c(
+            multipleEBITDA,
+            amountEBITDA,
+            amountDebtBalance,
+            pctCostSale
+          ),
+          names_to = "item",
+          values_to = "value"
+        ) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
     }
@@ -237,26 +307,22 @@ calculate_residual_valuation_cap_rates <-
 
     scenario_df <-
       scenario_df %>%
-      mutate_at(.vars =
-                  scenario_df %>% dplyr::select(dplyr::matches("^pct")) %>% names,
-                funs(. %>% percent(digits = 2))) %>%
-      mutate_at(.vars =
-                  scenario_df %>% dplyr::select(dplyr::matches("^amount")) %>% names,
-                funs(. %>% currency(digits = 2)))
+      mutate(across(matches("^pct"), ~percent(., digits = 2))) %>%
+      mutate(across(matches("^amount"), ~currency(., digits = 2)))
     if (!return_wide) {
       scenario_df <-
         scenario_df %>%
         dplyr::select(-amountValuationNet) %>%
-        gather(
-          item,
-          value,
-          -c(
+        pivot_longer(
+          cols = -c(
             idScenario,
             pctCapRate,
             amountNetOperatingIncome,
             amountDebtBalance,
             pctCostSale
-          )
+          ),
+          names_to = "item",
+          values_to = "value"
         ) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
@@ -316,24 +382,22 @@ calculate_residual_valuation_ebitda_multiples <-
 
     scenario_df <-
       scenario_df %>%
-      mutate_at(.vars =
-                  scenario_df %>% dplyr::select(dplyr::matches("^pct")) %>% names,
-                funs(. %>% percent(digits = 2))) %>%
-      mutate_at(.vars =
-                  scenario_df %>% dplyr::select(dplyr::matches("^amount")) %>% names,
-                funs(. %>% currency(digits = 2)))
+      mutate(across(matches("^pct"), ~percent(., digits = 2))) %>%
+      mutate(across(matches("^amount"), ~currency(., digits = 2)))
     if (!return_wide) {
       scenario_df <-
         scenario_df %>%
         dplyr::select(-amountValuationNet) %>%
-        gather(item,
-               value,
-               -c(
-                 multipleEBITDA,
-                 amountEBITDA,
-                 amountDebtBalance,
-                 pctCostSale
-               )) %>%
+        pivot_longer(
+          cols = -c(
+            multipleEBITDA,
+            amountEBITDA,
+            amountDebtBalance,
+            pctCostSale
+          ),
+          names_to = "item",
+          values_to = "value"
+        ) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
     }
@@ -342,10 +406,21 @@ calculate_residual_valuation_ebitda_multiples <-
   }
 
 
+#' Single post-money valuation calculation
+#'
+#' Calculates post-money ownership splits for a single investment scenario.
+#' This is an internal helper function used by \code{\link{calculate_valuation_post_money}}.
+#'
+#' @param pre_money_valuation Pre-money valuation in numeric or currency string format
+#' @param percent_sold Percentage of business sold as decimal or percentage string
+#'
+#' @return A \code{tibble} containing pre-money valuation, capital investment amount,
+#'   and ownership percentages for existing shareholders and new investors
+#' @keywords internal
+#' @family venture capital
 post_money_valuation <-
   function(pre_money_valuation = "$45,000,000",
            percent_sold = "10%") {
-    options(scipen = 999999)
     pre_money <-
       pre_money_valuation %>%
       parse_for_currency_value()
@@ -412,17 +487,17 @@ calculate_valuation_post_money <-
 
     scenario_df <-
       scenario_df %>%
-      mutate_at(.vars =
-                  scenario_df %>% dplyr::select(dplyr::matches("^pct")) %>% names,
-                funs(. %>% percent(digits = 2))) %>%
-      mutate_at(.vars =
-                  scenario_df %>% dplyr::select(dplyr::matches("^amount|valuation")) %>% names,
-                funs(. %>% currency(digits = 2)))
+      mutate(across(matches("^pct"), ~percent(., digits = 2))) %>%
+      mutate(across(matches("^amount|valuation"), ~currency(., digits = 2)))
     if (!return_wide) {
       scenario_df <-
         scenario_df %>%
         dplyr::select(-dplyr::matches("pct")) %>%
-        gather(item, value, -c(idScenario)) %>%
+        pivot_longer(
+          cols = -c(idScenario),
+          names_to = "item",
+          values_to = "value"
+        ) %>%
         mutate(value = value %>% currency(digits = 2)) %>%
         suppressWarnings()
     }
@@ -452,11 +527,31 @@ calculate_share_proceeds <-
     return(proceeds)
   }
 
+#' Calculate investment basis
+#'
+#' Calculates the total investment basis by summing purchase price,
+#' capitalized acquisition costs, and capital investment amounts.
+#'
+#' @param purchase_price Purchase price in numeric or currency string format
+#' @param capitalized_acquisition_costs Capitalized acquisition costs in numeric or currency string format
+#' @param capital_investment Capital investment amount in numeric or currency string format
+#'
+#' @return A \code{tibble} containing purchase price, capital investment,
+#'   capitalized costs, and total basis amount
+#' @export
+#' @family calculation
+#' @family leveraged finance calculation
+#'
+#' @examples
+#' calculate_basis(
+#'   purchase_price = "$10,000,000",
+#'   capitalized_acquisition_costs = "$300,000",
+#'   capital_investment = "$1,200,000"
+#' )
 calculate_basis <-
   function(purchase_price = "$10,000,000",
            capitalized_acquisition_costs = "$300,0000",
            capital_investment = "$1,200,000") {
-    options(scipen = 999)
 
     if (purchase_price %>% is_null) {
       stop("Please enter a purchase price")
@@ -492,6 +587,32 @@ calculate_basis <-
     return(basis_df)
   }
 
+#' Calculate capital stack with leverage
+#'
+#' Calculates the complete capital stack including debt and equity components
+#' based on purchase price, costs, and leverage parameters. Includes a leverage
+#' threshold check to prevent excessive leverage.
+#'
+#' @param purchase_price Purchase price in numeric or currency string format
+#' @param capitalized_acquisition_costs Capitalized acquisition costs in numeric or currency string format
+#' @param capital_investment Capital investment amount in numeric or currency string format
+#' @param loan_to_cost Loan-to-cost ratio as decimal (e.g., 0.7 for 70%)
+#' @param borrow_capital_investment If \code{TRUE}, include capital investment in debt basis
+#' @param borrow_capitalized_costs If \code{TRUE}, include capitalized costs in debt basis
+#' @param leverage_threshold Maximum allowable leverage ratio (default 0.95)
+#'
+#' @return A \code{tibble} containing basis components, loan proceeds, and equity amounts
+#' @export
+#' @family calculation
+#' @family leveraged finance calculation
+#'
+#' @examples
+#' calculate_capitalization(
+#'   purchase_price = "$9,700,000",
+#'   capitalized_acquisition_costs = "$300,000",
+#'   capital_investment = "$0",
+#'   loan_to_cost = 0.7
+#' )
 calculate_capitalization <-
   function(purchase_price = "$9,700,000",
            capitalized_acquisition_costs = "$300,000",
@@ -557,6 +678,33 @@ calculate_capitalization <-
     return(capital_stack_df)
   }
 
+#' Generate monthly period data
+#'
+#' Creates a tibble of monthly periods with period IDs and dates
+#' for use in loan amortization and cash flow calculations.
+#'
+#' @param start_date Start date in "YYYY-MM-DD" format
+#' @param term_years Number of years in the term
+#' @param term_months Additional months beyond term_years
+#'
+#' @return A \code{tibble} with columns:
+#'   \itemize{
+#'     \item idPeriod - Period identifier (0-based)
+#'     \item yearPeriod - Year number within the term
+#'     \item datePeriod - End date of each period
+#'   }
+#' @export
+#' @family calculation
+#' @family leveraged finance calculation
+#' @importFrom lubridate ymd %m+%
+#' @importFrom timeDate timeLastDayInMonth
+#'
+#' @examples
+#' get_data_monthly_periods(
+#'   start_date = "2024-01-01",
+#'   term_years = 5,
+#'   term_months = 0
+#' )
 get_data_monthly_periods <-
   function(start_date = "2016-06-01",
            term_years = 25,
@@ -616,6 +764,20 @@ get_data_monthly_periods <-
     return(all_periods)
   }
 
+#' Calculate loan payment amount
+#'
+#' Calculates the periodic payment for a loan based on present value,
+#' future value, interest rate, and number of periods. Similar to Excel's PMT function.
+#'
+#' @param r Periodic interest rate (e.g., monthly rate)
+#' @param n Total number of payment periods
+#' @param pv Present value (loan amount)
+#' @param fv Future value (balloon payment, typically 0)
+#' @param type Payment timing: 0 = end of period (default), 1 = beginning of period
+#'
+#' @return Numeric payment amount (negative value representing cash outflow)
+#' @keywords internal
+#' @family leveraged finance calculation
 pmt <-
   function (r, n, pv, fv, type = 0) {
     if (type != 0 && type != 1) {
@@ -677,7 +839,6 @@ calculate_loan_payment <-
            interest_reserve_period = 0,
            balloon_month = 0,
            return_annual_summary = F) {
-    options(scipen = 99999)
     options(digits = 10)
 
     interest_rate <-
@@ -893,6 +1054,40 @@ calculate_loan_payment <-
   }
 
 
+#' Calculate average loan payment
+#'
+#' Calculates the average annual principal and interest payments for a loan
+#' based on the specified parameters. Useful for quick leverage analysis.
+#'
+#' @param amount_initial_draw Initial loan draw amount
+#' @param is_interest_only If \code{TRUE}, loan has interest-only periods
+#' @param interest_only_periods Number of interest-only periods
+#' @param interest_rate Interest rate as decimal or percentage string
+#' @param is_actual_360 If \code{TRUE}, use actual/360 day count convention
+#' @param amortization_years Amortization period in years
+#' @param amortization_months Additional amortization months
+#' @param term_years Loan term in years
+#' @param term_months Additional term months
+#' @param pct_loan_fee Loan origination fee as percentage
+#' @param balloon_year Year of balloon payment
+#' @param override_monthly_interest If \code{TRUE}, use simplified monthly interest calculation
+#' @param interest_reserve_period Periods of funded interest reserve
+#' @param balloon_month Month of balloon payment within balloon year
+#'
+#' @return A \code{tibble} with average annual principal payment, interest payment,
+#'   and total payment amounts
+#' @export
+#' @family calculation
+#' @family leveraged finance calculation
+#' @importFrom lubridate ceiling_date days %m+%
+#'
+#' @examples
+#' calculate_average_payment(
+#'   amount_initial_draw = 1000000,
+#'   interest_rate = "5%",
+#'   amortization_years = 30,
+#'   term_years = 10
+#' )
 calculate_average_payment <-
   function(amount_initial_draw = 3000,
            is_interest_only = F,
@@ -948,6 +1143,37 @@ calculate_average_payment <-
     return(pmt_df)
   }
 
+#' Single leverage metric calculation
+#'
+#' Calculates comprehensive leverage return metrics for a single scenario
+#' including DSCR, cash-on-cash returns, return on equity, and debt yield.
+#' This is an internal helper function used by \code{\link{calculate_leverage_metrics}}.
+#'
+#' @param purchase_price Purchase price in numeric or currency string format
+#' @param capitalized_acquisition_costs Capitalized costs in numeric or currency string format
+#' @param capital_investment Capital investment in numeric or currency string format
+#' @param revenue Annual revenue in numeric or currency string format
+#' @param expenses Annual expenses in numeric or currency string format
+#' @param loan_to_cost Loan-to-cost ratio as decimal
+#' @param borrow_capital_investment If \code{TRUE}, include capital investment in debt basis
+#' @param borrow_capitalized_costs If \code{TRUE}, include capitalized costs in debt basis
+#' @param leverage_threshold Maximum allowable leverage ratio
+#' @param is_interest_only If \code{TRUE}, loan has interest-only periods
+#' @param interest_only_periods Number of interest-only periods
+#' @param interest_rate Interest rate as decimal or percentage string
+#' @param is_actual_360 If \code{TRUE}, use actual/360 day count convention
+#' @param amortization_years Amortization period in years
+#' @param amortization_months Additional amortization months
+#' @param term_years Loan term in years
+#' @param term_months Additional term months
+#' @param pct_loan_fee Loan origination fee as percentage
+#' @param balloon_year Year of balloon payment
+#' @param balloon_month Month of balloon payment
+#' @param return_message If \code{TRUE}, print summary message to console
+#'
+#' @return A \code{tibble} containing capital stack, operating metrics, and return calculations
+#' @keywords internal
+#' @family leveraged finance calculation
 calculate_leverage_metric <-
   function(purchase_price = "$9,700,000",
            capitalized_acquisition_costs = "$300,000",
@@ -1195,21 +1421,17 @@ calculate_leverage_metrics <-
     if (!return_wide) {
       all_data <-
         all_data %>%
-        gather(item, value, -c(idScenario))
+        pivot_longer(
+          cols = -c(idScenario),
+          names_to = "item",
+          values_to = "value"
+        )
     } else {
       all_data <-
         all_data %>%
-        mutate_at(
-          .vars =
-            all_data %>% dplyr::select(dplyr::matches("^amount[A-Z]|^mean[A-Z]")) %>% names(),
-          funs(. %>% formattable::currency(digits = 0))
-        ) %>%
-        mutate_at(.vars =
-                    all_data %>% dplyr::select(dplyr::matches("^pct[A-Z]")) %>% names(),
-                  funs(. %>% formattable::percent(digits = 2))) %>%
-        mutate_at(.vars =
-                    all_data %>% dplyr::select(dplyr::matches("^ratio[A-Z]|^rule")) %>% names(),
-                  funs(. %>% formattable::comma(digits = 4)))
+        mutate(across(matches("^amount[A-Z]|^mean[A-Z]"), ~formattable::currency(., digits = 0))) %>%
+        mutate(across(matches("^pct[A-Z]"), ~formattable::percent(., digits = 2))) %>%
+        mutate(across(matches("^ratio[A-Z]|^rule"), ~formattable::comma(., digits = 4)))
     }
     return(all_data)
   }

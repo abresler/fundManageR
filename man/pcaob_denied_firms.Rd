@@ -6,6 +6,14 @@
 \usage{
 pcaob_denied_firms()
 }
+\value{
+a \code{tibble} with firms that have denied PCAOB audit access
+}
 \description{
 Firms Denying PCAOB Audits
+}
+\examples{
+\dontrun{
+pcaob_denied_firms()
+}
 }

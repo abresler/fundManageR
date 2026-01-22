@@ -1,3 +1,51 @@
+#' Import URL with curl
+#'
+#' Downloads a file from a URL using curl and imports it with rio.
+#' More robust than rio::import() directly on URLs, especially for
+#' ZIP files and other compressed formats.
+#'
+#' @param url URL to download and import
+#' @param format optional file format hint for rio::import (e.g., "csv", "xlsx")
+#' @param ... additional arguments passed to rio::import
+#'
+#' @return imported data (usually a data frame)
+#' @keywords internal
+#' @import curl rio
+.import_url_curl <- function(url, format = NULL, ...) {
+  # Determine file extension for temp file
+  url_basename <- basename(url)
+  ext <- tools::file_ext(url_basename)
+  if (ext == "") ext <- "tmp"
+
+  # Create temp file with appropriate extension
+
+  temp_file <- tempfile(fileext = paste0(".", ext))
+
+  # Download using curl
+  tryCatch({
+    curl::curl_download(url, destfile = temp_file, quiet = TRUE)
+  }, error = function(e) {
+    stop(paste0("Failed to download URL: ", url, "\nError: ", e$message))
+  })
+
+  # Import using rio
+  result <- tryCatch({
+    if (!is.null(format)) {
+      rio::import(temp_file, format = format, ...)
+    } else {
+      rio::import(temp_file, ...)
+    }
+  }, error = function(e) {
+    unlink(temp_file)
+    stop(paste0("Failed to import file: ", temp_file, "\nError: ", e$message))
+  })
+
+  # Clean up temp file
+  unlink(temp_file)
+
+  return(result)
+}
+
 #' Drop NA columns
 #'
 #' This function drops NA
@@ -69,55 +117,45 @@ tidy_column_formats <-
   function(data, drop_na_columns = TRUE) {
     data <-
       data %>%
-      mutate_if(is_character,
-                funs(ifelse(. == "N/A", NA, .))) %>%
-      mutate_if(is_character,
-                funs(ifelse(. == "", NA, .)))
+      mutate(across(where(is_character), ~ifelse(. == "N/A", NA, .))) %>%
+      mutate(across(where(is_character), ~ifelse(. == "", NA, .)))
 
     data <-
       data %>%
-      mutate_at(data %>% select(dplyr::matches("^idCRD")) %>% names(),
-                funs(. %>% as.numeric())) %>%
-      mutate_at(data %>% select(
-        dplyr::matches(
-          "^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]"
-        )
-      ) %>% select(-dplyr::matches("nameElement")) %>% names(),
-      funs(. %>% str_to_upper())) %>%
-      mutate_at(
-        data %>% select(dplyr::matches("^amount")) %>% names(),
-        funs(. %>% as.numeric() %>% formattable::currency(digits = 0))
-      ) %>%
-      mutate_at(data %>% select(dplyr::matches("^is|^has")) %>% names(),
-                funs(. %>% as.logical())) %>%
-      mutate_at(
-        data %>% select(dplyr::matches("latitude|longitude")) %>% names(),
-        funs(. %>% as.numeric() %>% formattable::digits(digits = 5))
-      ) %>%
-      mutate_at(
-        data %>% select(dplyr::matches("^price[A-Z]|pershare")) %>% select(-dplyr::matches("priceNotation")) %>% names(),
-        funs(. %>% formattable::currency(digits = 3))
-      ) %>%
-      mutate_at(
-        data %>% select(dplyr::matches(
-          "^count[A-Z]|^number[A-Z]|^year[A-Z]"
-        )) %>% select(-dplyr::matches("country|county")) %>% names(),
-        funs(. %>% formattable::comma(digits = 0))
-      ) %>%
-      mutate_at(
-        data %>% select(dplyr::matches(
-          "codeInterestAccrualMethod|codeOriginalInterestRateType|codeLienPositionSecuritization|codePaymentType|codePaymentFrequency|codeServicingAdvanceMethod|codePropertyStatus"
-        )) %>% names(),
-        funs(. %>% as.integer())
-      ) %>%
-      mutate_at(data %>% select(dplyr::matches("^ratio|^multiple|^priceNotation|^value")) %>% names(),
-                funs(. %>% formattable::comma(digits = 3))) %>%
-      mutate_at(data %>% select(dplyr::matches("^pct|^percent")) %>% names(),
-                funs(. %>% formattable::percent(digits = 3))) %>%
-      mutate_at(
-        data %>% select(dplyr::matches("^amountFact")) %>% names(),
-        funs(. %>% as.numeric() %>% formattable::currency(digits = 3))
-      ) %>%
+      mutate(across(matches("^idCRD"), ~as.numeric(.))) %>%
+      mutate(across(
+        matches("^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]") & !matches("nameElement"),
+        ~str_to_upper(.)
+      )) %>%
+      mutate(across(
+        matches("^amount"),
+        ~as.numeric(.) %>% formattable::currency(digits = 0)
+      )) %>%
+      mutate(across(matches("^is|^has"), ~as.logical(.))) %>%
+      mutate(across(
+        matches("latitude|longitude"),
+        ~as.numeric(.) %>% formattable::digits(digits = 5)
+      )) %>%
+      mutate(across(
+        matches("^price[A-Z]|pershare") & !matches("priceNotation"),
+        ~formattable::currency(., digits = 3)
+      )) %>%
+      mutate(across(
+        matches("^count[A-Z]|^number[A-Z]|^year[A-Z]") & !matches("country|county"),
+        ~formattable::comma(., digits = 0)
+      )) %>%
+      mutate(across(
+        matches("codeInterestAccrualMethod|codeOriginalInterestRateType|codeLienPositionSecuritization|codePaymentType|codePaymentFrequency|codeServicingAdvanceMethod|codePropertyStatus"),
+        ~as.integer(.)
+      )) %>%
+      mutate(across(matches("^ratio|^multiple|^priceNotation|^value"),
+                    ~formattable::comma(., digits = 3))) %>%
+      mutate(across(matches("^pct|^percent"),
+                    ~formattable::percent(., digits = 3))) %>%
+      mutate(across(
+        matches("^amountFact"),
+        ~as.numeric(.) %>% formattable::currency(digits = 3)
+      )) %>%
       suppressWarnings()
     has_dates <-
       data %>% select(dplyr::matches("^date")) %>% ncol() > 0
@@ -181,7 +219,7 @@ tidy_column_relations <-
     if ('dataAllFilings' %in% names(data)) {
       data <-
         data %>%
-        unnest() %>%
+        unnest(cols = dataAllFilings) %>%
         tidy_column_formats()
 
       return(data)
@@ -190,7 +228,7 @@ tidy_column_relations <-
     if ('dataAssetXBRL' %in% names(data)) {
       data <-
         data %>%
-        unnest() %>%
+        unnest(cols = dataAssetXBRL) %>%
         tidy_column_formats()
 
       return(data)
@@ -214,7 +252,7 @@ tidy_column_relations <-
 
       df_match <-
         data %>%
-        select(idRow, one_of(column_keys), dplyr::matches(match))
+        select(idRow, any_of(column_keys), dplyr::matches(match))
 
       has_dates <-
         names(df_match) %>% str_count("date") %>% sum() > 0
@@ -222,13 +260,12 @@ tidy_column_relations <-
       if (has_dates) {
         df_match <-
           df_match %>%
-          mutate_at(df_match %>% select(dplyr::matches("^date")) %>% names(),
-                    funs(. %>% as.character()))
+          mutate(across(matches("^date"), ~as.character(.)))
       }
 
       key_cols <-
         df_match %>%
-        select(c(idRow, one_of(column_keys))) %>%
+        select(c(idRow, any_of(column_keys))) %>%
         names()
 
       valuecol <-
@@ -236,12 +273,12 @@ tidy_column_relations <-
 
       gathercols <-
         df_match %>%
-        select(-c(idRow, one_of(column_keys))) %>%
+        select(-c(idRow, any_of(column_keys))) %>%
         names()
 
       df_match <-
         df_match %>%
-        gather_('item', 'value', gathercols, na.rm = T) %>%
+        pivot_longer(cols = all_of(gathercols), names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
         mutate(
           countItem = item %>% readr::parse_number(),
           countItem = ifelse(countItem %>% is.na(), 0, countItem) + 1,
@@ -270,7 +307,7 @@ tidy_column_relations <-
           }
           df <-
             data %>%
-            select(idRow, one_of(c(column_keys, column)))
+            select(idRow, any_of(c(column_keys, column)))
           col_length_df <-
             1:nrow(df) %>%
             future_map_dfr(function(x) {
@@ -309,7 +346,7 @@ tidy_column_relations <-
 
           df <-
             df %>%
-            unnest()
+            unnest(cols = all_of(column))
 
           has_dates <-
             names(df) %>% str_count("date") %>% sum() > 0
@@ -317,18 +354,17 @@ tidy_column_relations <-
           if (has_dates) {
             df <-
               df %>%
-              mutate_at(df %>% select(dplyr::matches("^date")) %>% names(),
-                        funs(. %>% as.character()))
+              mutate(across(matches("^date"), ~as.character(.)))
           }
 
           gathercols <-
             df %>%
-            select(-c(idRow, one_of(column_keys))) %>%
+            select(-c(idRow, any_of(column_keys))) %>%
             names()
 
           df <-
             df %>%
-            gather_('item', 'value', gathercols, na.rm = T) %>%
+            pivot_longer(cols = all_of(gathercols), names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
             mutate(
               countItem = item %>% readr::parse_number(),
               countItem = ifelse(countItem %>% is.na(), 0, countItem) + 1,
@@ -368,8 +404,8 @@ tidy_column_relations <-
 
       df <-
         df %>%
-        spread(item, value) %>%
-        select(one_of(col_order)) %>%
+        pivot_wider(names_from = item, values_from = value) %>%
+        select(any_of(col_order)) %>%
         suppressWarnings()
 
       has_dates <-
@@ -378,10 +414,8 @@ tidy_column_relations <-
       if (has_dates) {
         df <-
           df %>%
-          mutate_at(df %>% select(dplyr::matches("^date[A-Z]")) %>% names(),
-                    funs(. %>% lubridate::ymd())) %>%
-          mutate_at(df %>% select(dplyr::matches("^datetime[A-Z]")) %>% names(),
-                    funs(. %>% lubridate::ymd_hm()))
+          mutate(across(matches("^date[A-Z]"), ~lubridate::ymd(.))) %>%
+          mutate(across(matches("^datetime[A-Z]"), ~lubridate::ymd_hm(.)))
       }
       if (clean_column_formats) {
         df <-
@@ -416,7 +450,7 @@ tidy_column_relations <-
           data %>%
           select(-dplyr::matches(ignore_cols)) %>%
           left_join(df %>%
-                      nest(-idRow, .key = dataResolved)) %>%
+                      nest(dataResolved = -idRow)) %>%
           suppressMessages()
         return(data)
       }

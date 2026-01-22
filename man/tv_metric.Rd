@@ -16,8 +16,26 @@ tv_metric(
 )
 }
 \arguments{
-\item{range}{}
+\item{filter}{filter conditions as a tibble}
+
+\item{symbols}{symbols query parameters as a list}
+
+\item{metrics}{vector of metric column names to retrieve}
+
+\item{sort}{sort parameters as a list}
+
+\item{options}{options parameters as a list}
+
+\item{range}{range vector for pagination}
+}
+\value{
+a list representing a TradingView metric query
 }
 \description{
 Generate tradeview metric query
+}
+\examples{
+\dontrun{
+tv_metric()
+}
 }

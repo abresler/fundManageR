@@ -21,8 +21,40 @@ parse_for_tables(
 )
 }
 \arguments{
-\item{return_message}{}
+\item{all_data}{a tibble containing EDGAR filing data}
+
+\item{table_name_initial}{initial table name for assignment}
+
+\item{parse_all_filings}{if \code{TRUE} parses all filings}
+
+\item{parse_complete_text_filings}{if \code{TRUE} parses complete text filings}
+
+\item{parse_form_d}{if \code{TRUE} parses Form D filings}
+
+\item{parse_13F}{if \code{TRUE} parses 13F filings}
+
+\item{parse_small_offerings}{if \code{TRUE} parses small offerings}
+
+\item{parse_form_3_4s}{if \code{TRUE} parses Form 3 and 4 filings}
+
+\item{parse_asset_files}{if \code{TRUE} parses asset files}
+
+\item{parse_xbrl}{if \code{TRUE} parses XBRL data}
+
+\item{assign_to_environment}{if \code{TRUE} assigns results to environment}
+
+\item{nest_data}{if \code{TRUE} nests data}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+A list of tibbles containing parsed EDGAR data
 }
 \description{
 Parse an EDGAR data frame for underlying tables
+}
+\examples{
+\dontrun{
+parse_for_tables(all_data)
+}
 }

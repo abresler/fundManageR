@@ -9,8 +9,16 @@ cik_filing_counts(cik, return_message = T)
 \arguments{
 \item{cik}{CIK codes}
 
-\item{return_message}{}
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+A tibble containing filing counts for each CIK
 }
 \description{
 CIK Filing Counts
+}
+\examples{
+\dontrun{
+cik_filing_counts(cik = 886982)
+}
 }

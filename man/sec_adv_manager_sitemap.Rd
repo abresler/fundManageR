@@ -6,6 +6,14 @@
 \usage{
 sec_adv_manager_sitemap()
 }
+\value{
+A tibble containing SEC ADV section identifiers and their corresponding names
+}
 \description{
 Returns data frame of SEC ADV sitemap
+}
+\examples{
+\dontrun{
+sec_adv_manager_sitemap()
+}
 }

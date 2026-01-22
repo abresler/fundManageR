@@ -181,12 +181,8 @@ sec_ciks <-
 
     data <-
       data %>%
-      mutate_at(.vars = data %>% select(dplyr::matches("date")) %>% names,
-                funs(. %>% lubridate::mdy())) %>%
-      mutate_at(
-        .vars = data %>% select(dplyr::matches("^name|^description|^category")) %>% names,
-        funs(. %>% str_replace('\\-', '') %>% stringr::str_to_upper())
-      ) %>%
+      mutate(across(dplyr::matches("date"), ~lubridate::mdy(.))) %>%
+      mutate(across(dplyr::matches("^name|^description|^category"), ~str_replace(., '\\-', '') %>% stringr::str_to_upper())) %>%
       mutate(
         nameOrganization = ifelse(nameOrganization == '', NA, nameOrganization),
         typeOutcome = ifelse(typeOutcome == '-', NA, typeOutcome)
@@ -296,7 +292,7 @@ sec_foia_requests <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-yearData, .key = dataFOIA)
+        nest(dataFOIA = -yearData)
     }
 
     return(all_data)
@@ -331,7 +327,7 @@ sec_foia_requests <-
 
     data <-
       tibble(namePeriod = periods, urlSEC = urls) %>%
-      mutate_all(str_squish) %>%
+      mutate(across(everything(), str_squish)) %>%
       filter(namePeriod != "")
 
     url_df <-
@@ -501,13 +497,13 @@ sec_foia_requests <-
       future_map_dfr(function(x) {
         tables[[x]] %>%
           as_tibble() %>%
-          mutate_all(str_trim)
+          mutate(across(everything(), str_trim))
       }) %>%
       select(-6) %>%
       tidyr::separate(V1,
                       sep = ' ',
                       into = c('idCUSIPBase', 'codeCUSIP1', 'codeCUSIP2')) %>%
-      mutate_all(str_trim) %>%
+      mutate(across(everything(), str_trim)) %>%
       unite(idCUSIP,
             idCUSIPBase,
             codeCUSIP1,
@@ -595,7 +591,7 @@ sec_foia_requests <-
 #' registered entities for a specified period.  The SEC exposes this data in PDF
 #' form so this function can take a long time to run.
 #'
-#' @descripton returns a data frame with all CUSIPs for specified years and quarters
+#' @description Returns a data frame with all CUSIPs for specified years and quarters
 #'
 #' @param years vector years to search, starting in 1996
 #' @param quarters quarters to search \itemize{
@@ -613,7 +609,6 @@ sec_foia_requests <-
 #' @import purrr stringr dplyr rvest formattable tidyr xml2 tabulapdf
 #' @importFrom lubridate mdy
 #' @importFrom readr read_csv
-#' @return
 #' @export
 #' @family SEC
 #' @family entity search
@@ -701,7 +696,7 @@ sec_cusips <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-periodData, .key = dataCUSIPs)
+        nest(dataCUSIPs = -periodData)
 
     }
 
@@ -740,7 +735,7 @@ sec_cusips <-
       url %>%
       read_csv() %>%
       slice(-1) %>%
-      mutate_all(str_to_upper) %>%
+      mutate(across(everything(), str_to_upper)) %>%
       select(1:10) %>%
       purrr::set_names(
         c(
@@ -864,13 +859,10 @@ sec_closed_end_funds <-
       future_map_dfr(function(x) {
         parse_closed_end_fund_url_safe(url = x, return_message = TRUE)
       }) %>%
-      mutate_if(is.character,
-                list(function(x){
-                  case_when(
-                    x == "[NULL]" ~ NA_character_,
-                    TRUE ~ x
-                  )
-                }))
+      mutate(across(where(is.character), ~case_when(
+                    . == "[NULL]" ~ NA_character_,
+                    TRUE ~ .
+                  )))
 
     all_data <-
       all_data %>%
@@ -890,7 +882,7 @@ sec_closed_end_funds <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-yearData, .key = dataClosedEndFunds)
+        nest(dataClosedEndFunds = -yearData)
     }
     all_data
   }
@@ -946,9 +938,8 @@ sec_investment_companies <-
           'zipcodeManager'
         )
       ) %>%
-      mutate_all(funs(. %>% str_to_upper() %>% str_trim())) %>%
-      mutate_at(.vars = c('idCIK', 'idOrganizationType'),
-                funs(. %>% as.numeric())) %>%
+      mutate(across(everything(), ~str_to_upper(.) %>% str_trim())) %>%
+      mutate(across(c('idCIK', 'idOrganizationType'), ~as.numeric(.))) %>%
       suppressMessages()
     df <-
       df %>%
@@ -1006,7 +997,7 @@ sec_investment_companies <-
     if (nest_data) {
       df <-
         df %>%
-        nest(-nameManager, .key = dataManager)
+        nest(dataManager = -nameManager)
     }
 
     return(df)
@@ -1059,7 +1050,7 @@ sec_investment_companies <-
     df <-
       url %>%
       read_csv() %>%
-      mutate_all(str_to_upper) %>%
+      mutate(across(everything(), str_to_upper)) %>%
       purrr::set_names(
         c(
           'dateData',
@@ -1153,7 +1144,6 @@ sec_investment_companies <-
 #' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @import purrr stringr dplyr rvest formattable lubridate readr
-#' @return
 #' @family SEC
 #' @family entity search
 #' @family fund data
@@ -1260,11 +1250,11 @@ sec_money_market_funds <-
       if (only_most_recent) {
         all_data <-
           all_data %>%
-          nest(-nameFiler, .key = dataMutualFund)
+          nest(dataMutualFund = -nameFiler)
       } else {
         all_data <-
           all_data %>%
-          nest(-c(nameFiler, dateData), .key = dataMutualFund)
+          nest(dataMutualFund = -c(nameFiler, dateData))
       }
     }
 
@@ -1280,7 +1270,7 @@ sec_money_market_funds <-
     df <-
       url %>%
       read_csv() %>%
-      mutate_all(str_to_upper) %>%
+      mutate(across(everything(), str_to_upper)) %>%
       suppressWarnings() %>%
       purrr::set_names(
         c(
@@ -1297,8 +1287,7 @@ sec_money_market_funds <-
 
     df <-
       df %>%
-      mutate_at(c('amountAssets', 'amountLiabilities'),
-                funs(. %>% as.numeric() * 1000000)) %>%
+      mutate(across(c('amountAssets', 'amountLiabilities'), ~as.numeric(.) * 1000000)) %>%
       mutate(amountEquity = amountAssets - amountLiabilities) %>%
       select(idDistrictBankruptcy:amountLiabilities,
              amountEquity,
@@ -1371,10 +1360,7 @@ sec_bankruptcies <-
       all_data %>%
       left_join(url_df) %>%
       select(yearData, everything()) %>%
-      mutate_at(
-        .vars = c('amountAssets', 'amountLiabilities', 'amountEquity'),
-        funs(. %>% formattable::currency(digits = 0))
-      ) %>%
+      mutate(across(c('amountAssets', 'amountLiabilities', 'amountEquity'), ~formattable::currency(., digits = 0))) %>%
       suppressWarnings() %>%
       suppressMessages()
 
@@ -1397,7 +1383,7 @@ sec_bankruptcies <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-yearData, .key = dataBankruptcies)
+        nest(dataBankruptcies = -yearData)
     }
 
     return(all_data)
@@ -1473,7 +1459,7 @@ sec_bankruptcies <-
       url %>%
       read_tsv(col_names = FALSE) %>%
       select(-dplyr::matches("X9")) %>%
-      mutate_all(str_to_upper) %>%
+      mutate(across(everything(), str_to_upper)) %>%
       purrr::set_names(
         c(
           'idCIK',
@@ -1504,8 +1490,7 @@ sec_bankruptcies <-
         ) %>% purrr::invoke(paste0, .),
         urlData = url
       ) %>%
-      mutate_at(.vars = c('idCIK', 'idReportingFilingNumber'),
-                funs(. %>% as.numeric())) %>%
+      mutate(across(c('idCIK', 'idReportingFilingNumber'), ~as.numeric(.))) %>%
       suppressWarnings() %>%
       suppressMessages() %>%
       select(idCIK:idReportingFilingNumber, addressEntity, everything())
@@ -1533,11 +1518,11 @@ sec_bankruptcies <-
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @import purrr stringr dplyr rvest formattable readr
 #' @export
-#'
-#' @examples
 #' @family SEC
 #' @family entity search
 #' @family broker dealers
+#'
+#' @examples
 #' \dontrun{
 #' sec_broker_dealers(only_most_recent = TRUE)
 #' sec_broker_dealers(only_most_recent = FALSE, years = 2016:2017, nest_data = FALSE)
@@ -1625,7 +1610,7 @@ sec_broker_dealers <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-dateData, .key = dataBrokers)
+        nest(dataBrokers = -dateData)
     }
 
     return(all_data)
@@ -1640,10 +1625,10 @@ sec_broker_dealers <-
            return_message = TRUE) {
     df <-
       url %>%
-      rio::import() %>%
+      .import_url_curl() %>%
       data.frame(stringsAsFactors = FALSE) %>%
       as_tibble() %>%
-      mutate_all(str_to_upper) %>%
+      mutate(across(everything(), str_to_upper)) %>%
       suppressWarnings() %>%
       slice(-c(1:3)) %>%
       purrr::set_names(c('nameEntity', 'idReportingFilingNumber', 'idCIK')) %>%
@@ -1799,7 +1784,7 @@ sec_municipal_advisors <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-dateData, .key = dataMunicipalDealers)
+        nest(dataMunicipalDealers = -dateData)
     }
 
     return(all_data)
@@ -1839,7 +1824,7 @@ sec_municipal_advisors <-
           'amountPrice'
         )
       ) %>%
-      mutate_all(str_to_upper) %>%
+      mutate(across(everything(), str_to_upper)) %>%
       mutate(
         dateSettlement = dateSettlement %>% lubridate::ymd(),
         amountPrice = amountPrice %>% readr::parse_number(),
@@ -2022,7 +2007,7 @@ sec_failed_to_deliver_securities <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-dateData, .key = dataFailedToDeliverSecurities)
+        nest(dataFailedToDeliverSecurities = -dateData)
     }
 
     return(all_data)
@@ -2127,12 +2112,8 @@ sec_failed_to_deliver_securities <-
           "volumeTradeVolForOddLots"
         )
       ) %>%
-      mutate_at(.vars = c(8, 9, 12, 13, 18, 19),
-                funs(. %>% as.numeric() * 1000)) %>%
-      mutate_at(
-        .vars = c('typeSecurity', 'idTicker'),
-        .funs = funs(. %>% str_to_upper())
-      ) %>%
+      mutate(across(c(8, 9, 12, 13, 18, 19), ~as.numeric(.) * 1000)) %>%
+      mutate(across(c('typeSecurity', 'idTicker'), ~str_to_upper(.))) %>%
       mutate(urlData = url,
              dateTrading = dateTrading %>% lubridate::ymd())
 
@@ -2254,8 +2235,7 @@ sec_securities_metrics_by_exchange <-
 
     all_data <-
       all_data %>%
-      mutate_at(.vars = all_data %>% select(dplyr::matches("^count|^volume")) %>% names(),
-                funs(. %>% formattable::comma(digits = 0)))
+      mutate(across(dplyr::matches("^count|^volume"), ~formattable::comma(., digits = 0)))
 
     if (return_message) {
       list(
@@ -2273,7 +2253,7 @@ sec_securities_metrics_by_exchange <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-dateData, .key = dataQuarterlyMetrics)
+        nest(dataQuarterlyMetrics = -dateData)
     }
 
     return(all_data)
@@ -2444,8 +2424,7 @@ sec_securities_metrics_by_exchange <-
         sep = 'q',
         remove = FALSE
       ) %>%
-      mutate_at(.vars = c('yearData', 'quarterData'),
-                funs(. %>% as.numeric()))
+      mutate(across(c('yearData', 'quarterData'), ~as.numeric(.)))
 
     url_df
   }
@@ -2462,7 +2441,6 @@ sec_securities_metrics_by_exchange <-
   function(url = "http://www.sec.gov/data/financial-statements/2016q3.zip",
            only_all = TRUE,
            return_message = TRUE) {
-    options(scipen = 999999)
 
     period_data <-
       url %>% str_replace_all("http://www.sec.gov/data/financial-statements/|.zip|/files/dera/data/financial-statement-data-sets/", '')
@@ -2521,16 +2499,10 @@ sec_securities_metrics_by_exchange <-
 
     sub <-
       sub %>%
-      mutate_at(
-        sub %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
-        funs(. %>% as.numeric() %>% lubridate::ymd())
-      ) %>%
-      mutate_at(sub %>% select(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
-                funs(. %>% as.numeric())) %>%
-      mutate_at(sub %>% select(dplyr::matches("^is[A-Z]|^has[A-Z]")) %>% names(),
-                funs(. %>% as.logical())) %>%
-      mutate_at(sub %>% select(dplyr::matches("^amount")) %>% names(),
-                funs(. %>% formattable::currency(digits = 0))) %>%
+      mutate(across(dplyr::matches("^date[A-Z]") & !dplyr::matches("datetime"), ~as.numeric(.) %>% lubridate::ymd())) %>%
+      mutate(across(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]"), ~as.numeric(.))) %>%
+      mutate(across(dplyr::matches("^is[A-Z]|^has[A-Z]"), ~as.logical(.))) %>%
+      mutate(across(dplyr::matches("^amount"), ~formattable::currency(., digits = 0))) %>%
       suppressWarnings() %>%
       mutate(
         urlSECXBRLFiling =
@@ -2602,16 +2574,10 @@ sec_securities_metrics_by_exchange <-
 
     pre <-
       pre %>%
-      mutate_at(
-        pre %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
-        funs(. %>% as.numeric() %>% lubridate::ymd())
-      ) %>%
-      mutate_at(pre %>% select(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
-                funs(. %>% as.numeric())) %>%
-      mutate_at(pre %>% select(dplyr::matches("^is[A-Z]|^has[A-Z]")) %>% names(),
-                funs(. %>% as.logical())) %>%
-      mutate_at(pre %>% select(dplyr::matches("^amount")) %>% names(),
-                funs(. %>% formattable::currency(digits = 0))) %>%
+      mutate(across(dplyr::matches("^date[A-Z]") & !dplyr::matches("datetime"), ~as.numeric(.) %>% lubridate::ymd())) %>%
+      mutate(across(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]"), ~as.numeric(.))) %>%
+      mutate(across(dplyr::matches("^is[A-Z]|^has[A-Z]"), ~as.logical(.))) %>%
+      mutate(across(dplyr::matches("^amount"), ~formattable::currency(., digits = 0))) %>%
       suppressWarnings() %>%
       unite(idReportLine,
             idReport,
@@ -2653,16 +2619,10 @@ sec_securities_metrics_by_exchange <-
 
     num <-
       num %>%
-      mutate_at(
-        num %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
-        funs(. %>% as.numeric() %>% lubridate::ymd())
-      ) %>%
-      mutate_at(num %>% select(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
-                funs(. %>% as.numeric())) %>%
-      mutate_at(num %>% select(dplyr::matches("^is[A-Z]|^has[A-Z]")) %>% names(),
-                funs(. %>% as.logical())) %>%
-      mutate_at(num %>% select(dplyr::matches("^amount")) %>% names(),
-                funs(. %>% formattable::currency(digits = 0))) %>%
+      mutate(across(dplyr::matches("^date[A-Z]") & !dplyr::matches("datetime"), ~as.numeric(.) %>% lubridate::ymd())) %>%
+      mutate(across(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]"), ~as.numeric(.))) %>%
+      mutate(across(dplyr::matches("^is[A-Z]|^has[A-Z]"), ~as.logical(.))) %>%
+      mutate(across(dplyr::matches("^amount"), ~formattable::currency(., digits = 0))) %>%
       left_join(tibble(
         typeUOM = c("AUD", "CAD", "CHF", "EUR", "JPY", "shares", "USD"),
         itemUOM = c(
@@ -2695,16 +2655,10 @@ sec_securities_metrics_by_exchange <-
 
     tag <-
       tag %>%
-      mutate_at(
-        tag %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
-        funs(. %>% as.numeric() %>% lubridate::ymd())
-      ) %>%
-      mutate_at(tag %>% select(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]")) %>% names(),
-                funs(. %>% as.numeric())) %>%
-      mutate_at(tag %>% select(dplyr::matches("^is[A-Z]|^has[A-Z]")) %>% names(),
-                funs(. %>% as.logical())) %>%
-      mutate_at(tag %>% select(dplyr::matches("^amount")) %>% names(),
-                funs(. %>% formattable::currency(digits = 0))) %>%
+      mutate(across(dplyr::matches("^date[A-Z]") & !dplyr::matches("datetime"), ~as.numeric(.) %>% lubridate::ymd())) %>%
+      mutate(across(dplyr::matches("^idCIK|idSIC|idEIN|^amount[A-Z]"), ~as.numeric(.))) %>%
+      mutate(across(dplyr::matches("^is[A-Z]|^has[A-Z]"), ~as.logical(.))) %>%
+      mutate(across(dplyr::matches("^amount"), ~formattable::currency(., digits = 0))) %>%
       suppressWarnings() %>%
       left_join(tibble(
         idValueType = c("I", "D"),
@@ -2809,10 +2763,10 @@ sec_securities_metrics_by_exchange <-
 #' @export
 #' @import purrr stringr dplyr rvest formattable
 #' @importFrom curl curl_download
-#' @examples
 #' @family SEC
 #' @family public company data
 #' @family entity search
+#'
 #' @examples
 #' \dontrun{
 #' sec_xbrl_periods(only_most_recent = TRUE, only_all = TRUE, assign_to_environment = TRUE, return_message = TRUE)
@@ -2892,18 +2846,12 @@ sec_xbrl_periods <-
             all_data %>%
             slice(x) %>%
             select(yearData, quarterData, periodData, dataTable) %>%
-            unnest()
+            unnest(cols = c(dataTable))
 
           df_data <-
             df_data %>%
-            mutate_at(.vars =
-                        df_data %>% select(dplyr::matches("^amount|^price|^value")) %>% names(),
-                      funs(. %>% formattable::currency(digits = 2))) %>%
-            mutate_at(
-              .vars =
-                df_data %>% select(dplyr::matches("^count[A-Z]")) %>% select(-dplyr::matches("country")) %>% names(),
-              funs(. %>% formattable::comma(digits = 0))
-            )
+            mutate(across(dplyr::matches("^amount|^price|^value"), ~formattable::currency(., digits = 2))) %>%
+            mutate(across(dplyr::matches("^count[A-Z]") & !dplyr::matches("country"), ~formattable::comma(., digits = 0)))
 
           assign(x = df_name, eval(df_data), envir = .GlobalEnv)
 

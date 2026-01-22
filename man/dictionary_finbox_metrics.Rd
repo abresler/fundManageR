@@ -6,6 +6,9 @@
 \usage{
 dictionary_finbox_metrics()
 }
+\value{
+a \code{tibble} with available FinBox metrics and their descriptions
+}
 \description{
 Get Searchable FinBOX metrics
 }

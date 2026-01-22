@@ -9,6 +9,9 @@ dictionary_finbox_companies(return_message = TRUE)
 \arguments{
 \item{return_message}{if \code{TRUE} return a message}
 }
+\value{
+a \code{tibble} with company data including tickers, exchange info, and sectors
+}
 \description{
 Returns companies with FinBOXIO data
 }

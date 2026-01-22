@@ -21,10 +21,22 @@ residual_values(
 
 \item{cost_of_sale}{vector of cost of sale}
 
-\item{debt}{vector}
+\item{debt}{vector of debt amounts}
 
-\item{return_message}{}
+\item{sale_date}{date of the sale}
+
+\item{has_guarantee}{if \code{TRUE} indicates a guarantee exists}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+a \code{tibble} with residual value calculations
 }
 \description{
 Residual value calculations
+}
+\examples{
+\dontrun{
+residual_values(net_operating_income = 10, exit_cap_rate = 0.08)
+}
 }

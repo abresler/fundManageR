@@ -14,6 +14,13 @@ sec_filing_streams_rf(
 )
 }
 \arguments{
+\item{filers}{type of filer \itemize{
+\item \code{All}: all filer types (default)
+\item \code{Corporate Insider}: corporate insiders
+\item \code{Companies}: companies
+\item \code{Investment Company}: acquires investment company data
+}}
+
 \item{filing_names}{type of filing \itemize{
 \item \code{Annual Reports}: annual report
 \item \code{Quarterly Reports}: quarterly report
@@ -31,6 +38,9 @@ sec_filing_streams_rf(
 }}
 
 \item{return_message}{return a message}
+}
+\value{
+A tibble containing SEC filing stream data
 }
 \description{
 This function returns the most recent SEC filings

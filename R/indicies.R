@@ -27,7 +27,7 @@ sp500_constituents <-
       data.frame(stringsAsFactors = FALSE) %>%
       as_tibble() %>%
       select(-3) %>%
-      mutate_all(str_to_upper) %>%
+      mutate(across(everything(), str_to_upper)) %>%
       purrr::set_names(
         c(
           'idTicker',
@@ -129,7 +129,7 @@ msci_indicies <-
       .$constituents %>%
       as_tibble() %>%
       purrr::set_names(c('pctWeight', 'nameCompany')) %>%
-      mutate_all(str_to_upper) %>%
+      mutate(across(everything(), str_to_upper)) %>%
       select(nameCompany, pctWeight) %>%
       mutate(pctWeight = (pctWeight %>% as.numeric() / 100) %>% formattable::percent(digits = 5)) %>%
       mutate(urlIndexConstituents = res$url)
@@ -236,11 +236,10 @@ msci_indicies_constituents <-
     if (nest_data) {
       const_df <-
         const_df %>%
-        nest(-c(idIndex,
+        nest(dataIndexMSCI = -c(idIndex,
                 nameIndex,
                 dateIndexAsOf,
-                idTypeRebalance),
-             .key = dataIndexMSCI)
+                idTypeRebalance))
     }
 
     if (return_message) {
@@ -290,7 +289,7 @@ msci_realtime_index_values <-
     index_data <-
       json_data$xmfIndices$index %>%
       as_tibble() %>%
-      mutate_all(str_to_upper)
+      mutate(across(everything(), str_to_upper))
 
     index_data <- index_data %>%
       purrr::set_names(
@@ -320,12 +319,9 @@ msci_realtime_index_values <-
 
     index_data <-
       index_data %>%
-      mutate_at(index_data %>% select(dplyr::matches('idIndex|value|pct')) %>% names(),
-                funs(. %>% readr::parse_number())) %>%
-      mutate_at(index_data %>% select(dplyr::matches('value')) %>% names(),
-                funs(. %>% formattable::comma())) %>%
-      mutate_at(index_data %>% select(dplyr::matches('pct')) %>% names(),
-                funs((. / 100) %>% formattable::percent(digits = 3)))
+      mutate(across(matches('idIndex|value|pct'), ~readr::parse_number(.))) %>%
+      mutate(across(matches('value'), ~formattable::comma(.))) %>%
+      mutate(across(matches('pct'), ~formattable::percent(. / 100, digits = 3)))
 
     if (return_message) {
       list("Got MSCI Index values as of ", Sys.time()) %>%
@@ -335,15 +331,17 @@ msci_realtime_index_values <-
     if (!return_wide) {
       index_data <-
         index_data %>%
-        gather(item,
-               value,
-               -c(
-                 datetimeData,
-                 nameIndex,
-                 idIndex,
-                 isTradingClosed,
-                 typeCurrency
-               ))
+        pivot_longer(
+          cols = -c(
+            datetimeData,
+            nameIndex,
+            idIndex,
+            isTradingClosed,
+            typeCurrency
+          ),
+          names_to = "item",
+          values_to = "value"
+        )
     }
 
     return(index_data)

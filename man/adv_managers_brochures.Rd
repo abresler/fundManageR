@@ -8,7 +8,8 @@ adv_managers_brochures(
   entity_names = NULL,
   crd_ids = NULL,
   split_pages = TRUE,
-  nest_data = FALSE
+  nest_data = FALSE,
+  parallel = TRUE
 )
 }
 \arguments{
@@ -19,6 +20,11 @@ adv_managers_brochures(
 \item{split_pages}{\code{TRUE} split brochure into individual pages}
 
 \item{nest_data}{\code{TRUE} return nested data frame}
+
+\item{parallel}{if \code{TRUE} uses parallel processing}
+}
+\value{
+A tibble containing OCR'd brochure text and metadata for the specified managers
 }
 \description{
 This function OCRs a firm's brochure

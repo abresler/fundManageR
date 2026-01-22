@@ -2,7 +2,7 @@
 % Please edit documentation in R/sec_2.R
 \name{edgar_ft_terms}
 \alias{edgar_ft_terms}
-\title{Title}
+\title{EDGAR Full Text Search by Terms}
 \usage{
 edgar_ft_terms(
   search_terms = c("\\"Jared Kushner\\"", "\\"EJF Capital\\"",
@@ -12,9 +12,23 @@ edgar_ft_terms(
   return_message = TRUE
 )
 }
+\arguments{
+\item{search_terms}{vector of search terms}
+
+\item{include_counts}{if \code{TRUE} includes filing counts}
+
+\item{nest_data}{if \code{TRUE} nests data}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+A tibble containing EDGAR filings matching the search terms
+}
 \description{
-Title
+EDGAR Full Text Search by Terms
 }
 \examples{
-edgar_ft_terms(search_terms = c('"Jared Kushner"', '"EJF Capital"', '"Blackstone Real Estate"'))
+\dontrun{
+edgar_ft_terms(search_terms = c('"Jared Kushner"', '"EJF Capital"'))
+}
 }

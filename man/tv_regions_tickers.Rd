@@ -36,7 +36,17 @@ tv_regions_tickers(
 }}
 
 \item{return_message}{if \code{TRUE} return message}
+
+\item{nest_data}{if \code{TRUE} nest data by region}
+}
+\value{
+a \code{tibble} of ticker data by region
 }
 \description{
 Acquires ticker symbols for specified regions
+}
+\examples{
+\dontrun{
+tv_regions_tickers(regions = "america", return_message = TRUE)
+}
 }

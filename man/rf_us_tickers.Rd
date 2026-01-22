@@ -7,7 +7,10 @@
 rf_us_tickers(return_message = TRUE)
 }
 \arguments{
-\item{return_message}{}
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+a \code{tibble} with US ticker data including CIK, ticker symbols, and company names
 }
 \description{
 Get United States publicly traded ticker data

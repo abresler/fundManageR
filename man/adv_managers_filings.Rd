@@ -13,7 +13,8 @@ adv_managers_filings(
     "Indirect Manager Owners", "Other Manager Information", "Manager Signatories"),
   flatten_tables = TRUE,
   gather_data = FALSE,
-  assign_to_environment = TRUE
+  assign_to_environment = TRUE,
+  parallel = TRUE
 )
 }
 \arguments{

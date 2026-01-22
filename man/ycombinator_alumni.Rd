@@ -29,7 +29,8 @@ ycombinator_alumni(nest_data = FALSE)
 \seealso{
 Other venture capital: 
 \code{\link{calculate_valuation_post_money}()},
-\code{\link{cb_unicorns}()}
+\code{\link{cb_unicorns}()},
+\code{\link{post_money_valuation}()}
 
 Other entity search: 
 \code{\link{adv_managers_current_period_summary}()},

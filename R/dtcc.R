@@ -172,7 +172,6 @@
 
 .resolve_dtcc_name_df <-
   function(data) {
-    options(scipen = 9999999)
     name_df <-
       .get_dtcc_name_df() %>%
       mutate(idRow = 1:n())
@@ -186,7 +185,7 @@
     if (has_missing_names) {
       df_has <-
         data %>%
-        select(one_of(rf_names[rf_names %in% name_df$nameDTCC]))
+        select(any_of(rf_names[rf_names %in% name_df$nameDTCC]))
 
       has_names <-
         names(df_has) %>%
@@ -204,7 +203,7 @@
       data <-
         df_has %>%
         bind_cols(data %>%
-                    select(one_of(rf_names[!rf_names %in% name_df$nameDTCC])))
+                    select(any_of(rf_names[!rf_names %in% name_df$nameDTCC])))
       return(data)
     }
 
@@ -243,12 +242,12 @@
 
     data <-
       data %>%
-      mutate_at(data %>% select(dplyr::matches("isCleared")) %>% names(),
-                funs(ifelse(. == "C", TRUE, FALSE))) %>%
-      mutate_at(data %>% select(dplyr::matches("^has|^is")) %>% names(),
-                funs(ifelse(. == "Y", TRUE, FALSE))) %>%
-      mutate_at(data %>% select(dplyr::matches("nameUnderylingAsset|^code|^type")) %>% names(),
-                funs(ifelse(. == '', NA, .)))
+      mutate(across(matches("isCleared"),
+                    ~ifelse(. == "C", TRUE, FALSE))) %>%
+      mutate(across(matches("^has|^is"),
+                    ~ifelse(. == "Y", TRUE, FALSE))) %>%
+      mutate(across(matches("nameUnderylingAsset|^code|^type"),
+                    ~ifelse(. == '', NA, .)))
 
     if ('amountLevelOption' %in% names(data)) {
       data <-
@@ -258,22 +257,20 @@
 
     data <-
       data %>%
-      mutate_at(data %>% select(dplyr::matches("^name|^description|^idDay|^type")) %>% names(),
-                funs(. %>% str_to_upper())) %>%
-      mutate_at(data %>% select(dplyr::matches("^price|amountOptionPremium")) %>% names(),
-                funs(. %>% as.character() %>% readr::parse_number())) %>%
-      mutate_at(
-        data %>% select(
-          dplyr::matches("^dateOptionLockPeriod|dateOptionExpiration|^date")
-        ) %>% select(-dplyr::matches("dateTime|dateMaturity|dateExercise")) %>% names(),
-        funs(. %>% lubridate::ymd())
-      ) %>%
-      mutate_at(data %>% select(dplyr::matches("dateMaturity|dateExercise")) %>% names(),
-                funs(. %>% lubridate::mdy())) %>%
-      mutate_at(data %>% select(dplyr::matches("^dateTime")) %>% names(),
-                funs(. %>% lubridate::ymd_hms())) %>%
-      mutate_at(data %>% select(dplyr::matches("^details|idDisseminationOriginal")) %>% names(),
-                funs(. %>% as.character()))
+      mutate(across(matches("^name|^description|^idDay|^type"),
+                    ~str_to_upper(.))) %>%
+      mutate(across(matches("^price|amountOptionPremium"),
+                    ~readr::parse_number(as.character(.)))) %>%
+      mutate(across(
+        matches("^dateOptionLockPeriod|dateOptionExpiration|^date") & !matches("dateTime|dateMaturity|dateExercise"),
+        ~lubridate::ymd(.)
+      )) %>%
+      mutate(across(matches("dateMaturity|dateExercise"),
+                    ~lubridate::mdy(.))) %>%
+      mutate(across(matches("^dateTime"),
+                    ~lubridate::ymd_hms(.))) %>%
+      mutate(across(matches("^details|idDisseminationOriginal"),
+                    ~as.character(.)))
 
     if ('amountLevelOption' %in% names(data)) {
       data <-
@@ -421,7 +418,7 @@
                   item = c('idSubIndex', 'idSeries'),
                   values = items
                 ) %>%
-                spread(item, values) %>%
+                pivot_wider(names_from = item, values_from = values) %>%
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
@@ -432,7 +429,7 @@
                   item = c('idIndex', 'idSubIndex', 'idSeries'),
                   values = items
                 ) %>%
-                spread(item, values) %>%
+                pivot_wider(names_from = item, values_from = values) %>%
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
@@ -443,7 +440,7 @@
                   item = c('idIndex', 'idSubIndex', 'idSeries', 'idSubIndex1'),
                   values = items
                 ) %>%
-                spread(item, values) %>%
+                pivot_wider(names_from = item, values_from = values) %>%
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
@@ -460,7 +457,7 @@
                   ),
                   values = items
                 ) %>%
-                spread(item, values) %>%
+                pivot_wider(names_from = item, values_from = values) %>%
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
@@ -478,7 +475,7 @@
                   ),
                   values = items
                 ) %>%
-                spread(item, values) %>%
+                pivot_wider(names_from = item, values_from = values) %>%
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
@@ -497,7 +494,7 @@
                   ),
                   values = items
                 ) %>%
-                spread(item, values) %>%
+                pivot_wider(names_from = item, values_from = values) %>%
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
@@ -517,7 +514,7 @@
                   ),
                   values = items
                 ) %>%
-                spread(item, values) %>%
+                pivot_wider(names_from = item, values_from = values) %>%
                 mutate(idSeries = idSeries %>% as.numeric())
             }
 
@@ -585,8 +582,8 @@
 
             df <-
               df_long %>%
-              spread(item, value) %>%
-              select(one_of(col_order))
+              pivot_wider(names_from = item, values_from = value) %>%
+              select(any_of(col_order))
 
           }
 
@@ -608,8 +605,8 @@
 
             df <-
               df_long %>%
-              spread(item, value) %>%
-              select(one_of(col_order))
+              pivot_wider(names_from = item, values_from = value) %>%
+              select(any_of(col_order))
 
           }
 
@@ -631,8 +628,8 @@
 
             df <-
               df_long %>%
-              spread(item, value) %>%
-              select(one_of(col_order))
+              pivot_wider(names_from = item, values_from = value) %>%
+              select(any_of(col_order))
           }
 
           if (asset %in% c("FOREIGNEXCHANGE", "INTERESTRATE")) {
@@ -653,12 +650,12 @@
 
             df <-
               df_long %>%
-              spread(item, value) %>%
-              select(one_of(col_order))
+              pivot_wider(names_from = item, values_from = value) %>%
+              select(any_of(col_order))
           }
           df <-
             df %>%
-            mutate_all(as.character)
+            mutate(across(everything(), as.character))
           return(df)
         })
 
@@ -725,8 +722,7 @@
       .resolve_taxonomy()
 
     if (return_message) {
-      list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+      .fm_parsing(url)
     }
 
     return(data)
@@ -782,7 +778,7 @@
     if (nest_data) {
       all_df <-
         all_df %>%
-        nest(-c(dateData, nameAsset), .key = dataDTCC)
+        nest(dataDTCC = -c(dateData, nameAsset))
     }
     return(all_df)
   }
@@ -972,7 +968,7 @@ dtcc_recent_trades <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(nameAsset, typeAction), .key = dataDTCC)
+        nest(dataDTCC = -c(nameAsset, typeAction))
     }
 
     return(all_data)
@@ -1006,12 +1002,9 @@ dtcc_recent_trades <-
 
     dtcc_df <-
       dtcc_df %>%
-      mutate_at(dtcc_df %>% select(
-        dplyr::matches(
-          "PRICE_NOTATION2|PRICE_NOTATION3|OPTION_EXPIRATION_DATE|OPTION_LOCK_PERIOD|OPTION_PREMIUM|ADDITIONAL_PRICE_NOTATION|ROUNDED_NOTIONAL_AMOUNT_1|ROUNDED_NOTIONAL_AMOUNT_2|OPTION_STRIKE_PRICE|ORIGINAL_DISSEMINATION_ID"
-        )
-      ) %>% names(),
-      funs(. %>% as.character()))
+      mutate(across(
+        matches("PRICE_NOTATION2|PRICE_NOTATION3|OPTION_EXPIRATION_DATE|OPTION_LOCK_PERIOD|OPTION_PREMIUM|ADDITIONAL_PRICE_NOTATION|ROUNDED_NOTIONAL_AMOUNT_1|ROUNDED_NOTIONAL_AMOUNT_2|OPTION_STRIKE_PRICE|ORIGINAL_DISSEMINATION_ID"),
+        ~as.character(.)))
 
     return(dtcc_df)
   }
@@ -1098,8 +1091,8 @@ dtcc_recent_trades <-
           mutate(urlData = x)
       }) %>%
       mutate(dateData = Sys.Date()) %>%
-      mutate_at(.vars = c('ORIGINAL_DISSEMINATION_ID'),
-                funs(. %>% as.numeric()))
+      mutate(across(any_of('ORIGINAL_DISSEMINATION_ID'),
+                    ~as.numeric(.)))
 
     if (all_data %>% nrow() == 0) {
       return(all_data)
@@ -1119,10 +1112,10 @@ dtcc_recent_trades <-
 
     all_data <-
       all_data %>%
-      mutate_at(
-        all_data %>% select(dplyr::matches("^priceNotation")) %>% names(),
-        funs(. %>% as.character() %>% readr::parse_number())
-      )
+      mutate(across(
+        matches("^priceNotation"),
+        ~readr::parse_number(as.character(.))
+      ))
     if ('isCleared' %in% names(all_data)) {
       all_data <-
         all_data %>%
@@ -1142,7 +1135,7 @@ dtcc_recent_trades <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(dateData, nameAsset), .key = dataDTCC)
+        nest(dataDTCC = -c(dateData, nameAsset))
     }
     return(all_data)
   }
@@ -1217,12 +1210,10 @@ dtcc_trades <-
 
         today <-
           today %>%
-          mutate_at(today %>% select(dplyr::matches(
-            "dateTime|idDisseminationOriginal|^date"
-          )) %>% names(),
-          funs(. %>% as.character())) %>%
-          mutate_at(today %>% select(dplyr::matches("^amount|priceOptionStrike")) %>% names(),
-                    funs(. %>% as.numeric())) %>%
+          mutate(across(matches("dateTime|idDisseminationOriginal|^date"),
+                        ~as.character(.))) %>%
+          mutate(across(matches("^amount|priceOptionStrike"),
+                        ~as.numeric(.))) %>%
           suppressWarnings()
 
         all_data <-
@@ -1249,19 +1240,16 @@ dtcc_trades <-
       data <-
         data %>%
         .resolve_dtcc_name_df() %>%
-        mutate_at(data %>% select(
-          dplyr::matches(
-            "^dateTime|idDisseminationOriginal|^date|^priceNotation"
-          )
-        ) %>% names(),
-        funs(. %>% as.character()))
+        mutate(across(
+          matches("^dateTime|idDisseminationOriginal|^date|^priceNotation"),
+          ~as.character(.)))
 
       data <-
         data %>%
-        mutate_at(
-          data %>% select(dplyr::matches("^priceNotation")) %>% names(),
-          funs(. %>% as.character() %>% readr::parse_number())
-        )
+        mutate(across(
+          matches("^priceNotation"),
+          ~readr::parse_number(as.character(.))
+        ))
 
 
 
@@ -1274,14 +1262,14 @@ dtcc_trades <-
 
     all_data <-
       all_data %>%
-      mutate_at(all_data %>% select(dplyr::matches("^dateTime[A-Z]")) %>% names(),
-                funs(. %>% lubridate::ymd_hms())) %>%
-      mutate_at(
-        all_data %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("^dateTime")) %>% names(),
-        funs(. %>% lubridate::ymd())
-      ) %>%
-      mutate_at(all_data %>% select(dplyr::matches("^idDissemination")) %>% names(),
-                funs(. %>% as.character() %>% as.integer())) %>%
+      mutate(across(matches("^dateTime[A-Z]"),
+                    ~lubridate::ymd_hms(.))) %>%
+      mutate(across(
+        matches("^date[A-Z]") & !matches("^dateTime"),
+        ~lubridate::ymd(.)
+      )) %>%
+      mutate(across(matches("^idDissemination"),
+                    ~as.integer(as.character(.)))) %>%
       suppressMessages() %>%
       suppressWarnings()
 
@@ -1304,7 +1292,7 @@ dtcc_trades <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(dateData, nameAsset), .key = dataDTCC)
+        nest(dataDTCC = -c(dateData, nameAsset))
     }
 
     return(all_data)

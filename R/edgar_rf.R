@@ -9,55 +9,45 @@ tidy_column_formats <-
   function(data, drop_na_columns = TRUE) {
     data <-
       data %>%
-      mutate_if(is_character,
-                funs(ifelse(. == "N/A", NA, .))) %>%
-      mutate_if(is_character,
-                funs(ifelse(. == "", NA, .)))
+      mutate(across(where(is_character), ~ifelse(. == "N/A", NA, .))) %>%
+      mutate(across(where(is_character), ~ifelse(. == "", NA, .)))
 
     data <-
       data %>%
-      mutate_at(data %>% dplyr::select(dplyr::matches("^idCRD|idCIK")) %>% names(),
-                funs(. %>% as.numeric())) %>%
-      mutate_at(data %>% dplyr::select(
-        dplyr::matches(
-          "^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]"
-        )
-      ) %>% dplyr::select(-dplyr::matches("nameElement")) %>% names(),
-      funs(. %>% str_to_upper())) %>%
-      mutate_at(
-        data %>% dplyr::select(dplyr::matches("^amount")) %>% names(),
-        funs(. %>% as.numeric() %>% formattable::currency(digits = 0))
-      ) %>%
-      mutate_at(data %>% dplyr::select(dplyr::matches("^is|^has")) %>% names(),
-                funs(. %>% as.logical())) %>%
-      mutate_at(
-        data %>% dplyr::select(dplyr::matches("latitude|longitude")) %>% names(),
-        funs(. %>% as.numeric() %>% formattable::digits(digits = 5))
-      ) %>%
-      mutate_at(
-        data %>% dplyr::select(dplyr::matches("^price[A-Z]|pershare")) %>% select(-dplyr::matches("priceNotation")) %>% names(),
-        funs(. %>% formattable::currency(digits = 3))
-      ) %>%
-      mutate_at(
-        data %>% dplyr::select(dplyr::matches(
-          "^count[A-Z]|^number[A-Z]|^year[A-Z]"
-        )) %>% dplyr::select(-dplyr::matches("country|county")) %>% names(),
-        funs(. %>% formattable::comma(digits = 0))
-      ) %>%
-      mutate_at(
-        data %>% dplyr::select(dplyr::matches(
-          "codeInterestAccrualMethod|codeOriginalInterestRateType|codeLienPositionSecuritization|codePaymentType|codePaymentFrequency|codeServicingAdvanceMethod|codePropertyStatus"
-        )) %>% names(),
-        funs(. %>% as.integer())
-      ) %>%
-      mutate_at(data %>% dplyr::select(dplyr::matches("^ratio|^multiple|^priceNotation|^value")) %>% names(),
-                funs(. %>% formattable::comma(digits = 3))) %>%
-      mutate_at(data %>% dplyr::select(dplyr::matches("^pct|^percent")) %>% names(),
-                funs(. %>% formattable::percent(digits = 3))) %>%
-      mutate_at(
-        data %>% dplyr::select(dplyr::matches("^amountFact")) %>% names(),
-        funs(. %>% as.numeric() %>% formattable::currency(digits = 3))
-      ) %>%
+      mutate(across(matches("^idCRD|idCIK"), ~as.numeric(.))) %>%
+      mutate(across(
+        c(matches("^name[A-Z]|^details[A-Z]|^description[A-Z]|^city[A-Z]|^state[A-Z]|^country[A-Z]|^count[A-Z]|^street[A-Z]|^address[A-Z]"),
+          -matches("nameElement")),
+        ~str_to_upper(.))) %>%
+      mutate(across(
+        matches("^amount"),
+        ~as.numeric(.) %>% formattable::currency(digits = 0)
+      )) %>%
+      mutate(across(matches("^is|^has"), ~as.logical(.))) %>%
+      mutate(across(
+        matches("latitude|longitude"),
+        ~as.numeric(.) %>% formattable::digits(digits = 5)
+      )) %>%
+      mutate(across(
+        c(matches("^price[A-Z]|pershare"), -matches("priceNotation")),
+        ~formattable::currency(., digits = 3)
+      )) %>%
+      mutate(across(
+        c(matches("^count[A-Z]|^number[A-Z]|^year[A-Z]"), -matches("country|county")),
+        ~formattable::comma(., digits = 0)
+      )) %>%
+      mutate(across(
+        matches("codeInterestAccrualMethod|codeOriginalInterestRateType|codeLienPositionSecuritization|codePaymentType|codePaymentFrequency|codeServicingAdvanceMethod|codePropertyStatus"),
+        ~as.integer(.)
+      )) %>%
+      mutate(across(matches("^ratio|^multiple|^priceNotation|^value"),
+                    ~formattable::comma(., digits = 3))) %>%
+      mutate(across(matches("^pct|^percent"),
+                    ~formattable::percent(., digits = 3))) %>%
+      mutate(across(
+        matches("^amountFact"),
+        ~as.numeric(.) %>% formattable::currency(digits = 3)
+      )) %>%
       suppressWarnings()
     has_dates <-
       data %>% dplyr::select(dplyr::matches("^date")) %>% ncol() > 0
@@ -133,12 +123,10 @@ resolve_names_to_upper <-
   function(data) {
     data <-
       data %>%
-      mutate_at(
-        data %>%
-          keep(is_character) %>%
-          select(-dplyr::matches("url")) %>% names(),
-        funs(. %>% str_to_upper())
-      )
+      mutate(across(
+        c(where(is_character), -matches("url")),
+        ~str_to_upper(.)
+      ))
 
     return(data)
   }
@@ -201,7 +189,7 @@ filer_type_df <-
         'Investment Company'
       )
     ) %>%
-      mutate_all(str_to_upper)
+      mutate(across(everything(), str_to_upper))
   }
 
 general_name_df <-
@@ -923,7 +911,7 @@ dictionary_sec_rules <-
         "Investment Company Act Section 3c"
       )
     ) %>%
-      mutate_all(str_to_upper)
+      mutate(across(everything(), str_to_upper))
   }
 
 # utilities ---------------------------------------------------------------
@@ -931,7 +919,7 @@ separate_column <-
   function(data, column_name = "idExemption") {
     has_splits <-
       data %>%
-      select(one_of(column_name)) %>%
+      select(any_of(column_name)) %>%
       magrittr::extract2(1) %>%
       map_dbl(function(x) {
         x %>% str_count('\\|')
@@ -944,7 +932,7 @@ separate_column <-
 
     max_split <-
       data %>%
-      select(one_of(column_name)) %>%
+      select(any_of(column_name)) %>%
       magrittr::extract2(1) %>%
       map_dbl(function(x) {
         x %>% str_count('\\|')
@@ -1012,19 +1000,17 @@ clean_names <-
       if (upper_case) {
         data <-
           data %>%
-          mutate_at(
-            .vars =
-              data %>% dplyr::select(dplyr::matches("^name")) %>% names(),
-            funs(. %>% stringr::str_to_upper())
-          )
+          mutate(across(
+            matches("^name"),
+            ~stringr::str_to_upper(.)
+          ))
       } else {
         data <-
           data %>%
-          mutate_at(
-            .vars =
-              data %>% dplyr::select(dplyr::matches("^name")) %>% names(),
-            funs(. %>% stringr::str_to_lower())
-          )
+          mutate(across(
+            matches("^name"),
+            ~stringr::str_to_lower(.)
+          ))
       }
       return(data)
     }
@@ -1080,7 +1066,7 @@ print_message <-
     if (has_missing_names) {
       df_has <-
         data %>%
-        select(one_of(rf_names[rf_names %in% name_df$nameRF]))
+        select(any_of(rf_names[rf_names %in% name_df$nameRF]))
 
       has_names <-
         names(df_has) %>%
@@ -1098,17 +1084,13 @@ print_message <-
       data <-
         df_has %>%
         bind_cols(data %>%
-                    select(one_of(rf_names[!rf_names %in% name_df$nameRF])))
+                    select(any_of(rf_names[!rf_names %in% name_df$nameRF])))
 
       data <-
         data %>%
-        mutate_at(.vars =
-                    data %>% select(
-                      dplyr::matches(
-                        "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
-                      )
-                    ) %>% names,
-                  funs(. %>% as.character() %>% readr::parse_number())) %>%
+        mutate(across(
+          matches("idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"),
+          ~as.character(.) %>% readr::parse_number())) %>%
         suppressWarnings()
       return(data)
     }
@@ -1128,13 +1110,9 @@ print_message <-
 
     data <-
       data %>%
-      mutate_at(.vars =
-                  data %>% select(
-                    dplyr::matches(
-                      "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
-                    )
-                  ) %>% names,
-                funs(. %>% as.character() %>% readr::parse_number())) %>%
+      mutate(across(
+        matches("idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"),
+        ~as.character(.) %>% readr::parse_number())) %>%
       suppressWarnings()
 
     return(data)
@@ -1173,15 +1151,13 @@ sic_naics_codes <-
 
     sic <-
       sic %>%
-      mutate_at(.vars = c('idSIC', 'idNAICS'),
-                funs(. %>% as.numeric())) %>%
+      mutate(across(c('idSIC', 'idNAICS'), ~as.numeric(.))) %>%
       mutate(
         classificationSIC = ifelse(classificationSIC == '', NA, classificationSIC),
         classificationNAICS = ifelse(classificationNAICS == '', NA, classificationNAICS)
       ) %>%
       arrange(idSIC) %>%
-      mutate_if(is.character,
-                stringr::str_to_upper)
+      mutate(across(where(is.character), stringr::str_to_upper))
 
     if (filter_duplicates) {
       sic <-
@@ -1211,6 +1187,9 @@ sic_naics_codes <-
 #' @importFrom  tidyr separate
 #' @importFrom readr read_csv
 #' @examples
+#' \dontrun{
+#' sec_rules()
+#' }
 #' @family dictionary
 #' @family SEC
 #' sec_rules()
@@ -1220,7 +1199,7 @@ sec_rules <-
       "http://rankandfiled.com/static/export/file_numbers.csv" %>%
       .parse_rank_and_filed_data(column_names = c("idPrefixSEC", "typeFiling", "nameLawSEC")) %>%
       mutate(typeFiling = ifelse(typeFiling == '', NA, typeFiling)) %>%
-      mutate_all(str_to_upper)
+      mutate(across(everything(), str_to_upper))
 
     return(codes)
   }
@@ -1294,9 +1273,9 @@ rf_leis <-
 
 #' Get United States publicly traded ticker data
 #'
-#' @param return_message
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return a \code{tibble} with US ticker data including CIK, ticker symbols, and company names
 #' @export
 #' @import dplyr purrr
 #' @importFrom  tidyr separate
@@ -1323,8 +1302,7 @@ rf_us_tickers <-
 
     data <-
       data %>%
-      mutate_at(.vars = c('idCIK', 'idSIC', 'idSIC', 'idIRS'),
-                funs(. %>% as.numeric()))
+      mutate(across(c('idCIK', 'idSIC', 'idSIC', 'idIRS'), ~as.numeric(.)))
 
     data <-
       data %>%
@@ -1562,7 +1540,6 @@ rf_sec_13F_companies <-
 recent_insider_trades <-
   function(nest_data = FALSE,
            return_message = TRUE) {
-    options(scipen = 9999)
     json_data <-
       "http://rankandfiled.com/data/buy_sell" %>%
       jsonlite::fromJSON()
@@ -1659,10 +1636,8 @@ recent_insider_trades <-
                    sep = 'c|f') %>%
           select(-replace) %>%
           mutate(idTicker = ifelse(idTicker == '', NA, idTicker)) %>%
-          mutate_at(.vars = df %>% select(dplyr::matches("^count|^amount|idCIK")) %>% names,
-                    funs(. %>% as.numeric())) %>%
-          mutate_at(.vars = df %>% select(dplyr::matches("^name")) %>% names,
-                    funs(. %>% str_to_upper())) %>%
+          mutate(across(matches("^count|^amount|idCIK"), ~as.numeric(.))) %>%
+          mutate(across(matches("^name"), ~str_to_upper(.))) %>%
           mutate(idInsiderTable = x) %>%
           suppressWarnings()
 
@@ -1687,18 +1662,18 @@ recent_insider_trades <-
 
     all_data <-
       all_data %>%
-      mutate_at(
-        .vars = all_data %>% select(dplyr::matches("amount")) %>% names(),
-        funs(. %>% as.numeric %>% formattable::currency(digits = 0))
-      ) %>%
-      mutate_at(
-        .vars = all_data %>% select(dplyr::matches("count")) %>% names(),
-        funs(. %>% as.numeric %>% formattable::comma(digits = 0))
-      ) %>%
-      mutate_at(
-        .vars = all_data %>% select(dplyr::matches("name|type")) %>% names(),
-        funs(. %>% stringr::str_to_upper())
-      ) %>%
+      mutate(across(
+        matches("amount"),
+        ~as.numeric(.) %>% formattable::currency(digits = 0)
+      )) %>%
+      mutate(across(
+        matches("count"),
+        ~as.numeric(.) %>% formattable::comma(digits = 0)
+      )) %>%
+      mutate(across(
+        matches("name|type"),
+        ~stringr::str_to_upper(.)
+      )) %>%
       arrange(nameCompany, nameTable)
 
     if (return_message) {
@@ -1714,7 +1689,7 @@ recent_insider_trades <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(nameTable, typeInsider, typeTransaction), .key = dataInsiderTrades)
+        nest(dataInsiderTrades = -c(nameTable, typeInsider, typeTransaction))
     }
 
     return(all_data)
@@ -1767,7 +1742,7 @@ sec_securities_filing_counts <-
         df_row %>%
           flatten_df() %>%
           as_tibble() %>%
-          gather(idForm, countFilings) %>%
+          pivot_longer(cols = everything(), names_to = "idForm", values_to = "countFilings") %>%
           mutate(yearFiling = year_no) %>%
           select(yearFiling, everything())
       })
@@ -1869,9 +1844,7 @@ sec_securities_filing_counts <-
 
       data <-
         data %>%
-        mutate_at(.vars =
-                    data %>% select(dplyr::matches("^amount|^count|idIndustry")) %>% names(),
-                  funs(. %>% as.numeric()))
+        mutate(across(matches("^amount|^count|idIndustry"), ~as.numeric(.)))
 
       if (return_message) {
         list("Parsed: ", url) %>%
@@ -1988,7 +1961,7 @@ securities_offerings <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(idForm, typeForm), .key = dataOfferings)
+        nest(dataOfferings = -c(idForm, typeForm))
 
     }
 
@@ -2213,7 +2186,7 @@ sec_filing_entities <-
             mutate(countItems = 1:n() - 1,
                    item = ifelse(countItems == 0, item, paste0(item, countItems))) %>%
             select(-countItems) %>%
-            spread(item, value)
+            pivot_wider(names_from = item, values_from = value)
 
           return(entity_df)
         })
@@ -2436,10 +2409,8 @@ sec_form_ds <-
 
     all_data <-
       all_data %>%
-      mutate_at(.vars = all_data %>% select(dplyr::matches("^amount")) %>% names,
-                funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(.vars = all_data %>% select(dplyr::matches("^count")) %>% names,
-                funs(. %>% formattable::comma(digits = 0))) %>%
+      mutate(across(matches("^amount"), ~formattable::currency(., digits = 0))) %>%
+      mutate(across(matches("^count"), ~formattable::comma(., digits = 0))) %>%
       arrange(desc(dateFiling)) %>%
       left_join(category_df) %>%
       mutate(pctSold = (amountSold / amountOffered) %>% formattable::percent(digits = 2)) %>%
@@ -2473,7 +2444,7 @@ sec_form_ds <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-nameIndustryParent, .key = dataFormDs)
+        nest(dataFormDs = -nameIndustryParent)
     }
     return(all_data)
   }

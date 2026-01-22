@@ -11,7 +11,12 @@ dallas_fed_international_housing(
 )
 }
 \arguments{
-\item{return_message}{}
+\item{nest_data}{if \code{TRUE} returns nested tibble}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+a \code{tibble} with international house price data
 }
 \description{
 This retrieves data for the international house

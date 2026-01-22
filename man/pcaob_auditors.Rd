@@ -9,6 +9,14 @@ pcaob_auditors(include_denied_firms = T)
 \arguments{
 \item{include_denied_firms}{adds PCAOB denied firm feature}
 }
+\value{
+a \code{tibble} with PCAOB auditor relationships and firm filings
+}
 \description{
 PCAOB Audit Relationships
+}
+\examples{
+\dontrun{
+pcaob_auditors(include_denied_firms = TRUE)
+}
 }

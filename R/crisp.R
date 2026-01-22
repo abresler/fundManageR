@@ -73,7 +73,7 @@ crsp_files <-
 
     data <-
       url %>%
-      rio::import() %>%
+      .import_url_curl() %>%
       suppressWarnings()
 
     is_index <-
@@ -135,7 +135,7 @@ crsp_files <-
 
       data <-
         data %>%
-        gather(nameIndex, pctReturns, -dateData, na.rm = TRUE) %>%
+        pivot_longer(cols = -dateData, names_to = "nameIndex", values_to = "pctReturns", values_drop_na = TRUE) %>%
         arrange(dateData) %>%
         mutate(
           nameIndex = nameIndex %>% str_to_upper(),
@@ -146,9 +146,7 @@ crsp_files <-
     }
 
     if (return_message) {
-      list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+      .fm_parsing(url)
     }
 
     return(data)
@@ -226,13 +224,13 @@ crsp_indicies_returns <-
       all_data <-
         all_data %>%
         mutate(nameIndex = 'index' %>% paste0(nameIndex %>% str_to_title() %>% str_replace_all('\\ ', '') %>% str_replace_all('\\&','and'))) %>%
-        spread(nameIndex, pctReturns)
+        pivot_wider(names_from = nameIndex, values_from = pctReturns)
     }
 
     if (nest_data) {
       all_data <-
         all_data %>%
-        tidyr::nest(.key = dataTable,  -dateData)
+        tidyr::nest(dataTable = -dateData)
     }
 
     return(all_data)

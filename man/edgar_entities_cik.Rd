@@ -7,11 +7,20 @@
 edgar_entities_cik(search_names, nest_data = FALSE, return_message = TRUE)
 }
 \arguments{
-\item{return_message}{}
+\item{search_names}{vector of entity names to search}
+
+\item{nest_data}{if \code{TRUE} nests data}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+A tibble containing CIK codes for matching entities
 }
 \description{
 SEC registered entity search
 }
 \examples{
-edgar_entities_cik( c("Rockwood", "BREA", 'EJF'))
+\dontrun{
+edgar_entities_cik(c("Rockwood", "BREA", "EJF"))
+}
 }

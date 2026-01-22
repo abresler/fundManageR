@@ -29,6 +29,9 @@ tidy_promote_structure(promote_structures = c("20 over a 12", '30 / 18', "40 ove
 }
 \seealso{
 Other calculation: 
+\code{\link{calculate_average_payment}()},
+\code{\link{calculate_basis}()},
+\code{\link{calculate_capitalization}()},
 \code{\link{calculate_cash_flow_dates}()},
 \code{\link{calculate_cash_flow_waterfall}()},
 \code{\link{calculate_cash_flow_waterfall_partnership}()},
@@ -40,7 +43,8 @@ Other calculation:
 \code{\link{calculate_residual_valuation_cap_rates}()},
 \code{\link{calculate_residual_valuation_ebitda_multiples}()},
 \code{\link{calculate_share_proceeds}()},
-\code{\link{calculate_valuation_post_money}()}
+\code{\link{calculate_valuation_post_money}()},
+\code{\link{get_data_monthly_periods}()}
 
 Other partnership calculation: 
 \code{\link{calculate_cash_flow_dates}()},

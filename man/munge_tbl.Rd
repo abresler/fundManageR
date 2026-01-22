@@ -26,6 +26,14 @@ munge_tbl(
 
 \item{include_address}{if \code{TRUE} builds addresses}
 }
+\value{
+A tibble with cleaned and formatted columns
+}
 \description{
 Munge a tibble
+}
+\examples{
+\dontrun{
+munge_tbl(data)
+}
 }

@@ -37,6 +37,9 @@ net_operating_income = "$27,500,000", cost_of_sale = "5\%",debt_balance = "$350,
 }
 \seealso{
 Other calculation: 
+\code{\link{calculate_average_payment}()},
+\code{\link{calculate_basis}()},
+\code{\link{calculate_capitalization}()},
 \code{\link{calculate_cash_flow_dates}()},
 \code{\link{calculate_cash_flow_waterfall}()},
 \code{\link{calculate_cash_flow_waterfall_partnership}()},
@@ -48,10 +51,13 @@ Other calculation:
 \code{\link{calculate_residual_valuation_ebitda_multiples}()},
 \code{\link{calculate_share_proceeds}()},
 \code{\link{calculate_valuation_post_money}()},
+\code{\link{get_data_monthly_periods}()},
 \code{\link{tidy_promote_structure}()}
 
 Other residual value calculation: 
-\code{\link{calculate_residual_valuation_ebitda_multiples}()}
+\code{\link{calculate_residual_valuation_ebitda_multiples}()},
+\code{\link{cap_rate_valuation}()},
+\code{\link{ebtida_multiple_value}()}
 }
 \concept{calculation}
 \concept{residual value calculation}

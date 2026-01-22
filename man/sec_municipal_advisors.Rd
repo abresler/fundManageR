@@ -66,6 +66,9 @@ Other SEC:
 \code{\link{securities_offerings}()},
 \code{\link{us_public_companies}()}
 
+Other broker dealers: 
+\code{\link{sec_broker_dealers}()}
+
 Other entity search: 
 \code{\link{adv_managers_current_period_summary}()},
 \code{\link{adv_managers_filings}()},

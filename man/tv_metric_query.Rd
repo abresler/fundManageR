@@ -6,6 +6,14 @@
 \usage{
 tv_metric_query()
 }
+\value{
+a list representing a default TradingView query
+}
 \description{
 Generate default TV query metric
+}
+\examples{
+\dontrun{
+tv_metric_query()
+}
 }

@@ -1,0 +1,224 @@
+---
+title: "ADV Functions: Analyzing SEC Investment Adviser Data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ADV Functions: Analyzing SEC Investment Adviser Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+
+collapse = TRUE,
+comment = "#>",
+eval = FALSE
+)
+```
+
+## Introduction
+This vignette demonstrates fundManageR's ADV data acquisition functions. The SEC requires registered investment advisers to file Form ADV, which contains detailed information about the adviser's business, ownership, clients, employees, disciplinary events, and private funds.
+
+fundManageR provides comprehensive access to this data through several functions:
+
+- `adv_managers_current_period_summary()` - Summary data for all registered advisers
+- `adv_managers_metadata()` - Search for advisers by name or CRD number
+- `adv_managers_filings()` - Detailed Form ADV section data
+- `adv_managers_brochures()` - Form ADV Part 2 brochure text (OCR'd)
+
+## Setup
+
+```{r setup}
+library(fundManageR)
+library(dplyr)
+library(tidyr)
+```
+
+## Explore All Registered Advisers
+
+The `adv_managers_current_period_summary()` function downloads summary data for all registered investment advisers from the SEC's most recent ADV filing period.
+```{r summary-data}
+# Get summary data for all registered advisers
+all_advisers <- adv_managers_current_period_summary()
+
+# View the structure
+glimpse(all_advisers)
+
+# How many advisers?
+nrow(all_advisers)
+
+# Filter to large advisers (>$1B AUM)
+large_advisers <- all_advisers %>%
+filter(hasAUMGreater1B == TRUE)
+
+nrow(large_advisers)
+```
+
+## Search for a Specific Adviser
+
+Use `adv_managers_metadata()
+` to search for advisers by name. This is useful when you don't know the CRD number.
+
+```{r search-adviser}
+# Search for Blackstone entities
+blackstone_entities <- adv_managers_metadata(entity_names = "Blackstone")
+
+# View results
+blackstone_entities %>%
+select(idCRD, nameEntityManager, cityOfficePrimary, stateOfficePrimary) %>%
+head(10)
+```
+
+## Get Detailed Filing Data
+
+Once you have a CRD number, use `adv_managers_filings()` to get detailed Form ADV data. This function parses all sections of the ADV filing.
+
+```{r filings-data}
+# Get detailed ADV data for Blackstone Management Partners (CRD 136979)
+blackstone_data <- adv_managers_filings(
+crd_ids = 136979,
+all_sections = TRUE,
+assign_to_environment = TRUE
+)
+
+# This creates multiple data frames in your environment:
+# - sectionRegistration
+# - section1IdentifyingInfo
+# - section5AdvisoryBusinessInformation
+# - section7BPrivateFundReporting
+# - sectionScheduleAOwners
+# - sectionScheduleBIndirectOwners
+# - managerRelatedAdvisers
+# - and more...
+```
+
+### Private Fund Data
+
+Section 7.B contains detailed information about private funds managed by the adviser.
+
+```{r private-funds}
+# View private fund data
+section7BPrivateFundReporting %>%
+select(nameFund, amountGrossAUM, nameAuditorFund) %>%
+head(10)
+
+# Count funds by auditor
+section7BPrivateFundReporting %>%
+count(nameAuditorFund, sort = TRUE)
+```
+
+### Related Advisers
+
+Schedule D Section 7.A lists related advisers and their relationships.
+
+```{r related-advisers}
+# View related advisers
+managerRelatedAdvisers %>%
+select(nameBusinessRelatedEntity, nameLegalRelatedEntity,
+        isRelatedPersonControlled, isPooledInvestmentSponsor) %>%
+head(10)
+```
+### Ownership Structure
+
+Schedule A and B contain direct and indirect ownership information.
+
+```{r ownership}
+# Direct owners (Schedule A)
+sectionScheduleAOwners %>%
+select(nameOwner, typeOwner, pctOwnership) %>%
+head(10)
+
+# Indirect owners (Schedule B)
+sectionScheduleBIndirectOwners %>%
+select(nameOwner, nameEntityOwned, typeOwnershipInterest) %>%
+head(10)
+```
+
+## Get Brochure Text
+
+Form ADV Part 2 (the "brochure") contains narrative information about the adviser's services, fees, and conflicts of interest. The `adv_managers_brochures()` function extracts and OCRs this text.
+
+```{r brochures}
+# Get brochure text for Blackstone
+blackstone_brochures <- adv_managers_brochures(crd_ids = 136979)
+
+# View structure
+glimpse(blackstone_brochures)
+
+# The textBrochure column contains the OCR'd text from each page
+blackstone_brochures %>%
+select(idCRD, nameEntityManager, countPages, textBrochure) %>%
+head(5)
+```
+
+## Example: Analyzing a Manager
+
+Here's a complete workflow to analyze an investment adviser:
+
+```{r complete-example}
+# 1. Search for the manager
+apollo <- adv_managers_metadata(entity_names = "Apollo Global")
+
+# 2. Get the primary CRD (usually the largest AUM)
+apollo_crd <- apollo %>%
+filter(str_detect(nameEntityManager, "APOLLO GLOBAL MANAGEMENT")) %>%
+pull(idCRD) %>%
+first()
+
+# 3. Get detailed filing data
+apollo_filings <- adv_managers_filings(
+crd_ids = apollo_crd,
+all_sections = TRUE,
+assign_to_environment = TRUE
+)
+
+# 4. Analyze the data
+# How many private funds?
+n_funds <- nrow(section7BPrivateFundReporting)
+
+# Total AUM across private funds
+total_aum <- section7BPrivateFundReporting %>%
+summarise(total = sum(amountGrossAUM, na.rm = TRUE))
+
+# Who are the auditors?
+auditors <- section7BPrivateFundReporting %>%
+count(nameAuditorFund, sort = TRUE)
+
+# Related advisers
+n_related <- nrow(managerRelatedAdvisers)
+```
+
+## Tips and Best Practices
+
+1. **CRD Numbers**: Always use CRD numbers when possible - they're unique identifiers. Names can have variations.
+
+2. **Large Datasets**: `adv_managers_current_period_summary()` downloads data for 20,000+ advisers. Consider filtering early.
+
+3. **Rate Limiting**: The SEC may rate-limit requests. Use `furrr::plan(sequential)` for safer sequential processing.
+
+4. **Environment Assignment**: Use `assign_to_environment = TRUE` to get individual data frames for each ADV section.
+
+5. **Nested Data**: Some sections return nested tibbles. Use `tidyr::unnest()` to flatten them.
+
+## Function Reference
+
+| Function | Description |
+|----------|-------------|
+| `adv_managers_current_period_summary()` | All advisers summary data |
+| `adv_managers_metadata()` | Search by name or CRD |
+| `adv_managers_filings()` | Detailed Form ADV sections |
+| `adv_managers_brochures()` | OCR'd brochure text |
+| `adv_period_urls()` | Historical filing period URLs |
+
+## Data Dictionary
+
+Key column prefixes used throughout:
+
+- `id*` - Identifiers (idCRD, idCIK, idSEC)
+- `name*` - Entity/person names
+- `amount*` - Dollar amounts (formatted as currency)
+- `pct*` - Percentages
+- `count*` - Counts
+- `is*`, `has*` - Boolean flags
+- `date*` - Date values
+- `url*` - URLs to SEC filings

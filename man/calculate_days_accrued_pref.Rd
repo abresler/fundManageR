@@ -35,6 +35,9 @@ calculate_days_accrued_pref(pct_pref = .1, is_actual_360 = T, days = 31, equity_
 }
 \seealso{
 Other calculation: 
+\code{\link{calculate_average_payment}()},
+\code{\link{calculate_basis}()},
+\code{\link{calculate_capitalization}()},
 \code{\link{calculate_cash_flow_dates}()},
 \code{\link{calculate_cash_flow_waterfall}()},
 \code{\link{calculate_cash_flow_waterfall_partnership}()},
@@ -46,6 +49,7 @@ Other calculation:
 \code{\link{calculate_residual_valuation_ebitda_multiples}()},
 \code{\link{calculate_share_proceeds}()},
 \code{\link{calculate_valuation_post_money}()},
+\code{\link{get_data_monthly_periods}()},
 \code{\link{tidy_promote_structure}()}
 
 Other partnership calculation: 

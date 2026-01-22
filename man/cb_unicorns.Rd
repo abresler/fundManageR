@@ -25,6 +25,7 @@ cb_unicorns(return_message = TRUE)
 \seealso{
 Other venture capital: 
 \code{\link{calculate_valuation_post_money}()},
+\code{\link{post_money_valuation}()},
 \code{\link{ycombinator_alumni}()}
 }
 \concept{venture capital}

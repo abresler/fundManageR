@@ -14,7 +14,14 @@ edgar_tickers(
 \arguments{
 \item{include_ticker_information}{if \code{TRUE} returns ticker information}
 
-\item{return_message}{}
+\item{join_sic}{if \code{TRUE} joins SIC code data}
+
+\item{snake_names}{if \code{TRUE} returns snake case names}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+A tibble containing SEC listed public company ticker data
 }
 \description{
 SEC listed public companys

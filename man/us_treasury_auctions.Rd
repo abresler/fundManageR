@@ -6,6 +6,14 @@
 \usage{
 us_treasury_auctions()
 }
+\value{
+a \code{tibble} of historical US treasury auction data
+}
 \description{
 Treasury Auction History
+}
+\examples{
+\dontrun{
+us_treasury_auctions()
+}
 }

@@ -56,3 +56,8 @@ if \code{interactive} a plotly htmlwidget or else a static ggplot2 visualization
 \description{
 Plot any FRED time series
 }
+\examples{
+\dontrun{
+visualize_fred_time_series(series_id = "DGS2")
+}
+}

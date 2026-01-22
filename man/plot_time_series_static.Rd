@@ -42,3 +42,8 @@ a ggplot2 object
 \description{
 Plot ggplot time series
 }
+\examples{
+\dontrun{
+plot_time_series_static(data = fred_data)
+}
+}

@@ -7,12 +7,17 @@
 tv_market_events(return_message = TRUE)
 }
 \arguments{
-\item{return_message}{}
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+a \code{tibble} of market events
 }
 \description{
 Returns a list of global financial
 and economics events
 }
 \examples{
+\dontrun{
 tv_market_events(return_message = TRUE)
+}
 }

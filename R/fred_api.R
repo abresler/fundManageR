@@ -40,14 +40,17 @@ curl_url <-
 
 #' read RDA file
 #'
-#' @param file
-#' @param return_tibble
-#' @return
+#' @param file path to RDA file or URL
+#' @param return_tibble if \code{TRUE} returns a tibble
+#' @return a \code{tibble} or data frame with the loaded RDA data
 #' @export
 #' @import dplyr stringr purrr
 #' @importFrom curl curl_download
 #' @importFrom curl curl
 #' @examples
+#' \dontrun{
+#' read_rda_file(file = "path/to/file.rda")
+#' }
 read_rda_file <-
   function(file = "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true",
            return_tibble = TRUE) {
@@ -130,7 +133,7 @@ parse_table_node <-
 
       df_series <-
         df_series %>%
-        nest(-countItemPage, .key = dataSeries)
+        nest(dataSeries = -countItemPage)
 
       df_series <-
         df_series %>%
@@ -155,7 +158,7 @@ parse_table_node <-
 
       df_tags <-
         df_tags %>%
-        nest(-countItemPage, .key = dataTags)
+        nest(dataTags = -countItemPage)
     } else {
       df_tags <-
         tibble(countItemPage = x)
@@ -268,7 +271,7 @@ get_fred_page_count <-
           left_join(df_table, by = "countItemPage")
         table_df
       }) %>%
-      mutate_if(is.character, str_squish)
+      mutate(across(where(is.character), str_squish))
 
     df_items <-
       df_items %>%
@@ -277,7 +280,7 @@ get_fred_page_count <-
       select(numberPage, everything())
 
     if (return_message) {
-      glue::glue("Parsed {url}") %>% cat(fill = T)
+      .fm_parsing(url)
     }
 
     df_items <-
@@ -332,7 +335,7 @@ get_fred_page_count <-
   function(search_term = "China Debt",
            return_message = TRUE) {
     if (return_message) {
-      glue::glue("Searching for for {search_term}\n") %>% cat(fill = T)
+      .fm_info("Searching FRED for {.fm_entity {search_term}}")
     }
     term_slug <- search_term %>% URLencode()
     search_url <-
@@ -361,7 +364,7 @@ get_fred_page_count <-
       select(termSearch, numberPage, everything())
 
     if (return_message) {
-      glue::glue("Found {nrow(all_data)} FRED series for {search_term}") %>% cat(fill = T)
+      .fm_data_acquired(n_rows = nrow(all_data), source = "FRED", entity = search_term)
     }
 
     all_data
@@ -700,10 +703,10 @@ dictionary_fred_ids <-
       .parse_fred_search(return_message = return_message)
 
 
-    char_names <- all_data %>% select_if(is.character) %>% select(-matches("period|url|term")) %>% names()
+    char_names <- all_data %>% select(where(is.character)) %>% select(-matches("period|url|term")) %>% names()
 
     all_data <- all_data %>%
-      mutate_at(char_names, str_to_upper)
+      mutate(across(all_of(char_names), str_to_upper))
 
     all_data
   }
@@ -740,7 +743,7 @@ fred_terms_ids <-
         purrr::possibly(.fred_terms_ids_json, tibble())
       all_data <-
         .fred_terms_ids_json_safe(search_terms = search_terms, return_message = return_message) %>%
-        mutate_if(is.character, str_squish)
+        mutate(across(where(is.character), str_squish))
 
       if (snake_names) {
         all_data <- janitor::clean_names(dat = all_data)
@@ -754,7 +757,7 @@ fred_terms_ids <-
 
     all_data <-
       .fred_terms_ids_html_safe(search_terms = search_terms, return_message = return_message) %>%
-      mutate_if(is.character, str_squish)
+      mutate(across(where(is.character), str_squish))
 
     if (snake_names) {
       all_data <- janitor::clean_names(dat = all_data)
@@ -842,7 +845,7 @@ fred_tags <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(tagSearch), .key = dataTag) %>%
+        nest(dataTag = -c(tagSearch)) %>%
         mutate(countSeriesTag = dataTag %>% map_dbl(nrow))
     }
 
@@ -1139,16 +1142,14 @@ fred_tags <-
       data %>%
       select(dateData, value)
 
-    char_cols <- data %>% select_if(is.character) %>% select(-matches("url")) %>% names()
+    char_cols <- data %>% select(where(is.character)) %>% select(-matches("url")) %>% names()
 
     data <- data %>%
-      mutate_at(char_cols, list(function(x) {
-        x %>% str_to_upper() %>% str_squish()
-      }))
+      mutate(across(all_of(char_cols), ~str_to_upper(.) %>% str_squish()))
 
     df_meta <-
       data %>%
-      select(-one_of("dateData", "value")) %>%
+      select(-any_of("dateData", "value")) %>%
       distinct(
       )
 
@@ -1164,7 +1165,7 @@ fred_tags <-
     if (widen_data) {
       data <-
         data %>%
-        spread(idSymbol, value)
+        pivot_wider(names_from = idSymbol, values_from = value)
     }
 
 
@@ -1258,7 +1259,7 @@ fred_symbols <-
     if (!nest_data) {
       all_data <-
         all_data %>%
-        unnest()
+        unnest(cols = where(is.list))
     }
 
 
@@ -1300,15 +1301,15 @@ fred_symbols <-
 
   data <-
     tibble(item = items[seq_along(sources)], value = sources) %>%
-    tidyr::spread(item, value) %>%
-    select(one_of(items))
+    tidyr::pivot_wider(names_from = item, values_from = value) %>%
+    select(any_of(items))
 
   items <- c("urlSource", "urlRelease")
 
   df_urls <-
     tibble(item = items[seq_along(urls)], value = urls) %>%
-    tidyr::spread(item, value) %>%
-    select(one_of(items))
+    tidyr::pivot_wider(names_from = item, values_from = value) %>%
+    select(any_of(items))
 
   data <-
     data %>%
@@ -1384,7 +1385,7 @@ fred_symbols <-
     multi_run()
     df <-
       df %>%
-      mutate_if(is.character, str_squish)
+      mutate(across(where(is.character), str_squish))
 
     df
   }
@@ -1696,8 +1697,9 @@ check_for_hrb <- function() {
 #' @export
 #'
 #' @examples
-#'
-
+#' \dontrun{
+#' visualize_fred_time_series(series_id = "DGS2")
+#' }
 visualize_fred_time_series <-
   function(series_id = "DGS2",
            use_random = FALSE,
@@ -1710,14 +1712,15 @@ visualize_fred_time_series <-
            interactive = FALSE) {
     if (use_random) {
       if (!'df_fred_symbols' %>% exists()) {
-        "Asssigning FRED symbols to your environment as df_fred_symbols" %>% cat(fill = T)
+        .fm_info("Assigning FRED symbols to your environment as {.fm_value df_fred_symbols}")
         assign(
           x = 'df_fred_symbols',
           value = eval(dictionary_.all_fred_series_ids()),
           envir = .GlobalEnv
         )
       }
-      "\nBuckle your seatbelts we are plotting one random time series from the nearly 400,000 available on FRED" %>% cat(fill = T)
+      .fm_headline("Into the void...")
+      .fm_info("Selecting one random time series from {.fm_value 400,000} available on FRED")
       series_id <- df_fred_symbols %>% sample_n(1) %>% .$idSeries
     }
 
@@ -1764,6 +1767,9 @@ visualize_fred_time_series <-
 #' @export
 #' @import dplyr glue tis grid hrbrthemes purrr readr stringr formattable
 #' @examples
+#' \dontrun{
+#' plot_time_series_static(data = fred_data)
+#' }
 plot_time_series_static <-
   function(data,
            date_start = NULL,
@@ -1960,7 +1966,7 @@ plot_time_series_static <-
       df_recession_start_end <-
         tis::nberDates() %>%
         as_tibble() %>%
-        mutate_all(lubridate::ymd) %>%
+        mutate(across(everything(), lubridate::ymd)) %>%
         purrr::set_names(c("dateStart", "dateEnd"))
 
 

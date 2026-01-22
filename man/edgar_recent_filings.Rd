@@ -21,8 +21,28 @@ edgar_recent_filings(
 )
 }
 \arguments{
-\item{return_message}{}
+\item{forms}{vector of form types to retrieve}
+
+\item{table_name_initial}{initial table name for assignment}
+
+\item{parse_all_filings}{if \code{TRUE} parses all filings}
+
+\item{parse_form_d}{if \code{TRUE} parses Form D filings}
+
+\item{parse_complete_text_filings}{if \code{TRUE} parses complete text filings}
+
+\item{nest_data}{if \code{TRUE} nests data}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+A tibble containing recent EDGAR filings
 }
 \description{
 Most recent EDGAR filings by type
+}
+\examples{
+\dontrun{
+edgar_recent_filings(forms = c("10-K", "10-Q"))
+}
 }

@@ -91,6 +91,119 @@ Formatting: formattable (currency, percent, comma)
 Parallel: furrr, future
 Special: pdftools (OCR), XBRL (financial statements), tabulapdf (PDF tables)
 
+## Dictionary Maintenance
+
+When you see "Missing {name} in dictionary" warnings, **always add the missing names** to the appropriate dictionary function:
+
+- **SEC ADV data**: Add to `dictionary_sec_names()` in `R/adv_functions.R`
+  - Add the raw SEC column name to the `nameSEC` vector
+  - Add the corresponding cleaned name to the `nameActual` vector (follow naming conventions above)
+
+- **FINRA data**: Add to dictionary in `R/finra.R`
+- **FDIC data**: Add to dictionary in `R/government_data.R`
+
+The `nameActual` values must follow the column naming conventions (id*, name*, amount*, pct*, count*, is*, has*, etc.).
+
+## Console Messaging System (Ferrara Style)
+
+The package uses a styled console messaging system inspired by the visual aesthetic of Abel Ferrara films - neon-soaked noir with atmospheric darkness. All user-facing messages should use the helper functions in `R/ferrara_messaging.R`.
+
+### The Ferrara Palette
+
+| Element | Color | Inspiration |
+|---------|-------|-------------|
+| Headlines | Neon Magenta | Times Square sleaze |
+| Info/Counts | Electric Cyan | Surveillance cold |
+| Success | Amber Gold | Streetlight glow |
+| Warnings | Blood Crimson | Violence undertones |
+| Errors | Deep Purple | Corruption, surreal |
+| Values | Stark White | Honest, clinical |
+| Subtle | Smoke Gray | Fog, ambiguity |
+
+### Core Message Functions
+
+```r
+# Success - The Deal Closes
+.fm_success("Transaction complete for {.fm_entity Blackstone}")
+
+# Info - The Surveillance
+.fm_info("Monitoring {.fm_value 500} entities")
+
+# Warning - The Danger
+.fm_warning("Missing {.fm_value idCRD} in dictionary")
+
+# Danger/Error - The Fall
+.fm_danger("Connection failed to {.fm_entity SEC EDGAR}")
+
+# Headlines - The Title Card
+.fm_headline("Into the void...")
+
+# Parsing progress
+.fm_parsing("https://www.sec.gov/...")
+```
+
+### Compound Message Builders
+
+```r
+# Data acquisition (most common)
+.fm_data_acquired(
+  n_rows = 1500,
+  source = "SEC EDGAR",
+  entity = "Apollo",
+  extra = "Q4 2024 filings"
+)
+
+# Time range results
+.fm_time_range(
+  start_year = 2010,
+  end_year = 2024,
+  n_records = 50000,
+  data_type = "REIT transactions"
+)
+
+# Entity spotlight (for random highlights)
+.fm_spotlight(
+  company = "ANTHROPIC",
+  description = "AI safety research company",
+  url = "https://anthropic.com",
+  extra = list("Valuation" = "$15B", "Batch" = "Winter 2021")
+)
+
+# Financial results
+.fm_financial_result("Total AUM", 5000000000, is_currency = TRUE)
+```
+
+### Inline Styling Classes
+
+Use these within message strings for consistent formatting:
+
+- `{.fm_value 1500}` - Numbers and values (white, bold)
+- `{.fm_entity Blackstone}` - Entity names (magenta, italic)
+- `{.fm_url https://...}` - URLs (cyan, italic)
+- `{.fm_subtle additional info}` - Secondary info (gray)
+
+### When to Use Messages
+
+- **Data acquisition**: Always show count and source on success
+- **Parsing**: Show URL being parsed for transparency
+- **Warnings**: Dictionary misses, data structure changes
+- **Errors**: API failures, missing required parameters
+- **Spotlights**: Random entity highlights (YC companies, unicorns)
+
+### Migration Pattern
+
+When updating legacy messages:
+
+```r
+# OLD (deprecated)
+glue("Found {nrow(data)} records") %>% cat(fill = T)
+list("Parsed: ", url) %>% purrr::invoke(paste0, .) %>% cat(fill = T)
+
+# NEW (Ferrara style)
+.fm_data_acquired(n_rows = nrow(data), source = "SEC")
+.fm_parsing(url)
+```
+
 ## Testing
 
-Tests are minimal - primarily integration tests that hit live APIs (skipped on CRAN). When adding functionality, wrap API calls with `purrr::possibly()` to handle failures gracefully.
+Tests are minimal - primarily integration tests that hit live APIs (skipped on CRAN). When adding functionality, wrap API calls with `purrr::possibly()` for graceful API failures.

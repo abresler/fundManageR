@@ -50,7 +50,9 @@
         "stateCompany",
         "countryCompany",
         "zipcodeCompany",
-        "firm_expelled_date"
+        "firm_expelled_date",
+        "firm_ia_disclosure_fl",
+        "ia_firm_name"
       ),
       nameActual = c(
         "cityCompany",
@@ -101,8 +103,9 @@
         "stateCompany",
         "countryCompany",
         "zipcodeCompany",
-        "dateFirmExpelled"
-
+        "dateFirmExpelled",
+        "hasFirmIADisclosure",
+        "nameEntityManagerIA"
       )
 
     )
@@ -124,7 +127,7 @@
         nrow() == 0
 
       if (no_name) {
-        glue::glue("Missing {id} in dictionary") %>% cat(fill = T)
+        .fm_warning("Missing {.fm_value {id}} in FINRA dictionary")
         return(id)
       }
       df_finra %>%
@@ -361,7 +364,7 @@
 
 
     cols <- json %>% map_df(class) %>%
-      gather(column, type) %>%
+      pivot_longer(cols = everything(), names_to = "column", values_to = "type") %>%
       filter(type != "list") %>%
       pull(column)
 
@@ -407,7 +410,7 @@
 
       data <-
         data %>%
-        select(-one_of("firm_ia_address_details"))
+        select(-any_of("firm_ia_address_details"))
 
     }
 
@@ -460,35 +463,33 @@
       mutate(urlFINRABrokerJSON = url)
 
     to_num <-
-      data %>% select(matches("idCRD|codeSEC|count[A-Z]")) %>% select_if(is.character) %>% names()
+      data %>% select(matches("idCRD|codeSEC|count[A-Z]")) %>% select(where(is.character)) %>% names()
 
     if (length(to_num) > 0) {
       data <-
         data %>%
-        mutate_at(to_num, as.numeric)
+        mutate(across(all_of(to_num), as.numeric))
     }
 
     to_logical <-
-      data %>% select(matches("^is[A-Z]|^has[A-Z]")) %>% select_if(is.character) %>% names()
+      data %>% select(matches("^is[A-Z]|^has[A-Z]")) %>% select(where(is.character)) %>% names()
 
     if (length(to_logical) > 0) {
       data <-
         data %>%
-        mutate_at(to_logical,
-                  list(function(x) {
-                    case_when(x %in% c("ACTIVE", "Y") ~ TRUE,
-                              TRUE ~ FALSE)
-                  }))
+        mutate(across(all_of(to_logical),
+                      ~case_when(.x %in% c("ACTIVE", "Y") ~ TRUE,
+                                 TRUE ~ FALSE)))
     }
 
     date_cols <-
       data %>% select(matches("date")) %>%
-      select_if(is.character) %>%
+      select(where(is.character)) %>%
       names()
 
     if (length(date_cols) > 0) {
       data <- data %>%
-        mutate_at(date_cols, mdy)
+        mutate(across(all_of(date_cols), mdy))
     }
 
     if (data %>% hasName("idCRD")) {
@@ -642,7 +643,7 @@
      urls %>%
        map_dfr(function(url){
          if (return_message) {
-           glue("Parsing {url} for PDF text") %>% message()
+           .fm_parsing(url)
          }
          .parse_finra_pdf_brochure_safe(url = url)
        })
@@ -674,7 +675,7 @@
       url_df$urlJSON %>%
       future_map_dfr(function(x) {
         if (return_message) {
-          glue("Parsing {x} for FINRA data") %>% message()
+          .fm_parsing(x)
         }
         data <-
           .parse_broker_json_url(url = x)
@@ -682,7 +683,7 @@
 
 
         if (return_message) {
-          glue("Found {nrow(data)} FINRA matches for {search_name}") %>% message()
+          .fm_data_acquired(n_rows = nrow(data), source = "FINRA", entity = search_name)
         }
         data
       })

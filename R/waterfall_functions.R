@@ -28,50 +28,48 @@
 #' 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547278 ), date_format = '%Y-%m-%d', scale_to_100 = FALSE,
 #' return_percentage = FALSE, return_df = TRUE, return_wide = TRUE, return_message = TRUE)
 calculate_irr_periods <-
-  function(dates = c(
-    "2016-06-01",
-    "2017-05-31",
-    "2018-05-31",
-    "2019-05-31",
-    "2020-05-31",
-    "2021-05-31",
-    "2022-05-31",
-    "2023-05-31",
-    "2024-05-31",
-    "2025-05-31",
-    "2026-05-31"
-  ),
-  cash_flows = c(
-    3000,
-    -478.515738547242,
-    -478.515738547242,
-    -478.515738547242,
-    -478.515738547242,
-    -478.515738547242,
-    -478.515738547242,
-    -478.515738547242,
-    -478.515738547242,
-    -478.515738547242,
-    -478.515738547278
-  ),
-  date_format = '%Y-%m-%d',
-  scale_to_100 = F,
-  return_percentage = F,
-  return_df = T,
-  return_wide = T,
-  return_message = T) {
+  function(
+    dates = c(
+      "2016-06-01",
+      "2017-05-31",
+      "2018-05-31",
+      "2019-05-31",
+      "2020-05-31",
+      "2021-05-31",
+      "2022-05-31",
+      "2023-05-31",
+      "2024-05-31",
+      "2025-05-31",
+      "2026-05-31"
+    ),
+    cash_flows = c(
+      3000,
+      -478.515738547242,
+      -478.515738547242,
+      -478.515738547242,
+      -478.515738547242,
+      -478.515738547242,
+      -478.515738547242,
+      -478.515738547242,
+      -478.515738547242,
+      -478.515738547242,
+      -478.515738547278
+    ),
+    date_format = '%Y-%m-%d',
+    scale_to_100 = F,
+    return_percentage = F,
+    return_df = T,
+    return_wide = T,
+    return_message = T
+  ) {
     secant <-
-      function(par,
-               fn,
-               tol = 1.e-07,
-               itmax = 100,
-               trace = TRUE,
-               ...) {
+      function(par, fn, tol = 1.e-07, itmax = 100, trace = TRUE, ...) {
         # par = a starting vector with 2 starting values
         # fn = a function whose first argument is the variable of interest
         #
-        if (length(par) != 2)
+        if (length(par) != 2) {
           stop("You must specify a starting parameter vector of length 2")
+        }
         p.2 <- par[1]
         p.1 <- par[2]
         f <- rep(NA, length(par))
@@ -80,7 +78,7 @@ calculate_irr_periods <-
         iter <- 1
         pchg <- abs(p.2 - p.1)
         fval <- f[2]
-        if (trace)
+        if (trace) {
           # cat("par: ", par, "fval: ", f, "\n")
           while (pchg >= tol & abs(fval) > tol & iter <= itmax) {
             p.new <- p.2 - (p.2 - p.1) * f[2] / (f[2] - f[1])
@@ -92,13 +90,13 @@ calculate_irr_periods <-
             f[2] <- fval
             iter <- iter + 1
           }
-        list(par = p.new,
-             value = fval,
-             iter = iter)
+        }
+        list(par = p.new, value = fval, iter = iter)
       }
     npv <-
-      function (irr, cashFlow, times)
-        sum(cashFlow / (1 + irr) ^ times)
+      function(irr, cashFlow, times) {
+        sum(cashFlow / (1 + irr)^times)
+      }
     cfDate <-
       dates %>%
       as.Date(format = date_format)
@@ -149,20 +147,20 @@ calculate_irr_periods <-
     amountProfit <-
       -(equityDistributions + equityContributions)
 
-    if (return_df)
+    if (return_df) {
       data <-
-      tibble(
-        dateStart,
-        dateEnd,
-        equityContributions,
-        equityDistributions,
-        pctIRR = irr,
-        amountProfit,
-        multipleCapital,
-        dateTimeCF = Sys.time()
-      ) %>%
-      mutate(pctIRR = percent(pctIRR, digits = 3))
-    else {
+        tibble(
+          dateStart,
+          dateEnd,
+          equityContributions,
+          equityDistributions,
+          pctIRR = irr,
+          amountProfit,
+          multipleCapital,
+          dateTimeCF = Sys.time()
+        ) %>%
+        mutate(pctIRR = percent(pctIRR, digits = 3))
+    } else {
       data <-
         irr
     }
@@ -188,12 +186,15 @@ calculate_irr_periods <-
     if (!return_wide) {
       data <-
         data %>%
-        gather(metric, value, -c(dateStart, dateEnd, dateTimeCF))
+        pivot_longer(
+          cols = -c(dateStart, dateEnd, dateTimeCF),
+          names_to = "metric",
+          values_to = "value"
+        )
     }
 
     return(data)
   }
-
 
 
 #' Summary cash flows
@@ -227,44 +228,45 @@ calculate_irr_periods <-
 #' cash_flows = c( -4151601, 119499.036215643, 257186.036215643, 447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166, 8788626.7640915 ),
 #' working_capital = 125000, remove_cumulative_cols = TRUE, include_final_day = TRUE, distribution_frequency = NA)
 calculate_cash_flow_dates <-
-  function(dates = c(
-    "2016-09-01",
-    "2017-08-31",
-    "2018-08-31",
-    "2019-08-31",
-    "2020-08-31",
-    "2021-08-31",
-    "2022-08-31",
-    "2023-08-31"
-  ),
-  cash_flows = c(
-    -4151601,
-    119499.036215643,
-    257186.036215643,
-    447646.036215643,
-    200652.036215643,
-    510409.036215643,
-    193.036215643166,
-    8788626.76409155
-  ),
-  working_capital = 125000,
-  remove_cumulative_cols = TRUE,
-  include_final_day = TRUE,
-  is_annual_budget = T,
-  distribution_frequency = NA) {
+  function(
+    dates = c(
+      "2016-09-01",
+      "2017-08-31",
+      "2018-08-31",
+      "2019-08-31",
+      "2020-08-31",
+      "2021-08-31",
+      "2022-08-31",
+      "2023-08-31"
+    ),
+    cash_flows = c(
+      -4151601,
+      119499.036215643,
+      257186.036215643,
+      447646.036215643,
+      200652.036215643,
+      510409.036215643,
+      193.036215643166,
+      8788626.76409155
+    ),
+    working_capital = 125000,
+    remove_cumulative_cols = TRUE,
+    include_final_day = TRUE,
+    is_annual_budget = T,
+    distribution_frequency = NA
+  ) {
     distribution_frequencies <-
-      c(NA,
-        'weekly',
-        'monthly',
-        'quarterly',
-        'yearly',
-        'sale')
+      c(NA, 'weekly', 'monthly', 'quarterly', 'yearly', 'sale')
 
     distribution_frequency <-
-      distribution_frequency %>% str_to_lower() %>%
-      str_replace_all('yearly', 'annually') %>% str_replace_all('residual', 'sale')
+      distribution_frequency %>%
+      str_to_lower() %>%
+      str_replace_all('yearly', 'annually') %>%
+      str_replace_all('residual', 'sale')
 
-    if (!distribution_frequency %>% str_to_lower() %in% distribution_frequencies) {
+    if (
+      !distribution_frequency %>% str_to_lower() %in% distribution_frequencies
+    ) {
       distribution_frequency <- 'annually'
     }
     dates <-
@@ -273,7 +275,8 @@ calculate_cash_flow_dates <-
 
     is_annual_budget <-
       as.numeric((dates[2] - dates[1] + 1)) %%
-      364 == 1
+        364 ==
+        1
 
     if (distribution_frequency %in% c(NA, 'sale')) {
       is_at_sale <-
@@ -292,24 +295,23 @@ calculate_cash_flow_dates <-
     distribution_dates_df <-
       distribution_dates_df %>%
       mutate(
-        isDistribution =
-          case_when(
-            (
-              idPeriod > 0 &
-                is_annual_budget == T &
-                (!distribution_frequency == 'sale')
-            ) ~ T,
-            (
-              is_at_sale == T &
-                distribution_dates_df$idPeriod == max(distribution_dates_df$idPeriod)
-            ) ~ T,
-            NA ~ F
-          ))
+        isDistribution = case_when(
+          (idPeriod > 0 &
+            is_annual_budget == T &
+            (!distribution_frequency == 'sale')) ~ T,
+          (is_at_sale == T &
+            distribution_dates_df$idPeriod ==
+              max(distribution_dates_df$idPeriod)) ~ T,
+          NA ~ F
+        )
+      )
 
     distribution_dates_df <-
       distribution_dates_df %>%
-      mutate_at('isDistribution',
-                funs(ifelse(isDistribution %>% is.na(), FALSE, .) %>% as.numeric()))
+      mutate(across(
+        isDistribution,
+        ~ ifelse(isDistribution %>% is.na(), FALSE, .) %>% as.numeric()
+      ))
 
     if (working_capital > 0) {
       working_capital <-
@@ -317,32 +319,34 @@ calculate_cash_flow_dates <-
     }
 
     cf_data <-
-      tibble(date = dates %>% ymd(),
-                 cashFlow = cash_flows %>% currency(digits = 2)) %>%
+      tibble(
+        date = dates %>% ymd(),
+        cashFlow = cash_flows %>% currency(digits = 2)
+      ) %>%
       mutate(idPeriod = 0:(nrow(.) - 1)) %>%
       dplyr::select(idPeriod, everything()) %>%
       left_join(distribution_dates_df) %>%
       suppressMessages()
 
-
     cf_data <-
       cf_data %>%
       mutate(
         isSalePeriod = if_else(idPeriod == max(idPeriod), T, F),
-        workingCapital =
-          case_when(
-            cf_data$idPeriod == 0 ~ working_capital,
-            cf_data$idPeriod == max(cf_data$idPeriod) ~ -working_capital,
-            TRUE ~ 0
-          ),
+        workingCapital = case_when(
+          cf_data$idPeriod == 0 ~ working_capital,
+          cf_data$idPeriod == max(cf_data$idPeriod) ~ -working_capital,
+          TRUE ~ 0
+        ),
         totalCF = workingCapital + cashFlow,
         capitalContribution = if_else(totalCF < 0, -totalCF, 0),
         cashAvailableDistribution = if_else(totalCF > 0, -totalCF, 0),
         capitalDistributionCurrent = cashAvailableDistribution * isDistribution,
-        undistributedCash = capitalDistributionCurrent - cashAvailableDistribution,
+        undistributedCash = capitalDistributionCurrent -
+          cashAvailableDistribution,
         cumUndistributedCash = -cumsum(undistributedCash),
         distributionAccruedCash = cumUndistributedCash * isDistribution,
-        capitalDistribution = distributionAccruedCash + capitalDistributionCurrent,
+        capitalDistribution = distributionAccruedCash +
+          capitalDistributionCurrent,
         capitalCF = capitalContribution + capitalDistribution
       ) %>%
       dplyr::select(
@@ -359,13 +363,14 @@ calculate_cash_flow_dates <-
         cumDays = cumsum(daysAccrued),
         cumContribution = cumsum(capitalContribution),
         cumDistribution = cumsum(capitalDistribution),
-        ratioCapitalReturned = (abs(cumDistribution) / cumContribution) %>% as.numeric,
+        ratioCapitalReturned = (abs(cumDistribution) / cumContribution) %>%
+          as.numeric,
         cumCF = cumsum(cashFlow),
         endCash = cumContribution + cumDistribution + cumCF,
         beginCash = ifelse(idPeriod == 0, 0, dplyr::lag(endCash))
       ) %>%
-      mutate_at(
-        .vars = c(
+      mutate(across(
+        c(
           "cashFlow",
           "workingCapital",
           'capitalCF',
@@ -379,30 +384,33 @@ calculate_cash_flow_dates <-
           "cumCF"
         ),
         currency
-      ) %>%
-      dplyr::select_(
-        .dots = c(
-          "idPeriod",
-          "date",
-          'daysAccrued',
-          'cumDays',
-          "cashFlow",
-          "isSalePeriod",
-          "workingCapital",
-          "totalCF",
-          "capitalContribution",
-          "capitalDistribution",
-          'capitalCF',
-          'ratioCapitalReturned',
-          "beginCash",
-          "endCash",
-          "cumContribution",
-          "cumDistribution",
-          "cumCF"
-        )
+      )) %>%
+      dplyr::select(
+        idPeriod,
+        date,
+        daysAccrued,
+        cumDays,
+        cashFlow,
+        isSalePeriod,
+        workingCapital,
+        totalCF,
+        capitalContribution,
+        capitalDistribution,
+        capitalCF,
+        ratioCapitalReturned,
+        beginCash,
+        endCash,
+        cumContribution,
+        cumDistribution,
+        cumCF
       )
 
-    if (!(cf_data$totalCF %>% sum) + ((cf_data$capitalContribution %>% sum) + (cf_data$capitalDistribution %>% sum)) == 0) {
+    if (
+      !(cf_data$totalCF %>% sum) +
+        ((cf_data$capitalContribution %>% sum) +
+          (cf_data$capitalDistribution %>% sum)) ==
+        0
+    ) {
       stop("Cash does not balance")
     }
 
@@ -413,7 +421,6 @@ calculate_cash_flow_dates <-
     }
 
     return(cf_data)
-
   }
 
 
@@ -442,34 +449,36 @@ calculate_cash_flow_dates <-
 #' working_capital = 125000, remove_cumulative_cols = T, distribution_frequency = 'yearly', date_format = '%Y-%m-%d', scale_to_100 = F, return_percentage = F, return_df = T, return_message = T
 #' )
 calculate_cash_flows_returns <-
-  function(dates = c(
-    "2016-09-01",
-    "2017-08-31",
-    "2018-08-31",
-    "2019-08-31",
-    "2020-08-31",
-    "2021-08-31",
-    "2022-08-31",
-    "2023-08-31"
-  ),
-  cash_flows = c(
-    -4151601,
-    119499.036215643,
-    257186.036215643,
-    447646.036215643,
-    200652.036215643,
-    510409.036215643,
-    193.036215643166,
-    8788626.76409155
-  ),
-  working_capital = 125000,
-  remove_cumulative_cols = T,
-  distribution_frequency = 'annually',
-  date_format = '%Y-%m-%d',
-  scale_to_100 = F,
-  return_percentage = F,
-  return_df = T,
-  return_message = T) {
+  function(
+    dates = c(
+      "2016-09-01",
+      "2017-08-31",
+      "2018-08-31",
+      "2019-08-31",
+      "2020-08-31",
+      "2021-08-31",
+      "2022-08-31",
+      "2023-08-31"
+    ),
+    cash_flows = c(
+      -4151601,
+      119499.036215643,
+      257186.036215643,
+      447646.036215643,
+      200652.036215643,
+      510409.036215643,
+      193.036215643166,
+      8788626.76409155
+    ),
+    working_capital = 125000,
+    remove_cumulative_cols = T,
+    distribution_frequency = 'annually',
+    date_format = '%Y-%m-%d',
+    scale_to_100 = F,
+    return_percentage = F,
+    return_df = T,
+    return_message = T
+  ) {
     cf_data <-
       calculate_cash_flow_dates(
         dates = dates,
@@ -490,9 +499,23 @@ calculate_cash_flows_returns <-
       )
 
     cf_Data
-
   }
 
+#' Scale value to percentage
+#'
+#' Converts a numeric value to percentage decimal form. Values greater than 1
+#' are assumed to be whole percentages and are divided by 100 (e.g., 20 becomes 0.20).
+#' Values already in decimal form (e.g., 0.20) are returned unchanged.
+#'
+#' @param x Numeric value representing a percentage
+#'
+#' @return Numeric value in decimal percentage form (0-1 scale)
+#' @keywords internal
+#' @family waterfall calculation
+#'
+#' @examples
+#' scale_to_pct(20)   # Returns 0.20
+#' scale_to_pct(0.20) # Returns 0.20
 scale_to_pct <- function(x) {
   if (x > 1) {
     x <-
@@ -505,11 +528,20 @@ scale_to_pct <- function(x) {
 .parse_promote_structure <-
   function(promote_structure = "20 over a 12") {
     hit_words <-
-      c(" over a ", " over ", "over", "over ", "over a",
-        "/", " / ", " until ", " on ")
+      c(
+        " over a ",
+        " over ",
+        "over",
+        "over ",
+        "over a",
+        "/",
+        " / ",
+        " until ",
+        " on "
+      )
     has_no_promote <-
       !promote_structure %>%
-      str_detect(hit_words %>% paste0(collapse = "|"))
+        str_detect(hit_words %>% paste0(collapse = "|"))
 
     if (has_no_promote) {
       stop(
@@ -518,9 +550,11 @@ scale_to_pct <- function(x) {
     }
 
     typeHurdle <-
-      case_when(promote_structure %>% str_detect("x") ~ "multiple",
-                promote_structure %>% str_detect("until") ~ "amount",
-                TRUE ~ "pref")
+      case_when(
+        promote_structure %>% str_detect("x") ~ "multiple",
+        promote_structure %>% str_detect("until") ~ "amount",
+        TRUE ~ "pref"
+      )
 
     hurdle_promote <-
       promote_structure %>%
@@ -528,12 +562,11 @@ scale_to_pct <- function(x) {
       future_map(parse_number) %>%
       flatten_dbl()
 
-
     case_when(
-      typeHurdle == "multiple" ~  hurdle_promote[[1]] %>% scale_to_pct()
+      typeHurdle == "multiple" ~ hurdle_promote[[1]] %>% scale_to_pct()
     )
 
-    if (typeHurdle %in%  c('multiple', "amount")) {
+    if (typeHurdle %in% c('multiple', "amount")) {
       hurdle_promote[[1]] <-
         hurdle_promote[[1]] %>%
         scale_to_pct()
@@ -543,26 +576,23 @@ scale_to_pct <- function(x) {
         map_dbl(scale_to_pct)
     }
 
-
     items <-
       c("pctPromote", 'valueHurdle')
 
     promote_df <-
-      tibble(typeHurdle,
-             item = items,
-             value = hurdle_promote) %>%
+      tibble(typeHurdle, item = items, value = hurdle_promote) %>%
       mutate(
-        item =
-          case_when(
-            typeHurdle == "pref" ~ item %>% str_replace(pattern = "valueHurdle", 'pctPref'),
-            typeHurdle == "multiple" ~ item %>% str_replace(pattern = "valueHurdle", 'ratioCapitalMultiple'),
-            TRUE ~ item %>% str_replace(pattern = "valueHurdle", 'amountFee')
-          )
+        item = case_when(
+          typeHurdle == "pref" ~ item %>%
+            str_replace(pattern = "valueHurdle", 'pctPref'),
+          typeHurdle == "multiple" ~ item %>%
+            str_replace(pattern = "valueHurdle", 'ratioCapitalMultiple'),
+          TRUE ~ item %>% str_replace(pattern = "valueHurdle", 'amountFee')
+        )
       ) %>%
-      spread(item, value)
+      pivot_wider(names_from = item, values_from = value)
 
     return(promote_df)
-
   }
 
 
@@ -585,15 +615,19 @@ scale_to_pct <- function(x) {
 #' @examples
 #' tidy_promote_structure(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"), return_wide = T)
 tidy_promote_structure <-
-  function(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"),
-           return_wide = F) {
+  function(
+    promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"),
+    return_wide = F
+  ) {
     parse_promote_structure_safe <-
       purrr::possibly(.parse_promote_structure, tibble())
 
     promote_data <-
       seq_along(promote_structures) %>%
       future_map_dfr(function(x) {
-        parse_promote_structure_safe(promote_structure = promote_structures[x]) %>%
+        parse_promote_structure_safe(
+          promote_structure = promote_structures[x]
+        ) %>%
           mutate(tierWaterfall = x) %>%
           dplyr::select(tierWaterfall, everything())
       })
@@ -601,22 +635,27 @@ tidy_promote_structure <-
     if (return_wide) {
       promote_data <-
         promote_data %>%
-        gather(item, hurdle, -c(tierWaterfall)) %>%
+        pivot_longer(
+          cols = -c(tierWaterfall),
+          names_to = "item",
+          values_to = "hurdle"
+        ) %>%
         replace_na(list(hurdle = 0)) %>%
         arrange(tierWaterfall) %>%
         unite(item, item, tierWaterfall, sep = '') %>%
         mutate(item = item %>% factor(ordered = T, levels = item)) %>%
-        spread(item, hurdle)
+        pivot_wider(names_from = item, values_from = hurdle)
 
       promote_data <-
         promote_data %>%
-        mutate_at(.vars =
-                    promote_data %>% dplyr::select(dplyr::matches("^pct[A-Z]|ratio[A-Z]")) %>% names,
-                  funs(. %>% as.numeric)) %>%
-        mutate_at(.vars =
-                    promote_data %>% dplyr::select(dplyr::matches("^pct[A-Z]")) %>% names,
-                  funs(. %>% percent))
-
+        mutate(across(
+          matches("^pct[A-Z]|ratio[A-Z]"),
+          ~ as.numeric(.)
+        )) %>%
+        mutate(across(
+          matches("^pct[A-Z]"),
+          ~ percent(.)
+        ))
     } else {
       promote_data <-
         promote_data %>%
@@ -625,9 +664,10 @@ tidy_promote_structure <-
 
       promote_data <-
         promote_data %>%
-        mutate_at(.vars =
-                    promote_data %>% dplyr::select(dplyr::matches("^pct[A-Z]")) %>% names,
-                  funs(. %>% percent)) %>%
+        mutate(across(
+          matches("^pct[A-Z]"),
+          ~ percent(.)
+        )) %>%
         dplyr::select(
           tierWaterfall,
           nameTier,
@@ -661,11 +701,13 @@ tidy_promote_structure <-
 #' @examples
 #' calculate_days_accrued_pref(pct_pref = .1, is_actual_360 = T, days = 31, equity_bb = 1700000.00, pref_accrued_bb = 0)
 calculate_days_accrued_pref <-
-  function(pct_pref = .1,
-           is_actual_360 = TRUE,
-           days = 31,
-           equity_bb = 1700000.00,
-           pref_accrued_bb = 0) {
+  function(
+    pct_pref = .1,
+    is_actual_360 = TRUE,
+    days = 31,
+    equity_bb = 1700000.00,
+    pref_accrued_bb = 0
+  ) {
     if (is_actual_360) {
       accrual_days <-
         360
@@ -675,7 +717,7 @@ calculate_days_accrued_pref <-
     }
 
     calc_basis <-
-      (equity_bb  + pref_accrued_bb) %>% currency(digits = 2)
+      (equity_bb + pref_accrued_bb) %>% currency(digits = 2)
 
     accrued_pref <-
       ((pct_pref / accrual_days) * days * calc_basis)
@@ -698,8 +740,7 @@ calculate_days_accrued_pref <-
 
 
 .waterfall_tier_df <-
-  function(tiers = 1:5,
-           return_wide = F) {
+  function(tiers = 1:5, return_wide = F) {
     waterfall_df <-
       tibble(
         tierWaterfall = 1,
@@ -755,16 +796,23 @@ calculate_days_accrued_pref <-
         bind_rows(other_tiers)
     }
 
-    convert_cols <- waterfall_df %>% select_if(is.numeric) %>% select(-dplyr::matches("idPeriod|tier")) %>% names()
+    convert_cols <- waterfall_df %>%
+      select(where(is.numeric)) %>%
+      select(-dplyr::matches("idPeriod|tier")) %>%
+      names()
 
     waterfall_df <-
       waterfall_df %>%
-      mutate_at(convert_cols, currency)
+      mutate(across(all_of(convert_cols), currency))
 
     if (return_wide) {
       waterfall_df <-
         waterfall_df %>%
-        gather(item, amount, -tierWaterfall, convert = F) %>%
+        pivot_longer(
+          cols = -tierWaterfall,
+          names_to = "item",
+          values_to = "amount"
+        ) %>%
         arrange(tierWaterfall, item) %>%
         unite(item, item, tierWaterfall, sep = '') %>%
         suppressWarnings()
@@ -774,18 +822,15 @@ calculate_days_accrued_pref <-
 
       waterfall_df <-
         waterfall_df %>%
-        spread(item, amount) %>%
-        dplyr::select(one_of(col_order))
+        pivot_wider(names_from = item, values_from = amount) %>%
+        dplyr::select(any_of(col_order))
     }
     return(waterfall_df)
   }
 
 
 .get_initial_equity_df <-
-  function(equity_bb = 0,
-           to_equity = 0,
-           period = 0,
-           equity_draw = 0) {
+  function(equity_bb = 0, to_equity = 0, period = 0, equity_draw = 0) {
     equityBB <-
       equity_bb
 
@@ -799,16 +844,11 @@ calculate_days_accrued_pref <-
       equityBB + equityDraw + toEquity
 
     equity_df <-
-      tibble(idPeriod = period,
-                 equityBB,
-                 equityDraw,
-                 toEquity,
-                 equityEB) %>%
-      mutate_at(
-        .vars = c('equityBB', 'equityDraw',
-                  'toEquity', 'equityEB'),
-        .funs = currency
-      )
+      tibble(idPeriod = period, equityBB, equityDraw, toEquity, equityEB) %>%
+      mutate(across(
+        c('equityBB', 'equityDraw', 'toEquity', 'equityEB'),
+        currency
+      ))
     return(equity_df)
   }
 
@@ -843,20 +883,20 @@ calculate_days_accrued_pref <-
 #'  widen_promote_structure = FALSE, bind_to_cf = FALSE,
 #' remove_zero_cols = TRUE, widen_waterfall = FALSE)
 calculate_cash_flow_waterfall <-
-  function(dates =
-             c("2015-03-11", "2015-11-20", "2016-10-15"),
-           cash_flows = c(-100000, -200000, 698906.76849),
-           working_capital = 0,
-           promote_structure = c("20 / 12", "30 / 18"),
-           distribution_frequency = NA,
-           is_actual_360 = TRUE,
-           widen_promote_structure = FALSE,
-           bind_to_cf = FALSE,
-           remove_zero_cols = TRUE,
-           widen_waterfall = FALSE) {
-    options(scipen = 999999)
+  function(
+    dates = c("2015-03-11", "2015-11-20", "2016-10-15"),
+    cash_flows = c(-100000, -200000, 698906.76849),
+    working_capital = 0,
+    promote_structure = c("20 / 12", "30 / 18"),
+    distribution_frequency = NA,
+    is_actual_360 = TRUE,
+    widen_promote_structure = FALSE,
+    bind_to_cf = FALSE,
+    remove_zero_cols = TRUE,
+    widen_waterfall = FALSE
+  ) {
 
-    if (class(dates)  != "Date") {
+    if (class(dates) != "Date") {
       dates <-
         readr::parse_date(dates)
     }
@@ -872,16 +912,19 @@ calculate_cash_flow_waterfall <-
 
     waterfall_data <-
       cf_data %>%
-      dplyr::select(idPeriod:daysAccrued,
-                    capitalContribution,
-                    capitalDistribution,
-                    capitalCF) %>%
+      dplyr::select(
+        idPeriod:daysAccrued,
+        capitalContribution,
+        capitalDistribution,
+        capitalCF
+      ) %>%
       mutate(cashDistributionAvailable = -pmin(0, capitalCF) %>% currency())
 
     promote_df <-
-      tidy_promote_structure(promote_structures = promote_structure,
-        return_wide = widen_promote_structure)
-
+      tidy_promote_structure(
+        promote_structures = promote_structure,
+        return_wide = widen_promote_structure
+      )
 
     waterfall_periods <-
       waterfall_data$idPeriod
@@ -907,7 +950,10 @@ calculate_cash_flow_waterfall <-
         period_data$capitalContribution
 
       periodCAD <-
-        period_data$cashDistributionAvailable %>% as.numeric() %>%digits(2) %>% currency
+        period_data$cashDistributionAvailable %>%
+        as.numeric() %>%
+        digits(2) %>%
+        currency
 
       if (period == 0) {
         equity_df <-
@@ -924,7 +970,7 @@ calculate_cash_flow_waterfall <-
           dplyr::select(idPeriod, everything())
       }
 
-      if (period > 0)  {
+      if (period > 0) {
         equityBB <-
           equity_df %>% dplyr::filter(idPeriod == period - 1) %>% .$equityEB
 
@@ -935,14 +981,20 @@ calculate_cash_flow_waterfall <-
           bbAccruedPref <-
             max(
               0,
-              waterfall_df %>% dplyr::filter(idPeriod == period - 1 &
-                  tierWaterfall == tier) %>% .$ebAccruedPref
+              waterfall_df %>%
+                dplyr::filter(
+                  idPeriod == period - 1 &
+                    tierWaterfall == tier
+                ) %>%
+                .$ebAccruedPref
             )
 
           bbCapitalMultiple <-
             max(
               0,
-              waterfall_df %>% dplyr::filter(idPeriod == period - 1, tierWaterfall == tier) %>% .$ebCapitalMultiple
+              waterfall_df %>%
+                dplyr::filter(idPeriod == period - 1, tierWaterfall == tier) %>%
+                .$ebCapitalMultiple
             )
 
           tierPromote <-
@@ -981,24 +1033,36 @@ calculate_cash_flow_waterfall <-
             ebCapitalMultiple <-
               0
 
-            if (tier == 1)  {
+            if (tier == 1) {
               toAccruedPref <-
-                -min(periodCAD, (accruedPref + bbAccruedPref)) %>% as.numeric() %>%digits(2)
+                -min(periodCAD, (accruedPref + bbAccruedPref)) %>%
+                as.numeric() %>%
+                digits(2)
 
               ebAccruedPref <-
-                (bbAccruedPref + accruedPref + toAccruedPref)  %>% as.numeric() %>%digits(2)
+                (bbAccruedPref + accruedPref + toAccruedPref) %>%
+                as.numeric() %>%
+                digits(2)
 
               cash_to_equity <-
-                max(0, (periodCAD + toAccruedPref))  %>% as.numeric() %>%digits(2)
+                max(0, (periodCAD + toAccruedPref)) %>%
+                as.numeric() %>%
+                digits(2)
 
               toEquity <-
-                -min(cash_to_equity, (equityBB + equityDraw)) %>% as.numeric() %>%digits(2)
+                -min(cash_to_equity, (equityBB + equityDraw)) %>%
+                as.numeric() %>%
+                digits(2)
 
               equityEB <-
-                (equityBB + equityDraw + toEquity) %>% as.numeric() %>%digits(2)
+                (equityBB + equityDraw + toEquity) %>%
+                as.numeric() %>%
+                digits(2)
 
               to_promote_tier <-
-                max(0, (cash_to_equity + toEquity))  %>% as.numeric() %>%digits(2)
+                max(0, (cash_to_equity + toEquity)) %>%
+                as.numeric() %>%
+                digits(2)
 
               distributionPriorPref <-
                 0
@@ -1009,21 +1073,23 @@ calculate_cash_flow_waterfall <-
 
                 toCapital <-
                   -to_promote_tier * (1 - tierPromote)
-
               }
               if (is_max_tier == F) {
                 typeNextTier <-
                   promote_df %>%
-                  dplyr::filter(tierWaterfall == tier + 1) %>% .$typeHurdle
+                  dplyr::filter(tierWaterfall == tier + 1) %>%
+                  .$typeHurdle
 
                 if (typeNextTier == 'pref') {
                   nextPref <-
                     promote_df %>%
-                    dplyr::filter(tierWaterfall == tier + 1) %>% .$pctPref
+                    dplyr::filter(tierWaterfall == tier + 1) %>%
+                    .$pctPref
 
                   bbAccruedPrefNext <-
                     waterfall_df %>%
-                    dplyr::filter(tierWaterfall == tier + 1) %>% .$bbAccruedPref
+                    dplyr::filter(tierWaterfall == tier + 1) %>%
+                    .$bbAccruedPref
 
                   prefAccruedNext <-
                     calculate_days_accrued_pref(
@@ -1035,32 +1101,46 @@ calculate_cash_flow_waterfall <-
                     )
 
                   cash_for_promote <-
-                    -min(to_promote_tier, max(
-                      0,
-                      (bbAccruedPref + prefAccruedNext + toAccruedPref) / (1 - tierPromote)
-                    ))
+                    -min(
+                      to_promote_tier,
+                      max(
+                        0,
+                        (bbAccruedPref + prefAccruedNext + toAccruedPref) /
+                          (1 - tierPromote)
+                      )
+                    )
                 }
                 if (typeNextTier == 'multiple') {
                   nextMultiple <-
                     promote_df %>%
-                    dplyr::filter(tierWaterfall == tier + 1) %>% .$ratioCapitalMultiple
+                    dplyr::filter(tierWaterfall == tier + 1) %>%
+                    .$ratioCapitalMultiple
 
                   bbCapitalMultipleNext <-
-                    waterfall_df %>% dplyr::filter(idPeriod == period - 1, tierWaterfall == tier + 1) %>% .$ebCapitalMultiple
+                    waterfall_df %>%
+                    dplyr::filter(
+                      idPeriod == period - 1,
+                      tierWaterfall == tier + 1
+                    ) %>%
+                    .$ebCapitalMultiple
 
                   capitalMultipleDrawNext <-
-                    (equity_df %>% dplyr::filter(idPeriod == period - 1) %>% .$equityDraw) * nextMultiple
-
+                    (equity_df %>%
+                      dplyr::filter(idPeriod == period - 1) %>%
+                      .$equityDraw) *
+                    nextMultiple
 
                   cash_for_promote <-
-                    -min(to_promote_tier, max(
-                      0,
-                      (
-                        bbCapitalMultipleNext + capitalMultipleDrawNext + toAccruedPref
-                      ) / (1 - tierPromote)
-                    ))
-
-
+                    -min(
+                      to_promote_tier,
+                      max(
+                        0,
+                        (bbCapitalMultipleNext +
+                          capitalMultipleDrawNext +
+                          toAccruedPref) /
+                          (1 - tierPromote)
+                      )
+                    )
                 }
 
                 toCapital <-
@@ -1074,40 +1154,90 @@ calculate_cash_flow_waterfall <-
             if (tier > 1) {
               priorLevelDistribution <-
                 waterfall_df %>%
-                dplyr::filter(idPeriod == period &
-                    tierWaterfall < tier) %>% dplyr::select(toAccruedPref,
-                      toPromote,
-                      toCapital,
-                      toCapitalMultiple) %>% gather(item, value) %>%
-                .$value %>% sum
+                dplyr::filter(
+                  idPeriod == period &
+                    tierWaterfall < tier
+                ) %>%
+                dplyr::select(
+                  toAccruedPref,
+                  toPromote,
+                  toCapital,
+                  toCapitalMultiple
+                ) %>%
+                pivot_longer(
+                  cols = everything(),
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
+                .$value %>%
+                sum
 
               equityDistribution <-
-                equity_df %>% dplyr::filter(idPeriod == period) %>% dplyr::select(toEquity) %>% gather(item, value) %>% .$value %>% sum
+                equity_df %>%
+                dplyr::filter(idPeriod == period) %>%
+                dplyr::select(toEquity) %>%
+                pivot_longer(
+                  cols = everything(),
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
+                .$value %>%
+                sum
 
               remainingCash <-
                 periodCAD + priorLevelDistribution + equityDistribution
 
               distributionPriorMultiple <-
-                waterfall_df %>% dplyr::filter(idPeriod == period &
-                    tierWaterfall == (tier - 1)) %>% dplyr::select(distributionPriorMultiple) %>% gather(item, value) %>% .$value %>% sum
+                waterfall_df %>%
+                dplyr::filter(
+                  idPeriod == period &
+                    tierWaterfall == (tier - 1)
+                ) %>%
+                dplyr::select(distributionPriorMultiple) %>%
+                pivot_longer(
+                  cols = everything(),
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
+                .$value %>%
+                sum
 
               distributionPriorPref <-
-                waterfall_df %>% dplyr::filter(idPeriod == period &
-                    tierWaterfall == (tier - 1)) %>% dplyr::select(distributionPriorPref, toAccruedPref) %>% gather(item, value) %>% .$value %>% sum
+                waterfall_df %>%
+                dplyr::filter(
+                  idPeriod == period &
+                    tierWaterfall == (tier - 1)
+                ) %>%
+                dplyr::select(distributionPriorPref, toAccruedPref) %>%
+                pivot_longer(
+                  cols = everything(),
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
+                .$value %>%
+                sum
 
               toAccruedPref <-
-                -max(0, min(
-                  remainingCash,
-                  (
-                    bbAccruedPref + accruedPref + distributionPriorPref + distributionPriorMultiple
+                -max(
+                  0,
+                  min(
+                    remainingCash,
+                    (bbAccruedPref +
+                      accruedPref +
+                      distributionPriorPref +
+                      distributionPriorMultiple)
                   )
-                ))
+                )
 
               to_promote_tier <-
                 remainingCash + toAccruedPref
 
               ebAccruedPref <-
-                bbAccruedPref + accruedPref + distributionPriorPref + distributionPriorMultiple + toAccruedPref
+                bbAccruedPref +
+                accruedPref +
+                distributionPriorPref +
+                distributionPriorMultiple +
+                toAccruedPref
 
               if (is_max_tier) {
                 toPromote <-
@@ -1118,16 +1248,19 @@ calculate_cash_flow_waterfall <-
               if (is_max_tier == F) {
                 typeNextTier <-
                   promote_df %>%
-                  dplyr::filter(tierWaterfall == tier + 1) %>% .$typeHurdle
+                  dplyr::filter(tierWaterfall == tier + 1) %>%
+                  .$typeHurdle
 
                 if (typeNextTier == 'pref') {
                   nextPref <-
                     promote_df %>%
-                    dplyr::filter(tierWaterfall == tier + 1) %>% .$pctPref
+                    dplyr::filter(tierWaterfall == tier + 1) %>%
+                    .$pctPref
 
                   bbAccruedPrefNext <-
                     waterfall_df %>%
-                    dplyr::filter(tierWaterfall == tier + 1) %>% .$bbAccruedPref
+                    dplyr::filter(tierWaterfall == tier + 1) %>%
+                    .$bbAccruedPref
 
                   prefAccruedNext <-
                     calculate_days_accrued_pref(
@@ -1139,31 +1272,48 @@ calculate_cash_flow_waterfall <-
                     )
 
                   cash_for_promote <-
-                    -min(to_promote_tier, max(
-                      0,
-                      (bbAccruedPref + prefAccruedNext + toAccruedPref) / (1 - tierPromote)
-                    ))
+                    -min(
+                      to_promote_tier,
+                      max(
+                        0,
+                        (bbAccruedPref + prefAccruedNext + toAccruedPref) /
+                          (1 - tierPromote)
+                      )
+                    )
                 }
                 if (typeNextTier == 'multiple') {
                   nextMultiple <-
                     promote_df %>%
-                    dplyr::filter(tierWaterfall == tier + 1) %>% .$ratioCapitalMultiple
+                    dplyr::filter(tierWaterfall == tier + 1) %>%
+                    .$ratioCapitalMultiple
 
                   bbCapitalMultipleNext <-
-                    waterfall_df %>% dplyr::filter(idPeriod == period - 1, tierWaterfall == tier + 1) %>% .$ebCapitalMultiple
+                    waterfall_df %>%
+                    dplyr::filter(
+                      idPeriod == period - 1,
+                      tierWaterfall == tier + 1
+                    ) %>%
+                    .$ebCapitalMultiple
 
                   capitalMultipleDrawNext <-
-                    (equity_df %>% dplyr::filter(idPeriod == period - 1) %>% .$equityDraw) * nextMultiple
+                    (equity_df %>%
+                      dplyr::filter(idPeriod == period - 1) %>%
+                      .$equityDraw) *
+                    nextMultiple
 
                   cash_for_promote <-
-                    -min(to_promote_tier, max(
-                      0,
-                      (
-                        bbCapitalMultipleNext + capitalMultipleDrawNext + toAccruedPref + distributionPriorPref + toEquity
-                      ) / (1 - tierPromote)
-                    ))
-
-
+                    -min(
+                      to_promote_tier,
+                      max(
+                        0,
+                        (bbCapitalMultipleNext +
+                          capitalMultipleDrawNext +
+                          toAccruedPref +
+                          distributionPriorPref +
+                          toEquity) /
+                          (1 - tierPromote)
+                      )
+                    )
                 }
 
                 toCapital <-
@@ -1173,13 +1323,14 @@ calculate_cash_flow_waterfall <-
                   cash_for_promote * (tierPromote)
               }
             }
-
           }
 
           if (typeHurdle == 'multiple') {
             ratioCapitalMultiple <-
-              promote_df %>% dplyr::filter(tierWaterfall == tier) %>% .$ratioCapitalMultiple
-            if (tier == 1)  {
+              promote_df %>%
+              dplyr::filter(tierWaterfall == tier) %>%
+              .$ratioCapitalMultiple
+            if (tier == 1) {
               accruedPref <-
                 0
               toAccruedPref <-
@@ -1189,30 +1340,54 @@ calculate_cash_flow_waterfall <-
                 0
 
               cash_to_equity <-
-                max(0, (periodCAD + toAccruedPref))  %>% as.numeric() %>%digits(2) %>% currency
+                max(0, (periodCAD + toAccruedPref)) %>%
+                as.numeric() %>%
+                digits(2) %>%
+                currency
 
               toEquity <-
-                -min(cash_to_equity, (equityBB + equityDraw)) %>% as.numeric() %>%digits(2) %>% currency
+                -min(cash_to_equity, (equityBB + equityDraw)) %>%
+                as.numeric() %>%
+                digits(2) %>%
+                currency
 
               equityEB <-
-                (equityBB + equityDraw + toEquity) %>% as.numeric() %>%digits(2) %>% currency
+                (equityBB + equityDraw + toEquity) %>%
+                as.numeric() %>%
+                digits(2) %>%
+                currency
 
               cash_to_multiple <-
-                max(0, (cash_to_equity + toEquity))  %>% as.numeric() %>%digits(2) %>% currency
+                max(0, (cash_to_equity + toEquity)) %>%
+                as.numeric() %>%
+                digits(2) %>%
+                currency
 
               capitalMultipleDraw <-
-                (equity_df %>% dplyr::filter(idPeriod == period - 1) %>% .$equityDraw) * ratioCapitalMultiple
+                (equity_df %>%
+                  dplyr::filter(idPeriod == period - 1) %>%
+                  .$equityDraw) *
+                ratioCapitalMultiple
 
               toCapitalMultiple <-
-                -min(cash_to_multiple,
-                  (bbCapitalMultiple + capitalMultipleDraw + toEquity)) %>% as.numeric() %>%digits(2) %>%
+                -min(
+                  cash_to_multiple,
+                  (bbCapitalMultiple + capitalMultipleDraw + toEquity)
+                ) %>%
+                as.numeric() %>%
+                digits(2) %>%
                 currency
 
               ebCapitalMultiple <-
-                bbCapitalMultiple + capitalMultipleDraw + toEquity + toCapitalMultiple
+                bbCapitalMultiple +
+                capitalMultipleDraw +
+                toEquity +
+                toCapitalMultiple
 
               to_promote_tier <-
-                max(0, (cash_to_multiple + toCapitalMultiple))  %>% as.numeric() %>%digits(2) %>%
+                max(0, (cash_to_multiple + toCapitalMultiple)) %>%
+                as.numeric() %>%
+                digits(2) %>%
                 currency
 
               distributionPriorPref <-
@@ -1227,27 +1402,40 @@ calculate_cash_flow_waterfall <-
 
                 toCapital <-
                   -to_promote_tier * (1 - tierPromote)
-
               }
 
               if (is_max_tier == F) {
                 nextMultiple <-
                   promote_df %>%
-                  dplyr::filter(tierWaterfall == tier + 1) %>% .$ratioCapitalMultiple
+                  dplyr::filter(tierWaterfall == tier + 1) %>%
+                  .$ratioCapitalMultiple
 
                 bbCapitalMultipleNext <-
-                  waterfall_df %>% dplyr::filter(idPeriod == period - 1, tierWaterfall == tier + 1) %>% .$ebCapitalMultiple
+                  waterfall_df %>%
+                  dplyr::filter(
+                    idPeriod == period - 1,
+                    tierWaterfall == tier + 1
+                  ) %>%
+                  .$ebCapitalMultiple
 
                 capitalMultipleDrawNext <-
-                  (equity_df %>% dplyr::filter(idPeriod == period - 1) %>% .$equityDraw) * nextMultiple
+                  (equity_df %>%
+                    dplyr::filter(idPeriod == period - 1) %>%
+                    .$equityDraw) *
+                  nextMultiple
 
                 cash_for_promote <-
-                  -min(to_promote_tier, max(
-                    0,
-                    (
-                      bbCapitalMultipleNext + capitalMultipleDrawNext + toCapitalMultiple + toEquity
-                    ) / (1 - tierPromote)
-                  ))
+                  -min(
+                    to_promote_tier,
+                    max(
+                      0,
+                      (bbCapitalMultipleNext +
+                        capitalMultipleDrawNext +
+                        toCapitalMultiple +
+                        toEquity) /
+                        (1 - tierPromote)
+                    )
+                  )
 
                 toCapital <-
                   cash_for_promote * (1 - tierPromote)
@@ -1260,18 +1448,38 @@ calculate_cash_flow_waterfall <-
             if (tier > 1) {
               priorLevelDistribution <-
                 waterfall_df %>%
-                dplyr::filter(idPeriod == period &
-                    tierWaterfall < tier) %>%
-                dplyr::select(tierWaterfall,
+                dplyr::filter(
+                  idPeriod == period &
+                    tierWaterfall < tier
+                ) %>%
+                dplyr::select(
+                  tierWaterfall,
                   toAccruedPref,
                   toPromote,
                   toCapital,
-                  toCapitalMultiple) %>%
-                gather(item, value, -tierWaterfall) %>% .$value %>% sum %>%
+                  toCapitalMultiple
+                ) %>%
+                pivot_longer(
+                  cols = -tierWaterfall,
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
+                .$value %>%
+                sum %>%
                 currency
 
               equityDistribution <-
-                equity_df %>% dplyr::filter(idPeriod == period) %>% dplyr::select(toEquity) %>% gather(item, value) %>% .$value %>% sum %>% currency
+                equity_df %>%
+                dplyr::filter(idPeriod == period) %>%
+                dplyr::select(toEquity) %>%
+                pivot_longer(
+                  cols = everything(),
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
+                .$value %>%
+                sum %>%
+                currency
 
               remainingCash <-
                 periodCAD + priorLevelDistribution + equityDistribution
@@ -1286,44 +1494,84 @@ calculate_cash_flow_waterfall <-
                 bbAccruedPref + accruedPref + toAccruedPref
 
               capitalMultipleDraw <-
-                (equity_df %>% dplyr::filter(idPeriod == period - 1) %>% .$equityDraw) * ratioCapitalMultiple %>%
-                currency()
+                (equity_df %>%
+                  dplyr::filter(idPeriod == period - 1) %>%
+                  .$equityDraw) *
+                ratioCapitalMultiple %>%
+                  currency()
 
               distributionPriorMultiple <-
                 waterfall_df %>%
-                dplyr::filter(idPeriod == period &
-                    tierWaterfall <= (tier - 1)) %>%
-                dplyr::select(toCapitalMultiple, toCapital) %>% gather(item, value) %>%
+                dplyr::filter(
+                  idPeriod == period &
+                    tierWaterfall <= (tier - 1)
+                ) %>%
+                dplyr::select(toCapitalMultiple, toCapital) %>%
+                pivot_longer(
+                  cols = everything(),
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
                 .$value %>%
                 sum %>%
                 currency
 
               distributionPriorPref <-
-                waterfall_df %>% dplyr::filter(idPeriod == period &
-                    tierWaterfall <= (tier - 1)) %>% dplyr::select(toAccruedPref) %>% gather(item, value) %>% .$value %>% sum %>%
+                waterfall_df %>%
+                dplyr::filter(
+                  idPeriod == period &
+                    tierWaterfall <= (tier - 1)
+                ) %>%
+                dplyr::select(toAccruedPref) %>%
+                pivot_longer(
+                  cols = everything(),
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
+                .$value %>%
+                sum %>%
                 currency
 
               priorEquity <-
-                waterfall_df %>% dplyr::filter(idPeriod == period &
-                    tierWaterfall == (tier - 1)) %>% dplyr::select(toEquity) %>% gather(item, value) %>% .$value %>% sum %>%
+                waterfall_df %>%
+                dplyr::filter(
+                  idPeriod == period &
+                    tierWaterfall == (tier - 1)
+                ) %>%
+                dplyr::select(toEquity) %>%
+                pivot_longer(
+                  cols = everything(),
+                  names_to = "item",
+                  values_to = "value"
+                ) %>%
+                .$value %>%
+                sum %>%
                 currency()
 
               toCapitalMultiple <-
-                -max(0,
+                -max(
+                  0,
                   min(
                     remainingCash,
-                    (
-                      bbCapitalMultiple + capitalMultipleDraw + distributionPriorMultiple + distributionPriorPref + priorEquity
-                    )
-                  )) %>%
+                    (bbCapitalMultiple +
+                      capitalMultipleDraw +
+                      distributionPriorMultiple +
+                      distributionPriorPref +
+                      priorEquity)
+                  )
+                ) %>%
                 currency()
 
               to_promote_tier <-
                 remainingCash + toCapitalMultiple
 
-
               ebCapitalMultiple <-
-                bbCapitalMultiple + capitalMultipleDraw + distributionPriorMultiple + distributionPriorPref + priorEquity + toCapitalMultiple
+                bbCapitalMultiple +
+                capitalMultipleDraw +
+                distributionPriorMultiple +
+                distributionPriorPref +
+                priorEquity +
+                toCapitalMultiple
 
               if (is_max_tier) {
                 toPromote <-
@@ -1335,23 +1583,39 @@ calculate_cash_flow_waterfall <-
               if (is_max_tier == F) {
                 nextMultiple <-
                   promote_df %>%
-                  dplyr::filter(tierWaterfall == tier + 1) %>% .$ratioCapitalMultiple
+                  dplyr::filter(tierWaterfall == tier + 1) %>%
+                  .$ratioCapitalMultiple
 
                 bbCapitalMultipleNext <-
-                  waterfall_df %>% dplyr::filter(idPeriod == period - 1, tierWaterfall == tier + 1) %>% .$ebCapitalMultiple %>%
+                  waterfall_df %>%
+                  dplyr::filter(
+                    idPeriod == period - 1,
+                    tierWaterfall == tier + 1
+                  ) %>%
+                  .$ebCapitalMultiple %>%
                   currency()
 
                 capitalMultipleDrawNext <-
-                  (equity_df %>% dplyr::filter(idPeriod == period - 1) %>% .$equityDraw) * nextMultiple %>%
-                  currency
+                  (equity_df %>%
+                    dplyr::filter(idPeriod == period - 1) %>%
+                    .$equityDraw) *
+                  nextMultiple %>%
+                    currency
 
                 cash_for_promote <-
-                  -min(to_promote_tier, max(
-                    0,
-                    (
-                      bbCapitalMultipleNext + capitalMultipleDrawNext + toCapitalMultiple + distributionPriorMultiple + distributionPriorPref + equityDistribution
-                    ) / (1 - tierPromote)
-                  ))
+                  -min(
+                    to_promote_tier,
+                    max(
+                      0,
+                      (bbCapitalMultipleNext +
+                        capitalMultipleDrawNext +
+                        toCapitalMultiple +
+                        distributionPriorMultiple +
+                        distributionPriorPref +
+                        equityDistribution) /
+                        (1 - tierPromote)
+                    )
+                  )
 
                 toCapital <-
                   cash_for_promote * (1 - tierPromote)
@@ -1359,7 +1623,6 @@ calculate_cash_flow_waterfall <-
                 toPromote <-
                   cash_for_promote * (tierPromote)
               }
-
             }
           }
 
@@ -1381,29 +1644,23 @@ calculate_cash_flow_waterfall <-
               toPromote,
               toCapital
             ) %>%
-            mutate_if(is.numeric, as.numeric)
+            mutate(across(where(is.numeric), as.numeric))
 
           waterfall_df <-
             waterfall_df %>%
-            mutate_if(is.numeric, as.numeric) %>%
+            mutate(across(where(is.numeric), as.numeric)) %>%
             bind_rows(period_waterfall) %>%
             distinct()
 
           period_equity <-
-            tibble(idPeriod = period,
-              equityBB,
-              equityDraw,
-              toEquity,
-              equityEB)
+            tibble(idPeriod = period, equityBB, equityDraw, toEquity, equityEB)
 
           equity_df <-
             equity_df %>%
             bind_rows(period_equity) %>%
             distinct()
         }
-
       }
-
     }
 
     if ('toEquity' %in% names(waterfall_df)) {
@@ -1417,33 +1674,48 @@ calculate_cash_flow_waterfall <-
 
     waterfall_df <-
       waterfall_df %>%
-      mutate_at(waterfall_df %>% dplyr::select(-c(idPeriod, tierWaterfall)) %>% names,
-        .funs = currency)
+      mutate(across(-c(idPeriod, tierWaterfall), currency))
 
     equity_df <-
       equity_df %>%
-      mutate_at(equity_df %>% dplyr::select(-c(idPeriod)) %>% names,
-        .funs = currency)
+      mutate(across(-c(idPeriod), currency))
 
     equityDistributions <-
       equity_df$toEquity %>% sum
 
     levelDistributions <-
-      waterfall_df %>% dplyr::select(dplyr::matches("to")) %>% gather(item, value) %>% .$value %>% sum %>% currency %>% suppressWarnings()
+      waterfall_df %>%
+      dplyr::select(dplyr::matches("to")) %>%
+      pivot_longer(
+        cols = everything(),
+        names_to = "item",
+        values_to = "value"
+      ) %>%
+      .$value %>%
+      sum %>%
+      currency %>%
+      suppressWarnings()
 
     cash_check <-
-      ((cf_data$capitalDistribution %>% sum %>% abs) + (equityDistributions  + levelDistributions)
-      ) %>% as.integer()
+      ((cf_data$capitalDistribution %>% sum %>% abs) +
+        (equityDistributions + levelDistributions)) %>%
+      as.integer()
 
     if (!cash_check == 0) {
-      stop("Waterfall does not tie to distributable by\n" %>%
-          paste0(cash_check %>% currency))
+      stop(
+        "Waterfall does not tie to distributable by\n" %>%
+          paste0(cash_check %>% currency)
+      )
     }
 
-    if (widen_waterfall)  {
+    if (widen_waterfall) {
       col_order <-
         waterfall_df %>%
-        gather(item, value, -c(idPeriod, tierWaterfall)) %>%
+        pivot_longer(
+          cols = -c(idPeriod, tierWaterfall),
+          names_to = "item",
+          values_to = "value"
+        ) %>%
         arrange(idPeriod, tierWaterfall) %>%
         unite(item, item, tierWaterfall, sep = '') %>%
         .$item %>%
@@ -1451,12 +1723,16 @@ calculate_cash_flow_waterfall <-
 
       waterfall_df <-
         waterfall_df %>%
-        gather(item, value, -c(idPeriod, tierWaterfall)) %>%
+        pivot_longer(
+          cols = -c(idPeriod, tierWaterfall),
+          names_to = "item",
+          values_to = "value"
+        ) %>%
         arrange(idPeriod, tierWaterfall) %>%
         unite(item, item, tierWaterfall, sep = '') %>%
-        spread(item, value) %>%
-        mutate_at(col_order, currency) %>%
-        dplyr::select(one_of(c('idPeriod', col_order))) %>%
+        pivot_wider(names_from = item, values_from = value) %>%
+        mutate(across(all_of(col_order), currency)) %>%
+        dplyr::select(any_of(c('idPeriod', col_order))) %>%
         suppressWarnings()
 
       waterfall_df <-
@@ -1469,7 +1745,6 @@ calculate_cash_flow_waterfall <-
           left_join(waterfall_df) %>%
           suppressMessages()
       }
-
     }
     if (widen_waterfall == F) {
       waterfall_df <-
@@ -1483,30 +1758,27 @@ calculate_cash_flow_waterfall <-
 
       waterfall_df <-
         waterfall_df %>%
-        mutate_if(is.numeric, as.numeric) %>%
-        mutate_at(
-          .vars = numeric_cols,
-          .funs = function(x)
-            if_else(x %>% is.na, 0, x)
-        )
+        mutate(across(where(is.numeric), as.numeric)) %>%
+        mutate(across(
+          all_of(numeric_cols),
+          ~ if_else(is.na(.), 0, .)
+        ))
 
       currency_vars <- waterfall_df %>%
-        select_if(is.numeric) %>%
+        select(where(is.numeric)) %>%
         select(-c(idPeriod, tierWaterfall)) %>%
         names()
 
       waterfall_df <-
         waterfall_df %>%
-        mutate_at(currency_vars, formattable::currency)
-
+        mutate(across(all_of(currency_vars), formattable::currency))
     }
 
     waterfall_df <-
       waterfall_df %>%
       left_join(waterfall_data %>% dplyr::select(idPeriod, date)) %>%
       dplyr::select(idPeriod, date, everything()) %>%
-      suppressMessages(
-      )
+      suppressMessages()
 
     waterfall_df
   }
@@ -1546,25 +1818,28 @@ calculate_cash_flow_waterfall <-
 #' widen_promote_structure = FALSE, bind_to_cf = FALSE, remove_zero_cols = TRU,
 #' widen_waterfall = FALSE)
 calculate_cash_flow_waterfall_partnership <-
-  function(dates =
-             c("2016-09-01",
-               "2017-08-31"),
-           cash_flows = c(-1500000,
-                          105000000),
-           working_capital = 200000,
-           promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
-           assign_to_environment = TRUE,
-           general_partner_pct = .05,
-           gp_promote_share = 1,
-           unnest_data = FALSE,
-           exclude_partnership_total = FALSE,
-           distribution_frequency = NA,
-           is_actual_360 = TRUE,
-           widen_promote_structure = FALSE,
-           bind_to_cf = FALSE,
-           remove_zero_cols = TRUE,
-           widen_waterfall = FALSE) {
-    options(scipen = 9999999)
+  function(
+    dates = c("2016-09-01", "2017-08-31"),
+    cash_flows = c(-1500000, 105000000),
+    working_capital = 200000,
+    promote_structure = c(
+      "20 over 12",
+      "30 over 20",
+      "50 over 3.5x",
+      "100 over 10x"
+    ),
+    assign_to_environment = TRUE,
+    general_partner_pct = .05,
+    gp_promote_share = 1,
+    unnest_data = FALSE,
+    exclude_partnership_total = FALSE,
+    distribution_frequency = NA,
+    is_actual_360 = TRUE,
+    widen_promote_structure = FALSE,
+    bind_to_cf = FALSE,
+    remove_zero_cols = TRUE,
+    widen_waterfall = FALSE
+  ) {
     pct_gp <-
       general_partner_pct %>% scale_to_pct()
 
@@ -1578,11 +1853,12 @@ calculate_cash_flow_waterfall_partnership <-
       1 - gp_promote_share
 
     promote_name_df <-
-      tibble(tierWaterfall = 1,
-                 nameTier = "Return of Equity") %>%
+      tibble(tierWaterfall = 1, nameTier = "Return of Equity") %>%
       bind_rows(
-        tidy_promote_structure(promote_structures = promote_structure,
-                               return_wide = F) %>%
+        tidy_promote_structure(
+          promote_structures = promote_structure,
+          return_wide = F
+        ) %>%
           mutate(tierWaterfall = tierWaterfall + 1) %>%
           dplyr::select(tierWaterfall, nameTier)
       )
@@ -1597,33 +1873,45 @@ calculate_cash_flow_waterfall_partnership <-
         bind_to_cf = F,
         widen_promote_structure = F
       ) %>%
-      dplyr::select(idPeriod:tierWaterfall,
-                    equityDraw, toEquity, everything())
+      dplyr::select(idPeriod:tierWaterfall, equityDraw, toEquity, everything())
 
     entity_waterfall <-
       waterfall_data %>%
-      dplyr::select(idPeriod,
-                    date,
-                    tierWaterfall,
-                    dplyr::matches("equityDraw"),
-                    dplyr::matches("to")) %>%
-      gather(item, toCF, -c(idPeriod, date, tierWaterfall)) %>%
+      dplyr::select(
+        idPeriod,
+        date,
+        tierWaterfall,
+        dplyr::matches("equityDraw"),
+        dplyr::matches("to")
+      ) %>%
+      pivot_longer(
+        cols = -c(idPeriod, date, tierWaterfall),
+        names_to = "item",
+        values_to = "toCF"
+      ) %>%
       dplyr::filter(!toCF == 0) %>%
       mutate(
-        toGP = -ifelse(item == 'toPromote', toCF * share_gp_promote, toCF * pct_gp),
-        toLP = -ifelse(item == 'toPromote',
-                       toCF * share_lp_promote_share,
-                       toCF * pct_lp)
+        toGP = -ifelse(
+          item == 'toPromote',
+          toCF * share_gp_promote,
+          toCF * pct_gp
+        ),
+        toLP = -ifelse(
+          item == 'toPromote',
+          toCF * share_lp_promote_share,
+          toCF * pct_lp
+        )
       ) %>%
-      mutate_at(.vars = c('toCF', 'toGP', 'toLP'),
-                .funs = currency) %>%
+      mutate(across(c('toCF', 'toGP', 'toLP'), currency)) %>%
       arrange(idPeriod, tierWaterfall) %>%
       left_join(promote_name_df, by = "tierWaterfall") %>%
       dplyr::select(idPeriod:tierWaterfall, nameTier, everything())
 
     cash_check <-
-      ((entity_waterfall$toCF %>% sum()) + (entity_waterfall$toGP %>% sum())  + (entity_waterfall$toLP %>% sum())
-      ) %>% as.integer()
+      ((entity_waterfall$toCF %>% sum()) +
+        (entity_waterfall$toGP %>% sum()) +
+        (entity_waterfall$toLP %>% sum())) %>%
+      as.integer()
 
     if (!cash_check == 0) {
       stop("Cash does not tie")
@@ -1694,21 +1982,20 @@ calculate_cash_flow_waterfall_partnership <-
     if (partnership_return_summary %>% tibble::has_name("value")) {
       partnership_return_summary <-
         partnership_return_summary %>%
-        spread(metric, value)
+        pivot_wider(names_from = metric, values_from = value)
     }
 
     partnership_return_summary <-
       partnership_return_summary %>%
-      mutate_at(.vars = c('pctIRR'),
-                .funs = percent) %>%
-      mutate_at(
-        .vars = c(
+      mutate(across(c('pctIRR'), percent)) %>%
+      mutate(across(
+        c(
           "equityContributions",
           "equityDistributions",
           "amountProfit"
         ),
-        .funs = currency
-      )
+        currency
+      ))
 
     if (exclude_partnership_total) {
       partnership_return_summary <-
@@ -1718,18 +2005,16 @@ calculate_cash_flow_waterfall_partnership <-
 
     data <-
       tibble(
-        nameTable =
-          c(
-            'Cash Flow Waterfall',
-            'Entity Waterfall',
-            'Partnership Return Summary'
-          ),
-        dataTable =
-          list(
-            waterfall_data,
-            entity_waterfall,
-            partnership_return_summary
-          )
+        nameTable = c(
+          'Cash Flow Waterfall',
+          'Entity Waterfall',
+          'Partnership Return Summary'
+        ),
+        dataTable = list(
+          waterfall_data,
+          entity_waterfall,
+          partnership_return_summary
+        )
       )
 
     if (assign_to_environment) {
@@ -1766,7 +2051,7 @@ calculate_cash_flow_waterfall_partnership <-
     if (unnest_data) {
       data <-
         data %>%
-        unnest()
+        unnest(cols = where(is.list))
     }
 
     data

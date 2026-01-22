@@ -27,6 +27,14 @@ build_address(
 
 \item{return_message}{if \code{TRUE} returns a message}
 }
+\value{
+A tibble with constructed address columns added
+}
 \description{
 Build Address from tibble
+}
+\examples{
+\dontrun{
+build_address(data)
+}
 }

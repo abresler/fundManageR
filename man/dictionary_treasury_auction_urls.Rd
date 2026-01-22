@@ -6,6 +6,14 @@
 \usage{
 dictionary_treasury_auction_urls()
 }
+\value{
+a \code{tibble} of treasury auction API URLs
+}
 \description{
 Treasury Auction URL Dictionary
+}
+\examples{
+\dontrun{
+dictionary_treasury_auction_urls()
+}
 }

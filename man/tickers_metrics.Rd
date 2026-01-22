@@ -16,8 +16,24 @@ tickers_metrics(
 )
 }
 \arguments{
-\item{return_message}{}
+\item{tickers}{vector of stock ticker symbols}
+
+\item{metrics}{vector of financial metrics to retrieve}
+
+\item{multiple_types}{vector of multiple types (e.g., 'ltm', 'fwd')}
+
+\item{period_types}{vector of period types (e.g., 'fy', 'fq', 'ytd')}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+a \code{tibble} with ticker metrics data
 }
 \description{
 finbox ticker metrics
+}
+\examples{
+\dontrun{
+tickers_metrics(tickers = c("AAPL", "GOOG"))
+}
 }

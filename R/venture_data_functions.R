@@ -43,8 +43,7 @@ ycombinator_alumni <-
       data %>%
       mutate(yearYC = batchYC %>% readr::parse_number(),
              idSeasonYC = batchYC %>% substr(1, 1),) %>%
-      mutate_if(is.character,
-                funs(ifelse(. == "", NA, .))) %>%
+      mutate(across(where(is.character), ~ifelse(. == "", NA, .))) %>%
       left_join(tibble(
         idSeasonYC = c('w', 's'),
         nameSeasonYC = c('Winter', 'Summer'),
@@ -69,12 +68,9 @@ ycombinator_alumni <-
 
     data <-
       data %>%
-      mutate_at(data %>% dplyr::select(dplyr::matches("name")) %>% names(),
-                funs(. %>% str_to_upper())) %>%
-      mutate_at(.vars = "urlCompany",
-                funs(ifelse(. == '', NA, .))) %>%
-      mutate_if(is.character,
-                str_trim)
+      mutate(across(matches("name"), ~str_to_upper(.))) %>%
+      mutate(across("urlCompany", ~ifelse(. == '', NA, .))) %>%
+      mutate(across(where(is.character), ~str_trim(.)))
 
 
     if (return_message)  {
@@ -83,36 +79,27 @@ ycombinator_alumni <-
         dplyr::filter(!descriptionCompany %>% is.na) %>%
         sample_n(1)
 
-      random_company_message <-
-        '\nCheckout ' %>%
-        paste0(
-          random_company$nameCompany,
-          ' from ',
-          random_company$nameSeasonYC,
-          ' ',
-          random_company$yearYC,
-          '\nThey describe themselves as:\n',
-          random_company$descriptionCompany,
-          '\nTheir website is ',
-          random_company$urlCompany
-        )
+      .fm_time_range(
+        start_year = min(data$yearYC),
+        end_year = max(data$yearYC),
+        n_records = nrow(data),
+        data_type = "YCombinator companies"
+      )
 
-      "You returned " %>%
-        paste0(
-          data %>% nrow() %>% formattable::comma(digits = 0),
-          ' YCombinator Companies from ',
-          data$yearYC %>% min(),
-          ' to ',
-          data$yearYC %>% max(),
-          random_company_message
-        ) %>%
-        cat(fill = T)
+      .fm_spotlight(
+        company = random_company$nameCompany,
+        description = random_company$descriptionCompany,
+        url = random_company$urlCompany,
+        extra = list(
+          "Batch" = paste(random_company$nameSeasonYC, random_company$yearYC)
+        )
+      )
     }
 
     if (nest_data) {
       data <-
         data %>%
-        nest(-batchYC, .key = dataClass)
+        nest(dataClass = -batchYC)
     }
     gc()
     data
@@ -141,21 +128,41 @@ cb_unicorns <-
       "https://www.cbinsights.com/research-unicorn-companies" %>%
       read_html()
 
-    data <-
-      page %>% html_table(fill = T) %>% first() %>%
-      as_tibble() %>%
-      set_names(
-        c(
-          "nameCompany",
-          "amountValuation",
-          "dateJoined",
-          "country",
-          "industry",
-          "namesInvestors"
-        )
-      ) %>%
+    raw_table <- page %>% html_table(fill = T) %>% first() %>% as_tibble()
+
+    # Handle dynamic column structure - CB Insights adds columns over time
+    expected_cols_7 <- c(
+      "nameCompany",
+      "amountValuation",
+      "dateJoined",
+      "country",
+      "city",
+      "industry",
+      "namesInvestors"
+    )
+    expected_cols_6 <- c(
+      "nameCompany",
+      "amountValuation",
+      "dateJoined",
+      "country",
+      "industry",
+      "namesInvestors"
+    )
+
+    if (ncol(raw_table) == 7) {
+      data <- raw_table %>% set_names(expected_cols_7)
+    } else if (ncol(raw_table) == 6) {
+      data <- raw_table %>% set_names(expected_cols_6)
+    } else {
+      # Fallback: use cleaned original names
+      data <- raw_table %>% janitor::clean_names()
+    }
+
+    data <- data %>%
       filter(!is.na(nameCompany)) %>%
       mutate(
+        # Clean any HTML artifacts from valuation (e.g., "$480/td>")
+        amountValuation = amountValuation %>% str_remove_all("<.*?>|/td>"),
         amountValuation = readr::parse_number(amountValuation) * 1000000000,
         dateJoined  = lubridate::mdy(dateJoined)
       ) %>%
@@ -169,13 +176,13 @@ cb_unicorns <-
                into = c("nameCompany", "nameDBA"),
                sep = "\\(") %>%
       mutate(nameDBA = nameDBA %>% str_remove_all("\\)")) %>%
-      mutate_if(is.character, str_trim)
+      mutate(across(where(is.character), ~str_trim(.)))
 
     df_investors <-
       data %>%
       select(id, namesInvestors) %>%
       separate_rows(namesInvestors, sep = "\\,") %>%
-      mutate_if(is.character, str_squish) %>%
+      mutate(across(where(is.character), ~str_squish(.))) %>%
       filter(namesInvestors != "") %>%
       group_by(id) %>%
       summarise(
@@ -187,7 +194,7 @@ cb_unicorns <-
       data %>%
       select(-namesInvestors) %>%
       left_join(df_investors, by = "id") %>%
-      mutate_if(is.character, str_to_upper)
+      mutate(across(where(is.character), ~str_to_upper(.)))
 
 
 
@@ -206,7 +213,12 @@ cb_unicorns <-
 
     if (return_message) {
       total <- data$amountValuation %>% sum()
-      glue("Acquired data on {nrow(data)} companies with a private market valuation of {total}") %>% cat(fill = T)
+      total_formatted <- formattable::currency(total, digits = 0)
+      .fm_data_acquired(
+        n_rows = nrow(data),
+        source = "CB Insights Unicorn List",
+        extra = paste0("Total private market valuation: ", total_formatted)
+      )
     }
     data
   }

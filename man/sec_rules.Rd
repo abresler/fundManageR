@@ -14,6 +14,11 @@ This function returns prefix
 descriptions of SEC rules and the
 law that created the rule
 }
+\examples{
+\dontrun{
+sec_rules()
+}
+}
 \seealso{
 Other dictionary: 
 \code{\link{dictionary_fred_ids}()},

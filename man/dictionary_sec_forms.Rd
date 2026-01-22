@@ -6,6 +6,14 @@
 \usage{
 dictionary_sec_forms()
 }
+\value{
+A tibble containing SEC form types and descriptions
+}
 \description{
 SEC form dictionary
+}
+\examples{
+\dontrun{
+dictionary_sec_forms()
+}
 }

@@ -75,7 +75,7 @@
           'yearQuarter'
 
         data %>%
-          gather(nameCountry, value, -yearQuarter) %>%
+          pivot_longer(cols = -yearQuarter, names_to = "nameCountry", values_to = "value") %>%
           mutate(nameCountry = nameCountry %>% str_to_upper()) %>%
           mutate(codeIndex = code_index) %>%
           select(codeIndex, everything())
@@ -84,8 +84,7 @@
     data <-
       data %>%
       tidyr::separate(yearQuarter, c('yearData', 'idQuarter'), sep = '\\:') %>%
-      mutate_at(c('yearData', 'idQuarter'),
-                funs(. %>% readr::parse_number())) %>%
+      mutate(across(c('yearData', 'idQuarter'), ~readr::parse_number(.))) %>%
       mutate(periodData = list(yearData, '.', idQuarter) %>% purrr::reduce(paste0)) %>%
       select(codeIndex, periodData, everything())
 
@@ -109,7 +108,7 @@
           select(nameCountry = country.name.en, idISO3c = iso3c, nameContinent = continent) %>%
           mutate(nameCountry = nameCountry %>% str_replace("Republic of Korea", "South Korea"),
                  nameCountry = nameCountry %>% str_replace("United Kingdom of Great Britain and Northern Ireland", "United Kingdom")) %>%
-          mutate_all(str_to_upper),
+          mutate(across(everything(), str_to_upper)),
         by = "nameCountry"
       ) %>%
       select(codeIndex, periodData, nameContinent, idISO3c, nameCountry, everything()) %>%
@@ -145,10 +144,10 @@
 #' This retrieves data for the international house
 #' price database maintained by the Dallas FED
 #'
-#' @param nest_data
-#' @param return_message
+#' @param nest_data if \code{TRUE} returns nested tibble
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return a \code{tibble} with international house price data
 #' @export
 #' @import countrycode readxl stringr dplyr purrr dplyr lubridate tidyr
 #' @examples
@@ -198,7 +197,7 @@ dallas_fed_international_housing <-
     if (nest_data) {
       data <-
         data %>%
-        nest(-c(codeIndex, nameIndex), .key = dataHousing)
+        nest(dataHousing = -c(codeIndex, nameIndex))
     }
     return(data)
   }

@@ -36,48 +36,47 @@ irei_entitites <- function(filter_type = NULL, return_message = TRUE) {
     "https://irei.com/industry-links/" %>%
     read_html()
 
-  entity_nodes <-
-    page %>%
-    html_nodes('strong , td a')
+  # Categories are h1 elements with id attributes, followed by ul with links
+  h1_nodes <- page %>% html_nodes('h1[id]')
 
-  headers <-
-    page %>%
-    html_nodes('strong:nth-child(1)') %>%
-    html_text()
+  all_data <- purrr::map_dfr(seq_along(h1_nodes), function(i) {
+    h1_node <- h1_nodes[[i]]
+    category <- h1_node %>% html_text() %>% str_trim()
 
-  entities <-
-    entity_nodes %>%
-    html_text()
+    # Get the next sibling ul element
+    ul_node <- h1_node %>%
+      rvest::html_element(xpath = "following-sibling::ul[1]")
 
-  urls <-
-    entity_nodes %>%
-    html_attr('href')
+    if (is.na(ul_node) || is.null(ul_node)) {
+      return(tibble())
+    }
 
-  data <-
-    tibble(nameEntity = entities, urlEntity = urls) %>%
-    filter(!nameEntity == '') %>%
-    mutate(idRow = 1:n())
+    links <- ul_node %>% html_nodes('li a')
 
-  df_headers <-
-    tibble(nameEntity = headers) %>%
-    left_join(data %>% dplyr::select(nameEntity, idRow)) %>%
-    suppressMessages()
+    if (length(links) == 0) {
+      return(tibble())
+    }
 
-  skip <- df_headers$idRow
+    tibble(
+      typeFirm = category,
+      nameEntity = links %>% html_text() %>% str_trim(),
+      urlEntity = links %>% html_attr('href')
+    )
+  })
 
-  df_headers <-
-    df_headers %>%
-    dplyr::rename(typeFirm = nameEntity) %>%
-    mutate(idRow = idRow + 1)
+  if (nrow(all_data) == 0) {
+    warning("No data found from IREI website - site structure may have changed")
+    return(tibble(
+      typeFirm = character(),
+      nameSearch = character(),
+      nameEntity = character(),
+      acronymEntity = character(),
+      urlEntity = character()
+    ))
+  }
 
-  data <-
-    data %>%
-    left_join(df_headers) %>%
-    slice(-skip) %>%
-    dplyr::select(typeFirm, nameEntity, urlEntity) %>%
-    fill(typeFirm) %>%
-    suppressMessages() %>%
-    filter(!is.na(urlEntity))
+  data <- all_data %>%
+    filter(!is.na(.data$urlEntity) & .data$urlEntity != "" & !is.na(.data$nameEntity) & .data$nameEntity != "")
 
   remove <-
     c(

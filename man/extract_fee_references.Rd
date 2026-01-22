@@ -7,10 +7,21 @@
 extract_fee_references(data, word_threshhold = 5, print_sentences = TRUE)
 }
 \arguments{
-\item{data}{A \code{tibble} with the OCR'd brochur data}
+\item{data}{A \code{tibble} with the OCR'd brochure data}
+
+\item{word_threshhold}{numeric threshold for filtering fee percentage values}
 
 \item{print_sentences}{if \code{TRUE} prints fee reference data}
 }
+\value{
+A tibble containing extracted fee references and related sentences from brochure data
+}
 \description{
 Extract fee references
+}
+\examples{
+\dontrun{
+brochure_data <- adv_managers_brochures(crd_ids = 156663)
+extract_fee_references(brochure_data)
+}
 }

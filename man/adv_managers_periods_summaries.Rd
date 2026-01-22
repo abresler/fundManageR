@@ -10,7 +10,8 @@ adv_managers_periods_summaries(
   only_most_recent = FALSE,
   include_exempt = TRUE,
   nest_data = FALSE,
-  return_message = TRUE
+  return_message = TRUE,
+  parallel = TRUE
 )
 }
 \arguments{

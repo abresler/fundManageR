@@ -10,9 +10,21 @@ tv_tickers_news(
   nest_data = FALSE
 )
 }
+\arguments{
+\item{tickers}{vector of ticker symbols}
+
+\item{return_message}{if \code{TRUE} returns a message}
+
+\item{nest_data}{if \code{TRUE} nest data by ticker}
+}
+\value{
+a \code{tibble} of news data
+}
 \description{
 Returns news data for specified tickers
 }
 \examples{
+\dontrun{
 tv_tickers_news(tickers = c("VNO", "AVB", "PEI"), return_message = TRUE, nest_data = FALSE)
+}
 }

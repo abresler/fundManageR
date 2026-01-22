@@ -9,8 +9,16 @@ finbox_tickers(tickers = c("VNO", "BXP"), assign_to_environment = TRUE)
 \arguments{
 \item{tickers}{\code{vector} of tickers}
 
-\item{assign_to_environment}{}
+\item{assign_to_environment}{if \code{TRUE} assigns data tables to the global environment}
+}
+\value{
+a \code{tibble} with comprehensive ticker data from Finbox
 }
 \description{
 Finbox ticker data
+}
+\examples{
+\dontrun{
+finbox_tickers(tickers = c("VNO", "BXP"))
+}
 }

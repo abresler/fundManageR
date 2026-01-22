@@ -8,7 +8,8 @@ adv_managers_metadata(
   entity_names = NULL,
   crd_ids = NULL,
   score_threshold = 0.2,
-  return_message = T
+  return_message = TRUE,
+  parallel = TRUE
 )
 }
 \arguments{

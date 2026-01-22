@@ -314,68 +314,50 @@
 
     data <-
       data %>%
-      mutate_at(is_has,
-                list(function(x) {
-                  x %>% as.character() %>% str_replace_all("Y", "1") %>% str_replace_all("N", "0") %>% as.numeric() %>% as.logical()
-                }))
+      mutate(across(all_of(is_has),
+                    ~.x %>% as.character() %>% str_replace_all("Y", "1") %>% str_replace_all("N", "0") %>% as.numeric() %>% as.logical()))
 
     date_cp <- data %>%
       dplyr::select(dplyr::matches("dateCPFB")) %>% names()
 
     data <-
       data %>%
-      mutate_at(date_cp,
-                list(function(x) {
-                  x %>% str_replace_all("9999", "1999") %>% dmy()
-                }))
+      mutate(across(all_of(date_cp),
+                    ~.x %>% str_replace_all("9999", "1999") %>% dmy()))
 
     data <-
       data %>%
-      mutate_if(is.numeric,
-                list(function(x) {
-                  ifelse(x == 0, NA_real_, x)
-                }))
+      mutate(across(where(is.numeric),
+                    ~ifelse(.x == 0, NA_real_, .x)))
 
     websites <- data %>%
       dplyr::select(dplyr::matches("url")) %>% names()
 
     data <-
       data %>%
-      mutate_at(websites,
-                list(function(x) {
-                  x %>% str_remove_all("\\http://|\\https://|https://|http://") %>% str_to_lower()
-                })) %>%
-      mutate_at(websites,
-                list(function(x) {
-                  str_c("https://", x)
-                })) %>%
-      mutate_at(websites,
-                list(function(x) {
-                  ifelse(x == "https://0", NA_character_, x)
-                }))
+      mutate(across(all_of(websites),
+                    ~.x %>% str_remove_all("\\http://|\\https://|https://|http://") %>% str_to_lower())) %>%
+      mutate(across(all_of(websites),
+                    ~str_c("https://", .x))) %>%
+      mutate(across(all_of(websites),
+                    ~ifelse(.x == "https://0", NA_character_, .x)))
 
     amount_cols <- data %>%
       dplyr::select(dplyr::matches("amount")) %>% names()
 
     data <- data %>%
-      mutate_at(amount_cols,
-                list(function(x) {
-                  x %>% formattable::currency(digits = 0)
-                }))
+      mutate(across(all_of(amount_cols),
+                    ~.x %>% formattable::currency(digits = 0)))
 
     pct_cols <- data %>%
       dplyr::select(dplyr::matches("pct")) %>% names()
 
     data <-
       data %>%
-      mutate_at(pct_cols,
-                list(function(x) {
-                  (as.numeric(x) / 100)
-                })) %>%
-      mutate_at(pct_cols,
-                list(function(x) {
-                  x %>% percent(digits = 2)
-                }))
+      mutate(across(all_of(pct_cols),
+                    ~(as.numeric(.x) / 100))) %>%
+      mutate(across(all_of(pct_cols),
+                    ~.x %>% percent(digits = 2)))
 
     count_cols <-
       data %>%
@@ -385,23 +367,19 @@
 
     data <-
       data %>%
-      mutate_at(count_cols,
-                list(function(x) {
-                  comma(x, digits = 0)
-                }))
+      mutate(across(all_of(count_cols),
+                    ~comma(.x, digits = 0)))
 
     data <- data %>%
-      mutate_if(is.character,
-                list(function(x) {
-                  ifelse(x == "0", NA_character_, x)
-                }))
+      mutate(across(where(is.character),
+                    ~ifelse(.x == "0", NA_character_, .x)))
 
     data <-
       data %>%
-      mutate_at(
-        data %>% select_if(is.character) %>% dplyr::select(-dplyr::matches("url")) %>% names(),
+      mutate(across(
+        where(is.character) & !matches("url"),
         str_to_upper
-      )
+      ))
 
     data %>%
       dplyr::select(
@@ -425,7 +403,7 @@
 #'
 #' Information about United States Banks as monitored by the FDIC
 #'
-#' @return
+#' @return a \code{tibble} with US bank information from the FDIC
 #' @export
 #'
 #' @examples
@@ -445,45 +423,41 @@ us_banks <-
 
     if (length(date_cols) > 0) {
       data <- data %>%
-        mutate_at(date_cols, mdy)
+        mutate(across(all_of(date_cols), mdy))
     }
 
     log_cols <-
-      data %>% select(matches("^is|^has")) %>% select_if(is.character) %>% names()
+      data %>% select(matches("^is|^has")) %>% select(where(is.character)) %>% names()
 
     if (length(log_cols) > 0) {
       data <- data %>%
-        mutate_at(log_cols,
-                  list(function(x) {
-                    case_when(x == "N" ~ F,
-                              x == "Y" ~ T)
-                  }))
+        mutate(across(all_of(log_cols),
+                      ~case_when(.x == "N" ~ FALSE,
+                                 .x == "Y" ~ TRUE)))
     }
 
     log_cols <-
-      data %>% select(matches("^is|^has")) %>% select_if(is.numeric) %>% names()
+      data %>% select(matches("^is|^has")) %>% select(where(is.numeric)) %>% names()
 
     if (length(log_cols) > 0) {
       data <-
         data %>%
-        mutate_at(log_cols,
-                  as.logical)
+        mutate(across(all_of(log_cols),
+                      as.logical))
     }
 
     id_cols <-
-      data %>% select(matches("^id[A-Z]")) %>% select_if(is.numeric) %>% names()
+      data %>% select(matches("^id[A-Z]")) %>% select(where(is.numeric)) %>% names()
 
     if (length(id_cols)  > 0) {
       data <- data %>%
-        mutate_at(id_cols,
-                  list(function(x) {
-                    case_when(x == 0 ~ NA_real_,
-                              TRUE ~ as.numeric(x))
-                  }))
+        mutate(across(all_of(id_cols),
+                      ~case_when(.x == 0 ~ NA_real_,
+                                 TRUE ~ as.numeric(.x))))
     }
 
     data <- data %>%
-      select(one_of(
+      select(any_of(
         c(
           "idFDIC",
           "idFederalReserve",

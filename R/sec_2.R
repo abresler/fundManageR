@@ -72,7 +72,7 @@
 
     df_locs <-
       data %>%
-      select(one_of(address, address1, address2, city, state, zip, country)) %>%
+      select(any_of(address, address1, address2, city, state, zip, country)) %>%
       distinct()
 
     if (length(city) + length(state) == 2) {
@@ -88,42 +88,34 @@
 
       df_locs <-
         df_locs %>%
-        mutate_if(is.character,
-                  list(function(x) {
-                    x %>% coalesce("")
-                  })) %>%
+        mutate(across(where(is.character),
+                  ~coalesce(., ""))) %>%
         unite(
           !!sym(new_col),
           c(address, city_state, zip, country),
           sep = " ",
           remove = F
         ) %>%
-        mutate_at(new_col, str_squish) %>%
-        mutate_if(is.character,
-                  list(function(x) {
-                    case_when(x == "" ~ NA_character_,
-                              TRUE ~ x)
-                  }))
+        mutate(across(any_of(new_col), str_squish)) %>%
+        mutate(across(where(is.character),
+                  ~case_when(. == "" ~ NA_character_,
+                              TRUE ~ .)))
 
     } else {
       df_locs <-
         df_locs %>%
-        mutate_if(is.character,
-                  list(function(x) {
-                    x %>% coalesce("")
-                  })) %>%
+        mutate(across(where(is.character),
+                  ~coalesce(., ""))) %>%
         unite(
           !!sym(new_col),
           c(address, city, state, zip, country),
           sep = " ",
           remove = F
         ) %>%
-        mutate_at(new_col, str_squish) %>%
-        mutate_if(is.character,
-                  list(function(x) {
-                    case_when(x == "" ~ NA_character_,
-                              TRUE ~ x)
-                  }))
+        mutate(across(any_of(new_col), str_squish)) %>%
+        mutate(across(where(is.character),
+                  ~case_when(. == "" ~ NA_character_,
+                              TRUE ~ .)))
     }
 
 
@@ -148,10 +140,13 @@
 #' @param part_threshold minimum number of matches
 #' @param snake_names if \code{TRUE} snakes names
 #'
-#' @return
+#' @return A tibble with constructed address columns added
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' build_address(data)
+#' }
 build_address <-
   function(data,
            address_search_slugs = c("^address", "^streetAddress", "^city", "^state", "^codeState", "^codeCountry", "^country", "^zipcode"),
@@ -212,102 +207,93 @@ build_address <-
 #' @param amount_digits formattable digits
 #' @param include_address if \code{TRUE} builds addresses
 #'
-#' @return
+#' @return A tibble with cleaned and formatted columns
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' munge_tbl(data)
+#' }
 munge_tbl <-
   function(data, snake_names = F, unformat = F, convert_case = T,
            amount_digits = 2,
            include_address = T) {
 
     data <- data %>%
-      mutate_if(is.character,
-                list(function(x) {
-                  x %>% str_squish()
-                })) %>%
-      mutate_if(is.character,
-                list(function(x) {
-                  case_when(x == "" ~ NA_character_,
-                            TRUE ~ x)
-                }))
+      mutate(across(where(is.character),
+                ~str_squish(.))) %>%
+      mutate(across(where(is.character),
+                ~case_when(. == "" ~ NA_character_,
+                            TRUE ~ .)))
 
     is_has <-
       data %>%
-      select_if(is.character) %>%
+      select(where(is.character)) %>%
       dplyr::select(dplyr::matches("^is|^has")) %>% names()
 
 
     if (length(is_has) > 0) {
       data <- data %>%
-        mutate_at(is_has,
-                  list(function(x){
-                    case_when(x %in% c("Y", "YES", "TRUE", "1") ~ TRUE,
-                              TRUE ~ FALSE)
-                  }))
+        mutate(across(any_of(is_has),
+                  ~case_when(. %in% c("Y", "YES", "TRUE", "1") ~ TRUE,
+                              TRUE ~ FALSE)))
     }
 
     to_num <-
       data %>%
-      select_if(is.character) %>%
+      select(where(is.character)) %>%
       select(matches("amount|price|value|ratio|count[A-Z]|number|shares")) %>%
       select(-matches("country|county")) %>%
       names()
 
     if (length(to_num) > 0) {
       data <- data %>%
-        mutate_at(to_num, readr::parse_number)
+        mutate(across(any_of(to_num), readr::parse_number))
     }
 
     if (convert_case) {
       upper_cols <-
-        data %>% select_if(is.character) %>%
+        data %>% select(where(is.character)) %>%
         select(-matches("^url")) %>%
         names()
       data <-
         data %>%
-        mutate_at(upper_cols,
-                  str_to_upper)
+        mutate(across(any_of(upper_cols),
+                  str_to_upper))
     }
 
     if (!unformat) {
       pct_names <-
         data %>%
-        select_if(is.numeric) %>%
+        select(where(is.numeric)) %>%
         select(matches("^percent|^pct")) %>% names()
       count_names <-
         data %>%
-        select_if(is.numeric) %>%
+        select(where(is.numeric)) %>%
         select(matches("^count|^number")) %>% names()
 
       amt_names <-
         data %>%
-        select_if(is.numeric) %>%
+        select(where(is.numeric)) %>%
         select(matches("^amount|^amt|^price|^earnings")) %>% names()
 
 
       if (length(pct_names) > 0) {
         data <- data %>%
-          mutate_at(pct_names,
-                    list(function(x){
-                      x %>% percent(digits = 2)
-                    }))
+          mutate(across(any_of(pct_names),
+                    ~percent(., digits = 2)))
       }
 
       if (length(amt_names) > 0) {
         data <- data %>%
-          mutate_at(pct_names,
-                    list(function(x){
-                      x %>% currency(digits = amount_digits)
-                    }))
+          mutate(across(any_of(pct_names),
+                    ~currency(., digits = amount_digits)))
       }
 
       if (length(count_names) > 0) {
         data <- data %>%
-          mutate_at(count_names,
-                    list(function(x){
-                      x %>% comma(digits = 0)
-                    }))
+          mutate(across(any_of(count_names),
+                    ~comma(., digits = 0)))
       }
     }
 
@@ -327,7 +313,7 @@ munge_tbl <-
 
     if (unformat) {
       data <- data %>%
-        mutate_if(is.numeric, as.numeric)
+        mutate(across(where(is.numeric), as.numeric))
     }
 
     data
@@ -448,8 +434,8 @@ munge_tbl <-
     data <-
       data %>%
       select(-dplyr::matches("object")) %>%
-      mutate_at(.vars = data %>% select(dplyr::matches("idCIK|idIRS")) %>% names(),
-                as.numeric) %>%
+      mutate(across(any_of(data %>% select(dplyr::matches("idCIK|idIRS")) %>% names()),
+                as.numeric)) %>%
       mutate(urlJSONGeneral = url,
              nameEntity = nameEntity %>% stringr::str_to_upper())
     has_address <-
@@ -494,7 +480,7 @@ munge_tbl <-
             if (nest_data) {
               df <-
                 df %>%
-                nest(-idRow, .key = dataCompaniesOwns)
+                nest(dataCompaniesOwns = -idRow)
             }
 
             return(df)
@@ -518,7 +504,7 @@ munge_tbl <-
                             sep = '\\#') %>%
             mutate(nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                    idRow = x) %>%
-            gather(item, value, -idRow, na.rm = TRUE) %>%
+            pivot_longer(cols = -idRow, names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
             group_by(item) %>%
             mutate(count = 1:n() - 1) %>%
             ungroup() %>%
@@ -531,21 +517,21 @@ munge_tbl <-
 
           df_data <-
             df_data %>%
-            spread(item, value) %>%
-            select(one_of(column_order))
+            pivot_wider(names_from = item, values_from = value) %>%
+            select(any_of(column_order))
         }) %>%
         suppressWarnings()
 
       detail_df <-
         detail_df %>%
-        mutate_at(.vars = detail_df %>% select(dplyr::matches("date")) %>% names(),
-                  funs(. %>% ymd())) %>%
+        mutate(across(any_of(detail_df %>% select(dplyr::matches("date")) %>% names()),
+                  ~ymd(.))) %>%
         suppressWarnings()
 
       if (nest_data) {
         detail_df <-
           detail_df %>%
-          nest(-idRow, .key = dataCompaniesOwns)
+          nest(dataCompaniesOwns = -idRow)
       }
 
       data <-
@@ -659,7 +645,6 @@ munge_tbl <-
       url %>%
       jsonlite::fromJSON()
 
-    options(scipen = 9999)
 
     status_df <-
       json_data$status_history %>% flatten_df() %>%
@@ -667,7 +652,7 @@ munge_tbl <-
 
     offering_history_class_df <-
       json_data$offering_history %>% future_map_dfr(class) %>%
-      gather(column, type) %>%
+      pivot_longer(cols = everything(), names_to = "column", values_to = "type") %>%
       mutate(idName = 1:n())
 
     offering_data <-
@@ -679,7 +664,7 @@ munge_tbl <-
     offering_data <-
       offering_data %>%
       as_tibble() %>%
-      mutate_all(funs(. %>% str_replace('\\|', '')))
+      mutate(across(everything(), ~str_replace(., '\\|', '')))
 
     offering_data <-
       offering_data %>%
@@ -701,24 +686,24 @@ munge_tbl <-
 
       offering_data <-
         offering_data %>%
-        mutate_at(.vars = offering_data %>% select(dplyr::matches("^is")) %>% names,
-                  funs(. %>% as.logical())) %>%
-        mutate_at(.vars = offering_data %>% select(dplyr::matches("^amount|^count|^idCIK")) %>% names,
-                  funs(. %>% as.numeric())) %>%
-        mutate_at(.vars = offering_data %>% select(dplyr::matches("^date")) %>% names,
-                  funs(. %>% lubridate::ymd())) %>%
-        mutate_at(.vars = offering_data %>% select(dplyr::matches("^amount")) %>% names,
-                  funs(. %>% formattable::currency(digits = 0))) %>%
-        mutate_at(.vars = offering_data %>% select(dplyr::matches("^count")) %>% names,
-                  funs(. %>% formattable::comma(digits = 0))) %>%
-        mutate_if(is.numeric, as.numeric)
+        mutate(across(any_of(offering_data %>% select(dplyr::matches("^is")) %>% names()),
+                  ~as.logical(.))) %>%
+        mutate(across(any_of(offering_data %>% select(dplyr::matches("^amount|^count|^idCIK")) %>% names()),
+                  ~as.numeric(.))) %>%
+        mutate(across(any_of(offering_data %>% select(dplyr::matches("^date")) %>% names()),
+                  ~lubridate::ymd(.))) %>%
+        mutate(across(any_of(offering_data %>% select(dplyr::matches("^amount")) %>% names()),
+                  ~formattable::currency(., digits = 0))) %>%
+        mutate(across(any_of(offering_data %>% select(dplyr::matches("^count")) %>% names()),
+                  ~formattable::comma(., digits = 0))) %>%
+        mutate(across(where(is.numeric), as.numeric))
     } else {
       offering_data <-
         offering_data %>%
-        mutate_at(.vars = offering_data %>% select(dplyr::matches("^amount|^count|^idCIK")) %>% names,
-                  funs(. %>% as.numeric())) %>%
-        mutate_at(.vars = offering_data %>% select(dplyr::matches("^date")) %>% names,
-                  funs(. %>% lubridate::ymd()))
+        mutate(across(any_of(offering_data %>% select(dplyr::matches("^amount|^count|^idCIK")) %>% names()),
+                  ~as.numeric(.))) %>%
+        mutate(across(any_of(offering_data %>% select(dplyr::matches("^date")) %>% names()),
+                  ~lubridate::ymd(.)))
     }
 
     has_relations <-
@@ -766,7 +751,7 @@ munge_tbl <-
               into = c('nameRelatedParty', 'titleRelatedParty')
             ) %>%
             mutate(countItem = 1:n() - 1) %>%
-            gather(item, value, -c(idRow, countItem)) %>%
+            pivot_longer(cols = -c(idRow, countItem), names_to = "item", values_to = "value") %>%
             arrange(countItem)
 
           df <-
@@ -778,13 +763,13 @@ munge_tbl <-
 
           df <-
             df %>%
-            spread(item, value) %>%
-            select(one_of(column_order))
+            pivot_wider(names_from = item, values_from = value) %>%
+            select(any_of(column_order))
 
           if (nest_data) {
             df <-
               df %>%
-              nest(-idRow, .key = dataRelations)
+              nest(dataRelations = -idRow)
           }
           return(df)
         })
@@ -840,7 +825,7 @@ munge_tbl <-
             if (nest_data) {
               df <-
                 df %>%
-                nest(-idRow, .key = dataBrokers)
+                nest(dataBrokers = -idRow)
             }
             return(tibble())
           }
@@ -851,7 +836,7 @@ munge_tbl <-
                             sep = '\\&',
                             into = c('nameBroker', 'idCRDBroker')) %>%
             mutate(countItem = 1:n() - 1) %>%
-            gather(item, value, -c(idRow, countItem)) %>%
+            pivot_longer(cols = -c(idRow, countItem), names_to = "item", values_to = "value") %>%
             arrange(countItem) %>%
             mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
             select(-countItem)
@@ -861,19 +846,19 @@ munge_tbl <-
 
           df <-
             df %>%
-            spread(item, value) %>%
-            select(one_of(column_order))
+            pivot_wider(names_from = item, values_from = value) %>%
+            select(any_of(column_order))
 
           df <-
             df %>%
-            mutate_at(df %>% select(dplyr::matches("idCRD")) %>% names(),
-                      funs(. %>% as.numeric())) %>%
+            mutate(across(any_of(df %>% select(dplyr::matches("idCRD")) %>% names()),
+                      ~as.numeric(.))) %>%
             resolve_names_to_upper()
 
           if (nest_data) {
             df <-
               df %>%
-              nest(-idRow, .key = dataBrokers)
+              nest(dataBrokers = -idRow)
           }
           return(df)
         })
@@ -1007,14 +992,14 @@ munge_tbl <-
 
         df <-
           df %>%
-          spread(item, value) %>%
-          select(one_of(col_order)) %>%
+          pivot_wider(names_from = item, values_from = value) %>%
+          select(any_of(col_order)) %>%
           resolve_names_to_upper()
 
         if (nest_data) {
           df <-
             df %>%
-            nest(-idPerson, .key = dataCompaniesRelated)
+            nest(dataCompaniesRelated = -idPerson)
         }
         return(df)
       })
@@ -1043,7 +1028,7 @@ munge_tbl <-
             sep = '\\|'
           ) %>%
           mutate(countRow = 1:n()) %>%
-          gather(item, value, -countRow) %>%
+          pivot_longer(cols = -countRow, names_to = "item", values_to = "value") %>%
           mutate(
             countRow = countRow - 1,
             value = value %>% as.numeric(),
@@ -1057,14 +1042,14 @@ munge_tbl <-
 
         df <-
           df %>%
-          spread(item, value) %>%
-          select(one_of(col_order)) %>%
+          pivot_wider(names_from = item, values_from = value) %>%
+          select(any_of(col_order)) %>%
           resolve_names_to_upper()
 
         if (nest_data) {
           df <-
             df %>%
-            nest(-idPerson, .key = dataOfferingValues)
+            nest(dataOfferingValues = -idPerson)
         }
         return(df)
       })
@@ -1096,7 +1081,6 @@ munge_tbl <-
       url %>%
       jsonlite::fromJSON()
 
-    options(scipen = 9999)
     cik <-
       url %>% str_replace_all('http://rankandfiled.com/data/filer/|/traders', '') %>%
       as.numeric()
@@ -1135,7 +1119,6 @@ munge_tbl <-
       url %>%
       jsonlite::fromJSON()
 
-    options(scipen = 9999)
     cik <-
       url %>% str_replace_all('http://rankandfiled.com/data/filer/|/clevel', '') %>%
       as.numeric()
@@ -1189,7 +1172,6 @@ munge_tbl <-
       url %>%
       jsonlite::fromJSON()
 
-    options(scipen = 9999)
 
     cik <-
       url %>% str_replace_all('http://rankandfiled.com/data/filer/|/mda', '') %>%
@@ -1207,7 +1189,7 @@ munge_tbl <-
     data <-
       data %>%
       mutate(nameWord = words) %>%
-      gather(date10K, countWord, -nameWord) %>%
+      pivot_longer(cols = -nameWord, names_to = "date10K", values_to = "countWord") %>%
       mutate(date10K = date10K %>% lubridate::ymd(),
              idCIK = cik) %>%
       select(idCIK, date10K, nameWord, countWord) %>%
@@ -1256,8 +1238,8 @@ munge_tbl <-
 
       filing_df <-
         filing_df %>%
-        mutate_at(.vars = filing_df %>% select(dplyr::matches("nameEntity")) %>% names(),
-                  funs(. %>% str_to_upper())) %>%
+        mutate(across(any_of(filing_df %>% select(dplyr::matches("nameEntity")) %>% names()),
+                  ~str_to_upper(.))) %>%
         resolve_names_to_upper()
 
       if ('name' %in% names(filing_df)) {
@@ -1290,7 +1272,7 @@ munge_tbl <-
               if (nest_data) {
                 df <-
                   df %>%
-                  nest(-idRow, .key = dataCompaniesOwned)
+                  nest(dataCompaniesOwned = -idRow)
               }
               return(df)
             }
@@ -1313,7 +1295,7 @@ munge_tbl <-
                               sep = '\\#') %>%
               mutate(nameCompanyOwned = nameCompanyOwned %>% str_to_upper(),
                      idRow = x) %>%
-              gather(item, value, -idRow, na.rm = TRUE) %>%
+              pivot_longer(cols = -idRow, names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
               group_by(item) %>%
               mutate(count = 1:n() - 1) %>%
               ungroup() %>%
@@ -1326,14 +1308,14 @@ munge_tbl <-
 
             df_data <-
               df_data %>%
-              spread(item, value) %>%
-              select(one_of(column_order)) %>%
+              pivot_wider(names_from = item, values_from = value) %>%
+              select(any_of(column_order)) %>%
               resolve_names_to_upper()
 
             if (nest_data) {
               df_data <-
                 df_data %>%
-                nest(-idRow, .key = dataCompaniesOwned)
+                nest(dataCompaniesOwned = -idRow)
             }
 
             return(df_data)
@@ -1342,8 +1324,8 @@ munge_tbl <-
 
         detail_df <-
           detail_df %>%
-          mutate_at(.vars = detail_df %>% select(dplyr::matches("date")) %>% names(),
-                    funs(. %>% ymd())) %>%
+          mutate(across(any_of(detail_df %>% select(dplyr::matches("date")) %>% names()),
+                    ~ymd(.))) %>%
           suppressWarnings()
 
         filing_df <-
@@ -1377,7 +1359,7 @@ munge_tbl <-
             if (nest_data) {
               df <-
                 df %>%
-                nest(idRow, .key = dataInsiderCompaniesOwned)
+                nest(dataInsiderCompaniesOwned = idRow)
             }
           }
 
@@ -1397,7 +1379,7 @@ munge_tbl <-
 
           df_data <-
             company_df %>%
-            gather(item, value, -c(nameFiler, idRow)) %>%
+            pivot_longer(cols = -c(nameFiler, idRow), names_to = "item", values_to = "value") %>%
             group_by(item) %>%
             mutate(count = 1:n() - 1) %>%
             ungroup() %>%
@@ -1410,31 +1392,27 @@ munge_tbl <-
 
           df_data <-
             df_data %>%
-            spread(item, value) %>%
-            select(one_of(column_order)) %>%
+            pivot_wider(names_from = item, values_from = value) %>%
+            select(any_of(column_order)) %>%
             resolve_names_to_upper()
 
           if (nest_data) {
             df_data <-
               df_data %>%
-              nest(-idRow, .key = dataInsiderCompaniesOwned)
+              nest(dataInsiderCompaniesOwned = -idRow)
           }
           return(df_data)
         })
 
       company_df <-
         company_df %>%
-        mutate_at(.vars =
-                    company_df %>% select(dplyr::matches("date")) %>% names(),
-                  funs(. %>% lubridate::ymd())) %>%
-        mutate_at(.vars =
-                    company_df %>% select(dplyr::matches("idCIK")) %>% names(),
-                  .funs = as.numeric) %>%
-        mutate_at(
-          .vars =
-            company_df %>% select(dplyr::matches("nameCompany")) %>% names(),
-          .funs = stringr::str_to_upper
-        )
+        mutate(across(any_of(company_df %>% select(dplyr::matches("date")) %>% names()),
+                  ~lubridate::ymd(.))) %>%
+        mutate(across(any_of(company_df %>% select(dplyr::matches("idCIK")) %>% names()),
+                  as.numeric)) %>%
+        mutate(across(any_of(company_df %>% select(dplyr::matches("nameCompany")) %>% names()),
+          stringr::str_to_upper
+        ))
 
       general_df <-
         general_df %>%
@@ -1472,7 +1450,6 @@ munge_tbl <-
       url %>%
       jsonlite::fromJSON()
 
-    options(scipen = 9999)
 
     cik <-
       url %>% str_replace_all('http://rankandfiled.com/data/filer/|/all', '') %>%
@@ -1573,7 +1550,6 @@ munge_tbl <-
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(tibble())
     }
-    options(scipen = 9999)
 
     name_df <-
       tibble(
@@ -1611,7 +1587,7 @@ munge_tbl <-
     if (has_missing_names) {
       df_has <-
         data %>%
-        select(one_of(rf_names[rf_names %in% name_df$nameRF]))
+        select(any_of(rf_names[rf_names %in% name_df$nameRF]))
 
       has_names <-
         names(df_has) %>%
@@ -1629,17 +1605,16 @@ munge_tbl <-
       data <-
         df_has %>%
         bind_cols(data %>%
-                    select(one_of(rf_names[!rf_names %in% name_df$nameRF])))
+                    select(any_of(rf_names[!rf_names %in% name_df$nameRF])))
 
       data <-
         data %>%
-        mutate_at(.vars =
-                    data %>% select(
+        mutate(across(any_of(data %>% select(
                       dplyr::matches(
                         "idCIK|idMidas|idIRS|^count|^price|^amount|^ratio|^pct|idMDA|^dateiso|idRF|price|amount|^year"
                       )
-                    ) %>% names,
-                  funs(. %>% as.character() %>% readr::parse_number())) %>%
+                    ) %>% names()),
+                  ~readr::parse_number(as.character(.)))) %>%
         suppressWarnings()
       return(data)
     }
@@ -1677,8 +1652,8 @@ munge_tbl <-
 
     data <-
       data %>%
-      mutate_at(.vars = data %>% select(dplyr::matches("date")) %>% names(),
-                funs(. %>% lubridate::ymd()))
+      mutate(across(any_of(data %>% select(dplyr::matches("date")) %>% names()),
+                ~lubridate::ymd(.)))
 
     data <-
       data %>%
@@ -1807,7 +1782,7 @@ munge_tbl <-
           item_df <-
             tibble(idFormType = reports, idRow = row_df$idRow) %>%
             left_join(report_dict_df) %>%
-            gather(item, value, -idRow) %>%
+            pivot_longer(cols = -idRow, names_to = "item", values_to = "value") %>%
             group_by(item) %>%
             mutate(countItems = 1:n() - 1) %>%
             ungroup() %>%
@@ -1821,8 +1796,8 @@ munge_tbl <-
 
           item_df <-
             item_df %>%
-            spread(item, value) %>%
-            select(one_of(col_order))
+            pivot_wider(names_from = item, values_from = value) %>%
+            select(any_of(col_order))
           return(item_df)
 
         })
@@ -1981,8 +1956,8 @@ munge_tbl <-
       filing_df <-
         url_df$urlJSON[[2]] %>%
         .parse_json_filings_safe(return_message = return_message) %>%
-        mutate_if(is_character,
-                  str_to_upper)
+        mutate(across(where(is_character),
+                  str_to_upper))
 
       has_rows  <-
         filing_df %>% nrow() > 0
@@ -2518,20 +2493,20 @@ sec_filer <-
         all_data %>%
         filter(nameTable %in% c('Filings', 'CIK Filings')) %>%
         select(dataTable) %>%
-        unnest() %>%
+        unnest(cols = c(dataTable)) %>%
         distinct()
 
 
       filing_df <-
         filing_df %>%
-        mutate_at(filing_df %>% select(dplyr::matches("^url")) %>% names(),
-                  funs(. %>% str_to_lower()))
+        mutate(across(any_of(filing_df %>% select(dplyr::matches("^url")) %>% names()),
+                  ~str_to_lower(.)))
 
 
       filing_df <-
         filing_df %>%
-        mutate_at(filing_df %>% select(dplyr::matches("url^[A-Z]")) %>% names(),
-                  funs(. %>% str_replace_all('archives', 'Archives')))
+        mutate(across(any_of(filing_df %>% select(dplyr::matches("url^[A-Z]")) %>% names()),
+                  ~str_replace_all(., 'archives', 'Archives')))
 
       filing_df <-
         filing_df %>%
@@ -2653,7 +2628,7 @@ sec_filer <-
               all_data %>%
               filter(nameTable == 'Subsidiaries') %>%
               select(dataTable) %>%
-              unnest()
+              unnest(cols = c(dataTable))
 
             if ('pctSubsidiaryOwned' %in% names(ad_sub_df)) {
               sub_df <-
@@ -2670,12 +2645,12 @@ sec_filer <-
             if (nest_data) {
               sub_df <-
                 sub_df %>%
-                nest(-c(dateFiling, idCIK, nameEntity), .key = dataSubsidiaries)
+                nest(dataSubsidiaries = -c(dateFiling, idCIK, nameEntity))
             }
             a_sub_df <-
               sub_df %>%
               group_by(idCIK, nameEntity) %>%
-              nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+              nest(dataTable = -c(idCIK, nameEntity)) %>%
               ungroup() %>%
               mutate(nameTable = 'Subsidiaries')
 
@@ -2688,12 +2663,12 @@ sec_filer <-
             if (nest_data) {
               sub_df <-
                 sub_df %>%
-                nest(-c(dateFiling, idCIK, nameEntity), .key = dataSubsidiaries)
+                nest(dataSubsidiaries = -c(dateFiling, idCIK, nameEntity))
             }
             a_sub_df <-
               sub_df %>%
               group_by(idCIK, nameEntity) %>%
-              nest(-c(idCIK, nameEntity), .key = dataTable) %>%
+              nest(dataTable = -c(idCIK, nameEntity)) %>%
               ungroup() %>%
               mutate(nameTable = 'Subsidiaries')
 
@@ -2726,7 +2701,7 @@ sec_filer <-
 
         all_data <-
           all_data %>%
-          nest(-nameTable, .key = dataTable) %>%
+          nest(dataTable = -nameTable) %>%
           bind_rows(tables_edgar)
 
       }
@@ -2751,7 +2726,7 @@ sec_filer <-
             all_data %>%
             filter(nameTable == table_name_df$nameTable[[x]]) %>%
             select(dplyr::matches(c('idCIK|nameEntity|dataTable'))) %>%
-            unnest() %>%
+            unnest(cols = c(dataTable)) %>%
             suppressWarnings() %>%
             remove_duplicate_columns()
 
@@ -2770,7 +2745,7 @@ sec_filer <-
                 df_data_names[[x]]
               table <-
                 df_data %>%
-                select(one_of(c(base_names, df_data_name))) %>%
+                select(any_of(c(base_names, df_data_name))) %>%
                 remove_duplicate_columns()
               is_null_col <-
                 table[,df_data_name] %>% magrittr::extract2(1) %>% map_lgl(is_null)
@@ -2779,7 +2754,7 @@ sec_filer <-
                 table %>%
                 mutate(is_null_col) %>%
                 filter(!is_null_col) %>%
-                unnest() %>%
+                unnest(cols = where(is.list)) %>%
                 remove_duplicate_columns() %>%
                 select(which(colMeans(is.na(.)) < 1)) %>%
                 # tidy_column_formats() %>%
@@ -2812,7 +2787,7 @@ sec_filer <-
               if (df_name %in% 'dataFilerTextFilings') {
                 table <-
                   df_data %>%
-                  unnest() %>%
+                  unnest(cols = where(is.list)) %>%
                   select(which(colMeans(is.na(.)) < 1)) %>%
                   tidy_column_formats() %>%
                   distinct()
@@ -2841,7 +2816,7 @@ sec_filer <-
                   df_data %>%
                   remove_duplicate_columns() %>%
                   # select(dplyr::matches("data")) %>%
-                  unnest()
+                  unnest(cols = where(is.list))
 
                 select_cols <-
                   tibble(nameData = names(df_data)) %>%
@@ -2902,7 +2877,7 @@ sec_filer <-
 
     general_cols <-
       data %>% future_map_dfr(class) %>%
-      gather(item, value) %>%
+      pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
       filter(!value %>% str_detect(c('list', 'data.frame'))) %>%
       .$item %>%
       suppressWarnings()
@@ -2910,7 +2885,7 @@ sec_filer <-
     general_df <-
       data %>%
       data.frame(stringsAsFactors = FALSE) %>%
-      dplyr::select(one_of(general_cols)) %>%
+      dplyr::select(any_of(general_cols)) %>%
       .resolve_name_df() %>%
       distinct()
 
@@ -2948,7 +2923,7 @@ sec_filer <-
               if (nest_data) {
                 df <-
                   df %>%
-                  nest(-idRow, .key = dataInsiderCompanies)
+                  nest(dataInsiderCompanies = -idRow)
               }
               return(df)
             }
@@ -2971,7 +2946,7 @@ sec_filer <-
                               sep = '\\#') %>%
               mutate(nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                      idRow = x) %>%
-              gather(item, value, -idRow, na.rm = TRUE) %>%
+              pivot_longer(cols = -idRow, names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
               group_by(item) %>%
               mutate(count = 1:n() - 1) %>%
               ungroup() %>%
@@ -2984,13 +2959,13 @@ sec_filer <-
 
             df_data <-
               df_data %>%
-              spread(item, value) %>%
-              select(one_of(column_order))
+              pivot_wider(names_from = item, values_from = value) %>%
+              select(any_of(column_order))
 
             if (nest_data) {
               df_data <-
                 df_data %>%
-                nest(-idRow, .key = dataInsiderCompanies)
+                nest(dataInsiderCompanies = -idRow)
             }
 
             return(df_data)
@@ -2999,8 +2974,8 @@ sec_filer <-
 
         detail_df <-
           detail_df %>%
-          mutate_at(.vars = detail_df %>% select(dplyr::matches("date")) %>% names(),
-                    funs(. %>% ymd())) %>%
+          mutate(across(any_of(detail_df %>% select(dplyr::matches("date")) %>% names()),
+                    ~ymd(.))) %>%
           suppressWarnings()
 
         filing_df <-
@@ -3030,7 +3005,7 @@ sec_filer <-
       company_name_df <-
         companies_df %>%
         select(-dplyr::matches("status_history")) %>%
-        gather(item, value, -c(idCIK, nameFiler)) %>%
+        pivot_longer(cols = -c(idCIK, nameFiler), names_to = "item", values_to = "value") %>%
         group_by(item) %>%
         mutate(countItem = 1:n() - 1) %>%
         ungroup() %>%
@@ -3044,13 +3019,13 @@ sec_filer <-
 
       company_name_df <-
         company_name_df %>%
-        spread(item, value) %>%
-        select(one_of(col_order))
+        pivot_wider(names_from = item, values_from = value) %>%
+        select(any_of(col_order))
 
       company_name_df <-
         company_name_df %>%
-        mutate_at(company_name_df %>% select(dplyr::matches("idCIK")) %>% names(),
-                  funs(. %>% as.numeric()))
+        mutate(across(any_of(company_name_df %>% select(dplyr::matches("idCIK")) %>% names()),
+                  ~as.numeric(.)))
 
       companies_df <-
         companies_df %>%
@@ -3065,7 +3040,7 @@ sec_filer <-
               as_tibble() %>%
               mutate(idRow = x) %>%
               select(-dplyr::matches("other|pair_id")) %>%
-              gather(item, value, -idRow) %>%
+              pivot_longer(cols = -idRow, names_to = "item", values_to = "value") %>%
               left_join(tibble(
                 item = c('date', 'officer', 'title', 'ten_percent', 'director'),
                 nameItem = c(
@@ -3082,7 +3057,7 @@ sec_filer <-
               ungroup() %>%
               mutate(item = ifelse(countItem == 0, nameItem, nameItem %>% paste0(countItem))) %>%
               select(idRow, item, value) %>%
-              spread(item, value) %>%
+              pivot_wider(names_from = item, values_from = value) %>%
               suppressMessages() %>%
               suppressWarnings()
             return(df)
@@ -3090,12 +3065,12 @@ sec_filer <-
 
         status_df <-
           status_df %>%
-          mutate_at(status_df %>% select(dplyr::matches("date")) %>% names(),
-                    funs(. %>% lubridate::ymd())) %>%
-          mutate_at(status_df %>% select(dplyr::matches("is")) %>% names(),
-                    funs(. %>% as.logical())) %>%
-          mutate_at(status_df %>% select(dplyr::matches("date")) %>% names(),
-                    funs(. %>% as.character()))
+          mutate(across(any_of(status_df %>% select(dplyr::matches("date")) %>% names()),
+                    ~lubridate::ymd(.))) %>%
+          mutate(across(any_of(status_df %>% select(dplyr::matches("is")) %>% names()),
+                    ~as.logical(.))) %>%
+          mutate(across(any_of(status_df %>% select(dplyr::matches("date")) %>% names()),
+                    ~as.character(.)))
 
         companies_df <-
           companies_df %>%
@@ -3103,7 +3078,7 @@ sec_filer <-
           left_join(status_df) %>%
           suppressWarnings() %>%
           suppressMessages() %>%
-          gather(item, value, -c(idCIK, nameFiler, idRow)) %>%
+          pivot_longer(cols = -c(idCIK, nameFiler, idRow), names_to = "item", values_to = "value") %>%
           group_by(item, idRow) %>%
           mutate(countItem = 1:n() - 1) %>%
           ungroup() %>%
@@ -3116,16 +3091,16 @@ sec_filer <-
 
         companies_df <-
           companies_df %>%
-          spread(item, value) %>%
-          select(one_of(col_order)) %>%
+          pivot_wider(names_from = item, values_from = value) %>%
+          select(any_of(col_order)) %>%
           suppressWarnings()
 
         companies_df <-
           companies_df %>%
-          mutate_at(status_df %>% select(dplyr::matches("date")) %>% names(),
-                    funs(. %>% lubridate::ymd())) %>%
-          mutate_at(status_df %>% select(dplyr::matches("^is|^has")) %>% names(),
-                    funs(. %>% as.logical()))
+          mutate(across(any_of(status_df %>% select(dplyr::matches("date")) %>% names()),
+                    ~lubridate::ymd(.))) %>%
+          mutate(across(any_of(status_df %>% select(dplyr::matches("^is|^has")) %>% names()),
+                    ~as.logical(.)))
 
       } else {
         companies_df <-
@@ -3136,7 +3111,7 @@ sec_filer <-
         companies_df <-
           companies_df %>%
           mutate(idRow = 1:n()) %>%
-          nest(-c(idRow, idCIK), .key = dataDetailsCompaniesOwned) %>%
+          nest(dataDetailsCompaniesOwned = -c(idRow, idCIK)) %>%
           as_tibble()
       }
 
@@ -3180,7 +3155,6 @@ sec_filer <-
       url %>%
       jsonlite::fromJSON()
 
-    options(scipen = 9999)
 
     cik <-
       url %>% str_replace_all('http://rankandfiled.com/data/insider/|/trades', '') %>%
@@ -3241,12 +3215,10 @@ sec_filer <-
 
     trade_df <-
       trade_df %>%
-      mutate_at(.vars =
-                  trade_df %>% select(dplyr::matches("date")) %>% names(),
-                .funs = lubridate::ymd) %>%
-      mutate_at(.vars =
-                  trade_df %>% select(dplyr::matches("idCIK|count|amount|price")) %>% names(),
-                funs(. %>% as.character() %>% readr::parse_number())) %>%
+      mutate(across(any_of(trade_df %>% select(dplyr::matches("date")) %>% names()),
+                lubridate::ymd)) %>%
+      mutate(across(any_of(trade_df %>% select(dplyr::matches("idCIK|count|amount|price")) %>% names()),
+                ~readr::parse_number(as.character(.)))) %>%
       left_join(tibble(
         idInsiderType = c("D", "ND"),
         typeInsider = c("Director", "Non-Director")
@@ -3364,11 +3336,11 @@ sec_filer <-
 
     all_data <-
       all_data %>%
-      mutate_at(.vars = all_data %>% select(dplyr::matches("amount|price")) %>% names(),
-                funs(. %>% formattable::currency(digits = 2))) %>%
-      mutate_at(.vars = all_data %>% select(dplyr::matches("count")) %>% names(),
-                funs(. %>% formattable::comma(digits = 0))) %>%
-      mutate_if(is.numeric, as.numeric)
+      mutate(across(any_of(all_data %>% select(dplyr::matches("amount|price")) %>% names()),
+                ~formattable::currency(., digits = 2))) %>%
+      mutate(across(any_of(all_data %>% select(dplyr::matches("count")) %>% names()),
+                ~formattable::comma(., digits = 0))) %>%
+      mutate(across(where(is.numeric), as.numeric))
 
     if (return_message) {
       list(
@@ -3459,7 +3431,7 @@ sec_filer <-
 
     general_cols <-
       json_data %>% future_map_dfr(class) %>%
-      gather(item, value) %>%
+      pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
       filter(!value %in% (c('list', 'data.frame'))) %>%
       .$item %>%
       suppressWarnings()
@@ -3467,7 +3439,7 @@ sec_filer <-
     general_df <-
       json_data %>%
       data.frame(stringsAsFactors = FALSE) %>%
-      dplyr::select(one_of(general_cols)) %>%
+      dplyr::select(any_of(general_cols)) %>%
       .resolve_name_df() %>%
       distinct() %>%
       select(-dplyr::matches("descriptionClasses"))
@@ -3509,8 +3481,8 @@ sec_filer <-
       }
       filer_df <-
         filer_df %>%
-        mutate_at(filer_df %>% select(dplyr::matches("idRF|idCIK")) %>% names(),
-                  funs(. %>% as.numeric()))
+        mutate(across(any_of(filer_df %>% select(dplyr::matches("idRF|idCIK")) %>% names()),
+                  ~as.numeric(.)))
 
       merge_cols <-
         c('idCIKFiler', 'idRow', names(filer_df)[!names(filer_df) %in% names(general_df)])
@@ -3522,7 +3494,7 @@ sec_filer <-
           filer_df %>%
             mutate(idRow = 1:n()) %>%
             dplyr::rename(idCIKFiler = idCIK) %>%
-            select(one_of(merge_cols))
+            select(any_of(merge_cols))
         ) %>%
         select(-dplyr::matches("^object|idRow")) %>%
         distinct() %>%
@@ -3610,7 +3582,7 @@ sec_filer <-
       df_urls <-
         df_all_filing_urls %>%
         mutate(nameTable = 'Filing Directories') %>%
-        nest(-nameTable, .key = dataTable)
+        nest(dataTable = -nameTable)
 
       all_tables <-
         all_tables %>%
@@ -3634,7 +3606,7 @@ sec_filer <-
           all_tables %>%
           bind_rows(tibble(
             nameTable = 'Text Filings',
-            dataTable = list(all_text_df %>% nest(-c(idCIK), .key = dataFilings))
+            dataTable = list(all_text_df %>% nest(dataFilings = -c(idCIK)))
           ))
       }
 
@@ -3738,11 +3710,10 @@ sec_filer <-
       url %>%
       jsonlite::fromJSON()
 
-    options(scipen = 9999)
 
     filing_class_df <-
       json_data$filings %>% future_map_dfr(class) %>%
-      gather(column, type) %>%
+      pivot_longer(cols = everything(), names_to = "column", values_to = "type") %>%
       mutate(idName = 1:n())
 
     general_df <-
@@ -3754,7 +3725,7 @@ sec_filer <-
     general_df <-
       general_df %>%
       as_tibble() %>%
-      mutate_all(funs(. %>% str_replace('\\|', '')))
+      mutate(across(everything(), ~str_replace(., '\\|', '')))
 
     general_df <-
       general_df %>%
@@ -3763,16 +3734,16 @@ sec_filer <-
 
     general_df <-
       general_df %>%
-      mutate_at(general_df %>% select(dplyr::matches("^datetime[A-Z]")) %>% names(),
-                funs(. %>% lubridate::ymd_hms())) %>%
-      mutate_at(general_df %>% select(dplyr::matches("dateFiled")) %>% names(),
-                funs(. %>% lubridate::ymd())) %>%
-      mutate_at(general_df %>% select(dplyr::matches("idRF|idCIK")) %>% names(),
-                funs(. %>% as.numeric())) %>%
-      mutate_at(general_df %>% select(dplyr::matches("^is|^has")) %>% names(),
-                funs(. %>% as.logical())) %>%
-      mutate_at(general_df %>% select(dplyr::matches("^description|^type")) %>% names(),
-                funs(. %>% stringr::str_to_upper())) %>%
+      mutate(across(any_of(general_df %>% select(dplyr::matches("^datetime[A-Z]")) %>% names()),
+                ~lubridate::ymd_hms(.))) %>%
+      mutate(across(any_of(general_df %>% select(dplyr::matches("dateFiled")) %>% names()),
+                ~lubridate::ymd(.))) %>%
+      mutate(across(any_of(general_df %>% select(dplyr::matches("idRF|idCIK")) %>% names()),
+                ~as.numeric(.))) %>%
+      mutate(across(any_of(general_df %>% select(dplyr::matches("^is|^has")) %>% names()),
+                ~as.logical(.))) %>%
+      mutate(across(any_of(general_df %>% select(dplyr::matches("^description|^type")) %>% names()),
+                ~stringr::str_to_upper(.))) %>%
       mutate(urlSEC = ifelse(
         slugSEC == "None",
         NA,
@@ -3810,10 +3781,10 @@ sec_filer <-
       }
       filer_df <-
         filer_df %>%
-        mutate_at(filer_df %>% select(dplyr::matches("idRF|idCIK")) %>% names(),
-                  funs(. %>% as.numeric())) %>%
-        mutate_at(filer_df %>% select(dplyr::matches("^name|^industry|^typeFund|^details")) %>% names(),
-                  funs(. %>% stringr::str_to_upper()))
+        mutate(across(any_of(filer_df %>% select(dplyr::matches("idRF|idCIK")) %>% names()),
+                  ~as.numeric(.))) %>%
+        mutate(across(any_of(filer_df %>% select(dplyr::matches("^name|^industry|^typeFund|^details")) %>% names()),
+                  ~stringr::str_to_upper(.)))
 
       if ('detailsOwnedBy' %in% names(filer_df)) {
         filer_df <-
@@ -3851,7 +3822,7 @@ sec_filer <-
                 nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                 idTickerOwns = idTickerOwns %>% str_to_upper()
               ) %>%
-              gather(item, value, -c(idRow, countItem)) %>%
+              pivot_longer(cols = -c(idRow, countItem), names_to = "item", values_to = "value") %>%
               mutate(value = ifelse(value == '', NA, value)) %>%
               mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
               arrange(countItem) %>%
@@ -3861,18 +3832,18 @@ sec_filer <-
               c('idRow', df$item)
             df <-
               df %>%
-              spread(item, value) %>%
-              select(one_of(col_order))
+              pivot_wider(names_from = item, values_from = value) %>%
+              select(any_of(col_order))
 
             df <-
               df %>%
-              mutate_at(df %>% select(dplyr::matches("date")) %>% names(),
-                        funs(. %>% lubridate::ymd()))
+              mutate(across(any_of(df %>% select(dplyr::matches("date")) %>% names()),
+                        ~lubridate::ymd(.)))
 
             if (nest_data) {
               df <-
                 df %>%
-                nest(-idRow, .key = dataCompaniesOwns)
+                nest(dataCompaniesOwns = -idRow)
             }
             return(df)
           }) %>%
@@ -3893,7 +3864,7 @@ sec_filer <-
           filer_df %>%
             mutate(idRow = 1:n()) %>%
             dplyr::rename(idCIKFiler = idCIK) %>%
-            select(one_of(
+            select(any_of(
               c('idCIKFiler', 'idRow'), names(filer_df)[!names(filer_df) %in% names(general_df)]
             ))
         ) %>%
@@ -3932,7 +3903,7 @@ sec_filer <-
           offering_long <-
             offering %>% .resolve_name_df() %>%
             mutate(idRow = x) %>%
-            gather(item, value, -idRow) %>%
+            pivot_longer(cols = -idRow, names_to = "item", values_to = "value") %>%
             group_by(item) %>%
             mutate(countItem = 1:n() - 1) %>%
             ungroup() %>%
@@ -3945,20 +3916,20 @@ sec_filer <-
 
           offering <-
             offering_long %>%
-            spread(item, value) %>%
-            select(one_of(c('idRow', col_order)))
+            pivot_wider(names_from = item, values_from = value) %>%
+            select(any_of(c('idRow', col_order)))
 
           offering <-
             offering %>%
-            mutate_at(offering %>% select(dplyr::matches("^count[A-Z]|^amount")) %>% names(),
-                      funs(. %>% as.numeric())) %>%
-            mutate_at(offering %>% select(dplyr::matches("^date")) %>% names(),
-                      funs(. %>% lubridate::ymd()))
+            mutate(across(any_of(offering %>% select(dplyr::matches("^count[A-Z]|^amount")) %>% names()),
+                      ~as.numeric(.))) %>%
+            mutate(across(any_of(offering %>% select(dplyr::matches("^date")) %>% names()),
+                      ~lubridate::ymd(.)))
 
           if (nest_data) {
             offering <-
               offering %>%
-              nest(-idRow, .key = dataOfferings)
+              nest(dataOfferings = -idRow)
           }
           return(offering)
         }) %>%
@@ -3966,8 +3937,8 @@ sec_filer <-
 
       offering_df <-
         offering_df %>%
-        mutate_at(dplyr::matches("^nameIndustry"),
-                  funs(. %>% str_to_upper()))
+        mutate(across(matches("^nameIndustry"),
+                  ~str_to_upper(.)))
 
       general_df <-
         general_df %>%
@@ -4018,8 +3989,8 @@ sec_filer <-
 
           trades <-
             trades %>%
-            mutate_at(.vars = trades %>% select(dplyr::matches("amount|count")) %>% names,
-                      funs(. %>% as.numeric())) %>%
+            mutate(across(any_of(trades %>% select(dplyr::matches("amount|count")) %>% names()),
+                      ~as.numeric(.))) %>%
             left_join(get_insider_code_df()) %>%
             suppressWarnings() %>%
             suppressMessages()
@@ -4042,7 +4013,7 @@ sec_filer <-
 
           trades_long <-
             trades %>%
-            gather(item, value, -idRow) %>%
+            pivot_longer(cols = -idRow, names_to = "item", values_to = "value") %>%
             group_by(item) %>%
             mutate(countItem = 1:n() - 1) %>%
             ungroup %>%
@@ -4055,20 +4026,20 @@ sec_filer <-
 
           trades <-
             trades_long %>%
-            spread(item, value) %>%
-            select(one_of(c('idRow', col_order)))
+            pivot_wider(names_from = item, values_from = value) %>%
+            select(any_of(c('idRow', col_order)))
 
           trades <-
             trades %>%
-            mutate_at(trades %>% select(dplyr::matches("^count[A-Z]|^amount")) %>% names(),
-                      funs(. %>% as.numeric())) %>%
-            mutate_at(trades %>% select(dplyr::matches("^date")) %>% names(),
-                      funs(. %>% lubridate::ymd()))
+            mutate(across(any_of(trades %>% select(dplyr::matches("^count[A-Z]|^amount")) %>% names()),
+                      ~as.numeric(.))) %>%
+            mutate(across(any_of(trades %>% select(dplyr::matches("^date")) %>% names()),
+                      ~lubridate::ymd(.)))
 
           if (nest_data) {
             trades <-
               trades %>%
-              nest(-idRow, .key = dataTrades)
+              nest(dataTrades = -idRow)
           }
           return(trades)
         }) %>%
@@ -4091,8 +4062,8 @@ sec_filer <-
 
     general_df <-
       general_df %>%
-      mutate_at(.vars = general_df %>% select(dplyr::matches("nameEntity")) %>% names(),
-                funs(. %>% str_to_upper())) %>%
+      mutate(across(any_of(general_df %>% select(dplyr::matches("nameEntity")) %>% names()),
+                ~str_to_upper(.))) %>%
       suppressWarnings() %>%
       ungroup() %>%
       select(-dplyr::matches("^object[A-Z]|^slug|dateiso")) %>%
@@ -4309,8 +4280,9 @@ sec_filer <-
 #' @param filers type of filer \itemize{
 #' \item \code{All}: all filer types (default)
 #' \item \code{Corporate Insider}: corporate insiders
-#' \item \code{Companies}:
-#' \item \code{Investment Company} acquires investment company data
+#' \item \code{Companies}: companies
+#' \item \code{Investment Company}: acquires investment company data
+#' }
 #' @param filing_names type of filing \itemize{
 #' \item \code{Annual Reports}: annual report
 #' \item \code{Quarterly Reports}: quarterly report
@@ -4329,7 +4301,7 @@ sec_filer <-
 #' @param return_message return a message
 #' @import dplyr tidyr purrr stringr formattable readr lubridate
 #' @importFrom jsonlite fromJSON
-#' @return
+#' @return A tibble containing SEC filing stream data
 #' @export
 #'
 #' @examples
@@ -4388,8 +4360,8 @@ sec_filing_streams_rf <-
     all_data <-
       all_data %>%
       select(-dplyr::matches("dateiso")) %>%
-      mutate_at(all_data %>% select(dplyr::matches("^name|^description|^industry|^typeEntity")) %>% names(),
-                funs(. %>% stringr::str_to_upper()))
+      mutate(across(any_of(all_data %>% select(dplyr::matches("^name|^description|^industry|^typeEntity")) %>% names()),
+                ~stringr::str_to_upper(.)))
 
     return(all_data)
   }
@@ -4421,7 +4393,7 @@ sec_filing_streams_rf <-
 
     general_class_df <-
       json_data %>% future_map_dfr(class) %>%
-      gather(column, type) %>%
+      pivot_longer(cols = everything(), names_to = "column", values_to = "type") %>%
       mutate(idName = 1:n())
 
     general_df <-
@@ -4467,8 +4439,8 @@ sec_filing_streams_rf <-
 
       general_df <-
         general_df %>%
-        mutate_if(is_character,
-                  str_to_upper)
+        mutate(across(where(is_character),
+                  str_to_upper))
     }
 
     has_snap_shot <-
@@ -4508,10 +4480,10 @@ sec_filing_streams_rf <-
 
       snap_shot_df <-
         snap_shot_df %>%
-        mutate_at(.vars = snap_shot_df %>% select(dplyr::matches("price|amount")) %>% names,
-                  funs(. %>% currency(digits = 2))) %>%
-        mutate_at(.vars = snap_shot_df %>% select(dplyr::matches("amountEBITDA")) %>% names,
-                  funs(. %>% currency(digits = 0)))
+        mutate(across(any_of(snap_shot_df %>% select(dplyr::matches("price|amount")) %>% names()),
+                  ~currency(., digits = 2))) %>%
+        mutate(across(any_of(snap_shot_df %>% select(dplyr::matches("amountEBITDA")) %>% names()),
+                  ~currency(., digits = 0)))
 
       general_df <-
         general_df %>%
@@ -4569,7 +4541,7 @@ sec_filing_streams_rf <-
                 nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                 idTickerOwns = idTickerOwns %>% str_to_upper()
               ) %>%
-              gather(item, value, -c(idRow, countItem)) %>%
+              pivot_longer(cols = -c(idRow, countItem), names_to = "item", values_to = "value") %>%
               mutate(value = ifelse(value == '', NA, value)) %>%
               mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
               arrange(countItem) %>%
@@ -4579,18 +4551,18 @@ sec_filing_streams_rf <-
               c('idRow', df$item)
             df <-
               df %>%
-              spread(item, value) %>%
-              select(one_of(col_order))
+              pivot_wider(names_from = item, values_from = value) %>%
+              select(any_of(col_order))
 
             df <-
               df %>%
-              mutate_at(df %>% select(dplyr::matches("date")) %>% names(),
-                        funs(. %>% lubridate::ymd()))
+              mutate(across(any_of(df %>% select(dplyr::matches("date")) %>% names()),
+                        ~lubridate::ymd(.)))
 
             if (nest_data) {
               df <-
                 df %>%
-                nest(-idRow, .key = dataCompaniesOwns)
+                nest(dataCompaniesOwns = -idRow)
             }
             return(df)
           }) %>%
@@ -4605,8 +4577,8 @@ sec_filing_streams_rf <-
 
       filer_df <-
         filer_df %>%
-        mutate_at(filer_df %>% select(dplyr::matches("nameEntity")) %>% names(),
-                  funs(. %>% stringr::str_to_upper())) %>%
+        mutate(across(any_of(filer_df %>% select(dplyr::matches("nameEntity")) %>% names()),
+                  ~stringr::str_to_upper(.))) %>%
         select(
           dplyr::matches("nameEntity"),
           dplyr::matches("^id"),
@@ -4639,7 +4611,7 @@ sec_filing_streams_rf <-
 
       general_df <-
         general_df %>%
-        bind_cols(filer_df %>% select(one_of(filer_cols))) %>%
+        bind_cols(filer_df %>% select(any_of(filer_cols))) %>%
         select(idCIK, dplyr::matches("nameEntity"), everything()) %>%
         select(-dplyr::matches("detailsOwns"))
     }
@@ -4657,7 +4629,7 @@ sec_filing_streams_rf <-
             if (nest_data) {
               df <-
                 df %>%
-                nest(-idRow, .key = dataCompaniesOwns)
+                nest(dataCompaniesOwns = -idRow)
             }
             return(df)
           }
@@ -4680,7 +4652,7 @@ sec_filing_streams_rf <-
                             sep = '\\#') %>%
             mutate(nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                    idRow = x) %>%
-            gather(item, value, -idRow, na.rm = TRUE) %>%
+            pivot_longer(cols = -idRow, names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
             group_by(item) %>%
             mutate(value = ifelse(value == '', NA, value),
                    count = 1:n() - 1) %>%
@@ -4694,13 +4666,13 @@ sec_filing_streams_rf <-
 
           df_data <-
             df_data %>%
-            spread(item, value) %>%
-            select(one_of(column_order))
+            pivot_wider(names_from = item, values_from = value) %>%
+            select(any_of(column_order))
 
           if (nest_data) {
             df_data <-
               df_data %>%
-              nest(-idRow, .key = dataCompaniesOwns)
+              nest(dataCompaniesOwns = -idRow)
           }
           return(df_data)
         }) %>%
@@ -4708,8 +4680,8 @@ sec_filing_streams_rf <-
 
       detail_df <-
         detail_df %>%
-        mutate_at(.vars = detail_df %>% select(dplyr::matches("date")) %>% names(),
-                  funs(. %>% ymd())) %>%
+        mutate(across(any_of(detail_df %>% select(dplyr::matches("date")) %>% names()),
+                  ~ymd(.))) %>%
         suppressWarnings()
 
       general_df <-
@@ -4788,7 +4760,6 @@ sec_filing_streams_rf <-
       url %>%
       jsonlite::fromJSON()
 
-    options(scipen = 9999)
 
     cik <-
       url %>% str_replace_all('http://rankandfiled.com/data/filer/|/trades', '') %>%
@@ -4833,12 +4804,10 @@ sec_filing_streams_rf <-
 
     trade_df <-
       trade_df %>%
-      mutate_at(.vars =
-                  trade_df %>% select(dplyr::matches("date")) %>% names(),
-                .funs = lubridate::ymd) %>%
-      mutate_at(.vars =
-                  trade_df %>% select(dplyr::matches("idCIK|count|amount|price")) %>% names(),
-                funs(. %>% as.character() %>% readr::parse_number())) %>%
+      mutate(across(any_of(trade_df %>% select(dplyr::matches("date")) %>% names()),
+                lubridate::ymd)) %>%
+      mutate(across(any_of(trade_df %>% select(dplyr::matches("idCIK|count|amount|price")) %>% names()),
+                ~readr::parse_number(as.character(.)))) %>%
       left_join(tibble(
         idInsiderType = c("D", "ND"),
         typeInsider = c("Director", "Non-Director")
@@ -4957,10 +4926,10 @@ sec_filing_streams_rf <-
 
     all_trades <-
       all_trades %>%
-      mutate_at(.vars = all_trades %>% select(dplyr::matches("count")) %>% names,
-                funs(. %>% formattable::comma(digits = 0))) %>%
-      mutate_at(.vars = all_trades %>% select(dplyr::matches("amount|price")) %>% names,
-                funs(. %>% formattable::currency(digits = 2))) %>%
+      mutate(across(any_of(all_trades %>% select(dplyr::matches("count")) %>% names()),
+                ~formattable::comma(., digits = 0))) %>%
+      mutate(across(any_of(all_trades %>% select(dplyr::matches("amount|price")) %>% names()),
+                ~formattable::currency(., digits = 2))) %>%
       select(idCIK:countShares, amountTransaction, everything()) %>%
       resolve_names_to_upper()
 
@@ -5170,10 +5139,10 @@ us_public_companies <-
         sep = '\\*',
         into = c("X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9")
       ) %>%
-      mutate_at(
-        .vars = c("X5", "X6", "X7", "X8", "X9"),
-        funs(. %>% as.character() %>% readr::parse_number())
-      ) %>%
+      mutate(across(
+        c("X5", "X6", "X7", "X8", "X9"),
+        ~readr::parse_number(as.character(.))
+      )) %>%
       purrr::set_names(
         c(
           'idTicker',
@@ -5331,7 +5300,7 @@ us_public_companies <-
       company_data <-
         company_data %>%
         inner_join(general_data %>%
-                     select(-one_of(
+                     select(-any_of(
                        c(
                          "idExchange",
                          "nameSector",
@@ -5498,18 +5467,18 @@ us_public_companies <-
 
       company_data <-
         company_data %>%
-        mutate_at(
-          company_data %>% select(dplyr::matches("price")) %>% names(),
-          funs(. %>% formattable::currency(digits = 2))
-        ) %>%
-        mutate_at(
-          company_data %>% select(dplyr::matches("amount")) %>% names(),
-          funs(. %>% formattable::currency(digits = 0))
-        ) %>%
-        mutate_at(
-          company_data %>% select(dplyr::matches("pct")) %>% names(),
-          funs(. %>% formattable::percent(digits = 2))
-        )
+        mutate(across(
+          any_of(company_data %>% select(dplyr::matches("price")) %>% names()),
+          ~formattable::currency(., digits = 2)
+        )) %>%
+        mutate(across(
+          any_of(company_data %>% select(dplyr::matches("amount")) %>% names()),
+          ~formattable::currency(., digits = 0)
+        )) %>%
+        mutate(across(
+          any_of(company_data %>% select(dplyr::matches("pct")) %>% names()),
+          ~formattable::percent(., digits = 2)
+        ))
       if (return_message) {
         list(
           "Acquired data for ",
@@ -6106,13 +6075,13 @@ us_public_companies <-
     count_df <-
       all_data %>% count(item, sort = T) %>%
       arrange(item) %>%
-      spread(item, n)
+      pivot_wider(names_from = item, values_from = n)
 
     off_one <-
       (count_df[, 2] %>% extract2(1)) - (count_df[, 1] %>% extract2(1)) == 1
 
     min_item <-
-      count_df %>% gather(item, value) %>% filter(value == min(value)) %>% .$item
+      count_df %>% pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>% filter(value == min(value)) %>% .$item
 
     change_pct <-
       has_pct & (pct_col == min_item) %>% sum() > 0
@@ -6143,12 +6112,12 @@ us_public_companies <-
           }
         }) %>%
         filter(!value %>% str_detect(hit_terms)) %>%
-        spread(item, value)
+        pivot_wider(names_from = item, values_from = value)
 
       if (change_pct) {
         df <-
           df %>%
-          select(-one_of(min_item))
+          select(-any_of(min_item))
       }
     }
 
@@ -6169,7 +6138,7 @@ us_public_companies <-
 
             column_df <-
               table_df %>% slice(1) %>%
-              gather(column, value) %>%
+              pivot_longer(cols = everything(), names_to = "column", values_to = "value") %>%
               mutate(idColumn = 1:n()) %>%
               filter(!value %>% is.na()) %>%
               left_join(tibble(
@@ -6210,7 +6179,7 @@ us_public_companies <-
 
             table_df <-
               table_df %>%
-              mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
+              mutate(across(everything(), ~str_to_upper(str_trim(.)))) %>%
               mutate(nameSubsidiary = ifelse(nameSubsidiary == '', NA, nameSubsidiary)) %>%
               filter(!nameSubsidiary %>% is.na())
 
@@ -6228,7 +6197,7 @@ us_public_companies <-
                 ) %>%
                 suppressWarnings() %>%
                 mutate(locationOrganizationSubsidiary = locationOrganizationSubsidiary %>% str_replace_all('\\,', '')) %>%
-                mutate_all(funs(. %>% str_replace('\n', '') %>% str_trim()))
+                mutate(across(everything(), ~str_trim(str_replace(., '\n', ''))))
             }
 
 
@@ -6236,9 +6205,9 @@ us_public_companies <-
               table_df <-
                 table_df %>%
                 mutate(nameProperty = ifelse(nameProperty == '', NA, nameProperty)) %>%
-                mutate_all(funs(. %>% str_replace('\n|\n  |\n  ', '') %>% str_trim())) %>%
-                mutate_all(funs(. %>% str_replace('\n', '') %>% str_trim())) %>%
-                mutate_all(funs(. %>% str_replace('  ', ' ') %>% str_trim())) %>%
+                mutate(across(everything(), ~str_trim(str_replace(., '\n|\n  |\n  ', '')))) %>%
+                mutate(across(everything(), ~str_trim(str_replace(., '\n', '')))) %>%
+                mutate(across(everything(), ~str_trim(str_replace(., '  ', ' ')))) %>%
                 fill(nameProperty)
 
             }
@@ -6271,13 +6240,13 @@ us_public_companies <-
           filter(!value %>% is.na()) %>%
           group_by(item) %>%
           mutate(idSubsidiary = 1:n()) %>%
-          spread(item, value) %>%
+          pivot_wider(names_from = item, values_from = value) %>%
           filter(!X1 == '') %>%
           mutate(idSubsidiary = 1:n()) %>%
-          gather(item, value, -c(X1, idSubsidiary)) %>%
+          pivot_longer(cols = -c(X1, idSubsidiary), names_to = "item", values_to = "value") %>%
           ungroup() %>%
           filter(!value %>% str_detect(hit_terms)) %>%
-          spread(item, value)
+          pivot_wider(names_from = item, values_from = value)
       }
 
     }
@@ -6299,8 +6268,8 @@ us_public_companies <-
 
       df <-
         df %>%
-        mutate_at(df %>% select(dplyr::matches('pct')) %>% names(),
-                  funs(. %>% as.numeric() / 100)) %>%
+        mutate(across(any_of(df %>% select(dplyr::matches('pct')) %>% names()),
+                  ~(as.numeric(.) / 100))) %>%
         suppressWarnings()
     }
 
@@ -6366,7 +6335,7 @@ us_public_companies <-
             into = c('locationOrganizationSubsidiary', 'remove')
           ) %>%
           select(-remove) %>%
-          mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
+          mutate(across(everything(), ~str_to_upper(str_trim(.)))) %>%
           mutate(idCIK = cik, urlSEC = url) %>%
           select(-dplyr::matches("idSubsidiary"))
 
@@ -6540,7 +6509,7 @@ us_public_companies <-
         select(-valueNC) %>%
         group_by(item) %>%
         mutate(idSubsidiary = 1:n()) %>%
-        spread(item, value) %>%
+        pivot_wider(names_from = item, values_from = value) %>%
         ungroup() %>%
         dplyr::rename(nameSubsidiary = X1)
 
@@ -7000,7 +6969,7 @@ us_public_companies <-
             xml_nodes %>% xml_text()
           json_data <-
             tibble(item, value) %>%
-            spread(item, value)
+            pivot_wider(names_from = item, values_from = value)
         }
 
         if (json_data %>% length() == 0) {
@@ -7029,9 +6998,9 @@ us_public_companies <-
           json_data %>%
           data.frame(stringsAsFactors = FALSE) %>%
           as_tibble() %>%
-          mutate_all(as.character) %>%
+          mutate(across(everything(), as.character)) %>%
           mutate(idTable = x) %>%
-          gather(nameSECFull, value, -idTable) %>%
+          pivot_longer(cols = -idTable, names_to = "nameSECFull", values_to = "value") %>%
           arrange(idTable)
         return(json_data)
       })
@@ -7151,8 +7120,8 @@ us_public_companies <-
 
       df_metadata <-
         df_metadata %>%
-        spread(nameActual, value) %>%
-        select(one_of(col_order)) %>%
+        pivot_wider(names_from = nameActual, values_from = value) %>%
+        select(any_of(col_order)) %>%
         mutate(urlSECFiling = url) %>%
         .resolve_form_columns()
     } else {
@@ -7199,14 +7168,14 @@ us_public_companies <-
 
           table_df <-
             table_df %>%
-            spread(nameActual, value) %>%
-            select(one_of(col_order)) %>%
+            pivot_wider(names_from = nameActual, values_from = value) %>%
+            select(any_of(col_order)) %>%
             mutate(urlSECFiling = url) %>%
             .resolve_form_columns()
 
           table_df <-
             table_df %>%
-            nest(-urlSECFiling, .key = data)
+            nest(data = -urlSECFiling)
         } else {
           table_df <-
             table_df %>%
@@ -7215,14 +7184,14 @@ us_public_companies <-
 
           table_df <-
             table_df %>%
-            spread(nameActual, value) %>%
-            select(one_of(col_order)) %>%
+            pivot_wider(names_from = nameActual, values_from = value) %>%
+            select(any_of(col_order)) %>%
             .resolve_form_columns() %>%
             mutate(urlSECFiling = url)
 
           table_df <-
             table_df %>%
-            nest(-urlSECFiling, .key = data)
+            nest(data = -urlSECFiling)
         }
         names(table_df)[[2]] <-
           table_name
@@ -7251,7 +7220,7 @@ us_public_companies <-
   function(.all_filings, filter_parameter = 'isXBRLInstanceFile', return_message = TRUE) {
     df_search <-
       .all_filings %>%
-      filter_(.dots = filter_parameter)
+      filter(.data[[filter_parameter]])
 
     if (filter_parameter == 'isXBRLInstanceFile') {
       if (df_search %>% nrow() == 0) {
@@ -7345,7 +7314,7 @@ us_public_companies <-
 .parse_xbrl_filer_url <-
   function(url = "https://www.sec.gov/Archives/edgar/data/1037540/000165642316000023/bxp-20160930.xml",
            return_message = TRUE) {
-    options(stringsAsFactors = FALSE, scipen = 999999)
+    options(stringsAsFactors = FALSE)
     cik <-
       url %>%
       str_split('data/') %>%
@@ -8748,7 +8717,7 @@ us_public_companies <-
         'Investment Company'
       )
     ) %>%
-      mutate_all(str_to_upper)
+      mutate(across(everything(), str_to_upper))
   }
 
 #' Form-D dictionary
@@ -9204,7 +9173,7 @@ dictionary_sec_rules <-
         "Investment Company Act Section 3c"
       )
     ) %>%
-      mutate_all(str_to_upper)
+      mutate(across(everything(), str_to_upper))
   }
 
 
@@ -9488,7 +9457,7 @@ dictionary_sec_rules <-
             xml_nodes %>% xml_text()
           json_data <-
             tibble(item, value) %>%
-            spread(item, value)
+            pivot_wider(names_from = item, values_from = value)
         }
 
         if (json_data %>% length() == 0) {
@@ -9517,9 +9486,9 @@ dictionary_sec_rules <-
           json_data %>%
           data.frame(stringsAsFactors = FALSE) %>%
           as_tibble() %>%
-          mutate_all(as.character) %>%
+          mutate(across(everything(), as.character)) %>%
           mutate(idTable = x) %>%
-          gather(nameSECFull, value, -idTable) %>%
+          pivot_longer(cols = -idTable, names_to = "nameSECFull", values_to = "value") %>%
           arrange(idTable)
         return(json_data)
       })
@@ -9639,8 +9608,8 @@ dictionary_sec_rules <-
 
       df_metadata <-
         df_metadata %>%
-        spread(nameActual, value) %>%
-        select(one_of(col_order)) %>%
+        pivot_wider(names_from = nameActual, values_from = value) %>%
+        select(any_of(col_order)) %>%
         mutate(urlSECFiling = url) %>%
         .resolve_form_columns()
     } else {
@@ -9687,14 +9656,14 @@ dictionary_sec_rules <-
 
           table_df <-
             table_df %>%
-            spread(nameActual, value) %>%
-            select(one_of(col_order)) %>%
+            pivot_wider(names_from = nameActual, values_from = value) %>%
+            select(any_of(col_order)) %>%
             mutate(urlSECFiling = url) %>%
             .resolve_form_columns()
 
           table_df <-
             table_df %>%
-            nest(-urlSECFiling, .key = data)
+            nest(data = -urlSECFiling)
         } else {
           table_df <-
             table_df %>%
@@ -9703,14 +9672,14 @@ dictionary_sec_rules <-
 
           table_df <-
             table_df %>%
-            spread(nameActual, value) %>%
-            select(one_of(col_order)) %>%
+            pivot_wider(names_from = nameActual, values_from = value) %>%
+            select(any_of(col_order)) %>%
             .resolve_form_columns() %>%
             mutate(urlSECFiling = url)
 
           table_df <-
             table_df %>%
-            nest(-urlSECFiling, .key = data)
+            nest(data = -urlSECFiling)
         }
         names(table_df)[[2]] <-
           table_name
@@ -9735,7 +9704,7 @@ dictionary_sec_rules <-
   function(.all_filings, filter_parameter = 'isXBRLInstanceFile', return_message = TRUE) {
     df_search <-
       .all_filings %>%
-      filter_(.dots = filter_parameter)
+      filter(.data[[filter_parameter]])
 
     if (filter_parameter == 'isXBRLInstanceFile') {
       if (df_search %>% nrow() == 0) {
@@ -10025,20 +9994,20 @@ dictionary_sec_rules <-
           tibble(item = all_items,
                  value = values) %>%
           mutate(urlSECFilingDirectory = search_url) %>%
-          spread(item, value)
+          pivot_wider(names_from = item, values_from = value)
 
         df_metadata <-
           df_metadata %>%
-          mutate_at(df_metadata %>% select(dplyr::matches('count')) %>% names(),
-                    funs(. %>% as.numeric())) %>%
-          mutate_at(
-            df_metadata %>% select(dplyr::matches('^date[A-Z]')) %>%  select(-dplyr::matches("datetime"))  %>% names(),
-            funs(. %>% lubridate::ymd())
-          ) %>%
-          mutate_at(
-            df_metadata %>% select(dplyr::matches('^datetime')) %>%  select(-dplyr::matches("datetime"))  %>% names(),
-            funs(. %>% lubridate::ymd_hms())
-          )
+          mutate(across(any_of(df_metadata %>% select(dplyr::matches('count')) %>% names()),
+                    ~as.numeric(.))) %>%
+          mutate(across(
+            any_of(df_metadata %>% select(dplyr::matches('^date[A-Z]')) %>%  select(-dplyr::matches("datetime"))  %>% names()),
+            ~lubridate::ymd(.)
+          )) %>%
+          mutate(across(
+            any_of(df_metadata %>% select(dplyr::matches('^datetime')) %>%  select(-dplyr::matches("datetime"))  %>% names()),
+            ~lubridate::ymd_hms(.)
+          ))
 
         urlSECFiling <-
           page %>%
@@ -10219,7 +10188,7 @@ dictionary_sec_rules <-
     if (nest_data) {
       df_all_filings <-
         df_all_filings %>%
-        nest(-c(idAccession, countAccension, urlSECFilingDirectory), .key = dataFilings)
+        nest(dataFilings = -c(idAccession, countAccension, urlSECFilingDirectory))
 
     }
     df_all_filings
@@ -10425,19 +10394,19 @@ dictionary_sec_rules <-
 
   data <-
     data %>%
-    spread(nameItem, value) %>%
-    select(one_of(col_order))
+    pivot_wider(names_from = nameItem, values_from = value) %>%
+    select(any_of(col_order))
 
   data <-
     data %>%
-    mutate_at(data %>% select(dplyr::matches("datetime")) %>% names(),
-              funs(. %>% lubridate::ymd_hms())) %>%
-    mutate_at(data %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names(),
-              funs(. %>% lubridate::ymd())) %>%
-    mutate_at(data %>% select(dplyr::matches("idCIK|count|monthdayFiscalYearEnd")) %>% names(),
-              funs(. %>% as.numeric())) %>%
-    mutate_at(data %>% select(dplyr::matches("name[A-Z]|type[A-Z]|description|class")) %>% names(),
-              funs(. %>% stringr::str_to_upper()))
+    mutate(across(any_of(data %>% select(dplyr::matches("datetime")) %>% names()),
+              ~lubridate::ymd_hms(.))) %>%
+    mutate(across(any_of(data %>% select(dplyr::matches("^date[A-Z]")) %>% select(-dplyr::matches("datetime")) %>% names()),
+              ~lubridate::ymd(.))) %>%
+    mutate(across(any_of(data %>% select(dplyr::matches("idCIK|count|monthdayFiscalYearEnd")) %>% names()),
+              ~as.numeric(.))) %>%
+    mutate(across(any_of(data %>% select(dplyr::matches("name[A-Z]|type[A-Z]|description|class")) %>% names()),
+              ~stringr::str_to_upper(.)))
 
   if ('nameCodeSIC' %in% names(data)) {
     data <-
@@ -10489,7 +10458,7 @@ dictionary_sec_rules <-
     df_text <-
       .parse_for_text(text_blob = text_blob) %>%
       mutate(idAccession = df_headers$idAccession) %>%
-      nest(-idAccession, .key = textFiling)
+      nest(textFiling = -idAccession)
 
     data <-
       df_headers %>%
@@ -10538,7 +10507,7 @@ dictionary_sec_rules <-
 .parse_xbrl_filer_url <-
   function(url = "https://www.sec.gov/Archives/edgar/data/1037540/000165642316000023/bxp-20160930.xml",
            return_message = TRUE) {
-    options(stringsAsFactors = FALSE, scipen = 999999)
+    options(stringsAsFactors = FALSE)
     cik <-
       url %>%
       str_split('data/') %>%
@@ -11949,7 +11918,7 @@ dictionary_sec_rules <-
         'Investment Company'
       )
     ) %>%
-      mutate_all(str_to_upper)
+      mutate(across(everything(), str_to_upper))
   }
 
 #' Form-D dictionary
@@ -12405,7 +12374,7 @@ dictionary_sec_rules <-
         "Investment Company Act Section 3c"
       )
     ) %>%
-      mutate_all(str_to_upper)
+      mutate(across(everything(), str_to_upper))
   }
 
 
@@ -12418,9 +12387,11 @@ dictionary_sec_rules <-
 #' SEC listed public companys
 #'
 #' @param include_ticker_information if \code{TRUE} returns ticker information
-#' @param return_message
+#' @param join_sic if \code{TRUE} joins SIC code data
+#' @param snake_names if \code{TRUE} returns snake case names
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return A tibble containing SEC listed public company ticker data
 #' @export
 #' @import jsonlite dplyr purrr stringr dplyr
 #' @family SEC EDGAR
@@ -12530,12 +12501,15 @@ edgar_tickers <-
 #' CIK Filing Counts
 #'
 #' @param cik CIK codes
-#' @param return_message
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return A tibble containing filing counts for each CIK
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' cik_filing_counts(cik = 886982)
+#' }
 cik_filing_counts <-
   function(cik, return_message = T) {
     .cik_filing_count_safe <-
@@ -12603,15 +12577,19 @@ cik_filing_counts <-
 #' SIC Counts
 #'
 #' @param sic vector of SIC codes
-#' @param join_sec if \code{TRUE} joins SIC data
+#' @param join_sic if \code{TRUE} joins SIC data
+#' @param snake_names if \code{TRUE} returns snake case names
 #' @param use_all_sic_codes uses all SIC codes
-#' @param return_message
+#' @param return_message if \code{TRUE} returns a message
+#' @param unformat if \code{TRUE} returns unformatted values
 #'
-#'
-#' @return
+#' @return A tibble containing filing counts by SIC code
 #' @export
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
 #' @examples
+#' \dontrun{
+#' sic_filing_count(sic = 6282)
+#' }
 sic_filing_count <-
   function(sic = NULL, join_sic = T, snake_names = F,
            use_all_sic_codes = F,
@@ -12652,30 +12630,28 @@ sic_filing_count <-
 .resolve_form_columns <-
   function(data) {
     data %>%
-      mutate_if(is.character,
-                funs(ifelse(. %in% c('_', "NULL"), NA, .))) %>%
-      mutate_at(data %>% select(
+      mutate(across(where(is.character),
+                ~ifelse(. %in% c('_', "NULL"), NA, .))) %>%
+      mutate(across(any_of(data %>% select(
         dplyr::matches(
           "^name|^description|^idDay|^type|^title|^description|^code|^address|^city|^state|^relationship"
         )
-      ) %>% names(),
-      funs(. %>% str_to_upper())) %>%
-      mutate_at(data %>% select(
+      ) %>% names()),
+      ~str_to_upper(.))) %>%
+      mutate(across(any_of(data %>% select(
         dplyr::matches("^price|^count|^amount|^value|^idCIK|^yearIncorporation|^idSIC|^pershare|^number|^percent|^term|^pct|^score|^year")
-      ) %>% names(),
-      funs(. %>% as.character() %>% readr::parse_number())) %>%
-      mutate_at(data %>% select(dplyr::matches("^is|^has")) %>% names(),
-                funs(
-                  ifelse(
+      ) %>% names()),
+      ~readr::parse_number(as.character(.)))) %>%
+      mutate(across(any_of(data %>% select(dplyr::matches("^is|^has")) %>% names()),
+                ~ifelse(
                     . %in% c('true', 'false'),
-                    . %>% as.logical(),
-                    . %>% as.numeric() %>% as.logical()
-                  )
-                )) %>%
-      mutate_at(data %>% select(dplyr::matches("^date")) %>% names(),
-                funs(. %>% lubridate::ymd())) %>%
-      mutate_at(data %>% select(dplyr::matches("^amountValueHoldings|^valueSecurities")) %>% names(),
-                funs(. * 1000)) %>%
+                    as.logical(.),
+                    as.logical(as.numeric(.))
+                  ))) %>%
+      mutate(across(any_of(data %>% select(dplyr::matches("^date")) %>% names()),
+                ~lubridate::ymd(.))) %>%
+      mutate(across(any_of(data %>% select(dplyr::matches("^amountValueHoldings|^valueSecurities")) %>% names()),
+                ~(. * 1000))) %>%
       suppressWarnings() %>%
       suppressMessages() %>%
       select(which(colMeans(is.na(.)) < 1))
@@ -12687,16 +12663,14 @@ sic_filing_count <-
 
 #' SIC Code dictionary
 #'
-#' @return
+#' @return A tibble containing SIC codes and industry names
 #' @export
 #' @import rvest stringr dplyr purrr tidyr xml2
 #' @family SEC
 #' @family dictionary
 #'
-#'
 #' @examples
 #' dictionary_sic_codes()
-
 dictionary_sic_codes <-
   memoise::memoise(function() {
     page <-
@@ -12712,10 +12686,13 @@ dictionary_sic_codes <-
 
 #' SEC form dictionary
 #'
-#' @return
+#' @return A tibble containing SEC form types and descriptions
 #' @export
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
 #' @examples
+#' \dontrun{
+#' dictionary_sec_forms()
+#' }
 dictionary_sec_forms <-
   function() {
     page <-
@@ -12802,24 +12779,27 @@ dictionary_sec_forms <-
 
 #' Parse an EDGAR data frame for underlying tables
 #'
-#' @param all_data
-#' @param table_name_initial
-#' @param parse_all_filings
-#' @param parse_complete_text_filings
-#' @param parse_form_d
-#' @param parse_13F
-#' @param parse_small_offerings
-#' @param parse_form_3_4s
-#' @param parse_asset_files
-#' @param parse_xbrl
-#' @param assign_to_environment
-#' @param nest_data
-#' @param return_message
+#' @param all_data a tibble containing EDGAR filing data
+#' @param table_name_initial initial table name for assignment
+#' @param parse_all_filings if \code{TRUE} parses all filings
+#' @param parse_complete_text_filings if \code{TRUE} parses complete text filings
+#' @param parse_form_d if \code{TRUE} parses Form D filings
+#' @param parse_13F if \code{TRUE} parses 13F filings
+#' @param parse_small_offerings if \code{TRUE} parses small offerings
+#' @param parse_form_3_4s if \code{TRUE} parses Form 3 and 4 filings
+#' @param parse_asset_files if \code{TRUE} parses asset files
+#' @param parse_xbrl if \code{TRUE} parses XBRL data
+#' @param assign_to_environment if \code{TRUE} assigns results to environment
+#' @param nest_data if \code{TRUE} nests data
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return A list of tibbles containing parsed EDGAR data
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' parse_for_tables(all_data)
+#' }
 parse_for_tables <-
   function(all_data,
            table_name_initial = "All Filings",
@@ -12903,12 +12883,12 @@ parse_for_tables <-
 
       df_all_filings <-
         df_all_filings %>%
-        nest(-c(idCIK, urlSECFilingDirectory, dplyr::matches("idAccession")), .key = dataFilings)
+        nest(dataFilings = -c(idCIK, urlSECFilingDirectory, dplyr::matches("idAccession")))
 
       all_data <-
         all_data %>%
         select(-dplyr::matches("dataFilings")) %>%
-        left_join(df_all_filings %>% select(-one_of(c('idCIK', 'idAccession')))) %>%
+        left_join(df_all_filings %>% select(-any_of(c('idCIK', 'idAccession')))) %>%
         mutate(hasNoFilings = dataFilings %>% map_lgl(is_null)) %>%
         suppressMessages()
 
@@ -12936,7 +12916,7 @@ parse_for_tables <-
       .all_filings <-
         .all_filings %>%
         select(dplyr::matches("idCIK|data")) %>%
-        unnest() %>%
+        unnest(cols = where(is.list)) %>%
         distinct()
 
       all_tables <-
@@ -13051,25 +13031,24 @@ parse_for_tables <-
             all_tables %>%
             slice(x) %>%
             select(dataTable) %>%
-            unnest()
+            unnest(cols = c(dataTable))
 
           df_name <-
             table_name_df %>% slice(x) %>% .$nameDF
 
           df_data <-
             df_data %>%
-            mutate_at(.vars =
-                        df_data %>% select(dplyr::matches("^amount|^price|^value")) %>% names(),
-                      funs(. %>% formattable::currency(digits = 2))) %>%
-            mutate_at(
-              .vars =
-                df_data %>% select(dplyr::matches("^count[A-Z]|^number")) %>% select(-dplyr::matches("country")) %>% names(),
-              funs(. %>% as.numeric() %>%  formattable::comma(digits = 0))
-            ) %>%
-            mutate_at(
-              .vars = df_data %>% select(dplyr::matches("^percent|^pct")) %>% select(-dplyr::matches("country")) %>% names(),
-              funs(. %>% as.numeric() %>% formattable::percent(digits = 0))
-            ) %>%
+            mutate(across(
+                        any_of(df_data %>% select(dplyr::matches("^amount|^price|^value")) %>% names()),
+                      ~formattable::currency(., digits = 2))) %>%
+            mutate(across(
+              any_of(df_data %>% select(dplyr::matches("^count[A-Z]|^number")) %>% select(-dplyr::matches("country")) %>% names()),
+              ~formattable::comma(as.numeric(.), digits = 0)
+            )) %>%
+            mutate(across(
+              any_of(df_data %>% select(dplyr::matches("^percent|^pct")) %>% select(-dplyr::matches("country")) %>% names()),
+              ~formattable::percent(as.numeric(.), digits = 0)
+            )) %>%
             select(which(colMeans(is.na(.)) < 1)) %>%
             tidy_column_formats()
 
@@ -13217,17 +13196,19 @@ parse_for_tables <-
     df
   }
 
-#' Title
+#' EDGAR Full Text Search by Terms
 #'
-#' @param search_terms
-#' @param nest_data
-#' @param return_message
+#' @param search_terms vector of search terms
+#' @param include_counts if \code{TRUE} includes filing counts
+#' @param nest_data if \code{TRUE} nests data
+#' @param return_message if \code{TRUE} returns a message
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi
-#' @return
+#' @return A tibble containing EDGAR filings matching the search terms
 #' @export
 #' @examples
-#' edgar_ft_terms(search_terms = c('"Jared Kushner"', '"EJF Capital"', '"Blackstone Real Estate"'))
-
+#' \dontrun{
+#' edgar_ft_terms(search_terms = c('"Jared Kushner"', '"EJF Capital"'))
+#' }
 edgar_ft_terms <-
   function(search_terms = c('"Jared Kushner"', '"EJF Capital"', '"Blackstone Real Estate"'),
            include_counts = F,
@@ -13287,7 +13268,7 @@ edgar_ft_terms <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(termSearch), .key = dataFilings)
+        nest(dataFilings = -c(termSearch))
     }
 
     return(all_data)
@@ -13476,10 +13457,10 @@ edgar_ft_terms <-
           sep = '\\-',
           remove = FALSE
         ) %>%
-        mutate_at(
+        mutate(across(
           c('idCIKFilerSubmission', 'codeYear', 'countFilerYearFilings'),
-          funs(. %>% as.character() %>% readr::parse_number())
-        ) %>%
+          ~readr::parse_number(as.character(.))
+        )) %>%
         suppressMessages() %>%
         suppressWarnings() %>%
         mutate(
@@ -13539,7 +13520,7 @@ edgar_ft_terms <-
     if (has_parameter) {
       df_params <-
         .sec_parameter_df() %>%
-        mutate_all(str_to_lower)
+        mutate(across(everything(), str_to_lower))
 
       parameter <-
         parameter %>% str_to_lower()
@@ -13725,28 +13706,30 @@ edgar_ft_terms <-
 
 #' EDGAR Search for Terms
 #'
-#' @param search_terms
-#' @param parameter
-#' @param year_start
-#' @param year_end
-#' @param parse_all_filings
-#' @param parse_form_d
-#' @param parse_13F
-#' @param parse_small_offerings
-#' @param parse_form_3_4s
-#' @param parse_asset_files
-#' @param parse_xbrl
-#' @param assign_to_environment
-#' @param nest_data
-#' @param return_message
+#' @param search_terms vector of search terms
+#' @param parameter additional search parameters
+#' @param year_start starting year for search
+#' @param year_end ending year for search
+#' @param table_name_initial initial table name for assignment
+#' @param parse_all_filings if \code{TRUE} parses all filings
+#' @param parse_form_d if \code{TRUE} parses Form D filings
+#' @param parse_13F if \code{TRUE} parses 13F filings
+#' @param parse_small_offerings if \code{TRUE} parses small offerings
+#' @param parse_form_3_4s if \code{TRUE} parses Form 3 and 4 filings
+#' @param parse_asset_files if \code{TRUE} parses asset files
+#' @param parse_xbrl if \code{TRUE} parses XBRL data
+#' @param assign_to_environment if \code{TRUE} assigns results to environment
+#' @param nest_data if \code{TRUE} nests data
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return A tibble containing EDGAR filings matching the search terms
 #' @export
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi XBRL jsonlite
 #' @importFrom jsonlite fromJSON
 #' @examples
+#' \dontrun{
 #' edgar_search_terms(search_terms = "China", year_start = 2020)
-
+#' }
 edgar_search_terms <-
   function(search_terms = NULL,
            parameter = NULL,
@@ -13832,7 +13815,7 @@ edgar_search_terms <-
             all_tables %>%
             filter(nameTable == table_name_df$nameTable[[x]]) %>%
             select(dplyr::matches(c('idCIK|nameEntity|dataTable'))) %>%
-            unnest() %>%
+            unnest(cols = c(dataTable)) %>%
             suppressWarnings()
 
           has_unnest <-
@@ -13848,8 +13831,8 @@ edgar_search_terms <-
             for (df_data_name in df_data_names) {
               table <-
                 df_data %>%
-                select(one_of(c(base_names, df_data_name))) %>%
-                unnest() %>%
+                select(any_of(c(base_names, df_data_name))) %>%
+                unnest(cols = where(is.list)) %>%
                 select(which(
                   colMeans(is.na(.)) < 1
                 ))
@@ -13867,7 +13850,7 @@ edgar_search_terms <-
             if (has_unnest) {
               df_data <-
                 df_data %>%
-                unnest()
+                unnest(cols = where(is.list))
 
               select_cols <- tibble(nameData = names(df_data)) %>%
                 mutate(idColumn = 1:n()) %>%
@@ -14105,7 +14088,7 @@ edgar_search_terms <-
 
           df <-
             tibble(idRow = x, item = c('nameEntityLegal', 'idCIK', 'typeSECEntity'), value = values) %>%
-            spread(item, value) %>%
+            pivot_wider(names_from = item, values_from = value) %>%
             mutate(idCIK = idCIK %>% as.numeric())
 
           df <-
@@ -14129,7 +14112,7 @@ edgar_search_terms <-
 
           df <-
             tibble(idRow = x, item = c('nameEntityLegal', 'idCIK', 'typeSECEntity'), value = values) %>%
-            spread(item, value) %>%
+            pivot_wider(names_from = item, values_from = value) %>%
             mutate(idCIK = idCIK %>% as.numeric())
 
           df <-
@@ -14211,10 +14194,10 @@ edgar_search_terms <-
     }
     data <-
       data %>%
-      mutate_at(
-        data %>% select_if(is.character) %>% select(-dplyr::matches("url")) %>% names(),
-        funs(ifelse(. == '', NA, .) %>% str_to_upper())
-      )
+      mutate(across(
+        any_of(data %>% select(where(is.character)) %>% select(-dplyr::matches("url")) %>% names()),
+        ~str_to_upper(ifelse(. == '', NA, .))
+      ))
     if ('descriptionFileSize' %in% names(data)) {
       data <-
         data %>%
@@ -14369,15 +14352,22 @@ edgar_search_terms <-
 
 #' Most recent EDGAR filings by type
 #'
-#' @param forms
-#' @param nest_data
-#' @param return_message
+#' @param forms vector of form types to retrieve
+#' @param table_name_initial initial table name for assignment
+#' @param parse_all_filings if \code{TRUE} parses all filings
+#' @param parse_form_d if \code{TRUE} parses Form D filings
+#' @param parse_complete_text_filings if \code{TRUE} parses complete text filings
+#' @param nest_data if \code{TRUE} nests data
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return A tibble containing recent EDGAR filings
 #' @export
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
 #' @examples
+#' \dontrun{
+#' edgar_recent_filings(forms = c("10-K", "10-Q"))
+#' }
 edgar_recent_filings <-
   function(forms = c("All", "10-D", "10-K"),
            table_name_initial = "Recent Filings",
@@ -14618,10 +14608,10 @@ edgar_recent_filings <-
           remove = FALSE,
           sep = '\\-'
         ) %>%
-        mutate_at(
+        mutate(across(
           c('idCIKFiler', 'codeYear', 'countFilerYearFilings'),
-          funs(. %>% as.numeric())
-        ) %>%
+          ~as.numeric(.)
+        )) %>%
         mutate(hasDifferentSECFiler = ifelse(!idCIK == idCIKFiler, TRUE, FALSE)) %>%
         select(
           typeIndex,
@@ -14747,10 +14737,10 @@ edgar_recent_filings <-
         remove = FALSE,
         sep = '\\-'
       ) %>%
-      mutate_at(
+      mutate(across(
         c('idCIKFiler', 'codeYear', 'countFilerYearFilings'),
-        funs(. %>% as.numeric())
-      ) %>%
+        ~as.numeric(.)
+      )) %>%
       mutate(hasDifferentSECFiler = ifelse(!idCIK == idCIKFiler, TRUE, FALSE)) %>%
       select(
         typeIndex,
@@ -14926,8 +14916,8 @@ edgar_filing_streams <-
       select(yearData, idQuarter, dateIndex, everything())
     all_data <-
       all_data %>%
-      mutate_at(all_data %>% select(dplyr::matches("count")) %>% names(),
-                funs(. %>% formattable::comma(digits = 0))) %>%
+      mutate(across(any_of(all_data %>% select(dplyr::matches("count")) %>% names()),
+                ~formattable::comma(., digits = 0))) %>%
       select(-dplyr::matches("slugAccension"))
 
     if (return_message) {
@@ -15221,16 +15211,18 @@ edgar_filing_streams <-
 
 #' SEC registered entity search
 #'
-#' @param search_names
-#' @param nest_data
-#' @param return_message
+#' @param search_names vector of entity names to search
+#' @param nest_data if \code{TRUE} nests data
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return A tibble containing CIK codes for matching entities
 #' @export
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
 #' @examples
-#' edgar_entities_cik( c("Rockwood", "BREA", 'EJF'))
+#' \dontrun{
+#' edgar_entities_cik(c("Rockwood", "BREA", "EJF"))
+#' }
 edgar_entities_cik <-
   function(search_names,
            nest_data = FALSE,
@@ -15273,7 +15265,7 @@ edgar_entities_cik <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(nameSearch), .key = dataSearch)
+        nest(dataSearch = -c(nameSearch))
     }
 
 
@@ -15439,8 +15431,8 @@ edgar_entities_cik <-
       .parse_company_pages_safe() %>%
       mutate(idTicker = ticker) %>%
       dplyr::select(idTicker, everything()) %>%
-      mutate_if(is.character,
-                str_to_upper)
+      mutate(across(where(is.character),
+                str_to_upper))
 
     data
   }
@@ -15672,7 +15664,7 @@ sec_tickers_info <-
 
     df_page_items <-
       df_page_items %>%
-      spread(nameActual, value) %>%
+      pivot_wider(names_from = nameActual, values_from = value) %>%
       .resolve_form_columns() %>%
       mutate(urlCIKPageFiling = url)
 
@@ -15936,8 +15928,8 @@ sec_tickers_info <-
 
     df_general <-
       df_general %>%
-      spread(nameActual, value) %>%
-      select(one_of(col_order)) %>%
+      pivot_wider(names_from = nameActual, values_from = value) %>%
+      select(any_of(col_order)) %>%
       dplyr::rename(nameEntityLegal = nameEntity) %>%
       mutate(nameEntity = nameEntityLegal %>% str_to_upper() %>% str_replace_all('\\.|\\,', '') %>% str_trim()) %>%
       separate(nameEntity,
@@ -15975,7 +15967,7 @@ sec_tickers_info <-
     df_general <-
       df_urls$urlCIKPageFiling[[1]] %>%
       .parse_cik_filer_general_info() %>%
-      mutate_all(funs(ifelse(. == '', NA, .))) %>%
+      mutate(across(everything(), ~ifelse(. == '', NA, .))) %>%
       .resolve_form_columns() %>%
       select(which(colMeans(is.na(.)) < 1))
 
@@ -16093,19 +16085,21 @@ sec_tickers_info <-
     return(all_data)
   }
 
-#' SIC Cod Companies
+#' SIC Code Companies
 #'
-#' @param sic_codes
-#' @param merge_names
-#' @param return_message
-#' @param nest_data
+#' @param sic_codes vector of SIC codes to search
+#' @param merge_names if \code{TRUE} merges SIC names
+#' @param return_message if \code{TRUE} returns a message
+#' @param nest_data if \code{TRUE} nests data
 #'
-#' @return
+#' @return A tibble containing companies matching the SIC codes
 #' @export
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
 #' @examples
+#' \dontrun{
 #' edgar_sic_filers(sic_codes = c(3949, 3690, 3711))
+#' }
 edgar_sic_filers <-
   function(sic_codes = NULL,
            merge_names = TRUE,
@@ -16713,13 +16707,13 @@ edgar_sic_filers <-
     count_df <-
       all_data %>% count(item, sort = T) %>%
       arrange(item) %>%
-      spread(item, n)
+      pivot_wider(names_from = item, values_from = n)
 
     off_one <-
       (count_df[, 2] %>% extract2(1)) - (count_df[, 1] %>% extract2(1)) == 1
 
     min_item <-
-      count_df %>% gather(item, value) %>% filter(value == min(value)) %>% .$item
+      count_df %>% pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>% filter(value == min(value)) %>% .$item
 
     change_pct <-
       has_pct & (pct_col == min_item) %>% sum() > 0
@@ -16750,12 +16744,12 @@ edgar_sic_filers <-
           }
         }) %>%
         filter(!value %>% str_detect(hit_terms)) %>%
-        spread(item, value)
+        pivot_wider(names_from = item, values_from = value)
 
       if (change_pct) {
         df <-
           df %>%
-          select(-one_of(min_item))
+          select(-any_of(min_item))
       }
     }
 
@@ -16776,7 +16770,7 @@ edgar_sic_filers <-
 
             column_df <-
               table_df %>% slice(1) %>%
-              gather(column, value) %>%
+              pivot_longer(cols = everything(), names_to = "column", values_to = "value") %>%
               mutate(idColumn = 1:n()) %>%
               filter(!value %>% is.na()) %>%
               left_join(tibble(
@@ -16817,7 +16811,7 @@ edgar_sic_filers <-
 
             table_df <-
               table_df %>%
-              mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
+              mutate(across(everything(), ~str_to_upper(str_trim(.)))) %>%
               mutate(nameSubsidiary = ifelse(nameSubsidiary == '', NA, nameSubsidiary)) %>%
               filter(!nameSubsidiary %>% is.na())
 
@@ -16835,7 +16829,7 @@ edgar_sic_filers <-
                 ) %>%
                 suppressWarnings() %>%
                 mutate(locationOrganizationSubsidiary = locationOrganizationSubsidiary %>% str_replace_all('\\,', '')) %>%
-                mutate_all(funs(. %>% str_replace('\n', '') %>% str_trim()))
+                mutate(across(everything(), ~str_trim(str_replace(., '\n', ''))))
             }
 
 
@@ -16843,9 +16837,9 @@ edgar_sic_filers <-
               table_df <-
                 table_df %>%
                 mutate(nameProperty = ifelse(nameProperty == '', NA, nameProperty)) %>%
-                mutate_all(funs(. %>% str_replace('\n|\n  |\n  ', '') %>% str_trim())) %>%
-                mutate_all(funs(. %>% str_replace('\n', '') %>% str_trim())) %>%
-                mutate_all(funs(. %>% str_replace('  ', ' ') %>% str_trim())) %>%
+                mutate(across(everything(), ~str_trim(str_replace(., '\n|\n  |\n  ', '')))) %>%
+                mutate(across(everything(), ~str_trim(str_replace(., '\n', '')))) %>%
+                mutate(across(everything(), ~str_trim(str_replace(., '  ', ' ')))) %>%
                 fill(nameProperty)
 
             }
@@ -16878,13 +16872,13 @@ edgar_sic_filers <-
           filter(!value %>% is.na()) %>%
           group_by(item) %>%
           mutate(idSubsidiary = 1:n()) %>%
-          spread(item, value) %>%
+          pivot_wider(names_from = item, values_from = value) %>%
           filter(!X1 == '') %>%
           mutate(idSubsidiary = 1:n()) %>%
-          gather(item, value, -c(X1, idSubsidiary)) %>%
+          pivot_longer(cols = -c(X1, idSubsidiary), names_to = "item", values_to = "value") %>%
           ungroup() %>%
           filter(!value %>% str_detect(hit_terms)) %>%
-          spread(item, value)
+          pivot_wider(names_from = item, values_from = value)
       }
 
     }
@@ -16906,8 +16900,8 @@ edgar_sic_filers <-
 
       df <-
         df %>%
-        mutate_at(df %>% select(dplyr::matches('pct')) %>% names(),
-                  funs(. %>% as.numeric() / 100)) %>%
+        mutate(across(any_of(df %>% select(dplyr::matches('pct')) %>% names()),
+                  ~(as.numeric(.) / 100))) %>%
         suppressWarnings()
     }
 
@@ -16973,7 +16967,7 @@ edgar_sic_filers <-
             into = c('locationOrganizationSubsidiary', 'remove')
           ) %>%
           select(-remove) %>%
-          mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
+          mutate(across(everything(), ~str_to_upper(str_trim(.)))) %>%
           mutate(idCIK = cik, urlSEC = url) %>%
           select(-dplyr::matches("idSubsidiary"))
 
@@ -17147,7 +17141,7 @@ edgar_sic_filers <-
         select(-valueNC) %>%
         group_by(item) %>%
         mutate(idSubsidiary = 1:n()) %>%
-        spread(item, value) %>%
+        pivot_wider(names_from = item, values_from = value) %>%
         ungroup() %>%
         dplyr::rename(nameSubsidiary = X1)
 

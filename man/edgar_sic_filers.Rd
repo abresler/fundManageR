@@ -2,7 +2,7 @@
 % Please edit documentation in R/sec_2.R
 \name{edgar_sic_filers}
 \alias{edgar_sic_filers}
-\title{SIC Cod Companies}
+\title{SIC Code Companies}
 \usage{
 edgar_sic_filers(
   sic_codes = NULL,
@@ -12,11 +12,22 @@ edgar_sic_filers(
 )
 }
 \arguments{
-\item{nest_data}{}
+\item{sic_codes}{vector of SIC codes to search}
+
+\item{merge_names}{if \code{TRUE} merges SIC names}
+
+\item{return_message}{if \code{TRUE} returns a message}
+
+\item{nest_data}{if \code{TRUE} nests data}
+}
+\value{
+A tibble containing companies matching the SIC codes
 }
 \description{
-SIC Cod Companies
+SIC Code Companies
 }
 \examples{
+\dontrun{
 edgar_sic_filers(sic_codes = c(3949, 3690, 3711))
+}
 }

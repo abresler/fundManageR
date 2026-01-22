@@ -30,6 +30,12 @@ nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 This function returns information about SEC registered
 broker dealers for specified periods from March 2007 onwards.
 }
+\examples{
+\dontrun{
+sec_broker_dealers(only_most_recent = TRUE)
+sec_broker_dealers(only_most_recent = FALSE, years = 2016:2017, nest_data = FALSE)
+}
+}
 \references{
 \href{http://sec.gov}{The Securities and Exchange Commission}
 }
@@ -83,11 +89,10 @@ Other entity search:
 \code{\link{securities_offerings}()},
 \code{\link{us_public_companies}()},
 \code{\link{ycombinator_alumni}()}
+
+Other broker dealers: 
+\code{\link{sec_municipal_advisors}()}
 }
 \concept{SEC}
-\concept{broker dealers
-\dontrun{
-sec_broker_dealers(only_most_recent = TRUE)
-sec_broker_dealers(only_most_recent = FALSE, years = 2016:2017, nest_data = FALSE)
-}}
+\concept{broker dealers}
 \concept{entity search}

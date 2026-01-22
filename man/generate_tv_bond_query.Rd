@@ -16,6 +16,14 @@ generate_tv_bond_query(
 \arguments{
 \item{column_names}{if not \code{NULL} vector of column names}
 }
+\value{
+a list representing a TradingView bond query
+}
 \description{
 Default Bond query metric
+}
+\examples{
+\dontrun{
+generate_tv_bond_query()
+}
 }

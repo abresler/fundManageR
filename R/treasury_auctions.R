@@ -291,9 +291,7 @@
 
     data <-
       json$securityList |> as_tibble() |>
-      mutate_all(list(function(x) {
-        case_when(x == "" ~ NA_character_, TRUE ~ x)
-      })) |>
+      mutate(across(everything(), ~case_when(.x == "" ~ NA_character_, TRUE ~ .x))) |>
       janitor::clean_names()
 
     data <- data |> .munge_treasury_direct_names()
@@ -305,32 +303,25 @@
       names()
 
     data <-
-      data |> mutate_at(date_cols, function(x) {
-        x |> ymd_hms()
-      }) |>
-      mutate_at(date_regular, function(x) {
-        x |> as.Date()
-      })
+      data |>
+      mutate(across(all_of(date_cols), ~ymd_hms(.x))) |>
+      mutate(across(all_of(date_regular), ~as.Date(.x)))
 
     logical_cols <- data |> select(matches("^is_")) |> names()
     data <- data |>
-      mutate_at(logical_cols, list(function(x) {
-        case_when(x == "Yes" ~ TRUE, x == "No" ~ FALSE, TRUE ~ NA)
-      }))
+      mutate(across(all_of(logical_cols), ~case_when(.x == "Yes" ~ TRUE, .x == "No" ~ FALSE, TRUE ~ NA)))
 
     amount_ratio <- data |> select(matches("^ratio|^index|^amount")) |> names()
 
     pct_cols <-
       data |> select(matches("^pct")) |> names()
 
-    data <- data |> mutate_at(amount_ratio, function(x) {
-      x |> readr::parse_number()
-    })
+    data <- data |>
+      mutate(across(all_of(amount_ratio), ~readr::parse_number(.x)))
 
     data <-
-      data |> mutate_at(pct_cols, function(x) {
-        x |> readr::parse_number() / 100
-      })
+      data |>
+      mutate(across(all_of(pct_cols), ~readr::parse_number(.x) / 100))
 
     data <-
       data |>
@@ -347,10 +338,13 @@
 
 #' Treasury Auction URL Dictionary
 #'
-#' @return
+#' @return a \code{tibble} of treasury auction API URLs
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' dictionary_treasury_auction_urls()
+#' }
 dictionary_treasury_auction_urls <-
   memoise::memoise(function() {
     url = "https://www.treasurydirect.gov/TA_WS/securities/jqsearch?format=jsonp&filterscount=0&groupscount=0&pagenum=0&pagesize=1000&recordstartindex=0&recordendindex=0"
@@ -367,10 +361,13 @@ dictionary_treasury_auction_urls <-
 
 #' Treasury Auction History
 #'
-#' @return
+#' @return a \code{tibble} of historical US treasury auction data
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' us_treasury_auctions()
+#' }
 us_treasury_auctions <-
   function() {
     df_urls <- dictionary_treasury_auction_urls()

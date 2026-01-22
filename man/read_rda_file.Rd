@@ -10,6 +10,19 @@ read_rda_file(
   return_tibble = TRUE
 )
 }
+\arguments{
+\item{file}{path to RDA file or URL}
+
+\item{return_tibble}{if \code{TRUE} returns a tibble}
+}
+\value{
+a \code{tibble} or data frame with the loaded RDA data
+}
 \description{
 read RDA file
+}
+\examples{
+\dontrun{
+read_rda_file(file = "path/to/file.rda")
+}
 }

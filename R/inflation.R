@@ -2,7 +2,7 @@
   function(data) {
     data <-
       data %>%
-      mutate_all(funs(. %>% as.character() %>% readr::parse_number())) %>%
+      mutate(across(everything(), ~as.character(.) %>% readr::parse_number())) %>%
       mutate(pctChangeIndex = pctChangeIndex / 100)
 
     current <-

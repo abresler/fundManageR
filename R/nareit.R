@@ -105,7 +105,7 @@
                              'idTicker',
                              'typeInvestment',
                              'nameSector')) %>%
-          mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
+          mutate(across(everything(), ~str_trim(.) %>% str_to_upper())) %>%
           mutate(idRow = 1:n())
 
         sector_df <-
@@ -153,7 +153,7 @@
               'amountEquityMarketCap'
             )
           ) %>%
-          mutate_all(funs(. %>% str_trim() %>% str_to_upper()))
+          mutate(across(everything(), ~str_trim(.) %>% str_to_upper()))
 
         all_data <-
           all_data %>%
@@ -215,7 +215,7 @@
             idRow
           ) %>%
           left_join(sector_df) %>%
-          mutate_all(str_to_upper) %>%
+          mutate(across(everything(), str_to_upper)) %>%
           fill(nameSector) %>%
           select(-idRow) %>%
           select(nameCompany, idTicker, nameSector, everything()) %>%
@@ -257,7 +257,7 @@
           fill(nameSector) %>%
           select(-idRow) %>%
           select(nameSector, everything()) %>%
-          mutate_all(funs(. %>% str_trim() %>% str_to_upper())) %>%
+          mutate(across(everything(), ~str_trim(.) %>% str_to_upper())) %>%
           suppressMessages()
 
         all_data <-
@@ -287,14 +287,7 @@
       }
 
       if (return_message) {
-        list(
-          "Acquired ",
-          all_data %>% nrow() %>% formattable::comma(digits = 0),
-          ' REITs for the year ',
-          year_data
-        ) %>%
-          purrr::invoke(paste0, .) %>%
-          cat(fill = T)
+        .fm_data_acquired(n_rows = nrow(all_data), source = "NAREIT", extra = paste("Year:", year_data))
       }
 
       df <<-
@@ -494,7 +487,7 @@ nareit_constituent_years <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(yearData, dateFile), .key = dataConstituents)
+        nest(dataConstituents = -c(yearData, dateFile))
     }
 
     return(all_data)
@@ -545,7 +538,7 @@ nareit_constituent_years <-
       page %>%
       .parse_page_item(item = "nameCompany", css = ".name a") %>%
       mutate(idRow = 1:n()) %>%
-      spread(item, value)
+      pivot_wider(names_from = item, values_from = value)
 
 
     url_company <-
@@ -558,19 +551,19 @@ nareit_constituent_years <-
       page %>%
       .parse_page_item(item = "sectorCompany", css = ".sector") %>%
       mutate(idRow = 1:n()) %>%
-      spread(item, value)
+      pivot_wider(names_from = item, values_from = value)
 
     ticker <-
       page %>%
       .parse_page_item(item = "idTicker", css = ".ticker") %>%
       mutate(idRow = 1:n()) %>%
-      spread(item, value)
+      pivot_wider(names_from = item, values_from = value)
 
     address <-
       page %>%
       .parse_page_item(item = "addressCompany", css = ".address") %>%
       mutate(idRow = 1:n()) %>%
-      spread(item, value)
+      pivot_wider(names_from = item, values_from = value)
 
     last_price <-
       page %>%
@@ -578,7 +571,7 @@ nareit_constituent_years <-
                       css = ".price",
                       is_number = T) %>%
       mutate(idRow = 1:n()) %>%
-      spread(item, value)
+      pivot_wider(names_from = item, values_from = value)
 
     returns <-
       page %>% html_nodes(".return") %>% html_text() %>% str_trim() %>%
@@ -589,7 +582,7 @@ nareit_constituent_years <-
       tidyr::separate(returns,
                       into = c("pctReturnMonth", "pctReturnDay"),
                       sep = "\\ ") %>%
-      mutate_all(readr::parse_number) %>%
+      mutate(across(everything(), readr::parse_number)) %>%
       mutate(pctReturnMonth = pctReturnMonth / 100,
              pctReturnDay = pctReturnDay / 100) %>%
       mutate(idRow = 1:n())
@@ -665,7 +658,7 @@ nareit_constituent_years <-
     item <-  c("nameCompany", "idTicker")
     df_metadata <-
       tibble(item = item[seq_along(company_ticker)], value = company_ticker) %>%
-      spread(item, value)
+      pivot_wider(names_from = item, values_from = value)
 
     description <-
       page %>%
@@ -699,7 +692,7 @@ nareit_constituent_years <-
       items <- c("pctReturnMonth", "pctReturnDay")
       df_ret <- tibble(item = items[seq_along(returns)],
                            value = returns) %>%
-        spread(item, value)
+        pivot_wider(names_from = item, values_from = value)
       if (df_ret %>% tibble::has_name("pctReturnMonth")) {
         df_ret <- df_ret %>% mutate(pctReturnMonth = pctReturnMonth / 100)
       }
@@ -731,8 +724,8 @@ nareit_constituent_years <-
 
     data <-
       tibble(item = actual_names, value = overview_values) %>%
-      spread(item, value) %>%
-      select(one_of(actual_names))
+      pivot_wider(names_from = item, values_from = value) %>%
+      select(any_of(actual_names))
 
     if (data %>% has_name("nameExchangeSlug")) {
       data <-
@@ -756,8 +749,7 @@ nareit_constituent_years <-
           sep = "\\-",
           convert = T
         ) %>%
-        mutate_at(c("priceLowDay", "priceHighDay"),
-                  funs(. %>% readr::parse_number()))
+        mutate(across(c("priceLowDay", "priceHighDay"), ~readr::parse_number(.)))
     }
 
     if (data %>% has_name("highlow52Week")) {
@@ -769,8 +761,7 @@ nareit_constituent_years <-
           sep = "\\-",
           convert = T
         ) %>%
-        mutate_at(c("price52WeekLow", "price52WeekHigh"),
-                  funs(. %>% readr::parse_number()))
+        mutate(across(c("price52WeekLow", "price52WeekHigh"), ~readr::parse_number(.)))
     }
 
     if (data %>% has_name("amountMarketCapitalization")) {
@@ -802,14 +793,12 @@ nareit_constituent_years <-
     if (num_names %>% length() > 0) {
       data <-
         data %>%
-        mutate_at(num_names,
-                  funs(. %>% readr::parse_number()))
+        mutate(across(all_of(num_names), ~readr::parse_number(.)))
     }
 
     data <-
       data %>%
-      mutate_if(is.character,
-                str_trim)
+      mutate(across(where(is.character), str_trim))
 
     data <-
       df_metadata %>%
@@ -875,7 +864,7 @@ nareit_constituent_years <-
         tibble(titlePerson = titles, namePerson = contacts) %>%
         separate_rows(namePerson, sep = "\\, ") %>%
         separate_rows(titlePerson, sep = "\\ & ") %>%
-        mutate_all(str_trim)
+        mutate(across(everything(), str_trim))
 
       data <-
         data %>%
@@ -927,7 +916,7 @@ nareit_constituent_years <-
                      cityProperty = cities) %>%
             slice(2:nrow(.)) %>%
             separate_rows(addressStreetProperty, sep = "              ") %>%
-            mutate_all(str_trim) %>%
+            mutate(across(everything(), str_trim)) %>%
             mutate(stateProperty = nameState) %>%
             mutate(
               addressProperty = glue::glue(
@@ -1055,13 +1044,11 @@ nareit_entities <-
         sep = "\\, ",
         remove = F
       ) %>%
-      mutate_if(is.character,
-                str_trim)
+      mutate(across(where(is.character), str_trim))
 
     all_data <-
       all_data %>%
-      mutate_if(is.character,
-                funs(if_else(. == "N/A", NA_character_, .))) %>%
+      mutate(across(where(is.character), ~if_else(. == "N/A", NA_character_, .))) %>%
       arrange(nameCompany)
 
     all_data <-
@@ -1080,7 +1067,7 @@ nareit_entities <-
 
     all_data <-
       all_data %>%
-      select(-one_of(
+      select(-any_of(
         c(
           "sectorCompany",
           "nameCompany",
@@ -1092,11 +1079,9 @@ nareit_entities <-
       )) %>%
       left_join(df_companies) %>%
       suppressMessages() %>%
-      mutate_if(is.character,
-                funs(if_else(. == "N/A", NA_character_, .))) %>%
-      mutate_if(is.character,
-                funs(if_else(. == "", NA_character_, .))) %>%
-      select(one_of( c(
+      mutate(across(where(is.character), ~if_else(. == "N/A", NA_character_, .))) %>%
+      mutate(across(where(is.character), ~if_else(. == "", NA_character_, .))) %>%
+      select(any_of(c(
         "dateData",
         "sectorCompany",
         "idTicker",
@@ -1201,19 +1186,16 @@ nareit_notable_properties <-
           'descriptionProperty'
         )
       ) %>%
-      mutate_at(.vars = c('coordinateLongitude', 'coordinateLongitude'),
-                funs(. %>% as.numeric())) %>%
+      mutate(across(c('coordinateLongitude', 'coordinateLongitude'), ~as.numeric(.))) %>%
       mutate(idProperty = idProperty %>% as.integer())
 
     df <-
       df %>%
       mutate(idProperty = idProperty %>% as.numeric()) %>%
-      mutate_at(
-        df %>%
-          keep(is_character) %>%
-          select(-dplyr::matches("url")) %>% names(),
-        funs(. %>% str_to_upper())
-      )
+      mutate(across(
+        names(df %>% keep(is_character) %>% select(-dplyr::matches("url"))),
+        ~str_to_upper(.)
+      ))
 
     return(df)
   }
@@ -1306,7 +1288,7 @@ nareit_notable_properties <-
 
     df_long <-
       df_holdings %>%
-      gather(item, value, -slugState) %>%
+      pivot_longer(cols = -slugState, names_to = "item", values_to = "value") %>%
       group_by(item) %>%
       mutate(countItem = (1:n()) - 1) %>%
       ungroup() %>%
@@ -1319,8 +1301,8 @@ nareit_notable_properties <-
 
     df_long <-
       df_long %>%
-      spread(item, value) %>%
-      select(one_of(col_order))
+      pivot_wider(names_from = item, values_from = value) %>%
+      select(any_of(col_order))
 
     if (return_message) {
       list(
@@ -1364,8 +1346,7 @@ nareit_notable_properties <-
 
     df <-
       df %>%
-      mutate_at(df %>% select(dplyr::matches('idState|count|amount')) %>% names(),
-                funs(. %>% as.numeric())) %>%
+      mutate(across(matches('idState|count|amount'), ~as.numeric(.))) %>%
       mutate(amountValuationOwnedProperties = amountValuationOwnedProperties * 1000000 %>% formattable::currency(digits = 0)) %>%
       select(idState:countHeadquarters,
              countSingleFamilyHomes,
@@ -1419,7 +1400,7 @@ nareit_property_msa <-
       json_data$features$geometry %>%
       as_tibble() %>%
       mutate(idLocation = 1:n()) %>%
-      unnest()
+      unnest(cols = c(coordinates))
 
     df_lat_lon <-
       df_lat_lon[c(TRUE, FALSE),] %>%
@@ -1429,7 +1410,7 @@ nareit_property_msa <-
              mutate(item = 'coordinateLatitude')) %>%
       bind_rows() %>%
       select(idLocation, coordinates, item) %>%
-      spread(item, coordinates)
+      pivot_wider(names_from = item, values_from = coordinates)
 
     df_property <-
       df_property %>%
@@ -1459,8 +1440,7 @@ nareit_property_msa <-
     if (nest_data) {
       df_property <-
         df_property %>%
-        nest(-c(nameMSA, coordinateLatitude, coordinateLongitude),
-             .key = dataProperties)
+        nest(dataProperties = -c(nameMSA, coordinateLatitude, coordinateLongitude))
     }
 
     return(df_property)
@@ -1513,7 +1493,7 @@ nareit_state_info <-
       json_data$features$geometry %>%
       as_tibble() %>%
       mutate(idLocation = 1:n()) %>%
-      unnest()
+      unnest(cols = c(coordinates))
 
     df_lat_lon <-
       df_lat_lon[c(TRUE, FALSE), ] %>%
@@ -1523,7 +1503,7 @@ nareit_state_info <-
              mutate(item = 'coordinateLatitude')) %>%
       bind_rows() %>%
       select(idLocation, coordinates, item) %>%
-      spread(item, coordinates)
+      pivot_wider(names_from = item, values_from = coordinates)
 
     df_property <-
       df_property %>%
@@ -1543,7 +1523,7 @@ nareit_state_info <-
     df_property <-
       df_md %>%
       left_join(df_property %>%
-                  nest(-slugState, .key = dataPropertiesOwned)) %>%
+                  nest(dataPropertiesOwned = -slugState)) %>%
       suppressWarnings() %>%
       suppressMessages()
 
@@ -1572,7 +1552,7 @@ nareit_state_info <-
       if (nest_data) {
         df_hqs <-
           df_hqs %>%
-          nest(-slugState, .key = dataCompanyHQs)
+          nest(dataCompanyHQs = -slugState)
       }
 
       df_property <-
@@ -1605,7 +1585,7 @@ nareit_state_info <-
       if (nest_data) {
         holdings_df <-
           holdings_df %>%
-          nest(-slugState, .key = dataCompanyHoldings)
+          nest(dataCompanyHoldings = -slugState)
       }
 
 
@@ -1617,8 +1597,7 @@ nareit_state_info <-
 
     df_property <-
       df_property %>%
-      mutate_at(df_property %>% select(dplyr::matches("count")) %>% names(),
-                funs(. %>% formattable::comma(digits = 0))) %>%
+      mutate(across(matches("count"), ~formattable::comma(., digits = 0))) %>%
       arrange(desc(slugState))
 
     return(df_property)
@@ -1687,13 +1666,13 @@ nareit_monthly_returns <-
       data %>%
       slice(7:nrow(data)) %>%
       as_tibble() %>%
-      mutate_all(as.character) %>%
+      mutate(across(everything(), as.character)) %>%
       purrr::set_names(items)
 
     data <-
       data %>%
       mutate(dateData = dateData %>% as.numeric() %>% as.Date(origin = "1899-12-30")) %>%
-      gather(item, valueItem, -dateData) %>%
+      pivot_longer(cols = -dateData, names_to = "item", values_to = "valueItem") %>%
       mutate(valueItem = valueItem %>% as.numeric()) %>%
       filter(!valueItem %>% is.na()) %>%
       tidyr::separate(item, c('nameIndex', 'metricItem'), sep = '\\:') %>%
@@ -1725,15 +1704,13 @@ nareit_monthly_returns <-
 
     data <-
       data %>%
-      spread(nameItem, valueItem) %>%
+      pivot_wider(names_from = nameItem, values_from = valueItem) %>%
       suppressWarnings()
 
     data <-
       data %>%
-      mutate_at(.vars = data %>% select(dplyr::matches("^index")) %>% names(),
-                funs(. %>% formattable::comma(digits = 5))) %>%
-      mutate_at(.vars = data %>% select(dplyr::matches("^pct")) %>% names(),
-                funs((. / 100) %>% formattable::percent(digits = 4))) %>%
+      mutate(across(matches("^index"), ~formattable::comma(., digits = 5))) %>%
+      mutate(across(matches("^pct"), ~formattable::percent(. / 100, digits = 4))) %>%
       mutate(urlData = url) %>%
       suppressWarnings()
 
@@ -1751,7 +1728,7 @@ nareit_monthly_returns <-
     if (!return_wide) {
       data <-
         data %>%
-        gather(item, value, -c(dateData, nameIndex, urlData), convert = T)
+        pivot_longer(cols = -c(dateData, nameIndex, urlData), names_to = "item", values_to = "value")
     }
 
     return(data)
@@ -1816,7 +1793,7 @@ nareit_annual_subsector_returns <-
       data %>%
       slice(8:nrow(data)) %>%
       as_tibble() %>%
-      mutate_all(as.character) %>%
+      mutate(across(everything(), as.character)) %>%
       select(1:24) %>%
       purrr::set_names(items[1:24]) %>%
       filter(!dateData %>% is.na())
@@ -1824,7 +1801,7 @@ nareit_annual_subsector_returns <-
     data <-
       data %>%
       mutate(dateData = dateData %>% as.numeric() %>% as.Date(origin = "1899-12-30")) %>%
-      gather(item, valueItem, -dateData) %>%
+      pivot_longer(cols = -dateData, names_to = "item", values_to = "valueItem") %>%
       mutate(valueItem = valueItem %>% as.numeric()) %>%
       filter(!valueItem %>% is.na()) %>%
       tidyr::separate(item, c('nameSector', 'nameSubSector'), sep = '\\-') %>%
@@ -1839,13 +1816,12 @@ nareit_annual_subsector_returns <-
 
     data <-
       data %>%
-      spread(metricItem, valueItem) %>%
+      pivot_wider(names_from = metricItem, values_from = valueItem) %>%
       suppressWarnings()
 
     data <-
       data %>%
-      mutate_at(.vars = data %>% select(dplyr::matches("^pct")) %>% names(),
-                funs((. / 100) %>% formattable::percent(digits = 4))) %>%
+      mutate(across(matches("^pct"), ~formattable::percent(. / 100, digits = 4))) %>%
       mutate(urlData = url)
 
     if (return_message) {
@@ -1862,10 +1838,7 @@ nareit_annual_subsector_returns <-
     if (!return_wide) {
       data <-
         data %>%
-        gather(item,
-               value,
-               -c(dateData, nameSector, nameSubSector, urlData),
-               convert = T)
+        pivot_longer(cols = -c(dateData, nameSector, nameSubSector, urlData), names_to = "item", values_to = "value")
     }
 
     return(data)
@@ -1985,8 +1958,7 @@ nareit_annual_subsector_returns <-
     rm(con)
     data <-
       data %>%
-      mutate_if(is.factor,
-                as.character)
+      mutate(across(where(is.factor), as.character))
 
     if ("NA." %in% names(data)) {
       data <-
@@ -2007,8 +1979,7 @@ nareit_annual_subsector_returns <-
     data <-
       data %>%
       purrr::set_names(actual_names) %>%
-      mutate_if(is_character,
-                str_to_upper) %>%
+      mutate(across(where(is_character), str_to_upper)) %>%
       mutate(
         nameSubSector = ifelse(nameSubSector == '', NA, nameSubSector),
         dateOffering = dateOffering %>% lubridate::ymd()
@@ -2016,25 +1987,16 @@ nareit_annual_subsector_returns <-
 
     data <-
       data %>%
-      mutate_at(data %>% select(dplyr::matches("^countShares|^amountProceeds")) %>% names(),
-                funs(. %>% as.numeric() * 1000000)) %>%
-      mutate_at(
-        data %>% select(dplyr::matches("^price")) %>% names(),
-        funs(. %>% as.character() %>% readr::parse_number())
-      ) %>%
+      mutate(across(matches("^countShares|^amountProceeds"), ~as.numeric(.) * 1000000)) %>%
+      mutate(across(matches("^price"), ~readr::parse_number(as.character(.)))) %>%
       mutate(urlData = url) %>%
       select(dateOffering, nameCompany, everything())
 
     data <-
       data %>%
-      mutate_at(data %>% select(dplyr::matches(
-        "nameUnderwriter|descriptionOffering"
-      )) %>% names(),
-      funs(ifelse(. == '', NA, .))) %>%
-      mutate_if(is.character,
-                funs(str_trim)) %>%
-      mutate_if(is.character,
-                funs(ifelse(. == '', NA, .)))
+      mutate(across(matches("nameUnderwriter|descriptionOffering"), ~ifelse(. == '', NA, .))) %>%
+      mutate(across(where(is.character), str_trim)) %>%
+      mutate(across(where(is.character), ~ifelse(. == '', NA, .)))
 
     has_shares <-
       names(data) %>% str_detect('countShares') %>% sum() > 0
@@ -2134,12 +2096,9 @@ nareit_capital_raises <-
       left_join(url_df %>% select(urlData, typeCapital)) %>%
       select(typeCapital, everything()) %>%
       arrange(dateOffering) %>%
-      mutate_at(all_data %>% select(dplyr::matches("amount")) %>% names(),
-                funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(all_data %>% select(dplyr::matches("count")) %>% names(),
-                funs(. %>% formattable::comma(digits = 0))) %>%
-      mutate_at(all_data %>% select(dplyr::matches("price")) %>% names(),
-                funs(. %>% formattable::comma(digits = 3))) %>%
+      mutate(across(matches("amount"), ~formattable::currency(., digits = 0))) %>%
+      mutate(across(matches("count"), ~formattable::comma(., digits = 0))) %>%
+      mutate(across(matches("price"), ~formattable::comma(., digits = 3))) %>%
       filter(!dateOffering %>% is.na()) %>%
       suppressMessages()
     if (return_message) {
@@ -2157,7 +2116,7 @@ nareit_capital_raises <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-typeCapital, .key = dataOfferingNAREIT)
+        nest(dataOfferingNAREIT = -typeCapital)
     }
 
     return(all_data)
@@ -2210,7 +2169,7 @@ nareit_mergers_acquisitions <-
       slice(3:nrow(.)) %>%
       mutate(V1 = ifelse(V1 == '', NA, V1)) %>%
       filter(!V2 %>% str_detect("Total")) %>%
-      mutate_all(funs(. %>% str_trim() %>% str_to_upper()))
+      mutate(across(everything(), ~str_trim(.) %>% str_to_upper()))
 
     all_data <-
       all_data %>%
@@ -2240,7 +2199,7 @@ nareit_mergers_acquisitions <-
         all_data %>%
         filter(V9 == "") %>%
         filter(!yearMerger == "2017") %>%
-        mutate_all(funs(ifelse(. == '', NA, .))) %>%
+        mutate(across(everything(), ~ifelse(. == '', NA, .))) %>%
         dplyr::select(which(colMeans(is.na(.)) < 1)) %>%
         purrr::set_names(
           c(
@@ -2257,7 +2216,7 @@ nareit_mergers_acquisitions <-
         bind_rows(
           all_data %>%
             filter(!V9 == "") %>%
-            mutate_all(funs(ifelse(. == '', NA, .))) %>%
+            mutate(across(everything(), ~ifelse(. == '', NA, .))) %>%
             dplyr::select(which(colMeans(is.na(
               .
             )) < 1)) %>%
@@ -2301,7 +2260,7 @@ nareit_mergers_acquisitions <-
           all_data %>%
             filter(V9 == "") %>%
             filter(yearMerger == "2017") %>%
-            mutate_all(funs(ifelse(. == '', NA, .))) %>%
+            mutate(across(everything(), ~ifelse(. == '', NA, .))) %>%
             dplyr::select(which(colMeans(is.na(
               .
             )) < 1)) %>%
@@ -2379,8 +2338,7 @@ nareit_mergers_acquisitions <-
               nameTarget = c('Boykin Lodging Company',
                              'Fieldstone Investment Corporation')
             ) %>%
-              mutate_if(is.character,
-                        str_to_upper)
+              mutate(across(where(is.character), str_to_upper))
           )
       ) %>%
       arrange(idTransaction) %>%
@@ -2487,7 +2445,7 @@ nareit_mergers_acquisitions <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-yearMerger, .key = dataTransactions)
+        nest(dataTransactions = -yearMerger)
     }
 
     return(all_data)
@@ -2552,8 +2510,7 @@ nareit_industry_tracker <-
 
     data <-
       data %>%
-      mutate_if(is.factor,
-                as.character)
+      mutate(across(where(is.factor), as.character))
 
     years_quarters <-
       data %>%
@@ -2620,7 +2577,7 @@ nareit_industry_tracker <-
       select(nameItem, everything()) %>%
       fill(nameItem) %>%
       select(-idRow) %>%
-      gather(yearQuarter, value, -c(nameSector, nameItem)) %>%
+      pivot_longer(cols = -c(nameSector, nameItem), names_to = "yearQuarter", values_to = "value") %>%
       mutate(
         value = value %>% readr::parse_number(),
         nameSector = nameSector %>% str_to_upper()
@@ -2632,15 +2589,14 @@ nareit_industry_tracker <-
 
     data <-
       data %>%
-      spread(nameItem, value) %>%
+      pivot_wider(names_from = nameItem, values_from = value) %>%
       tidyr::separate(
         yearQuarter,
         remove = FALSE,
         sep = '\\.',
         into = c('yearData', 'quarterData')
       ) %>%
-      mutate_at(c('yearData', 'quarterData'),
-                funs(. %>% as.numeric())) %>%
+      mutate(across(c('yearData', 'quarterData'), ~as.numeric(.))) %>%
       arrange(yearData, quarterData) %>%
       mutate(urlData = url)
 
@@ -2661,18 +2617,14 @@ nareit_industry_tracker <-
 
     data <-
       data %>%
-      mutate_at(data %>% select(dplyr::matches("amount")) %>% names(),
-                funs(. %>% formattable::currency(digits = 0))) %>%
-      mutate_at(data %>% select(dplyr::matches("pct")) %>% names(),
-                funs(. %>% formattable::percent(digits = 3))) %>%
+      mutate(across(matches("amount"), ~formattable::currency(., digits = 0))) %>%
+      mutate(across(matches("pct"), ~formattable::percent(., digits = 3))) %>%
       mutate(urlData = url)
 
     if (!return_wide) {
       data <-
         data %>%
-        gather(item,
-               value,
-               -c(nameSector, yearQuarter, yearData, quarterData, urlData))
+        pivot_longer(cols = -c(nameSector, yearQuarter, yearData, quarterData, urlData), names_to = "item", values_to = "value")
     }
 
     if (return_message) {
@@ -2684,7 +2636,7 @@ nareit_industry_tracker <-
     if (nest_data) {
       data <-
         data %>%
-        nest(-yearData, .key = dataTracker)
+        nest(dataTracker = -yearData)
     }
 
     return(data)
@@ -2699,7 +2651,7 @@ nareit_industry_tracker <-
   function(url, return_message = TRUE) {
 
     if (return_message) {
-      glue::glue("Parsing {url}") %>% cat(fill = T)
+      .fm_parsing(url)
     }
 
     page <-
@@ -2810,9 +2762,9 @@ nareit_industry_tracker <-
 
         data <-
           tibble(item = items, value  = values) %>%
-          spread(item, value) %>%
+          pivot_wider(names_from = item, values_from = value) %>%
           suppressWarnings() %>%
-          mutate_at(
+          mutate(across(
             c(
               "amountAssets",
               "amountInvestmentMinimum",
@@ -2822,13 +2774,13 @@ nareit_industry_tracker <-
               "pctYieldTTM",
               "pctTurnOver"
             ),
-            funs(. %>% readr::parse_number())
-          ) %>%
+            ~readr::parse_number(.)
+          )) %>%
           suppressWarnings()
 
         data <-
           data %>%
-          mutate_at(
+          mutate(across(
             c(
               "pctReturn1Month",
               "pctExpenses",
@@ -2836,8 +2788,8 @@ nareit_industry_tracker <-
               "pctYieldTTM",
               "pctTurnOver"
             ),
-            funs(. / 100)
-          )
+            ~. / 100
+          ))
 
         data <-
           data %>%
@@ -2873,7 +2825,7 @@ nareit_industry_tracker <-
             mutate(value = value %>% readr::parse_number()) %>%
             mutate(value = ifelse(item %>% str_detect("pct"), value / 100, value)) %>%
             tidyr::unite(item, item, period, sep = '') %>%
-            spread(item, value) %>%
+            pivot_wider(names_from = item, values_from = value) %>%
             suppressWarnings() %>%
             mutate(urlNAREIT = res$url)
 
@@ -2963,8 +2915,7 @@ reit_funds <-
 
       detail_df <-
         detail_df %>%
-        mutate_at(detail_df %>% select(dplyr::matches("pct")) %>% names(),
-                  funs(. / 100))
+        mutate(across(matches("pct"), ~. / 100))
 
       df_table <-
         df_table %>%
@@ -2973,10 +2924,8 @@ reit_funds <-
 
       df_table <-
         df_table %>%
-        mutate_at(df_table %>% select(dplyr::matches("amount")) %>% names(),
-                  funs(. %>% formattable::currency())) %>%
-        mutate_at(df_table %>% select(dplyr::matches("pct")) %>% names(),
-                  funs(. %>% formattable::percent()))
+        mutate(across(matches("amount"), ~formattable::currency(.))) %>%
+        mutate(across(matches("pct"), ~formattable::percent(.)))
     }
 
     df_table <-

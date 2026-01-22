@@ -81,11 +81,16 @@ tv_metrics_data(
 \item options- sort options
 }}
 
-\item{return_message}{}
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+a \code{tibble} of metrics data
 }
 \description{
 Get data for trade view query
 }
 \examples{
-tv_metrics_data(regions = c( 'america'))
+\dontrun{
+tv_metrics_data(regions = c('america'))
+}
 }

@@ -24,11 +24,44 @@ edgar_search_terms(
 )
 }
 \arguments{
-\item{return_message}{}
+\item{search_terms}{vector of search terms}
+
+\item{parameter}{additional search parameters}
+
+\item{year_start}{starting year for search}
+
+\item{year_end}{ending year for search}
+
+\item{table_name_initial}{initial table name for assignment}
+
+\item{parse_all_filings}{if \code{TRUE} parses all filings}
+
+\item{parse_form_d}{if \code{TRUE} parses Form D filings}
+
+\item{parse_13F}{if \code{TRUE} parses 13F filings}
+
+\item{parse_small_offerings}{if \code{TRUE} parses small offerings}
+
+\item{parse_form_3_4s}{if \code{TRUE} parses Form 3 and 4 filings}
+
+\item{parse_asset_files}{if \code{TRUE} parses asset files}
+
+\item{parse_xbrl}{if \code{TRUE} parses XBRL data}
+
+\item{assign_to_environment}{if \code{TRUE} assigns results to environment}
+
+\item{nest_data}{if \code{TRUE} nests data}
+
+\item{return_message}{if \code{TRUE} returns a message}
+}
+\value{
+A tibble containing EDGAR filings matching the search terms
 }
 \description{
 EDGAR Search for Terms
 }
 \examples{
+\dontrun{
 edgar_search_terms(search_terms = "China", year_start = 2020)
+}
 }

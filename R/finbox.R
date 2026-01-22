@@ -2166,16 +2166,14 @@
   function(data) {
     data <-
       data %>%
-      mutate_at(data %>% dplyr::select(dplyr::matches("^pct[A-Z]")) %>% names(),
-                funs(. %>% formattable::percent(digits = 2))) %>%
-      mutate_at(data %>% dplyr::select(dplyr::matches("^ratio[A-Z]")) %>% names(),
-                funs(. %>% formattable::digits(digits = 5))) %>%
-      mutate_at(data %>% dplyr::select(dplyr::matches("^price[A-Z]|pershare")) %>% names(),
-                funs(. %>% formattable::currency(digits = 4))) %>%
-      mutate_at(
-        data %>% dplyr::select(dplyr::matches("^amount[A-Z]")) %>% names(),
-        funs(. * 1000000 %>% formattable::currency(digits = 0))
-      )
+      mutate(across(matches("^pct[A-Z]"),
+                    ~formattable::percent(., digits = 2))) %>%
+      mutate(across(matches("^ratio[A-Z]"),
+                    ~formattable::digits(., digits = 5))) %>%
+      mutate(across(matches("^price[A-Z]|pershare"),
+                    ~formattable::currency(., digits = 4))) %>%
+      mutate(across(matches("^amount[A-Z]"),
+                    ~formattable::currency(. * 1000000, digits = 0)))
 
     if (data %>% tibble::has_name('idIndicies')) {
       df_indicies <-
@@ -2221,7 +2219,7 @@
     data <-
       data %>%
       dplyr::select(
-        one_of(
+        any_of(
           "idTicker",
           "nameCompany",
           "industryCompany",
@@ -2247,7 +2245,7 @@
 #'
 #' @param return_message if \code{TRUE} return a message
 #'
-#' @return
+#' @return a \code{tibble} with company data including tickers, exchange info, and sectors
 #' @export
 #' @import glue dplyr purrr stringr
 #' @importFrom jsonlite fromJSON
@@ -2278,7 +2276,7 @@ dictionary_finbox_companies <-
           )
       ) %>%
       dplyr::select(idExchange, slugExchange, idTicker, nameCompany, everything()) %>%
-      mutate_all(funs(. %>% str_replace_all('\\ , ', '\\, ') %>% str_trim())) %>%
+      mutate(across(everything(), ~str_replace_all(., '\\ , ', '\\, ') %>% str_trim())) %>%
       arrange(idExchange, slugExchange, sectorCompany, idTicker) %>%
       suppressWarnings()
 
@@ -2296,7 +2294,7 @@ dictionary_finbox_companies <-
 
 #' Get Searchable FinBOX metrics
 #'
-#' @return
+#' @return a \code{tibble} with available FinBox metrics and their descriptions
 #' @export
 #' @import purrr dplyr stringr
 #' @importFrom jsonlite fromJSON
@@ -2377,16 +2375,19 @@ metrics <-
 
 #' finbox ticker metrics
 #'
-#' @param tickers
-#' @param metrics
-#' @param multiple_type
-#' @param period_types
-#' @param return_message
+#' @param tickers vector of stock ticker symbols
+#' @param metrics vector of financial metrics to retrieve
+#' @param multiple_types vector of multiple types (e.g., 'ltm', 'fwd')
+#' @param period_types vector of period types (e.g., 'fy', 'fq', 'ytd')
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return a \code{tibble} with ticker metrics data
 #' @export
 #' @import glue purrr curl rvest jsonlite dplyr anytime reticulate lubridate stringr
 #' @examples
+#' \dontrun{
+#' tickers_metrics(tickers = c("AAPL", "GOOG"))
+#' }
 tickers_metrics <-
   function(tickers = c('AAPL', 'NFLX', "FB", "GOOG", "TSLA", "VNO"),
          metrics = c("total_current_assets", "total_net_income_margin", "total_net_income", "pre_tax_income_cagr",
@@ -2520,7 +2521,7 @@ tickers_metrics <-
 
     df_classes <-
       data %>% future_map_dfr(class) %>%
-      tidyr::gather(namePart, classPart) %>%
+      tidyr::pivot_longer(cols = everything(), names_to = "namePart", values_to = "classPart") %>%
       mutate(idColumn = 1:n())
 
     df_classes <-
@@ -2553,12 +2554,12 @@ tickers_metrics <-
     df_description <-
       df_description %>%
       dplyr::select(-idColumn) %>%
-      tidyr::spread(nameFinbox, value) %>%
-      dplyr::select(one_of(col_order))
+      tidyr::pivot_wider(names_from = nameFinbox, values_from = value) %>%
+      dplyr::select(any_of(col_order))
 
     df_description <-
       df_description %>%
-      dplyr::select(-one_of("ticker"))
+      dplyr::select(-any_of("ticker"))
 
     if (df_description %>% ncol() == 8) {
       df_description <-
@@ -2743,10 +2744,10 @@ tickers_metrics <-
                 future_map(function(x){
                   df_list[x] %>% pull() %>% flatten_df() %>%
                     flatten_df() %>%
-                    gather(typeParty, value) %>%
+                    pivot_longer(cols = everything(), names_to = "typeParty", values_to = "value") %>%
                     mutate(nameItem = x,
                            value = value %>% as.character() %>%  readr::parse_number()) %>%
-                    spread(nameItem, value)
+                    pivot_wider(names_from = nameItem, values_from = value)
                 }) %>%
                 suppressWarnings()
 
@@ -2770,7 +2771,7 @@ tickers_metrics <-
           df <- list_data %>% flatten_df()
           df_periods <-
             df %>%
-            gather(item, value) %>%
+            pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
             filter(item %>% str_detect('period')) %>%
             mutate(item =item %>% str_replace_all('period_end_', '')) %>%
             dplyr::select(period = item, datePeriodEnd = value) %>%
@@ -2778,7 +2779,7 @@ tickers_metrics <-
 
           df_values <-
             df %>%
-            gather(item, value) %>%
+            pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%
             filter(!item %>% str_detect('period')) %>%
             mutate(value = value %>% as.numeric())
 
@@ -2844,7 +2845,7 @@ tickers_metrics <-
             list_data %>%
             mutate(datetimeArticle = timeSincePublished %>% map_chr(.extract_date) %>% ymd_hms(),
                    dateArticle = datetimeArticle %>% as.Date()) %>%
-            select(one_of(c("datetimeArticle","dateArticle", "domainArticle", "titleArticle", "urlArticle"))) %>%
+            select(any_of(c("datetimeArticle","dateArticle", "domainArticle", "titleArticle", "urlArticle"))) %>%
             arrange(datetimeArticle)
 
         }
@@ -2876,12 +2877,15 @@ tickers_metrics <-
 #' Finbox ticker data
 #'
 #' @param tickers \code{vector} of tickers
-#' @param assign_to_environment
+#' @param assign_to_environment if \code{TRUE} assigns data tables to the global environment
 #'
-#' @return
+#' @return a \code{tibble} with comprehensive ticker data from Finbox
 #' @export
 #' @import glue purrr curl rvest jsonlite dplyr anytime reticulate lubridate stringr future furrr
 #' @examples
+#' \dontrun{
+#' finbox_tickers(tickers = c("VNO", "BXP"))
+#' }
 finbox_tickers <-
   function(tickers = c("VNO", "BXP"),
            assign_to_environment = TRUE) {
@@ -2906,7 +2910,7 @@ finbox_tickers <-
             all_data %>%
             filter(nameTable == tables[[x]]) %>%
             dplyr::select(-nameTable) %>%
-            unnest()
+            unnest(cols = where(is.list))
 
           table_name <- str_c('data', tables[[x]] %>% str_to_upper())
 

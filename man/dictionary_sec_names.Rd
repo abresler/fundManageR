@@ -6,6 +6,15 @@
 \usage{
 dictionary_sec_names()
 }
+\value{
+A tibble with columns nameSEC and nameActual for column name mappings
+}
 \description{
-SEC Name Dictionary
+Returns a tibble mapping SEC column names to standardized actual names
+used throughout the package.
+}
+\examples{
+\dontrun{
+dictionary_sec_names()
+}
 }

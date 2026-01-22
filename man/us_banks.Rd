@@ -6,6 +6,9 @@
 \usage{
 us_banks()
 }
+\value{
+a \code{tibble} with US bank information from the FDIC
+}
 \description{
 Information about United States Banks as monitored by the FDIC
 }

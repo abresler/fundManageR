@@ -140,16 +140,18 @@
 #' @param net_operating_income vector of net operating incomes
 #' @param exit_cap_rate vector of exit cap rates
 #' @param cost_of_sale vector of cost of sale
-#' @param debt vector
-#' @param transaction_cost
-#' @param sale_date
-#' @param has_guarantee
-#' @param return_message
+#' @param debt vector of debt amounts
+#' @param sale_date date of the sale
+#' @param has_guarantee if \code{TRUE} indicates a guarantee exists
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return a \code{tibble} with residual value calculations
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' residual_values(net_operating_income = 10, exit_cap_rate = 0.08)
+#' }
 residual_values <-
   function(net_operating_income = 10,
     exit_cap_rate = .08,
@@ -196,20 +198,14 @@ residual_values <-
 
     if (length(amount_names) >0)  {
       all_data <- all_data %>%
-        mutate_at(amount_names,
-          list(function(x) {
-            x %>% formattable::currency(digits = 3)
-          }))
+        mutate(across(all_of(amount_names), ~formattable::currency(., digits = 3)))
     }
 
     percent_names <-
       all_data %>% select(matches("^pct|percent")) %>% names()
     if (length(percent_names) > 0)  {
       all_data <- all_data %>%
-        mutate_at(percent_names,
-          list(function(x) {
-            x %>% formattable::percent(digits = 3)
-          }))
+        mutate(across(all_of(percent_names), ~formattable::percent(., digits = 3)))
     }
     all_data <- all_data %>%
       mutate(isEquityUnderWater = as.logical(isEquityUnderWater))

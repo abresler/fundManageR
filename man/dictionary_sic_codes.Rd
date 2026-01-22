@@ -6,6 +6,9 @@
 \usage{
 dictionary_sic_codes()
 }
+\value{
+A tibble containing SIC codes and industry names
+}
 \description{
 SIC Code dictionary
 }

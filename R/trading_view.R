@@ -103,13 +103,15 @@
 #' Returns a list of global financial
 #' and economics events
 #'
-#' @param return_message
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return a \code{tibble} of market events
 #' @export
 #' @import dplyr jsonlite purrr anytime glue stringr
 #' @examples
+#' \dontrun{
 #' tv_market_events(return_message = TRUE)
+#' }
 tv_market_events <-
   function(return_message = TRUE) {
 
@@ -176,17 +178,16 @@ tv_market_events <-
         into = c("regionIndicator", "groupIndicator"),
         sep = "\\ "
       ) %>%
-      mutate_if(is.character,
-                list(function(x) {
-                  ifelse(x == "", NA, x) %>% str_trim()
-                })) %>%
+      mutate(across(where(is.character),
+                ~ifelse(. == "", NA, .) %>% str_trim()
+                )) %>%
       suppressMessages() %>%
       suppressWarnings()
 
     data <-
       data %>%
-      mutate_at(c('actualData', 'previousData', 'forecastData'),
-                funs(. %>% map_dbl(function(x) {
+      mutate(across(c('actualData', 'previousData', 'forecastData'),
+                ~map_dbl(., function(x) {
                   .parse_result(x = x)
                 }))) %>%
       suppressWarnings() %>%
@@ -364,13 +365,13 @@ get_tradeview_term <-
 
     data <-
       data %>%
-      mutate_at(c("symbol", "description"),
-                funs(. %>% str_replace_all("<em>|</em>", ""))) %>%
+      mutate(across(c("symbol", "description"),
+                ~str_replace_all(., "<em>|</em>", ""))) %>%
       tibble::as_tibble() %>%
       mutate(termSearch = term) %>%
       dplyr::select(termSearch, everything()) %>%
-      mutate_if(is.character,
-                str_trim)
+      mutate(across(where(is.character),
+                str_trim))
     data
   }
 
@@ -401,7 +402,7 @@ get_tradeview_term <-
       ) %>%
       tidyr::separate(idTickerClass,
                       into = c('idTicker', 'typeSecurity')) %>%
-      mutate_all(str_trim) %>%
+      mutate(across(everything(), str_trim)) %>%
       mutate(
         regionSecurities = idRegion,
         urlJSON = url,
@@ -474,12 +475,15 @@ get_tradeview_term <-
 #' \item turkey
 #' }
 #' @param return_message if \code{TRUE} return message
-#' @param nest_data
+#' @param nest_data if \code{TRUE} nest data by region
 #' @import jsonlite glue dplyr purrr tidyr stringr
-#' @return
+#' @return a \code{tibble} of ticker data by region
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' tv_regions_tickers(regions = "america", return_message = TRUE)
+#' }
 tv_regions_tickers <-
   function(regions = c(
     'america',
@@ -516,8 +520,7 @@ tv_regions_tickers <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(urlJSON, regionSecurities),
-             .key = dataTickers)
+        nest(dataTickers = -c(urlJSON, regionSecurities))
     }
 
     all_data
@@ -580,7 +583,7 @@ tv_regions_tickers <-
               tidyr::separate(name, into = c("nameIndex", "typeIndex"), sep = "\\(") %>%
               mutate(isSectorIndex = typeIndex %>% str_detect("SECTOR")) %>%
               select(-typeIndex) %>%
-              mutate_if(is.character, str_trim) %>%
+              mutate(across(where(is.character), str_trim)) %>%
               suppressWarnings() %>%
               suppressMessages()
 
@@ -672,13 +675,15 @@ tv_regions_tickers <-
 #' \item turkey
 #' }
 #' @param return_message if \code{TRUE} return message
-#' @param nest_data
+#' @param nest_data if \code{TRUE} nest data by region
 #' @import jsonlite glue dplyr purrr tidyr stringr
-
-#' @return
+#' @return a \code{tibble} of metrics data by region
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' tv_regions_metrics(regions = "america", return_message = TRUE)
+#' }
 tv_regions_metrics <-
   function(regions = c(
     'america',
@@ -715,8 +720,7 @@ tv_regions_metrics <-
     if (nest_data) {
       all_data <-
         all_data %>%
-        nest(-c(urlJSON, regionSecurities),
-             .key = dataMetrics)
+        nest(dataMetrics = -c(urlJSON, regionSecurities))
     }
 
     all_data
@@ -730,10 +734,13 @@ tv_regions_metrics <-
 #'
 #' @param column_names if not \code{NULL} vector of column names
 #'
-#' @return
+#' @return a list representing a TradingView bond query
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' generate_tv_bond_query()
+#' }
 generate_tv_bond_query <-
   function(column_names = c("country_code", "name", "coupon", "maturity_date", "close",
                             "change", "change_abs", "high", "low", "Recommend.All", "description",
@@ -762,17 +769,20 @@ generate_tv_bond_query <-
 
 #' Generate tradeview metric query
 #'
-#' @param filter
-#' @param symbols
-#' @param metrics
-#' @param sort
-#' @param options
-#' @param range
+#' @param filter filter conditions as a tibble
+#' @param symbols symbols query parameters as a list
+#' @param metrics vector of metric column names to retrieve
+#' @param sort sort parameters as a list
+#' @param options options parameters as a list
+#' @param range range vector for pagination
 #'
-#' @return
+#' @return a list representing a TradingView metric query
 #' @export
 #' @import reticulate magrittr glue dplyr
 #' @examples
+#' \dontrun{
+#' tv_metric()
+#' }
 tv_metric <-
   function(filter = tibble(left = 'market_cap_basic',
                                operation = 'nempty'),
@@ -827,7 +837,7 @@ tv_metric <-
 
     json$close()
     data <-
-      json_data$data %>% as_tibble() %>% unnest()
+      json_data$data %>% as_tibble() %>% unnest(cols = where(is.list))
 
     data <- data %>%
       purrr::set_names(c('idExchangeTicker', 'value')) %>%
@@ -843,7 +853,7 @@ tv_metric <-
                       sep = '\\:') %>%
       tidyr::separate(idTickerClass,
                       into = c('idTicker', 'typeSecurity')) %>%
-      mutate_all(str_trim) %>%
+      mutate(across(everything(), str_trim)) %>%
       mutate(idRegion,
              typeSecurity = if_else(typeSecurity %>% is.na(), 'COMMON', typeSecurity)) %>%
       suppressWarnings() %>%
@@ -863,10 +873,13 @@ tv_metric <-
 
 #' Generate default TV query metric
 #'
-#' @return
+#' @return a list representing a default TradingView query
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' tv_metric_query()
+#' }
 tv_metric_query <-
   function() {
     list(
@@ -1179,7 +1192,6 @@ tv_metric_query <-
                range = c(0, 15000000000000)
              ),
            return_message = TRUE) {
-    options(scipen = 99999)
     glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
       cat(fill = T)
 
@@ -1258,14 +1270,14 @@ tv_metric_query <-
 
     df_companies <-
       df_companies %>%
-      spread(nameTW, value)
+      pivot_wider(names_from = nameTW, values_from = value)
 
     df_values <-
       data %>%
       filter(!typeField %in% c(NA, 'text')) %>%
       dplyr::select(idExchange:value, nameTW) %>%
       mutate(value = value %>% readr::parse_number()) %>%
-      spread(nameTW, value)
+      pivot_wider(names_from = nameTW, values_from = value)
 
     data <-
       df_companies %>%
@@ -1275,10 +1287,9 @@ tv_metric_query <-
 
     data <-
       data %>%
-      mutate_if(is.character,
-                list(function(x) {
-                  ifelse(x == "", NA, x) %>% str_trim() %>% str_to_upper()
-                }))
+      mutate(across(where(is.character),
+                ~ifelse(. == "", NA, .) %>% str_trim() %>% str_to_upper()
+                ))
 
     df_fields <-
       df_metrics %>%
@@ -1295,12 +1306,10 @@ tv_metric_query <-
           if (length(mutate_cols) > 0) {
             data <<-
               data %>%
-              mutate_at(mutate_cols,
-                        list(function(x) {
-                          x %>%
-                            gsub("^\\s+|\\s+$", "", .) %>%
+              mutate(across(all_of(mutate_cols),
+                        ~gsub("^\\s+|\\s+$", "", .) %>%
                             str_to_upper() %>% str_trim()
-                        }))
+                        ))
           }
         }
 
@@ -1310,10 +1319,9 @@ tv_metric_query <-
           if (length(mutate_cols) > 0) {
             data <<-
               data %>%
-              mutate_at(mutate_cols,
-                        list(function(x){
-                          x %>% formattable::comma(digits = 2)
-                        }))
+              mutate(across(all_of(mutate_cols),
+                        ~formattable::comma(., digits = 2)
+                        ))
           }
         }
 
@@ -1325,10 +1333,9 @@ tv_metric_query <-
           if (length(mutate_cols) > 0) {
             data <<-
               data %>%
-              mutate_at(mutate_cols,
-                        list(function(x){
-                          (x / 100) %>% formattable::percent(digits = 2)
-                        }))
+              mutate(across(all_of(mutate_cols),
+                        ~formattable::percent(. / 100, digits = 2)
+                        ))
           }
         }
 
@@ -1340,10 +1347,9 @@ tv_metric_query <-
           if (length(mutate_cols) > 0) {
             data <<-
               data %>%
-              mutate_at(mutate_cols,
-                        list(function(x){
-                          x %>% formattable::currency(digits = 2)
-                        }))
+              mutate(across(all_of(mutate_cols),
+                        ~formattable::currency(., digits = 2)
+                        ))
           }
         }
         if (field == "time") {
@@ -1354,10 +1360,9 @@ tv_metric_query <-
           if (length(mutate_cols) > 0) {
             data <<-
               data %>%
-              mutate_at(mutate_cols,
-                        list(function(x) {
-                          as.POSIXct(x, origin = "1970-01-01", tz = "UTC")
-                        }))
+              mutate(across(all_of(mutate_cols),
+                        ~as.POSIXct(., origin = "1970-01-01", tz = "UTC")
+                        ))
           }
         }
 
@@ -1367,10 +1372,9 @@ tv_metric_query <-
     data <-
       data %>%
       separate(idTicker, sep = "/", into = c("idTicker", "classSecurity")) %>%
-      mutate_if(is.character,
-                list(function(x) {
-                  ifelse(x == "", NA, x) %>% str_trim() %>% str_to_upper()
-                })) %>%
+      mutate(across(where(is.character),
+                ~ifelse(. == "", NA, .) %>% str_trim() %>% str_to_upper()
+                )) %>%
       suppressMessages() %>%
       suppressWarnings()
 
@@ -1459,14 +1463,16 @@ tv_metric_query <-
 #' \item sort - sort paramters
 #' \item options- sort options
 #' }
-#' @param return_message
+#' @param return_message if \code{TRUE} returns a message
 #'
-#' @return
+#' @return a \code{tibble} of metrics data
 #' @export
 #' @import reticulate dplyr purrr stringr glue
 #'
 #' @examples
-#' tv_metrics_data(regions = c( 'america'))
+#' \dontrun{
+#' tv_metrics_data(regions = c('america'))
+#' }
 tv_metrics_data <-
   function(regions = c( 'america'),
            query =
@@ -1745,15 +1751,17 @@ tv_metrics_data <-
 #'
 #' Returns news data for specified tickers
 #'
-#' @param tickers
-#' @param return_message
-#' @param nest_data
+#' @param tickers vector of ticker symbols
+#' @param return_message if \code{TRUE} returns a message
+#' @param nest_data if \code{TRUE} nest data by ticker
 #' @import dplyr tibble glue anytime tidyr curl jsonlite
-#' @return
+#' @return a \code{tibble} of news data
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' tv_tickers_news(tickers = c("VNO", "AVB", "PEI"), return_message = TRUE, nest_data = FALSE)
+#' }
 
 tv_tickers_news <-
   function(tickers = c("FB", "AAPL", "NFLX", "GOOG", "VNO", "EQR", "BXP"),
@@ -1765,17 +1773,16 @@ tv_tickers_news <-
     all_data <-
       urls %>%
       .parse_tradingview_news_urls(return_message = return_message) %>%
-      mutate_if(is.character,
-                list(function(x) {
-                  ifelse(x == "", NA, x) %>% str_trim()
-                })) %>%
+      mutate(across(where(is.character),
+                ~ifelse(. == "", NA, .) %>% str_trim()
+                )) %>%
       suppressMessages() %>%
       suppressWarnings()
 
     if (nest_data) {
       all_data <-
         all_data %>%
-        tidyr::nest(-c(idTicker, urlJSON), .key = 'tickerNews')
+        tidyr::nest(tickerNews = -c(idTicker, urlJSON))
     }
 
     all_data

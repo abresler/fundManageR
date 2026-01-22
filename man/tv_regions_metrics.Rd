@@ -36,7 +36,17 @@ tv_regions_metrics(
 }}
 
 \item{return_message}{if \code{TRUE} return message}
+
+\item{nest_data}{if \code{TRUE} nest data by region}
+}
+\value{
+a \code{tibble} of metrics data by region
 }
 \description{
 Get searchable metrics by region
+}
+\examples{
+\dontrun{
+tv_regions_metrics(regions = "america", return_message = TRUE)
+}
 }

@@ -4,3 +4,6 @@
 ^\.Rhistory
 ^docs$
 ^_pkgdown\.yml$
+^doc$
+^Meta$
+^CLAUDE\.md$

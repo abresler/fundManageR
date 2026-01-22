@@ -16,12 +16,24 @@ sic_filing_count(
 \arguments{
 \item{sic}{vector of SIC codes}
 
+\item{join_sic}{if \code{TRUE} joins SIC data}
+
+\item{snake_names}{if \code{TRUE} returns snake case names}
+
 \item{use_all_sic_codes}{uses all SIC codes}
 
-\item{return_message}{}
+\item{return_message}{if \code{TRUE} returns a message}
 
-\item{join_sec}{if \code{TRUE} joins SIC data}
+\item{unformat}{if \code{TRUE} returns unformatted values}
+}
+\value{
+A tibble containing filing counts by SIC code
 }
 \description{
 SIC Counts
+}
+\examples{
+\dontrun{
+sic_filing_count(sic = 6282)
+}
 }

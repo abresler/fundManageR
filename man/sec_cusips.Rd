@@ -33,6 +33,9 @@ sec_cusips(
 nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
 }
 \description{
+Returns a data frame with all CUSIPs for specified years and quarters
+}
+\details{
 This function returns information on all Committee on Uniform Securities Identification Procedures [CUSIP]
 registered entities for a specified period.  The SEC exposes this data in PDF
 form so this function can take a long time to run.
