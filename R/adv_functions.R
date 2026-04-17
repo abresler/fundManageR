@@ -1186,13 +1186,15 @@
 #' on any Investment Adviser Public Disclosure [IAPD]
 #' filing manager.  This function can be used to discover
 #' managers to power the
-#' \code{\link{adv_managers_filing()}} function.
+#' \code{\link{adv_managers_filings}} function.
 #'
 #' @param entity_names vector of entities to search
-#' @param score_threshold matching score threshold for the search name
-#' if \code{NULL} there is no threshold
-#' @param crd_ids numric vector of crds to search
-#' @param return_message return a message
+#' @param crd_ids numeric vector of CRDs to search
+#' @param score_threshold matching score threshold for the search name.
+#'   If \code{NULL} there is no threshold.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#' @param parallel Logical. If \code{TRUE} (default), uses parallel processing via furrr.
+#'
 #' @import dplyr purrr curl jsonlite lubridate tidyr rvest httr
 #' @return a data frame
 #' @export
@@ -1201,9 +1203,11 @@
 #' @family fund data
 #' @family entity search
 #' @examples
+#' \dontrun{
 #' adv_managers_metadata(entity_names = c('Divco', 'EJF'), score_threshold = .2)
 #' adv_managers_metadata(entity_names = "Blackstone", score_threshold = NULL)
 #' adv_managers_metadata(crd_ids = 173787)
+#' }
 adv_managers_metadata <-
   function(entity_names =  NULL,
            crd_ids = NULL,
@@ -4612,7 +4616,7 @@ sec_adv_manager_sitemap <-
             page %>%
             html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleAPHSection_ctl00_ownersGrid') %>%
             html_table(fill = T, header = F) %>%
-            data.frame(stringsAsFactors = F) %>%
+            data.frame() %>%
             as_tibble() %>%
             slice(-1) %>%
             mutate(X1 = X1 %>% str_to_upper())
@@ -4818,7 +4822,7 @@ sec_adv_manager_sitemap <-
             page %>%
             html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleBPHSection_ctl00_ownersGrid') %>%
             html_table(fill = T, header = F) %>%
-            data.frame(stringsAsFactors = F) %>%
+            data.frame() %>%
             as_tibble() %>%
             slice(-1) %>%
             mutate(X1 = X1 %>% str_to_upper())
@@ -7757,6 +7761,7 @@ sec_adv_manager_sitemap <-
 #' @param flatten_tables \code{TRUE} flattens data with multiple values into wide form
 #' @param gather_data \code{TRUE} returns a long data frame
 #' @param assign_to_environment \code{TRUE} assign individual data frames to your environment
+#' @param parallel Logical. If \code{TRUE} (default), uses parallel processing via furrr.
 #'
 #' @return a \code{tibble}
 #' @export
@@ -7771,10 +7776,12 @@ sec_adv_manager_sitemap <-
 #' @family entity search
 #' @family fund data
 #' @examples
+#' \dontrun{
 #' adv_managers_filings(entity_names = c('Blackstone Real Estate'), crd_ids = NULL,
 #'  all_sections = TRUE,  section_names = NULL,
 #'  flatten_tables = TRUE, gather_data = FALSE,
 #'  assign_to_environment = TRUE)
+#' }
 adv_managers_filings <-
   function(entity_names = NULL,
            crd_ids = NULL,
@@ -9253,15 +9260,18 @@ dictionary_sec_names <-
 #' information for every ADV filing manager
 #' from 2006 onwards.
 #'
-#' @param periods dates in year-month form
-#' @param all_periods include all periods
-#' @param is_exempt exempt, non-exempt filers
-#' @param nest_data return a nested data frame
-#' @param return_message return a message after parsing data
+#' @param periods dates in year-month form (e.g., "2018-06")
+#' @param all_periods Logical. If \code{TRUE}, includes all available periods.
+#' @param only_most_recent Logical. If \code{TRUE}, returns only the most recent period.
+#' @param include_exempt Logical. If \code{TRUE} (default), includes exempt filers.
+#' @param nest_data Logical. If \code{TRUE}, returns a nested data frame.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#' @param parallel Logical. If \code{TRUE} (default), uses parallel processing via furrr.
+#'
 #' @import dplyr stringr lubridate readr readxl rvest purrr httr tidyr tibble glue
 #' @importFrom curl curl_download
-#' @return where \code{nest_data} is \code{TRUE} a nested tibble by period and type of filer,
-#' where \code{nest_data} is \code{FALSE} a tibble
+#' @returns When \code{nest_data} is \code{TRUE}, a nested tibble by period and type of filer.
+#'   When \code{nest_data} is \code{FALSE}, a flat tibble with ADV summary data.
 #' @export
 #' @family IAPD
 #' @family ADV
@@ -9269,7 +9279,8 @@ dictionary_sec_names <-
 #' @family fund data
 #' @examples
 #' \dontrun{
-#' adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"), all_periods = FALSE, is_exempt = c(FALSE,TRUE), only_most_recent = FALSE, nest_data = FALSE)
+#' adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"),
+#'   all_periods = FALSE, include_exempt = TRUE, only_most_recent = FALSE, nest_data = FALSE)
 #'
 #' adv_managers_periods_summaries(only_most_recent = TRUE)
 #' }
@@ -9449,12 +9460,12 @@ adv_managers_periods_summaries <-
 #'
 #' For multiple periods and all information see \code{\link{adv_managers_periods_summaries}}
 #'
-#' @param file_directory directory you want to save your data into, if none specified a temporary file will be created
-#' @param folder_name older you want the data to be downloaded into
-#' @param remove_files remove the files from the folders
-#' @param empty_trash empty the trash after being read into R
-#' @param return_message return a message after parsing data
-#' @return a data frame
+#' @param select_names Character vector of column names to include in the output.
+#'   Default includes key identifiers, contact info, AUM, and registration status fields.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#'
+#' @returns A tibble containing ADV summary data for the most recent period with
+#'   columns specified by \code{select_names}.
 #' @export
 #' @family IAPD
 #' @family ADV

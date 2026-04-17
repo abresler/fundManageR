@@ -24,7 +24,7 @@ sp500_constituents <-
       page %>%
       html_table(fill = TRUE) %>%
       .[[1]] %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       as_tibble() %>%
       select(-3) %>%
       mutate(across(everything(), str_to_upper)) %>%

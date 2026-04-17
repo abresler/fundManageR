@@ -3,14 +3,17 @@
 #' This function returns information about available
 #' CRSP index data
 #'
-#' @param include_summary_file \code{TRUE} (default) or \code{FALSE} to exclude
-#' @return a \code{tibble}
+#' @param include_summary_files Logical. If \code{TRUE} (default), includes summary files.
+#'
+#' @returns A tibble containing CRSP file metadata with URLs and file names.
 #' @references \href{http://crsp.com}{The Center for Research in Security Prices}
 #' @export
 #' @import rvest dplyr tidyr stringr lubridate readr
 #' @family CRSP
 #' @examples
+#' \dontrun{
 #' crsp_files()
+#' }
 crsp_files <-
   function(include_summary_files = TRUE) {
   page <-
@@ -157,18 +160,21 @@ crsp_files <-
 #' This function returns information
 #' about a CRSP index's constituents
 #'
-#' @param return_message \code{TRUE} return a message after data import
-#' @param nest_data \code{TRUE} return nested data frame
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#'
 #' @references \href{http://crsp.com}{The Center for Research in Security Prices}
 #' @import rvest dplyr tidyr stringr lubridate readr purrr
 #' @importFrom rio import
-#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+#' @returns A tibble containing CRSP index constituent data including ticker,
+#'   company name, and weight.
 #' @export
 #' @family CRSP
 #' @family index constituents
 #'
 #' @examples
-#' crsp_indicies_constituents(nest_data = FALSE, return_message = TRUE)
+#' \dontrun{
+#' crsp_indicies_constituents(return_message = TRUE)
+#' }
 crsp_indicies_constituents <-
   function(return_message = TRUE) {
     url_df <-

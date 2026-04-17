@@ -144,14 +144,19 @@
 #' This retrieves data for the international house
 #' price database maintained by the Dallas FED
 #'
-#' @param nest_data if \code{TRUE} returns nested tibble
-#' @param return_message if \code{TRUE} returns a message
+#' @param indicies Character vector of index codes to filter. If \code{NULL} (default),
+#'   returns all available indices.
+#' @param nest_data Logical. If \code{TRUE}, returns nested tibble.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
 #'
-#' @return a \code{tibble} with international house price data
+#' @returns A tibble with international house price data including country,
+#'   date, and index values.
 #' @export
 #' @import countrycode readxl stringr dplyr purrr dplyr lubridate tidyr
 #' @examples
+#' \dontrun{
 #' dallas_fed_international_housing()
+#' }
 dallas_fed_international_housing <-
   function(indicies = NULL ,
            nest_data = FALSE, return_message = TRUE) {

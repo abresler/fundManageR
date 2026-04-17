@@ -1637,7 +1637,7 @@ nareit_monthly_returns <-
     curl::curl_download(url, tmp)
     data <-
       xlsx::read.xlsx(file = tmp, sheetIndex = 2) %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       suppressWarnings()
 
     tmp %>%
@@ -1764,7 +1764,7 @@ nareit_annual_subsector_returns <-
 
     data <-
       xlsx::read.xlsx(file = tmp, sheetIndex = 2) %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       suppressWarnings()
 
     tmp %>%
@@ -1950,7 +1950,7 @@ nareit_annual_subsector_returns <-
     data <-
       con$content %>%
       xlsx::read.xlsx(sheetIndex = sheet) %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       suppressWarnings() %>%
       as_tibble()
 
@@ -2129,10 +2129,11 @@ nareit_capital_raises <-
 #' This function OCRs data on NAREIT member
 #' M&A activity since 2004.
 #'
-#' @param return_wide \code{TRUE} return data in wide form
-#' @param return_message \code{TRUE} return a message after data import
-#' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+#' @param pages Integer vector. Page numbers to OCR from the PDF (default 32:33).
+#' @param nest_data Logical. If \code{TRUE}, returns nested data frame.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#'
+#' @returns A tibble containing NAREIT M&A activity data.
 #' @export
 #' @import purrr stringr dplyr rvest formattable lubridate tidyr readr
 #' @family NAREIT
@@ -2501,7 +2502,7 @@ nareit_industry_tracker <-
       xlsx::read.xlsx(file = tmp,
                       sheetIndex = 1,
                       header = FALSE) %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       suppressWarnings() %>%
       as_tibble()
 

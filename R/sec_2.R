@@ -368,7 +368,7 @@ munge_tbl <-
     data <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       as_tibble()
 
     is_company <-
@@ -576,7 +576,7 @@ munge_tbl <-
     json_data <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       as_tibble() %>%
       tidyr::separate(
         filings,
@@ -1675,7 +1675,7 @@ munge_tbl <-
       purrr::invoke(paste0, .)
 
     data_js <-
-      general_url %>% jsonlite::fromJSON() %>% data.frame(stringsAsFactors = FALSE)
+      general_url %>% jsonlite::fromJSON() %>% data.frame()
 
     is_public_company <-
       'company' %in% (data_js %>% names())
@@ -1684,7 +1684,7 @@ munge_tbl <-
       'insider' %in% (data_js %>% names())
     if (is_public_company) {
       company_df <-
-        general_url %>% jsonlite::fromJSON() %>% data.frame(stringsAsFactors = FALSE) %>%
+        general_url %>% jsonlite::fromJSON() %>% data.frame() %>%
         as_tibble()
 
       general_df <-
@@ -2281,8 +2281,11 @@ munge_tbl <-
 #' filing entities (default)
 #' @param parse_small_offerings \code{TRUE} parses \href{https://www.sec.gov/info/smallbus/secg/rccomplianceguide-051316.htm}{Regulation CrowdFunding}
 #' Form 1-A data if any exists for a filer (default)
+#' @param parse_complete_text_filings Logical. If \code{TRUE}, parses complete text of filings.
+#' @param parse_form_d Logical. If \code{TRUE}, parses Form D private placement filings.
+#' @param parse_form_3_4s Logical. If \code{TRUE}, parses Form 3 and 4 insider trading filings.
 #' @param nest_data return a nested data frame \code{TRUE, FALSE}
-#' @param assign_to_environment \code{true} assigns individual data frames to your environment
+#' @param assign_to_environment \code{TRUE} assigns individual data frames to your environment
 #' @param return_message \code{TRUE} return a message after data import
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
@@ -2884,7 +2887,7 @@ sec_filer <-
 
     general_df <-
       data %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       dplyr::select(any_of(general_cols)) %>%
       .resolve_name_df() %>%
       distinct()
@@ -3438,7 +3441,7 @@ sec_filer <-
 
     general_df <-
       json_data %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       dplyr::select(any_of(general_cols)) %>%
       .resolve_name_df() %>%
       distinct() %>%
@@ -4298,15 +4301,17 @@ sec_filer <-
 #' \item \code{Proxy Statements}:  proxy issuances
 #' \item \code{Confidential}: confidential information
 #' }
-#' @param return_message return a message
+#' @param nest_data Logical. If \code{TRUE} (default), returns nested tibble.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#'
 #' @import dplyr tidyr purrr stringr formattable readr lubridate
 #' @importFrom jsonlite fromJSON
-#' @return A tibble containing SEC filing stream data
+#' @returns A tibble containing SEC filing stream data grouped by filer and filing type.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' sec_filing_streams(filers = 'All', filing_names = 'Annual Reports')
+#' sec_filing_streams_rf(filers = 'All', filing_names = 'Annual Reports')
 #' }
 #'
 sec_filing_streams_rf <-
@@ -4332,8 +4337,7 @@ sec_filing_streams_rf <-
     type_df <-
       expand.grid(
         nameFiler = filers,
-        nameFiling = filing_names,
-        stringsAsFactors = FALSE
+        nameFiling = filing_names
       ) %>%
       as_tibble()
 
@@ -6133,7 +6137,7 @@ us_public_companies <-
           future_map_dfr(function(x) {
             table_df <-
               tables[[x]] %>%
-              data.frame(stringsAsFactors = FALSE) %>%
+              data.frame() %>%
               as_tibble()
 
             column_df <-
@@ -6991,12 +6995,12 @@ us_public_companies <-
             flatten()
 
           json_data <-
-            json_data[json_data %>% future_map(function(x){data.frame(x, stringsAsFactors = F)} %>% nrow()) > 0]
+            json_data[json_data %>% future_map(function(x){data.frame(x)} %>% nrow()) > 0]
         }
 
         json_data <-
           json_data %>%
-          data.frame(stringsAsFactors = FALSE) %>%
+          data.frame() %>%
           as_tibble() %>%
           mutate(across(everything(), as.character)) %>%
           mutate(idTable = x) %>%
@@ -9479,12 +9483,12 @@ dictionary_sec_rules <-
             flatten()
 
           json_data <-
-            json_data[json_data %>% future_map(function(x){data.frame(x, stringsAsFactors = F)} %>% nrow()) > 0]
+            json_data[json_data %>% future_map(function(x){data.frame(x)} %>% nrow()) > 0]
         }
 
         json_data <-
           json_data %>%
-          data.frame(stringsAsFactors = FALSE) %>%
+          data.frame() %>%
           as_tibble() %>%
           mutate(across(everything(), as.character)) %>%
           mutate(idTable = x) %>%
@@ -13711,18 +13715,19 @@ edgar_ft_terms <-
 #' @param year_start starting year for search
 #' @param year_end ending year for search
 #' @param table_name_initial initial table name for assignment
-#' @param parse_all_filings if \code{TRUE} parses all filings
-#' @param parse_form_d if \code{TRUE} parses Form D filings
-#' @param parse_13F if \code{TRUE} parses 13F filings
-#' @param parse_small_offerings if \code{TRUE} parses small offerings
-#' @param parse_form_3_4s if \code{TRUE} parses Form 3 and 4 filings
-#' @param parse_asset_files if \code{TRUE} parses asset files
-#' @param parse_xbrl if \code{TRUE} parses XBRL data
-#' @param assign_to_environment if \code{TRUE} assigns results to environment
-#' @param nest_data if \code{TRUE} nests data
-#' @param return_message if \code{TRUE} returns a message
+#' @param parse_all_filings Logical. If \code{TRUE}, parses all filings.
+#' @param parse_complete_text_filings Logical. If \code{TRUE}, parses complete text of filings.
+#' @param parse_form_d Logical. If \code{TRUE}, parses Form D filings.
+#' @param parse_13F Logical. If \code{TRUE}, parses 13F filings.
+#' @param parse_small_offerings Logical. If \code{TRUE}, parses small offerings.
+#' @param parse_form_3_4s Logical. If \code{TRUE}, parses Form 3 and 4 filings.
+#' @param parse_asset_files Logical. If \code{TRUE}, parses asset files.
+#' @param parse_xbrl Logical. If \code{TRUE}, parses XBRL data.
+#' @param assign_to_environment Logical. If \code{TRUE}, assigns results to environment.
+#' @param nest_data Logical. If \code{TRUE}, nests data.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
 #'
-#' @return A tibble containing EDGAR filings matching the search terms
+#' @returns A tibble containing EDGAR filings matching the search terms.
 #' @export
 #' @import dplyr purrr curl formattable tidyr stringr lubridate rvest httr xml2 jsonlite readr stringi XBRL jsonlite
 #' @importFrom jsonlite fromJSON
@@ -14354,13 +14359,19 @@ edgar_search_terms <-
 #'
 #' @param forms vector of form types to retrieve
 #' @param table_name_initial initial table name for assignment
-#' @param parse_all_filings if \code{TRUE} parses all filings
-#' @param parse_form_d if \code{TRUE} parses Form D filings
-#' @param parse_complete_text_filings if \code{TRUE} parses complete text filings
-#' @param nest_data if \code{TRUE} nests data
-#' @param return_message if \code{TRUE} returns a message
+#' @param parse_all_filings Logical. If \code{TRUE}, parses all filings.
+#' @param parse_form_d Logical. If \code{TRUE}, parses Form D filings.
+#' @param parse_complete_text_filings Logical. If \code{TRUE}, parses complete text filings.
+#' @param parse_13F Logical. If \code{TRUE}, parses 13F institutional holdings filings.
+#' @param parse_small_offerings Logical. If \code{TRUE}, parses small offering filings.
+#' @param parse_form_3_4s Logical. If \code{TRUE}, parses Form 3 and 4 insider trading filings.
+#' @param parse_asset_files Logical. If \code{TRUE}, parses asset-backed security filings.
+#' @param parse_xbrl Logical. If \code{TRUE}, parses XBRL financial data.
+#' @param assign_to_environment Logical. If \code{TRUE} (default), assigns results to global environment.
+#' @param nest_data Logical. If \code{TRUE}, nests data.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
 #'
-#' @return A tibble containing recent EDGAR filings
+#' @returns A tibble containing recent EDGAR filings with form types and metadata.
 #' @export
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
@@ -14815,15 +14826,27 @@ edgar_recent_filings <-
 #'
 #' @param start_date starting date in year-month-date form
 #' @param end_date ending date starting in year-month-date form
-#' @param only_most_recent_data \code{TRUE} return only most recent day's filing stream
+#' @param only_most_recent_data Logical. If \code{TRUE}, returns only most recent day's filing stream.
 #' @param index_type type of index to parse \itemize{
 #' \item \code{master}: parses master log (default)
-#' \item \code{compamy}: parses company log
+#' \item \code{company}: parses company log
 #' \item \code{filer}: parses filer log
 #' }
-#' @param return_message \code{TRUE} return a message after data import
-#' @param nest_data \code{TRUE} return nested data frame
-#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+#' @param table_name_initial Character. Initial table name for assignment (default "Filing Logs").
+#' @param parse_all_filings Logical. If \code{TRUE}, parses all filing types.
+#' @param parse_complete_text_filings Logical. If \code{TRUE}, parses complete text of filings.
+#' @param parse_form_d Logical. If \code{TRUE}, parses Form D filings.
+#' @param parse_13F Logical. If \code{TRUE}, parses 13F filings.
+#' @param parse_small_offerings Logical. If \code{TRUE}, parses small offering filings.
+#' @param parse_form_3_4s Logical. If \code{TRUE}, parses Form 3 and 4 insider trading filings.
+#' @param parse_asset_files Logical. If \code{TRUE}, parses asset-backed security filings.
+#' @param parse_xbrl Logical. If \code{TRUE}, parses XBRL financial data.
+#' @param assign_to_environment Logical. If \code{TRUE} (default), assigns results to global environment.
+#' @param nest_data Logical. If \code{TRUE}, returns nested data frame.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#'
+#' @returns When \code{nest_data} is \code{TRUE}, a nested tibble. When \code{FALSE}, a flat tibble
+#'   containing SEC filing stream data.
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @import dplyr tidyr purrr stringr formattable readr lubridate XBRL curl jsonlite lazyeval
 #' @importFrom jsonlite fromJSON
@@ -14833,9 +14856,8 @@ edgar_recent_filings <-
 #' @examples
 #' \dontrun{
 #' edgar_filing_streams(start_date = "2016-01-01",
-#' end_date = Sys.Date(), only_most_recent_data = FALSE, index_type = 'master',
-#' nest_data = TRUE,
-#' return_message = TRUE)
+#'   end_date = Sys.Date(), only_most_recent_data = FALSE, index_type = 'master',
+#'   nest_data = TRUE, return_message = TRUE)
 #' }
 
 edgar_filing_streams <-
@@ -15440,14 +15462,22 @@ edgar_entities_cik <-
 #' Get Ticker SEC company information
 #'
 #' @param tickers character vector of ticker symbols
-#' @param return_message if \code{true} return a message
+#' @param join_sic Logical. If \code{TRUE} (default), joins SIC code descriptions.
+#' @param snake_names Logical. If \code{TRUE}, converts column names to snake_case.
+#' @param unformat Logical. If \code{TRUE}, returns unformatted numeric values.
+#' @param convert_case Logical. If \code{TRUE} (default), converts text to uppercase.
+#' @param amount_digits Integer. Number of decimal digits for currency formatting (default 2).
+#' @param include_address Logical. If \code{TRUE} (default), includes company address data.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
 #'
-#' @return a \code{tibble}
+#' @returns A tibble with SEC company information including CIK, SIC codes, and filings metadata.
 #' @export
 #' @import curl glue dplyr purrr stringr rvest xml2
 #'
 #' @examples
+#' \dontrun{
 #' sec_tickers_info(tickers = c("BXP", "AVB", "AAPL"))
+#' }
 sec_tickers_info <-
   function(tickers = c("VNO", "NVDA", "FB"),
            join_sic = T,
@@ -16765,7 +16795,7 @@ edgar_sic_filers <-
           future_map_dfr(function(x) {
             table_df <-
               tables[[x]] %>%
-              data.frame(stringsAsFactors = FALSE) %>%
+              data.frame() %>%
               as_tibble()
 
             column_df <-

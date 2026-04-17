@@ -717,18 +717,21 @@ dictionary_fred_ids <-
 #' This function returns
 #' matching FRED series ID for a given
 #' search term.  When using
-#' `use_json_api` search results limited to 100,
+#' `use_json_api` search results limited to 100.
 #'
 #' @param search_terms vector of search terms
-#' @param use_json_api if \code{TRUE} uses faster json API but results limted to 100
-#' default \code{FALSE}
-#' @param return_message if \code{TRUE} returns message
+#' @param use_json_api Logical. If \code{TRUE} (default), uses faster JSON API
+#'   but results limited to 100.
+#' @param snake_names Logical. If \code{TRUE}, converts column names to snake_case.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
 #'
-#' @return a \code{tibble}
+#' @returns A tibble containing matching FRED series IDs and metadata.
 #' @export
 #' @import dplyr lubridate tidyr purrr jsonlite curl rvest glue stringr
 #' @examples
+#' \dontrun{
 #' fred_terms_ids(search_terms = c("China Debt", "China Housing"))
+#' }
 fred_terms_ids <-
   function(search_terms = NULL,
            use_json_api = TRUE,
@@ -1046,7 +1049,7 @@ fred_tags <-
 
     df_data <-
       json_data$series$obs[[1]] %>%
-      data.frame(stringsAsFactors = F) %>%
+      data.frame() %>%
       as_tibble() %>%
       purrr::set_names(c('datetimeData', 'value'))
 
@@ -1229,8 +1232,7 @@ fred_symbols <-
            return_message = TRUE) {
     df_options <-
       expand.grid(symbol = symbols,
-                  transform = transformations,
-                  stringsAsFactors = FALSE) %>%
+                  transform = transformations) %>%
       as_tibble()
 
     fred_symbol_safe <-
@@ -1668,8 +1670,8 @@ check_for_hrb <- function() {
 #' Plot any FRED time series
 #'
 #' @param series_id any FRED series ID
-#' @param use_random if \code{TRUE} a random FRED series ID is chosen
-#' @param fred_data_transformations Any FRED transformation \itemize{
+#' @param use_random Logical. If \code{TRUE}, a random FRED series ID is chosen.
+#' @param fred_data_transformation Any FRED transformation \itemize{
 #' \item \code{default}
 #' \item \code{change}
 #' \item \code{change prior year}
@@ -1681,19 +1683,20 @@ check_for_hrb <- function() {
 #' \item \code{natural log}
 #' \item \code{index}
 #' }
-#' @param date_start data start date, if \code{NULL} all chosen
+#' @param date_start data start date, if \code{NULL} all data is chosen
 #' @param date_end data end date
-#' @param use_hrbr_theme uses Bob Rudis theme
 #' @param plot_transformations Any plot transformations you wish to apply \itemize{
-#' \code{median}: Median value
-#' \code{mean}: Mean value
-#' \code{smooth}: GAM smooth line
+#' \item \code{median}: Median value
+#' \item \code{mean}: Mean value
+#' \item \code{smooth}: GAM smooth line
 #' }
-#' @param plot_labels if \code{TRUE} text of any plot transformations are plotted
-#' @param interactive if \code{TRUE} visualization turned into an interactive plotly widget
+#' @param use_hrbr_theme Logical. If \code{TRUE}, uses Bob Rudis theme.
+#' @param plot_labels Logical. If \code{TRUE}, text of any plot transformations are plotted.
+#' @param interactive Logical. If \code{TRUE}, visualization turned into an interactive plotly widget.
+#'
 #' @import purrr jsonlite dplyr stringr ggplot2 tidyr
 #' @importFrom plotly ggplotly
-#' @return if \code{interactive} a plotly htmlwidget or else a static ggplot2 visualization
+#' @returns If \code{interactive} is TRUE, a plotly htmlwidget. Otherwise, a static ggplot2 visualization.
 #' @export
 #'
 #' @examples

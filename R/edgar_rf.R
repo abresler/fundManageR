@@ -1236,6 +1236,10 @@ location_codes <-
 #' for entities registered with the SEC
 #'
 #' @param return_message \code{TRUE} return a message after data import
+#'
+#' @returns A tibble containing Legal Entity Identifier (LEI) data for SEC-registered
+#'   entities with columns including idCIK, nameEntity, idLEI, typeEntity, and URL references.
+#'
 #' @export
 #' @import dplyr purrr formattable
 #' @importFrom  tidyr separate
@@ -1244,7 +1248,9 @@ location_codes <-
 #' @family SEC
 #' @family Rank and Filed
 #' @examples
+#' \dontrun{
 #' rf_leis()
+#' }
 rf_leis <-
   function(return_message = TRUE) {
     leis <-
@@ -1823,7 +1829,7 @@ sec_securities_filing_counts <-
         url %>%
         jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
         .$detail %>%
-        data.frame(stringsAsFactors = FALSE) %>%
+        data.frame() %>%
         dplyr::as_tibble() %>%
         purrr::set_names(c('dateFiling', 'offering')) %>%
         suppressWarnings() %>%
@@ -1990,7 +1996,7 @@ securities_offerings <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
       .$results %>%
-      data.frame(results = ., stringsAsFactors = FALSE) %>%
+      data.frame(results = .) %>%
       as_tibble()
 
     type_df <-
@@ -2236,9 +2242,12 @@ sec_filing_entities <-
 #' @param nest_data \code{TRUE} return nested data frame
 #' @import purrr dplyr stringr tidyr formattable lubridate
 #' @importFrom jsonlite fromJSON
-#' @return where \code{nest_data} is \code{TRUE} a nested tibble by asset,
-#' where \code{nest_data} is \code{FALSE} a tibble
-
+#'
+#' @returns A tibble containing SEC Form-D filing data. When \code{nest_data} is
+#'   \code{TRUE}, returns a nested tibble grouped by asset. When \code{nest_data}
+#'   is \code{FALSE}, returns a flat tibble with columns including filing dates,
+#'   issuer information, offering amounts, and investor details.
+#'
 #' @export
 #'
 #' @examples

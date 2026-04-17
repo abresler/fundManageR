@@ -286,8 +286,7 @@ calculate_residual_valuation_cap_rates <-
         cap_rate = cap_rates,
         noi = net_operating_income,
         cost_sale = cost_of_sale,
-        debt = debt_balance,
-        stringsAsFactors = F
+        debt = debt_balance
       ) %>%
       as_tibble
 
@@ -361,8 +360,7 @@ calculate_residual_valuation_ebitda_multiples <-
         ebitda_multiple = ebitda_multiples,
         ebitda = ebitda,
         cost_sale = cost_of_sale,
-        debt = debt_balance,
-        stringsAsFactors = F
+        debt = debt_balance
       ) %>%
       as_tibble
 
@@ -469,8 +467,7 @@ calculate_valuation_post_money <-
     scenario_matrix <-
       expand.grid(
         pre_money_valuation = pre_money_valuation,
-        percent_sold = percent_sold,
-        stringsAsFactors = F
+        percent_sold = percent_sold
       ) %>%
       as_tibble
 
@@ -1383,8 +1380,7 @@ calculate_leverage_metrics <-
         amortization_months = amortization_months,
         term_years = term_years,
         term_months = term_months,
-        pct_loan_fee = pct_loan_fee,
-        stringsAsFactors = F
+        pct_loan_fee = pct_loan_fee
       ) %>%
       as_tibble()
 

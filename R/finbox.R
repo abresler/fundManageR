@@ -2075,8 +2075,7 @@
 
     metrics_names <-
       expand.grid(metric = multiple_metrics,
-                  type = multiple_types,
-                  stringsAsFactors = F) %>%
+                  type = multiple_types) %>%
       as_tibble() %>%
       tidyr::unite(typeMetric, metric, type, sep = '_') %>%
       pull(typeMetric)
@@ -2101,8 +2100,7 @@
 
     periods <-
       expand.grid(metric = period_metrics,
-                  period = period_types,
-                  stringsAsFactors = F) %>%
+                  period = period_types) %>%
       as_tibble() %>%
       tidyr::unite(periodMetric, metric, period, sep = '_') %>%
       pull(periodMetric)

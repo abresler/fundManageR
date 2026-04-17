@@ -712,13 +712,13 @@
 #' This function returns information for any
 #' Financial Industry Regulatory Authority [FINRA] registered
 #' entity.
-#' @param ocr_pdf if \code{TRUE} returns OCR'd broker report PDF
-#' @param score_threshold matching score threshold for the search name
-#' if \code{NULL} there is no threshold
+#'
 #' @param entity_names vector of names to search
-#' @param return_message return a message upon parsing \code{TRUE, FALS}
+#' @param ocr_pdf Logical. If \code{TRUE}, returns OCR'd broker report PDF.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#'
 #' @import jsonlite dplyr tidyr purrr stringr pdftools stringi magrittr
-#' @return a \code{data frame}
+#' @returns A tibble with FINRA registered entity information.
 #' @note Use \code{\link{finra_people}} for registered people
 #' @references \href{http://www.finra.org/}{FINRA}
 #' @export
@@ -726,8 +726,9 @@
 #' @family IAPD
 #' @family entity search
 #' @examples
-#' finra_entities(entity_names = c("EJF", "Blackstone", "Next Play", "Simple Capital"),
-#' ocr_pdf = TRUE)
+#' \dontrun{
+#' finra_entities(entity_names = c("EJF", "Blackstone"), ocr_pdf = TRUE)
+#' }
 
 finra_entities <-
   function(entity_names = NULL,
@@ -739,8 +740,7 @@ finra_entities <-
     search_df <-
       expand.grid(
         nameSearch = entity_names,
-        isFirm = TRUE,
-        stringsAsFactors = FALSE
+        isFirm = TRUE
       ) %>%
       as_tibble()
     .finra_entity_safe <-
@@ -779,22 +779,24 @@ finra_entities <-
 #'
 #' This function returns information for any
 #' Financial Industry Regulatory Authority [FINRA] registered
-#' entity.
-#' @param ocr_pdf if \code{TRUE} returns OCR'd broker report PDF
+#' person.
+#'
 #' @param search_name vector of names to search
-#' @param score_threshold matching score threshold for the search name
-#' if \code{NULL} there is no threshold
-#' @param return_message return a message upon parsing \code{TRUE, FALS}
+#' @param ocr_pdf Logical. If \code{TRUE}, returns OCR'd broker report PDF.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#'
 #' @import jsonlite dplyr tidyr purrr stringr pdftools stringi
-#' @return a \code{data frame}
-#' @note Use \code{\link{finra_people()}} for registered people
+#' @returns A tibble with FINRA registered person information.
+#' @note Use \code{\link{finra_entities}} for registered entities
 #' @references \href{http://www.finra.org/}{FINRA}
 #' @export
 #' @family FINRA
 #' @family IAPD
 #' @family person search
 #' @examples
-#' finra_people(search_name = 'Llyod Blankfein', ocr_pdf = TRUE)
+#' \dontrun{
+#' finra_people(search_name = 'Lloyd Blankfein', ocr_pdf = TRUE)
+#' }
 finra_people <-
   function(search_name = NULL,
            ocr_pdf = TRUE,
@@ -805,8 +807,7 @@ finra_people <-
     search_df <-
       expand.grid(
         nameSearch = search_name,
-        isFirm = FALSE,
-        stringsAsFactors = FALSE
+        isFirm = FALSE
       ) %>%
       as_tibble()
     .finra_entity_safe <-

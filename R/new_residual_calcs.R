@@ -167,8 +167,7 @@ residual_values <-
         cost_of_sale = cost_of_sale,
         debt = debt,
         sale_date = sale_date,
-        has_guarantee = has_guarantee,
-        stringsAsFactors = F
+        has_guarantee = has_guarantee
       ) %>% as_tibble()
 
     scenarios <- nrow(df_inputs)

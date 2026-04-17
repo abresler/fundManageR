@@ -1,32 +1,40 @@
-#' Interal rate of return
+#' Internal rate of return
 #'
 #' This function returns a data frame that produces
 #' the \href{https://en.wikipedia.org/wiki/Internal_rate_of_return}{internal rate of return}
 #' for specified dates and cash flows
 #'
-#' @param cash_flows vector of cash flows
 #' @param dates vector of dates, year-month-date format
-#' @param date_format date format
+#' @param cash_flows vector of cash flows
+#' @param date_format date format (default \code{'\%Y-\%m-\%d'})
 #' @param scale_to_100 \code{TRUE} scale to 100
 #' @param return_percentage \code{TRUE} return percentages
 #' @param return_df \code{TRUE} returns a data frame
+#' @param return_wide Logical. If \code{TRUE} (default), returns data in wide format.
 #' @param return_message \code{TRUE} return a message after data import
+#'
 #' @importFrom magrittr %>%
 #' @importFrom formattable digits currency percent
 #' @importFrom lubridate ymd
 #' @importFrom dplyr tibble
 #'
-#' @return \code{tibble}
+#' @returns A tibble containing IRR calculations with annual, monthly, and daily rates.
 #' @family calculation
 #' @family leveraged finance calculation
 #' @family partnership calculation
 #' @export
 #'
 #' @examples
-#' calculate_irr_periods(dates = c("2016-06-01","2017-05-31", "2018-05-31", "2019-05-31", "2020-05-31", "2021-05-31",
-#' "2022-05-31", "2023-05-31", "2024-05-31", "2025-05-31", "2026-05-31"), cash_flows = c( -3000, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242,
-#' 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547278 ), date_format = '%Y-%m-%d', scale_to_100 = FALSE,
-#' return_percentage = FALSE, return_df = TRUE, return_wide = TRUE, return_message = TRUE)
+#' \dontrun{
+#' calculate_irr_periods(
+#'   dates = c("2016-06-01", "2017-05-31", "2018-05-31", "2019-05-31",
+#'             "2020-05-31", "2021-05-31", "2022-05-31", "2023-05-31",
+#'             "2024-05-31", "2025-05-31", "2026-05-31"),
+#'   cash_flows = c(-3000, rep(478.52, 10)),
+#'   date_format = '%Y-%m-%d', scale_to_100 = FALSE,
+#'   return_percentage = FALSE, return_df = TRUE, return_wide = TRUE,
+#'   return_message = TRUE)
+#' }
 calculate_irr_periods <-
   function(
     dates = c(
@@ -207,26 +215,34 @@ calculate_irr_periods <-
 #' @param working_capital amount of working capital, minimum cash
 #' @param remove_cumulative_cols \code{TRUE} remove summary columns
 #' @param include_final_day \code{TRUE} include the final day in calculation
+#' @param is_annual_budget Logical. If \code{TRUE} (default), treats cash flows as annual budget figures.
 #' @param distribution_frequency frequency of distribution \itemize{
-#' \\item \code{NA}: NA
+#' \item \code{NA}: NA
 #' \item \code{weekly}: weekly distributions
 #' \item \code{monthly}: monthly distributions
 #' \item \code{quarterly}: quarterly distributions
 #' \item \code{annually}: annual distributions
 #' \item \code{sale}: distribution on residual
 #' }
+#'
 #' @import tidyr dplyr stringr formattable purrr
 #' @importFrom magrittr %>%
 #' @importFrom lubridate ymd
-#' @return tibble
+#' @returns A tibble containing cash flow summary data with period dates,
+#'   contributions, distributions, and cumulative balances.
 #' @export
 #' @family calculation
 #' @family leveraged finance calculation
 #' @family partnership calculation
 #' @examples
-#' calculate_cash_flow_dates(dates = c( "2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31", "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31" ),
-#' cash_flows = c( -4151601, 119499.036215643, 257186.036215643, 447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166, 8788626.7640915 ),
-#' working_capital = 125000, remove_cumulative_cols = TRUE, include_final_day = TRUE, distribution_frequency = NA)
+#' \dontrun{
+#' calculate_cash_flow_dates(
+#'   dates = c("2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31",
+#'             "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31"),
+#'   cash_flows = c(-4151601, 119499, 257186, 447646, 200652, 510409, 193, 8788627),
+#'   working_capital = 125000, remove_cumulative_cols = TRUE,
+#'   include_final_day = TRUE, distribution_frequency = NA)
+#' }
 calculate_cash_flow_dates <-
   function(
     dates = c(
@@ -430,7 +446,6 @@ calculate_cash_flow_dates <-
 #' @param cash_flows vector of cash flows
 #' @param working_capital amount of working capital, minimum cash
 #' @param remove_cumulative_cols remove summary columns
-#' @param include_final_day include the final day in calculation
 #' @param distribution_frequency when is the cash distributed
 #' @param date_format format of the date inputs
 #' @param scale_to_100 scale numbers to 100
@@ -438,16 +453,22 @@ calculate_cash_flow_dates <-
 #' @param return_df return data frame
 #' @param return_message include a message
 #'
-#' @return tibble
+#' @returns A tibble containing cash flow returns with IRR calculations.
 #' @export
 #' @family calculation
 #' @family leveraged finance calculation
 #' @family partnership calculation
 #' @examples
-#' calculate_cash_flows_returns(dates = c( "2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31", "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31" ),
-#' cash_flows = c(4151601, -119499.036215643, -257186.036215643, -447646.036215643, -200652.036215643, -510409.036215643, -193.036215643166, -8788626.7640915 ),
-#' working_capital = 125000, remove_cumulative_cols = T, distribution_frequency = 'yearly', date_format = '%Y-%m-%d', scale_to_100 = F, return_percentage = F, return_df = T, return_message = T
-#' )
+#' \dontrun{
+#' calculate_cash_flows_returns(
+#'   dates = c("2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31",
+#'             "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31"),
+#'   cash_flows = c(4151601, -119499, -257186, -447646, -200652, -510409, -193, -8788627),
+#'   working_capital = 125000, remove_cumulative_cols = TRUE,
+#'   distribution_frequency = 'yearly', date_format = '%Y-%m-%d',
+#'   scale_to_100 = FALSE, return_percentage = FALSE,
+#'   return_df = TRUE, return_message = TRUE)
+#' }
 calculate_cash_flows_returns <-
   function(
     dates = c(
@@ -1793,7 +1814,8 @@ calculate_cash_flow_waterfall <-
 #' @param cash_flows vector of cash flows
 #' @param working_capital amount of working capital
 #' @param promote_structure vector of the promote structure
-#' @param general_partner_pct ercentage of capital provided by general partner
+#' @param assign_to_environment Logical. If \code{TRUE} (default), assigns result data frames to the global environment.
+#' @param general_partner_pct percentage of capital provided by general partner
 #' @param gp_promote_share share of promote to general partner
 #' @param unnest_data unnest final results
 #' @param exclude_partnership_total exclude total columns
@@ -1803,20 +1825,26 @@ calculate_cash_flow_waterfall <-
 #' @param bind_to_cf \code{TRUE}  bind results to data frame
 #' @param remove_zero_cols \code{TRUE} remove zero-value columns
 #' @param widen_waterfall \code{TRUE} returns waterfall in wide form
+#'
 #' @family calculation
 #' @family leveraged finance calculation
 #' @family partnership calculation
-#' @return \code{tibble}O
+#' @returns A tibble containing partnership waterfall calculations with cash flow
+#'   allocations to GP and LP including promote distributions.
 #' @export
 #'
 #' @examples
-#' calculate_cash_flow_waterfall_partnership(dates =c("2016-09-01", "2017-08-31"), cash_flows = c(-1500000, 105000000),
-#' working_capital = 200000, promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
-#' general_partner_pct = .05, gp_promote_share = 1, unnest_data = F,
-#' exclude_partnership_total = F,
-#' distribution_frequency = 'annually', is_actual_360 = TRUE,
-#' widen_promote_structure = FALSE, bind_to_cf = FALSE, remove_zero_cols = TRU,
-#' widen_waterfall = FALSE)
+#' \dontrun{
+#' calculate_cash_flow_waterfall_partnership(
+#'   dates = c("2016-09-01", "2017-08-31"),
+#'   cash_flows = c(-1500000, 105000000),
+#'   working_capital = 200000,
+#'   promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
+#'   general_partner_pct = .05, gp_promote_share = 1, unnest_data = FALSE,
+#'   exclude_partnership_total = FALSE, distribution_frequency = 'annually',
+#'   is_actual_360 = TRUE, widen_promote_structure = FALSE, bind_to_cf = FALSE,
+#'   remove_zero_cols = TRUE, widen_waterfall = FALSE)
+#' }
 calculate_cash_flow_waterfall_partnership <-
   function(
     dates = c("2016-09-01", "2017-08-31"),

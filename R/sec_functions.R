@@ -900,9 +900,11 @@ sec_closed_end_funds <-
 #' \item Closed-end Funds
 #' }
 #'
-#' @param only_most_recent \code{TRUE} return only the most recent year
-#' @param return_message \code{TRUE} return a message after data import
-#' @return nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+#' @param nest_data Logical. If \code{TRUE} (default), returns nested tibble.
+#' @param return_message Logical. If \code{TRUE}, returns progress messages.
+#'
+#' @returns A tibble containing SEC registered investment company data including
+#'   fund names, CIKs, and organization types.
 #' @references \href{http://sec.gov}{The Securities and Exchange Commission}
 #' @export
 #' @import purrr stringr dplyr rvest formattable tidyr
@@ -912,7 +914,9 @@ sec_closed_end_funds <-
 #' @family entity search
 #' @family fund search
 #' @examples
+#' \dontrun{
 #' sec_investment_companies(nest_data = TRUE, return_message = TRUE)
+#' }
 
 sec_investment_companies <-
   function(nest_data = TRUE,
@@ -1626,7 +1630,7 @@ sec_broker_dealers <-
     df <-
       url %>%
       .import_url_curl() %>%
-      data.frame(stringsAsFactors = FALSE) %>%
+      data.frame() %>%
       as_tibble() %>%
       mutate(across(everything(), str_to_upper)) %>%
       suppressWarnings() %>%
