@@ -370,7 +370,7 @@
 
     data  <-
       json %>% select(cols) %>% as_tibble() %>%
-      mutate(id = 1:n()) %>%
+      mutate(id = seq_len(n())) %>%
       select(id, everything())
 
     if (data %>% hasName("firm_address_details") & data %>% hasName("firm_ia_address_details")) {
@@ -389,13 +389,13 @@
 
     if (json %>% hasName("firm_ia_address_details")) {
       df_addresses <-
-        1:nrow(data) %>%
+        seq_len(nrow(data)) %>%
         map_dfr(function(x) {
           d <- json[["firm_ia_address_details"]][[x]]
           if (is.na(d)) {
             return(tibble(id = x))
           }
-          d %>% fromJSON() %>% flatten_df() %>%
+          d %>% fromJSON() %>% as_tibble() %>%
             mutate(id = x)
         })
 
@@ -416,7 +416,7 @@
 
     if (json %>% hasName("firm_relying_advisors")) {
       df_advisors <-
-        1:nrow(data) %>%
+        seq_len(nrow(data)) %>%
         map_dfr(function(x) {
           d <- json[["firm_relying_advisors"]][[x]]
           if (length(d) == 0) {
@@ -439,7 +439,7 @@
 
     if (json %>% hasName("firm_other_names")) {
       df_names <-
-        1:nrow(data) %>%
+        seq_len(nrow(data)) %>%
         map_dfr(function(x) {
           namesEntityOther <-
             json[["firm_other_names"]][[x]] %>% unique() %>% sort() %>%
@@ -514,7 +514,7 @@
 
     df_info <-
       info %>%
-      flatten_df()
+      as_tibble()
 
     sec_name_df <-
       tibble(
@@ -636,7 +636,7 @@
   }
 
 .parse_finra_pdf_brochure_urls <-
-   function(urls, return_message = T) {
+   function(urls, return_message = TRUE) {
      .parse_finra_pdf_brochure_safe <-
        possibly(.parse_finra_pdf_brochure, tibble())
 
@@ -691,7 +691,7 @@
     if (ocr_pdf && has_url) {
       df_pdfs <-
         all_data$urlFINRABrokerPDF %>%
-        .parse_finra_pdf_brochure_urls(return_message = T)
+        .parse_finra_pdf_brochure_urls(return_message = TRUE)
 
       if (nrow(df_pdfs) > 0) {
         all_data <-
@@ -732,7 +732,7 @@
 
 finra_entities <-
   function(entity_names = NULL,
-           ocr_pdf = F,
+           ocr_pdf = FALSE,
            return_message = TRUE) {
     if (length(entity_names) == 0) {
       stop("Please enter entities to search for")
@@ -747,7 +747,7 @@ finra_entities <-
       purrr::possibly(.finra_entity, tibble())
 
     all_data <-
-      1:nrow(search_df) %>%
+      seq_len(nrow(search_df)) %>%
       future_map_dfr(function(x) {
         .finra_entity_safe(
           search_name = search_df$nameSearch[[x]],
@@ -801,7 +801,7 @@ finra_people <-
   function(search_name = NULL,
            ocr_pdf = TRUE,
            return_message = TRUE) {
-    if (search_name %>% purrr::is_null()) {
+    if (search_name %>% is.null()) {
       stop("Please enter a person to search for")
     }
     search_df <-
@@ -814,7 +814,7 @@ finra_people <-
       purrr::possibly(.finra_entity, tibble())
 
     all_data <-
-      1:nrow(search_df) %>%
+      seq_len(nrow(search_df)) %>%
       future_map_dfr(function(x) {
         .finra_entity_safe(
           search_name = search_df$nameSearch[[x]],

@@ -53,7 +53,7 @@ sp500_constituents <-
       page %>%
       html_nodes('td:nth-child(2) a') %>%
       html_attr('href') %>%
-      .[1:nrow(df)] %>%
+      .[seq_len(nrow(df))] %>%
       paste0('https://en.wikipedia.org', .)
 
     df <-
@@ -63,8 +63,8 @@ sp500_constituents <-
 
     if (return_message) {
       list("Returned S&P 500 constituents as of ", Sys.Date()) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(df)
@@ -120,8 +120,9 @@ msci_indicies <-
 
 .parse_msci_json_constituent_url <- function(url = "https://www.msci.com/c/portal/layout?p_l_id=1317535&p_p_cacheability=cacheLevelPage&p_p_id=indexconstituents_WAR_indexconstituents_INSTANCE_nXWh5mC97ig8&p_p_lifecycle=2&p_p_resource_id=701268",
                                             return_message = TRUE) {
-  df <-
-    tibble()
+  state <- new.env(parent = emptyenv())
+
+  state$rows <- list()
   success <- function(res) {
     data <-
       res$url %>%
@@ -137,19 +138,17 @@ msci_indicies <-
     if (return_message) {
       index_id <-
         res$url %>% str_split('p_p_resource_id=') %>%
-        flatten_chr() %>%
+        list_c() %>%
         .[[2]] %>%
         as.numeric()
       list("Parsed Index ID: ", index_id) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
 
 
-    df <<-
-      df %>%
-      bind_rows(data)
+    state$rows[[length(state$rows) + 1L]] <- data
   }
   failure <- function(msg) {
     tibble()
@@ -159,7 +158,7 @@ msci_indicies <-
       curl_fetch_multi(url = x, success, failure)
     })
   multi_run()
-  df
+  dplyr::bind_rows(state$rows)
 }
 
 #' MSCI Indicies Constituents
@@ -219,7 +218,7 @@ msci_indicies_constituents <-
       left_join(index_df, by = "urlIndexConstituents") %>%
       suppressMessages() %>%
       group_by(idIndex) %>%
-      mutate(rankCompanyIndex = 1:n()) %>%
+      mutate(rankCompanyIndex = seq_len(n())) %>%
       ungroup() %>%
       select(
         idIndex,
@@ -248,8 +247,8 @@ msci_indicies_constituents <-
         const_df$nameIndex %>% unique() %>% length(),
         ' MSCI indicies'
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(const_df)
@@ -307,7 +306,7 @@ msci_realtime_index_values <-
         )
       ) %>%
       mutate(
-        datetimeData = list(current_year, " ", datetimeData) %>% purrr::invoke(paste0, .) %>% ydm_hm(),
+        datetimeData = list(current_year, " ", datetimeData) %>% do.call(paste0, .) %>% ydm_hm(),
         isTradingClosed = isTradingClosed %>% as.logical()
       ) %>%
       select(datetimeData,
@@ -325,8 +324,8 @@ msci_realtime_index_values <-
 
     if (return_message) {
       list("Got MSCI Index values as of ", Sys.time()) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
     if (!return_wide) {
       index_data <-

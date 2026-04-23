@@ -3,7 +3,7 @@
 # munge -------------------------------------------------------------------
 
 .extract_date <-
-  function(period = "6 days ago", return_character = T) {
+  function(period = "6 days ago", return_character = TRUE) {
     period <-
       period %>% str_replace_all("^a |^an ", "1 ")
     time_number <-
@@ -2177,16 +2177,16 @@
       df_indicies <-
         seq_along(data$idIndicies) %>%
         future_map_dfr(function(x){
-          if (data$idIndicies[x] %>% flatten_chr() %>% length() == 0) {
+          if (data$idIndicies[x] %>% list_c() %>% length() == 0) {
             return(tibble(idRow = x, nameIndicies = NA))
           }
-          indicies <- data$idIndicies[x] %>% flatten_chr() %>% str_c(collapse = ', ')
+          indicies <- data$idIndicies[x] %>% list_c() %>% str_c(collapse = ', ')
           tibble(idRow = x, nameIndicies = indicies)
         })
 
       data <-
         data %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(df_indicies) %>%
         dplyr::select(-idIndicies) %>%
         dplyr::select(-idRow) %>%
@@ -2197,17 +2197,17 @@
       df_benchmarks <-
         seq_along(data$idBenchmarks) %>%
         future_map_dfr(function(x){
-          if (data$idBenchmarks[x] %>% flatten_chr() %>% length() == 0) {
+          if (data$idBenchmarks[x] %>% list_c() %>% length() == 0) {
             return(tibble(idRow = x, idTickersBenchmark = NA))
           }
-          benchmarks <- data$idBenchmarks[x] %>% flatten_chr() %>% str_c(collapse = ', ')
+          benchmarks <- data$idBenchmarks[x] %>% list_c() %>% str_c(collapse = ', ')
 
           tibble(idRow = x, idTickersBenchmark = benchmarks)
         })
 
       data <-
         data %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(df_benchmarks) %>%
         dplyr::select(-idBenchmarks) %>%
         dplyr::select(-idRow) %>%
@@ -2280,7 +2280,7 @@ dictionary_finbox_companies <-
 
     if (return_message) {
       glue::glue("Acquired {nrow(data)} searchable companies from finbox.io") %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
     gc()
     data
@@ -2308,13 +2308,13 @@ dictionary_finbox_metrics <-
       data$data[c("id", "datatype", "default_period")] %>%
       as_tibble() %>%
       purrr::set_names(c('nameFinbox', 'typeData', 'periodDefault')) %>%
-      mutate(idRow = 1:n())
+      mutate(idRow = seq_len(n()))
 
     df_periods <-
       seq_along(data$data$periods) %>%
       future_map_dfr(function(x) {
         null_value <-
-          data$data$periods[[x]] %>% purrr::is_null()
+          data$data$periods[[x]] %>% is.null()
         if (null_value) {
           return(tibble())
         }
@@ -2436,7 +2436,7 @@ tickers_metrics <-
     .get_finbox_base_names()
 
   actual_names <-
-    1:nrow(df_names) %>%
+    seq_len(nrow(df_names)) %>%
     map_chr(function(x){
       row_name <-
         df_names$nameBase[[x]]
@@ -2520,7 +2520,7 @@ tickers_metrics <-
     df_classes <-
       data %>% future_map_dfr(class) %>%
       tidyr::pivot_longer(cols = everything(), names_to = "namePart", values_to = "classPart") %>%
-      mutate(idColumn = 1:n())
+      mutate(idColumn = seq_len(n()))
 
     df_classes <-
       df_classes %>%
@@ -2536,7 +2536,7 @@ tickers_metrics <-
       future_map_dfr(function(x) {
         nameFinbox <- char_cols[x]
         value <-
-          data[nameFinbox] %>% flatten_chr()
+          data[nameFinbox] %>% list_c()
 
         if (value %>% length() > 1) {
           value <- value %>% stringr::str_c(collapse = ', ')
@@ -2609,7 +2609,7 @@ tickers_metrics <-
 
         if (nameData == 'finql') {
           df <-
-            list_data %>% flatten_df()
+            list_data %>% as_tibble()
 
           actual_names <-
             .parse_actual_names(df = df)
@@ -2642,7 +2642,7 @@ tickers_metrics <-
                   c('low', 'mid', 'high') %>%
                   future_map(function(x){
                     df_row <-
-                      df_list[x] %>% flatten_df() %>%
+                      df_list[x] %>% as_tibble() %>%
                       purrr::set_names(c('priceModel', 'pctUpside'))
 
                     names(df_row) <-
@@ -2682,7 +2682,7 @@ tickers_metrics <-
               df <-
                 list_data[[list_parts[x]]]
 
-              df <- df %>% flatten_df()
+              df <- df %>% as_tibble()
 
               if (df %>% nrow() == 0) {
                 return(tibble())
@@ -2717,12 +2717,12 @@ tickers_metrics <-
 
           df_pricing <- list_dfs[list_df_rows == 1] %>% purrr::reduce(bind_cols)
 
-          has_models <- list_dfs[list_df_rows == 5] %>% flatten_df() %>% nrow() > 0
+          has_models <- list_dfs[list_df_rows == 5] %>% as_tibble() %>% nrow() > 0
 
           if (has_models) {
             df_pricing <-
               df_pricing %>%
-              mutate(dataModels = list(list_dfs[list_df_rows == 5] %>% flatten_df()))
+              mutate(dataModels = list(list_dfs[list_df_rows == 5] %>% as_tibble()))
           }
 
           data <-
@@ -2740,8 +2740,8 @@ tickers_metrics <-
               all_data <-
                 df_list %>% names() %>%
                 future_map(function(x){
-                  df_list[x] %>% pull() %>% flatten_df() %>%
-                    flatten_df() %>%
+                  df_list[x] %>% pull() %>% as_tibble() %>%
+                    as_tibble() %>%
                     pivot_longer(cols = everything(), names_to = "typeParty", values_to = "value") %>%
                     mutate(nameItem = x,
                            value = value %>% as.character() %>%  readr::parse_number()) %>%
@@ -2766,7 +2766,7 @@ tickers_metrics <-
         }
 
         if (nameData == 'financials') {
-          df <- list_data %>% flatten_df()
+          df <- list_data %>% as_tibble()
           df_periods <-
             df %>%
             pivot_longer(cols = everything(), names_to = "item", values_to = "value") %>%

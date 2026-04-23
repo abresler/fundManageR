@@ -6,7 +6,7 @@
 \usage{
 crsp_indicies_returns(
   return_wide = FALSE,
-  nest_data = F,
+  nest_data = FALSE,
   return_message = TRUE
 )
 }

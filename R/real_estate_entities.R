@@ -113,7 +113,7 @@ irei_entitites <- function(filter_type = NULL, return_message = TRUE) {
     suppressWarnings() %>%
     dplyr::select(typeFirm, nameSearch, nameEntity, acronymEntity, everything())
 
-  if (!filter_type %>% purrr::is_null()) {
+  if (!filter_type %>% is.null()) {
     filter_type <-
       filter_type %>% str_to_lower() %>% str_replace_all('\\-', '')
 
@@ -132,7 +132,7 @@ irei_entitites <- function(filter_type = NULL, return_message = TRUE) {
       data$typeFirm %>% unique() %>% str_c(collapse = ', ')
 
     glue::glue("Acquired {firm_count} firms from the {segments} sectors of the institutional real estate jungle") %>%
-      cat(fill = T)
+      cat(fill = TRUE)
 
   }
   data

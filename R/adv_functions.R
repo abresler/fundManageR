@@ -540,7 +540,7 @@
           html_nodes(css = node_css) %>%
           html_attr(name = html_attribute)
 
-        if (!base_url %>% purrr::is_null()) {
+        if (!base_url %>% is.null()) {
           node_attribute <-
             base_url %>%
             paste0(node_attribute)
@@ -580,7 +580,7 @@
       stri_trim_both() %>%
       gsub("^\\s+|\\s+$", "", .) %>%
       str_split("   +") %>%
-      flatten_chr()
+      list_c()
 
     node_text <-
       node_text[!node_text == '']
@@ -610,7 +610,7 @@
   function(node_text,
            hit_words = "Total Number of Clients",
            off_set = 4,
-           is_numeric_node = T) {
+           is_numeric_node = TRUE) {
     if (hit_words %>% length() > 1) {
       hit_words <-
         hit_words %>% str_c(collapse = '|')
@@ -698,7 +698,7 @@
     }
 
     count_series <-
-      funds$nameFundClean %>% str_count('\\SERIES') %>% sum(na.rm = T)
+      funds$nameFundClean %>% str_count('\\SERIES') %>% sum(na.rm = TRUE)
 
     if (count_series > 0) {
       funds <-
@@ -820,7 +820,7 @@
                 nameItem,
                 valueItem,
                 sep = '.',
-                remove = F)
+                remove = FALSE)
       })
     return(item_name_df)
   }
@@ -831,7 +831,7 @@
       seq_along(item_name) %>%
       future_map_dfr(function(x) {
         tibble(nameItem = rep(item_name[x], 1),
-                   valueItem = T) %>%
+                   valueItem = TRUE) %>%
           mutate(fullnameItem = nameItem)
       })
     return(item_name_df)
@@ -851,7 +851,7 @@
       simplifyDataFrame = TRUE
     )
 
-  data <- json_data$hits$hits$`_source.iacontent` |> as.character() |> jsonlite::fromJSON(simplifyDataFrame = T, flatten = T)
+  data <- json_data$hits$hits$`_source.iacontent` |> as.character() |> jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = TRUE)
 
   names(data)
 
@@ -915,7 +915,7 @@
                      names_to = "item",
                      values_to = "value") %>%
         group_by(item) %>%
-        mutate(idItem = (1:n() - 1),
+        mutate(idItem = (seq_len(n()) - 1),
                nameItem = if_else(idItem > 0, item %>% paste0(idItem), item)) %>%
         ungroup() %>%
         dplyr::select(-c(item, idItem)) %>%
@@ -932,7 +932,7 @@
     idCRD <-
       url %>%
       str_split('\\?ORG_PK=') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[2] %>%
       as.numeric()
     return(idCRD)
@@ -1010,14 +1010,14 @@
                              statusReportingERA,
                              dateEffectiveERA) %>%
                   mutate(nameEntityManager = name_entity_manager,
-                         countItem = 1:n()) %>%
+                         countItem = seq_len(n())) %>%
                   dplyr::select(nameEntityManager, everything()) %>%
                   .widen_adv_data() %>%
                   .mutate_adv_data()
 
               } else {
                 table_df <-
-                  tibble(nameEntityManager = name_entity_manager, isExempt = F)
+                  tibble(nameEntityManager = name_entity_manager, isExempt = FALSE)
               }
               return(table_df)
             }
@@ -1045,7 +1045,7 @@
                   tibble(stateRegistration, dateEffectiveState) %>%
                   mutate(nameEntityManager = name_entity_manager) %>%
                   dplyr::select(nameEntityManager, everything()) %>%
-                  mutate(countItem = 1:n()) %>%
+                  mutate(countItem = seq_len(n())) %>%
                   arrange(countItem) %>%
                   .widen_adv_data() %>%
                   .mutate_adv_data()
@@ -1084,14 +1084,14 @@
                 table_df <-
                   tibble(statusJurisdiction, statusReporting, dateEffective) %>%
                   mutate(nameEntityManager = name_entity_manager,
-                         countItem = 1:n()) %>%
+                         countItem = seq_len(n())) %>%
                   dplyr::select(nameEntityManager, everything()) %>%
                   .widen_adv_data() %>%
                   .mutate_adv_data()
 
               } else {
                 table_df <-
-                  tibble(nameEntityManager = name_entity_manager, isExempt = F)
+                  tibble(nameEntityManager = name_entity_manager, isExempt = FALSE)
               }
               return(table_df)
             }
@@ -1212,17 +1212,17 @@ adv_managers_metadata <-
            score_threshold = .2,
            return_message = TRUE,
            parallel = TRUE) {
-    if (entity_names %>% purrr::is_null() & crd_ids %>% purrr::is_null()) {
+    if (entity_names %>% is.null() & crd_ids %>% is.null()) {
       stop("Please enter a name or CRD to search")
     }
 
-    if (!crd_ids %>% purrr::is_null()) {
+    if (!crd_ids %>% is.null()) {
       crd_urls <-
         'https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=' %>%
         paste0(crd_ids)
     }
 
-    if (!entity_names %>% purrr::is_null()) {
+    if (!entity_names %>% is.null()) {
       finra_data <-
         entity_names %>%
         finra_entities(
@@ -1240,12 +1240,12 @@ adv_managers_metadata <-
         finra_data$urlManagerSummaryADV
     }
 
-    if ((!crd_ids %>% purrr::is_null()) & (!entity_names %>% purrr::is_null())) {
+    if ((!crd_ids %>% is.null()) & (!entity_names %>% is.null())) {
       adv_urls <-
         c(adv_urls, crd_urls)
     }
 
-    if ((!crd_ids %>% purrr::is_null()) & (entity_names %>% purrr::is_null())) {
+    if ((!crd_ids %>% is.null()) & (entity_names %>% is.null())) {
       adv_urls <-
         c(crd_urls)
     }
@@ -1282,7 +1282,7 @@ adv_managers_metadata <-
     url_primary_key <-
       url %>%
       str_split(pattern = 'FLNG_PK=') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[2]
     return(url_primary_key)
   }
@@ -1537,7 +1537,7 @@ sec_adv_manager_sitemap <-
 .parse_adv_manager_sitemap_df <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK=135952',
            manager = NULL,
-           return_wide = F) {
+           return_wide = FALSE) {
     idCRD <-
       url %>%
       .get_url_crd()
@@ -1546,10 +1546,10 @@ sec_adv_manager_sitemap <-
       idCRD <-
         url %>%
         str_split('\\?ORG_PK=') %>%
-        flatten_chr() %>%
+        list_c() %>%
         .[2] %>%
         str_split('\\&') %>%
-        flatten_chr() %>%
+        list_c() %>%
         .[[1]] %>%
         as.numeric() %>%
         suppressWarnings()
@@ -1592,7 +1592,7 @@ sec_adv_manager_sitemap <-
     base_url <-
       actual_url %>%
       str_split('sections|Sections') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]]
 
     name_entity_manager <-
@@ -1668,7 +1668,7 @@ sec_adv_manager_sitemap <-
       dplyr::filter(!nameFunction %>% is.na()) %>%
       dplyr::select(-nameSection) %>%
       mutate(nameEntityManager = if (length(name_entity_manager) > 0) name_entity_manager[1] else NA_character_,
-             idRow = 1:n()) %>%
+             idRow = seq_len(n())) %>%
       group_by(idSection) %>%
       dplyr::filter(idRow == min(idRow)) %>%
       ungroup() %>%
@@ -1721,12 +1721,12 @@ sec_adv_manager_sitemap <-
         c(urls, manager_data$urlManagerADV %>% unique()) %>% unique()
     }
 
-    if (idCRDs %>% purrr::is_null() & 'manager_data' %>% exists()) {
+    if (idCRDs %>% is.null() & 'manager_data' %>% exists()) {
       urls <-
         manager_data$urlManagerADV %>% unique()
     }
 
-    if ('urls' %>% exists() & entity_names %>% purrr::is_null()) {
+    if ('urls' %>% exists() & entity_names %>% is.null()) {
       manager_data <-
         adv_managers_metadata(crd_ids = idCRDs, entity_names = NULL)
 
@@ -1739,7 +1739,7 @@ sec_adv_manager_sitemap <-
       unique() %>%
       future_map_dfr(function(x) {
         tryCatch({
-          .parse_adv_manager_sitemap_df(url = x, return_wide = F)
+          .parse_adv_manager_sitemap_df(url = x, return_wide = FALSE)
         }, error = function(e) {
           tibble()
         })
@@ -1800,7 +1800,7 @@ sec_adv_manager_sitemap <-
       x %>% str_count('\\, ')
 
     full_name <-
-      x %>% str_split('\\, ') %>% flatten_chr()
+      x %>% str_split('\\, ') %>% list_c()
 
     if (count_commas == 1) {
       name_first <-
@@ -1871,7 +1871,7 @@ sec_adv_manager_sitemap <-
     idCRD <-
       url %>%
       str_split('=') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[2] %>% str_replace_all('&FLNG_PK', '') %>%
       as.numeric()
     return(idCRD)
@@ -1905,7 +1905,7 @@ sec_adv_manager_sitemap <-
   }
 
 .get_form_check_box_df <-
-  function(modify = T) {
+  function(modify = TRUE) {
     form_value_df <-
       tibble(
         idRow = 1:52,
@@ -2013,7 +2013,7 @@ sec_adv_manager_sitemap <-
             'hasFundPrimeBroker.FALSE'
           )
         ) %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         dplyr::select(idRow, nameItem)
     }
     return(form_value_df)
@@ -2041,7 +2041,7 @@ sec_adv_manager_sitemap <-
   function(page = page,
            table_number = 1,
            table_css_node_df,
-           only_radio = T) {
+           only_radio = TRUE) {
     node_table <-
       .get_fund_table_html(
         page = page,
@@ -2064,7 +2064,7 @@ sec_adv_manager_sitemap <-
     check_box_df <-
       tibble(nodeName = table_checked_nodes) %>%
       mutate(idTable = table_number,
-             idImageNode = 1:n()) %>%
+             idImageNode = seq_len(n())) %>%
       left_join(.get_check_box_value_df()) %>%
       suppressMessages() %>%
       dplyr::select(idTable, idImageNode, nodeName, isNodeChecked)
@@ -2091,9 +2091,9 @@ sec_adv_manager_sitemap <-
   function(page = page,
            table_number = 1,
            table_css_node_df,
-           only_radio = T) {
+           only_radio = TRUE) {
     form_value_df <-
-      .get_form_check_box_df(modify = T)
+      .get_form_check_box_df(modify = TRUE)
 
     check_box_df <-
       .get_table_check_box_df(
@@ -2113,10 +2113,10 @@ sec_adv_manager_sitemap <-
 
     response_df <-
       check_box_df %>%
-      slice(1:nrow(form_value_df)) %>%
+      slice(seq_len(nrow(form_value_df))) %>%
       left_join(form_value_df %>% dplyr::rename(idImageNode = idRow)) %>%
-      dplyr::filter(isNodeChecked == T) %>%
-      dplyr::filter(logicalResponse == T) %>%
+      dplyr::filter(isNodeChecked == TRUE) %>%
+      dplyr::filter(logicalResponse == TRUE) %>%
       dplyr::select(nameItem, logicalResponse) %>%
       suppressWarnings() %>%
       suppressMessages()
@@ -2180,7 +2180,7 @@ sec_adv_manager_sitemap <-
 
     table_data_nodes <-
       base_table_html %>%
-      html_text(trim = T) %>%
+      html_text(trim = TRUE) %>%
       str_replace_all('\r|\n|\t', '') %>%
       stri_replace_all_charclass("\\p{WHITE_SPACE}", " ") %>%
       stri_trim_both() %>%
@@ -2195,7 +2195,7 @@ sec_adv_manager_sitemap <-
         data_nodes <-
           table_data_nodes[[x]] %>%
           str_split('  ') %>%
-          flatten_chr()
+          list_c()
 
         if (data_nodes[!data_nodes == ''] %>% length() > 0) {
           data_nodes <-
@@ -2222,7 +2222,7 @@ sec_adv_manager_sitemap <-
 
           if (isNumberSection) {
             numberSection <-
-              nodeText %>% str_extract_all("^[1-9].") %>% flatten_chr() %>% as.numeric()
+              nodeText %>% str_extract_all("^[1-9].") %>% list_c() %>% as.numeric()
           } else {
             numberSection <-
               NA
@@ -2230,7 +2230,7 @@ sec_adv_manager_sitemap <-
 
           if (isLetter) {
             letterSection <-
-              nodeText %>% str_extract_all("^\\([a-z]") %>% flatten_chr() %>%
+              nodeText %>% str_extract_all("^\\([a-z]") %>% list_c() %>%
               str_replace_all('\\(', '')
           } else {
             letterSection <-
@@ -2414,7 +2414,7 @@ sec_adv_manager_sitemap <-
             node_value %>% str_replace('\\$|\\', '')
         }
         if ((variable_name == 'idFundFormD') &
-            (node_value %>% str_detect("-") == F)) {
+            (node_value %>% str_detect("-") == FALSE)) {
           node_value <-
             NA
         }
@@ -2480,7 +2480,7 @@ sec_adv_manager_sitemap <-
         count_df <-
           locations_df %>%
           dplyr::filter(nodeText %>% str_detect(hit_words)) %>%
-          mutate(countLocation = 1:n()) %>%
+          mutate(countLocation = seq_len(n())) %>%
           dplyr::select(countLocation, idLocationNode, nodeText)
 
         locations_df <-
@@ -2630,7 +2630,7 @@ sec_adv_manager_sitemap <-
   function(page,
            table_css_node_df = table_css_node_df,
            section_matrix_df = section_matrix_df,
-           return_message = T)  {
+           return_message = TRUE)  {
     parse_fund_table <-
       function(page,
                table_number = 1,
@@ -2654,7 +2654,7 @@ sec_adv_manager_sitemap <-
       .extract_node_data_safe <-
         purrr::possibly(.extract_node_data, tibble())
       fund_table_data <-
-        1:nrow(section_matrix_df) %>%
+        seq_len(nrow(section_matrix_df)) %>%
         future_map_dfr(function(x) {
           .extract_node_data(
             table_node_df = table_node_df,
@@ -2754,8 +2754,8 @@ sec_adv_manager_sitemap <-
                  "rangeAUMOver50B")
 
       data <-
-        tibble(nameItem = items, valueItem = T) %>%
-        mutate(idRow = 1:n())
+        tibble(nameItem = items, valueItem = TRUE) %>%
+        mutate(idRow = seq_len(n()))
 
       data
     }
@@ -2782,9 +2782,9 @@ sec_adv_manager_sitemap <-
         node_df <-
           tibble(nodeName = check_nodes) %>%
           left_join(.get_check_box_value_df(), by = "nodeName") %>%
-          mutate(idRow = 1:n()) %>%
+          mutate(idRow = seq_len(n())) %>%
           left_join(get_node_item_df(), by = "idRow") %>%
-          mutate(valueItem = T) %>%
+          mutate(valueItem = TRUE) %>%
           dplyr::filter(isNodeChecked) %>%
           dplyr::select(nameItem, valueItem) %>%
           suppressMessages()
@@ -2840,7 +2840,7 @@ sec_adv_manager_sitemap <-
           )
 
         business_data_df <-
-          1:nrow(business_name_df) %>%
+          seq_len(nrow(business_name_df)) %>%
           future_map_dfr(function(x) {
             tibble(
               nameItem =
@@ -2864,7 +2864,7 @@ sec_adv_manager_sitemap <-
                  value = value %>% str_trim()) %>%
           dplyr::select(nameItem, value) %>%
           dplyr::filter(!value == '') %>%
-          mutate(idRow = 1:n()) %>%
+          mutate(idRow = seq_len(n())) %>%
           group_by(nameItem) %>%
           dplyr::filter(idRow == min(idRow)) %>%
           ungroup() %>%
@@ -3040,7 +3040,7 @@ sec_adv_manager_sitemap <-
                     nameItem,
                     valueItem,
                     sep = '.',
-                    remove = F)
+                    remove = FALSE)
           })
 
         node_item_df <-
@@ -3085,8 +3085,8 @@ sec_adv_manager_sitemap <-
             left_join(.get_check_box_value_df()) %>%
             mutate(isNodeChecked = if_else(nodeName %>% str_detect('Checkbox not checked'), F, T)) %>%
             bind_cols(node_item_df) %>%
-            mutate(valueItem = T) %>%
-            dplyr::filter(isNodeChecked == T) %>%
+            mutate(valueItem = TRUE) %>%
+            dplyr::filter(isNodeChecked == TRUE) %>%
             dplyr::select(nameItem, valueItem) %>%
             suppressMessages()
         }
@@ -3144,10 +3144,10 @@ sec_adv_manager_sitemap <-
           node_df <-
             tibble(nodeName = check_nodes) %>%
             left_join(.get_check_box_value_df()) %>%
-            tidyr::replace_na(list(isNodeChecked = F)) %>%
+            tidyr::replace_na(list(isNodeChecked = FALSE)) %>%
             mutate(isNodeChecked = if_else(nodeName %>% str_detect('Checkbox not checked'), F, T)) %>%
             bind_cols(node_item_df) %>%
-            dplyr::filter(isNodeChecked == T) %>%
+            dplyr::filter(isNodeChecked == TRUE) %>%
             dplyr::select(nameItem, valueItem) %>%
             suppressMessages()
         }
@@ -3155,7 +3155,7 @@ sec_adv_manager_sitemap <-
         node_df <-
           node_df %>%
           group_by(nameItem) %>%
-          mutate(countItem = 1:n()) %>%
+          mutate(countItem = seq_len(n())) %>%
           ungroup() %>%
           mutate(nameEntityManager = name_entity_manager) %>%
           mutate(
@@ -3226,7 +3226,7 @@ sec_adv_manager_sitemap <-
             nodeName = boxes
           ) %>%
           left_join(.get_check_box_value_df()) %>%
-          dplyr::filter(isNodeChecked == T) %>%
+          dplyr::filter(isNodeChecked == TRUE) %>%
           suppressMessages() %>%
           .$typeEntityManager
 
@@ -3265,7 +3265,7 @@ sec_adv_manager_sitemap <-
 
 .get_section_4_data <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvSuccessionsSection.aspx?ORG_PK=158207&FLNG_PK=056E2F260008019605946011010394F5056C8CC0',
-           return_wide = T) {
+           return_wide = TRUE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -3298,7 +3298,7 @@ sec_adv_manager_sitemap <-
           tibble(nodeName = check_nodes) %>%
           left_join(.get_check_box_value_df()) %>%
           bind_cols(get_node_item_df()) %>%
-          dplyr::filter(isNodeChecked == T) %>%
+          dplyr::filter(isNodeChecked == TRUE) %>%
           dplyr::select(nameItem, valueItem) %>%
           suppressMessages()
 
@@ -3314,7 +3314,7 @@ sec_adv_manager_sitemap <-
           'isSucceedingRIABusiness' %in% names(node_df)
 
         if (has_ria_node) {
-          if (node_df$isSucceedingRIABusiness == T) {
+          if (node_df$isSucceedingRIABusiness == TRUE) {
             node_text <-
               page %>%
               .parse_node_table_to_text(
@@ -3378,10 +3378,10 @@ sec_adv_manager_sitemap <-
         glue::glue('https://files.adviserinfo.sec.gov/IAPD/crd_iapd_AdvVersionSelector.aspx?ORG_PK={idCRD}')
 
       sitefuture_map_dfr <-
-        .parse_adv_manager_sitemap_df(url =url, return_wide = F, manager = name_entity_manager)
+        .parse_adv_manager_sitemap_df(url =url, return_wide = FALSE, manager = name_entity_manager)
     }
 
-    is_new_iapd <- page %>% html_nodes('.QueryHeaderLabel') %>% html_text() %>% str_detect(" Amount of Regulatory Assets") %>% sum(na.rm = T) > 0
+    is_new_iapd <- page %>% html_nodes('.QueryHeaderLabel') %>% html_text() %>% str_detect(" Amount of Regulatory Assets") %>% sum(na.rm = TRUE) > 0
 
     section_exists <-
       section_name %in% sitefuture_map_dfr$idSection
@@ -3446,7 +3446,7 @@ sec_adv_manager_sitemap <-
         separate(nameItem, into = c("nameItem", "valueItem"), sep = "\\.") %>%
         mutate(valueItem = ifelse(is.na(valueItem), T, valueItem) %>% as.logical()) %>%
         suppressWarnings() %>%
-        mutate(idRow = 1:n())
+        mutate(idRow = seq_len(n()))
     }
 
 
@@ -3475,7 +3475,7 @@ sec_adv_manager_sitemap <-
 
             client_summary_image_df <-
               client_summary_image_df %>%
-              mutate(idRow = 1:n()) %>%
+              mutate(idRow = seq_len(n())) %>%
               left_join(
                 .get_section_5_node_name_df(),
                 by = "idRow"
@@ -3541,7 +3541,7 @@ sec_adv_manager_sitemap <-
           )
 
         employee_count_df <-
-          1:nrow(employee_node_df) %>%
+          seq_len(nrow(employee_node_df)) %>%
           future_map_dfr(function(x) {
             tibble(
               nameItem =
@@ -3600,7 +3600,7 @@ sec_adv_manager_sitemap <-
 
         if (has_aum_df) {
           aum_value_df <-
-            1:nrow(aum_value_name_df) %>%
+            seq_len(nrow(aum_value_name_df)) %>%
             future_map_dfr(function(x) {
               has_value <-
                 .find_text_node_safe(
@@ -3678,7 +3678,7 @@ sec_adv_manager_sitemap <-
             tibble(nameItem = rep('typeOther', length(other_value)),
                        value = other_value) %>%
             mutate(
-              countItem = (1:n()) - 1,
+              countItem = (seq_len(n())) - 1,
               fullnameItem = if_else(
                 countItem > 0,
                 nameItem %>% paste0(".", countItem),
@@ -3719,7 +3719,7 @@ sec_adv_manager_sitemap <-
 
 .get_section_6_data <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvOtherBusinessSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0',
-           return_wide = T) {
+           return_wide = TRUE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -3743,7 +3743,7 @@ sec_adv_manager_sitemap <-
           separate(nameItem, into = c("nameItem", "valueItem"), sep = "\\.") %>%
           mutate(valueItem = ifelse(is.na(valueItem), T, valueItem) %>% as.logical()) %>%
           suppressWarnings() %>%
-          mutate(idRow = 1:n())
+          mutate(idRow = seq_len(n()))
         return(node_item_df)
       }
 
@@ -3761,7 +3761,7 @@ sec_adv_manager_sitemap <-
             node_df <-
               tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df(), by = "nodeName") %>%
-              mutate(idRow = 1:n()) %>%
+              mutate(idRow = seq_len(n())) %>%
               left_join(
                 get_node_item_df(),
                 by = "idRow"
@@ -3805,7 +3805,7 @@ sec_adv_manager_sitemap <-
 
 .get_section_7a_data <-
   function(url = "https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvFinancialAffiliationsSection.aspx?ORG_PK=156663&FLNG_PK=02D633120008019C05413701015E4D91056C8CC0",
-           return_wide = T) {
+           return_wide = TRUE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -3857,9 +3857,9 @@ sec_adv_manager_sitemap <-
               tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
-              mutate(valueItem = T) %>%
+              mutate(valueItem = TRUE) %>%
               suppressMessages() %>%
-              dplyr::filter(isNodeChecked == T) %>% nrow > 0 %>%
+              dplyr::filter(isNodeChecked == TRUE) %>% nrow > 0 %>%
               suppressMessages()
 
             if (has_nodes) {
@@ -3867,8 +3867,8 @@ sec_adv_manager_sitemap <-
                 tibble(nodeName = check_nodes) %>%
                 left_join(.get_check_box_value_df()) %>%
                 bind_cols(get_node_item_df()) %>%
-                mutate(valueItem = T) %>%
-                dplyr::filter(isNodeChecked == T) %>%
+                mutate(valueItem = TRUE) %>%
+                dplyr::filter(isNodeChecked == TRUE) %>%
                 dplyr::select(nameItem, valueItem) %>%
                 suppressMessages()
               if (return_wide) {
@@ -3908,8 +3908,8 @@ sec_adv_manager_sitemap <-
 
 .get_section_7b_data <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvPrivateFundReportingSection.aspx?ORG_PK=162351&FLNG_PK=052DAAB400080184043CE66005E35E29056C8CC0',
-           return_wide = F,
-           return_message = T) {
+           return_wide = FALSE,
+           return_message = TRUE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -3920,7 +3920,7 @@ sec_adv_manager_sitemap <-
       .get_html_page()
 
     parse_private_fund_data <-
-      function(page, return_wide, return_message = T) {
+      function(page, return_wide, return_message = TRUE) {
         name_entity_manager <-
           page %>%
           .get_entity_manager_name()
@@ -3978,10 +3978,10 @@ sec_adv_manager_sitemap <-
 
           if (return_message) {
             total_aum <-
-              all_data$amountFundGrossAUM %>% sum(na.rm = T) %>% formattable::currency()
+              all_data$amountFundGrossAUM %>% sum(na.rm = TRUE) %>% formattable::currency()
 
             glue::glue("Parsed {name_entity_manager} they have {fund_count} fund vehicles
-                       and {total_aum} in private fund AUM") %>% cat(fill = T)
+                       and {total_aum} in private fund AUM") %>% cat(fill = TRUE)
           }
 
           if (return_wide) {
@@ -4017,7 +4017,7 @@ sec_adv_manager_sitemap <-
 
 .get_section_8_data <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvClientTransSection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
-           return_wide = T) {
+           return_wide = TRUE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -4069,9 +4069,9 @@ sec_adv_manager_sitemap <-
             section_data <-
               tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
-              mutate(idRow = 1:n()) %>%
-              left_join(get_node_item_df() %>% mutate(idRow = 1:n()), by = "idRow") %>%
-              dplyr::filter(isNodeChecked == T) %>%
+              mutate(idRow = seq_len(n())) %>%
+              left_join(get_node_item_df() %>% mutate(idRow = seq_len(n())), by = "idRow") %>%
+              dplyr::filter(isNodeChecked == TRUE) %>%
               dplyr::filter(!is.na(nameItem)) %>%
               mutate(nameEntityManager = name_entity_manager) %>%
               dplyr::select(nameEntityManager, nameItem, valueItem) %>%
@@ -4108,7 +4108,7 @@ sec_adv_manager_sitemap <-
 
 .get_section_9_data <-
   function(url = 'https://adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvCustodySection.aspx?ORG_PK=134600&FLNG_PK=04189D5A00080188013572C10022C501056C8CC0',
-           return_wide = T) {
+           return_wide = TRUE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -4200,8 +4200,8 @@ sec_adv_manager_sitemap <-
               tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
-              mutate(value = T) %>%
-              dplyr::filter(isNodeChecked == T) %>%
+              mutate(value = TRUE) %>%
+              dplyr::filter(isNodeChecked == TRUE) %>%
               mutate(nameEntityManager = name_entity_manager) %>%
               dplyr::select(nameEntityManager, nameItem, value) %>%
               suppressMessages()
@@ -4263,7 +4263,7 @@ sec_adv_manager_sitemap <-
       .find_text_node_safe <-
         possibly(.find_text_node, NULL)
       custody_value_df <-
-        1:nrow(custody_name_df) %>%
+        seq_len(nrow(custody_name_df)) %>%
         future_map_dfr(function(x) {
           value_exists <-
             .find_text_node_safe(
@@ -4344,7 +4344,7 @@ sec_adv_manager_sitemap <-
               tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
-              dplyr::filter(isNodeChecked == T) %>%
+              dplyr::filter(isNodeChecked == TRUE) %>%
               dplyr::select(nameItem, valueItem) %>%
               suppressMessages()
 
@@ -4388,7 +4388,7 @@ sec_adv_manager_sitemap <-
 
 .get_section_11_data <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvDisciplinarySection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0',
-           return_wide = T) {
+           return_wide = TRUE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -4449,7 +4449,7 @@ sec_adv_manager_sitemap <-
               tibble(nodeName = check_nodes) %>%
               left_join(.get_check_box_value_df()) %>%
               bind_cols(get_node_item_df()) %>%
-              dplyr::filter(isNodeChecked == T) %>%
+              dplyr::filter(isNodeChecked == TRUE) %>%
               mutate(nameEntityManager = name_entity_manager) %>%
               dplyr::select(nameEntityManager, nameItem, value = valueItem) %>%
               suppressMessages()
@@ -4527,7 +4527,7 @@ sec_adv_manager_sitemap <-
               left_join(.get_check_box_value_df()) %>%
               suppressMessages() %>%
               bind_cols(get_node_item_df()) %>%
-              dplyr::filter(isNodeChecked == T) %>% nrow > 0
+              dplyr::filter(isNodeChecked == TRUE) %>% nrow > 0
 
 
             if (has_nodes) {
@@ -4535,13 +4535,13 @@ sec_adv_manager_sitemap <-
                 tibble(nodeName = check_nodes) %>%
                 left_join(.get_check_box_value_df()) %>%
                 bind_cols(get_node_item_df()) %>%
-                dplyr::filter(isNodeChecked == T) %>%
+                dplyr::filter(isNodeChecked == TRUE) %>%
                 dplyr::select(nameItem, valueItem) %>%
                 dplyr::select(nameEntityManager, everything) %>%
                 mutate(nameEntityManager = name_entity_manager) %>%
                 dplyr::rename(value = valueItem) %>%
                 group_by(nameItem) %>%
-                mutate(countItem = 1:n()) %>%
+                mutate(countItem = seq_len(n())) %>%
                 ungroup() %>%
                 suppressMessages() %>%
                 mutate(
@@ -4590,7 +4590,7 @@ sec_adv_manager_sitemap <-
 
 .get_schedule_a_data <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleASection.aspx?ORG_PK=150510&FLNG_PK=00B175BA0008018601B35551000582C5056C8CC0',
-           return_wide = F) {
+           return_wide = FALSE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -4613,7 +4613,7 @@ sec_adv_manager_sitemap <-
           table_data <-
             page %>%
             html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleAPHSection_ctl00_ownersGrid') %>%
-            html_table(fill = T, header = F) %>%
+            html_table(fill = TRUE, header = FALSE) %>%
             data.frame() %>%
             as_tibble() %>%
             slice(-1) %>%
@@ -4664,10 +4664,10 @@ sec_adv_manager_sitemap <-
           }
 
           has_entity_owners <-
-            table_data %>% dplyr::filter(isEntityOwnerManagerEntity == T) %>% nrow > 0
+            table_data %>% dplyr::filter(isEntityOwnerManagerEntity == TRUE) %>% nrow > 0
           if (has_entity_owners) {
             entity_df <-
-              table_data %>% dplyr::filter(isEntityOwnerManagerEntity == T) %>%
+              table_data %>% dplyr::filter(isEntityOwnerManagerEntity == TRUE) %>%
               mutate(
                 countDash = idEntityManagerOwner %>% str_count('\\-'),
                 typeIDEntityManagerOwner = if_else(countDash == 0, 'idCRD', 'idEIN')
@@ -4763,7 +4763,7 @@ sec_adv_manager_sitemap <-
       section_data <-
         section_data %>%
         mutate(across(everything(), as.character)) %>%
-        mutate(countItem = 1:n(),
+        mutate(countItem = seq_len(n()),
                idCRD = idCRD %>% as.numeric()) %>%
         pivot_longer(cols = -c(nameEntityManager, countItem, idCRD),
                      names_to = "item",
@@ -4797,7 +4797,7 @@ sec_adv_manager_sitemap <-
 
 .get_schedule_b_data <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleBSection.aspx?ORG_PK=142979&FLNG_PK=00AB630A0008018801764C5100236B05056C8CC0',
-           return_wide = F) {
+           return_wide = FALSE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -4819,7 +4819,7 @@ sec_adv_manager_sitemap <-
           table_data <-
             page %>%
             html_nodes(css = '#ctl00_ctl00_cphMainContent_cphAdvFormContent_ScheduleBPHSection_ctl00_ownersGrid') %>%
-            html_table(fill = T, header = F) %>%
+            html_table(fill = TRUE, header = FALSE) %>%
             data.frame() %>%
             as_tibble() %>%
             slice(-1) %>%
@@ -4869,10 +4869,10 @@ sec_adv_manager_sitemap <-
 
           if (has_individual_data) {
             has_entity_df <-
-              table_data %>% dplyr::filter(isEntityOwnerOwnerManagerEntity == T) %>% nrow > 0
+              table_data %>% dplyr::filter(isEntityOwnerOwnerManagerEntity == TRUE) %>% nrow > 0
             if (has_entity_df) {
               entity_df <-
-                table_data %>% dplyr::filter(isEntityOwnerOwnerManagerEntity == T)
+                table_data %>% dplyr::filter(isEntityOwnerOwnerManagerEntity == TRUE)
 
               entity_df <-
                 entity_df %>%
@@ -5053,7 +5053,7 @@ sec_adv_manager_sitemap <-
       section_data <-
         section_data %>%
         mutate(across(everything(), as.character)) %>%
-        mutate(countItem = 1:n(),
+        mutate(countItem = seq_len(n()),
                idCRD = idCRD %>% as.numeric()) %>%
         pivot_longer(cols = -c(nameEntityManager, countItem, idCRD),
                      names_to = "item",
@@ -5087,8 +5087,8 @@ sec_adv_manager_sitemap <-
 
 .get_schedule_d_data <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvScheduleDSection.aspx?ORG_PK=284340&FLNG_PK=0573726A0008018802C736510026C985056C8CC0',
-           join_data = F,
-           return_wide = F) {
+           join_data = FALSE,
+           return_wide = FALSE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -5115,7 +5115,7 @@ sec_adv_manager_sitemap <-
 
         table_node_df <-
           tibble(idCSSTable = table_ids %>% paste0('#', .)) %>%
-          mutate(idTable = 1:n())
+          mutate(idTable = seq_len(n()))
 
         table_nodes <-
           page %>%
@@ -5126,13 +5126,13 @@ sec_adv_manager_sitemap <-
           future_map_dfr(function(x) {
             raw_nodes <-
               table_nodes[[x]] %>%
-              html_text(trim = T) %>%
+              html_text(trim = TRUE) %>%
               str_replace_all('\r|\n|\t', '') %>%
               stri_replace_all_charclass("\\p{WHITE_SPACE}", " ") %>%
               stri_trim_both() %>%
               gsub("^\\s+|\\s+$", "", .) %>%
               str_split('\\  ') %>%
-              flatten_chr() %>%
+              list_c() %>%
               str_trim()
 
             raw_nodes <-
@@ -5142,7 +5142,7 @@ sec_adv_manager_sitemap <-
               tibble(idTable = x, nodeText = raw_nodes)
             }
           }) %>%
-          mutate(idRow = 1:n())
+          mutate(idRow = seq_len(n()))
 
         parse_other_office_locations <-
           function(page, return_wide) {
@@ -5155,13 +5155,13 @@ sec_adv_manager_sitemap <-
               future_map_dfr(function(x) {
                 raw_nodes <-
                   table_nodes[[x]] %>%
-                  html_text(trim = T) %>%
+                  html_text(trim = TRUE) %>%
                   str_replace_all('\r|\n|\t', '') %>%
                   stri_replace_all_charclass("\\p{WHITE_SPACE}", " ") %>%
                   stri_trim_both() %>%
                   gsub("^\\s+|\\s+$", "", .) %>%
                   str_split('\\  ') %>%
-                  flatten_chr()
+                  list_c()
 
                 raw_nodes <-
                   raw_nodes[!raw_nodes == '']
@@ -5177,11 +5177,11 @@ sec_adv_manager_sitemap <-
               })
 
             has_end_table <-
-              end_table_df %>% dplyr::filter(isEndTable == T) %>% nrow > 0
+              end_table_df %>% dplyr::filter(isEndTable == TRUE) %>% nrow > 0
             if (has_end_table) {
               end_table_no <-
                 end_table_df %>%
-                dplyr::filter(isEndTable == T) %>%
+                dplyr::filter(isEndTable == TRUE) %>%
                 slice(1) %>%
                 .$idTable - 1
             } else {
@@ -5194,13 +5194,13 @@ sec_adv_manager_sitemap <-
               future_map_dfr(function(x) {
                 raw_nodes <-
                   table_nodes[[x]] %>%
-                  html_text(trim = T) %>%
+                  html_text(trim = TRUE) %>%
                   str_replace_all('\r|\n|\t', '') %>%
                   stri_replace_all_charclass("\\p{WHITE_SPACE}", " ") %>%
                   stri_trim_both() %>%
                   gsub("^\\s+|\\s+$", "", .) %>%
                   str_split('\\  ') %>%
-                  flatten_chr()
+                  list_c()
 
                 raw_nodes <-
                   raw_nodes[!raw_nodes == '']
@@ -5309,7 +5309,7 @@ sec_adv_manager_sitemap <-
 
               url_df <-
                 tibble(urlManager) %>%
-                mutate(countItem = 1:n()) %>%
+                mutate(countItem = seq_len(n())) %>%
                 pivot_longer(cols = -countItem, names_to = "item", values_to = "value") %>%
                 dplyr::filter(!value %>% is.na()) %>%
                 pivot_wider(names_from = item, values_from = value) %>%
@@ -5351,7 +5351,7 @@ sec_adv_manager_sitemap <-
 
               related_adviser_node_df <-
                 tibble(cssNode = node_id_value) %>%
-                mutate(idTable = 1:n()) %>%
+                mutate(idTable = seq_len(n())) %>%
                 dplyr::select(idTable, everything())
 
               related_advisor_df <-
@@ -5385,13 +5385,13 @@ sec_adv_manager_sitemap <-
                   if (is.na(nameLegalRelatedEntity) || nameLegalRelatedEntity == "") {
                     table_nodes <-
                       table_node %>%
-                      html_text(trim = T) %>%
+                      html_text(trim = TRUE) %>%
                       str_replace_all('\r|\n|\t', '') %>%
                       stri_replace_all_charclass("\\p{WHITE_SPACE}", " ") %>%
                       stri_trim_both() %>%
                       gsub("^\\s+|\\s+$", "", .) %>%
                       str_split("   +") %>%
-                      flatten_chr()
+                      list_c()
 
                     nameLegalRelatedEntity <-
                       table_nodes[table_nodes %>% grep('Legal Name of', .) + 1] %>% str_replace_all('Related Person: ', '')
@@ -5488,7 +5488,7 @@ sec_adv_manager_sitemap <-
                       mutate(idTable = x) %>%
                       left_join(.get_check_box_value_df()) %>%
                       bind_cols(node_df) %>%
-                      dplyr::filter(isNodeChecked == T) %>%
+                      dplyr::filter(isNodeChecked == TRUE) %>%
                       dplyr::select(idTable, nameItem, valueItem) %>%
                       suppressMessages() %>%
                       pivot_wider(names_from = nameItem, values_from = valueItem)
@@ -5585,7 +5585,7 @@ sec_adv_manager_sitemap <-
                   )
                 )) %>%
                 group_by(nameItem) %>%
-                mutate(countItem = 1:n()) %>%
+                mutate(countItem = seq_len(n())) %>%
                 ungroup() %>%
                 suppressMessages() %>%
                 dplyr::select(-idNode) %>%
@@ -5681,7 +5681,7 @@ sec_adv_manager_sitemap <-
                   )
                 )) %>%
                 group_by(nameItem) %>%
-                mutate(countItem = 1:n()) %>%
+                mutate(countItem = seq_len(n())) %>%
                 ungroup() %>%
                 suppressMessages() %>%
                 dplyr::select(-idNode)
@@ -5832,7 +5832,7 @@ sec_adv_manager_sitemap <-
               node_text <-
                 node_text %>%
                 str_split('\n|\r') %>%
-                flatten_chr() %>%
+                list_c() %>%
                 str_to_upper() %>%
                 str_trim()
 
@@ -5845,7 +5845,7 @@ sec_adv_manager_sitemap <-
                   item = 'descriptionOtherDisclosures',
                   value = node_text
                 ) %>%
-                mutate(countItem = 1:n()) %>%
+                mutate(countItem = seq_len(n())) %>%
                 pivot_wider(names_from = item, values_from = value)
 
               if (return_wide) {
@@ -5880,7 +5880,7 @@ sec_adv_manager_sitemap <-
 
         related_adviser_df <-
           page %>%
-          parse_related_advisor_safe(return_wide = F)
+          parse_related_advisor_safe(return_wide = FALSE)
 
         parse_control_person_data_safe <-
           possibly(parse_control_person_data, NULL)
@@ -5968,7 +5968,7 @@ sec_adv_manager_sitemap <-
         dplyr::select(idCRD, nameEntityManager, everything())
     }
 
-    if ((!return_wide) & join_data == T) {
+    if ((!return_wide) & join_data == TRUE) {
       section_data <-
         section_data %>%
         pivot_longer(cols = -c(nameEntityManager, idCRD),
@@ -6010,7 +6010,7 @@ sec_adv_manager_sitemap <-
       function(page) {
         is_old <-
           (page %>%
-             .get_html_node_text('.PrintHistRed') %>% is.na == T) %>% as.numeric() %>% sum() >= 1
+             .get_html_node_text('.PrintHistRed') %>% is.na == TRUE) %>% as.numeric() %>% sum() >= 1
         if (is_old) {
           nodes <-
             page %>%
@@ -6080,7 +6080,7 @@ sec_adv_manager_sitemap <-
 
 .get_section_drp <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/content/viewform/adv/Sections/iapd_AdvDrpSection.aspx?ORG_PK=103863&FLNG_PK=05CBF6920008018902B1D9910035D515056C8CC0',
-           return_wide = F) {
+           return_wide = FALSE) {
     idCRD <-
       url %>%
       .get_pk_url_crd()
@@ -6094,7 +6094,7 @@ sec_adv_manager_sitemap <-
       .get_entity_manager_name()
 
     clean_adv_drp_data <-
-      function(data, widen_data = F) {
+      function(data, widen_data = FALSE) {
         has_data <-
           data %>% ncol > 1
         if (has_data) {
@@ -6109,7 +6109,7 @@ sec_adv_manager_sitemap <-
             dplyr::filter(!value %>% is.na()) %>%
             distinct() %>%
             group_by(item) %>%
-            mutate(countItem = 1:n()) %>%
+            mutate(countItem = seq_len(n())) %>%
             ungroup() %>%
             pivot_wider(names_from = item, values_from = value) %>%
             .mutate_adv_data()
@@ -6127,9 +6127,9 @@ sec_adv_manager_sitemap <-
       function(item_name = 'dateCharged',
                hit_word = 'Charged',
                offset = 1,
-               is_numeric = F,
-               is_date = T,
-               is_employment_firm = F,
+               is_numeric = FALSE,
+               is_date = TRUE,
+               is_employment_firm = FALSE,
                replace_words = NA,
                filter_words = NA) {
         name_df <-
@@ -6151,9 +6151,9 @@ sec_adv_manager_sitemap <-
                item_name = 'descriptionPersonEntityViolator',
                hit_word = 'Other Product Types:',
                offset = 1,
-               is_numeric = F,
-               is_date = F,
-               is_employment_firm = F,
+               is_numeric = FALSE,
+               is_date = FALSE,
+               is_employment_firm = FALSE,
                replace_words = NA,
                filter_words = '^7.') {
         row_locs <-
@@ -6188,7 +6188,7 @@ sec_adv_manager_sitemap <-
               date_values <-
                 values[[x]] %>%
                 str_split('\\: ') %>%
-                flatten_chr()
+                list_c()
               val_length <-
                 date_values %>% length()
               if (val_length == 1) {
@@ -6206,7 +6206,7 @@ sec_adv_manager_sitemap <-
               }
               return(date_value)
             }) %>%
-            flatten_chr() %>%
+            list_c() %>%
             lubridate::mdy() %>%
             as.character() %>%
             suppressWarnings()
@@ -6220,7 +6220,7 @@ sec_adv_manager_sitemap <-
               emp_length <-
                 values[x] %>%
                 str_split('\\:') %>%
-                flatten_chr()
+                list_c()
               if (emp_length %>% length() == 1) {
                 emp_val <-
                   emp_length %>%
@@ -6265,7 +6265,7 @@ sec_adv_manager_sitemap <-
           table_df  <-
             tibble(value = values) %>%
             dplyr::filter(!value %>% is.na()) %>%
-            mutate(countItem = 1:n(),
+            mutate(countItem = seq_len(n()),
                    nameItem = item_name) %>%
             dplyr::select(countItem, nameItem, value)
 
@@ -6284,7 +6284,7 @@ sec_adv_manager_sitemap <-
             ) %>%
             ungroup() %>%
             dplyr::filter(!lagValue == 1) %>%
-            mutate(countItem = 1:n()) %>%
+            mutate(countItem = seq_len(n())) %>%
             dplyr::select(-lagValue)
 
         } else {
@@ -6320,7 +6320,7 @@ sec_adv_manager_sitemap <-
                 stri_trim_both() %>%
                 gsub("^\\s+|\\s+$", "", .) %>%
                 str_split('\\  ') %>%
-                flatten_chr() %>%
+                list_c() %>%
                 str_trim()
 
               raw_nodes <-
@@ -6331,16 +6331,16 @@ sec_adv_manager_sitemap <-
               }
             }) %>%
             dplyr::select(nodeText) %>%
-            mutate(idRow = 1:n())
+            mutate(idRow = seq_len(n()))
 
           drp_name_df <-
             generate_table_name_df(
               item_name = 'idCRDViolator',
               hit_word = 'CRD Number:',
               offset = 1,
-              is_numeric = T,
-              is_date = F,
-              is_employment_firm = F,
+              is_numeric = TRUE,
+              is_date = FALSE,
+              is_employment_firm = FALSE,
               replace_words = NA,
               filter_words = NA
             ) %>%
@@ -6350,9 +6350,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'namePersonEntityViolator',
                   hit_word = 'Name:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6360,9 +6360,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionPersonEntityViolator',
                   hit_word = 'relatedbusiness and your o',
                   offset = 2,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6370,9 +6370,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionLocationCharges',
                   hit_word = 'Formal Charge(s) were brought in:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6380,9 +6380,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'dateCharged',
                   hit_word = 'Charged',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = T,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = TRUE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6390,9 +6390,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'dateEventStatus',
                   hit_word = 'Event Status Date',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = T,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = TRUE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6400,9 +6400,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionDispositionDisclosure',
                   hit_word = 'Disposition Disclosure',
                   offset = 2,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6410,9 +6410,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionViolationCircumstances',
                   hit_word = 'Disposition Disclosure',
                   offset = 2,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 )
@@ -6421,7 +6421,7 @@ sec_adv_manager_sitemap <-
             )
 
           all_drp_data <-
-            1:nrow(drp_name_df) %>%
+            seq_len(nrow(drp_name_df)) %>%
             future_map_dfr(function(x) {
               parse_drp_table_data_safe(
                 all_table_node_df = all_table_node_df,
@@ -6480,7 +6480,7 @@ sec_adv_manager_sitemap <-
                 stri_trim_both() %>%
                 gsub("^\\s+|\\s+$", "", .) %>%
                 str_split('\\  ') %>%
-                flatten_chr() %>%
+                list_c() %>%
                 str_trim()
 
               raw_nodes <-
@@ -6491,16 +6491,16 @@ sec_adv_manager_sitemap <-
               }
             }) %>%
             dplyr::select(nodeText) %>%
-            mutate(idRow = 1:n())
+            mutate(idRow = seq_len(n()))
 
           drp_name_df <-
             generate_table_name_df(
               item_name = 'idCRDViolator',
               hit_word = 'CRD Number:',
               offset = 1,
-              is_numeric = T,
-              is_date = F,
-              is_employment_firm = F,
+              is_numeric = TRUE,
+              is_date = FALSE,
+              is_employment_firm = FALSE,
               replace_words = NA,
               filter_words = NA
             ) %>%
@@ -6510,9 +6510,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'namePersonEntityViolator',
                   hit_word = 'Name:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6520,9 +6520,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'entityEnforcmentAgencyViolation',
                   hit_word = 'foreign financial regulatory authority,',
                   offset = 3,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6530,9 +6530,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'sanctionPrincpalViolation',
                   hit_word = 'Principal Sanction:',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = 'Principal Sanction:',
                   filter_words = NA
                 ),
@@ -6540,9 +6540,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionSanctions',
                   hit_word = 'Other Sanctions:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = c('^3.')
                 ),
@@ -6550,9 +6550,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'dateInitiated',
                   hit_word = 'Date Initiated',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = T,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = TRUE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6560,9 +6560,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'idDocket',
                   hit_word = 'Docket/Case Number',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = 'Docket/Case Number:',
                   filter_words = NA
                 ),
@@ -6570,9 +6570,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'nameEmployingFirmViolationTime',
                   hit_word = 'Employing Firm when activity ',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = T,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = TRUE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6580,9 +6580,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'typeProductViolation',
                   hit_word = 'Principal Product Type:',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = 'Principal Product Type:',
                   filter_words = NA
                 ),
@@ -6590,9 +6590,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionProductViolation',
                   hit_word = 'Other Product Types:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words =  c('^7.')
                 ),
@@ -6600,9 +6600,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionAllegationViolation',
                   hit_word = 'Describe the allegations',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = c('^8.')
                 ),
@@ -6610,9 +6610,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'dateResolution',
                   hit_word = 'Resolution Date',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = T,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = TRUE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6620,9 +6620,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'amountFineViolation',
                   hit_word = 'Monetary/Fine Amount:',
                   offset = 1,
-                  is_numeric = T,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = TRUE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6630,9 +6630,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'detailOrderViolation',
                   hit_word = 'Ordered:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6640,9 +6640,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionSatisfactionConditions',
                   hit_word = 'waived:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6650,9 +6650,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionViolationCircumstances',
                   hit_word = 'Provide a brief summary of details related to the action status:',
                   offset = 2,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 )
@@ -6661,7 +6661,7 @@ sec_adv_manager_sitemap <-
             )
 
           all_drp_data <-
-            1:nrow(drp_name_df) %>%
+            seq_len(nrow(drp_name_df)) %>%
             future_map_dfr(function(x) {
               parse_drp_table_data_safe(
                 all_table_node_df = all_table_node_df,
@@ -6718,7 +6718,7 @@ sec_adv_manager_sitemap <-
                 stri_trim_both() %>%
                 gsub("^\\s+|\\s+$", "", .) %>%
                 str_split('\\  ') %>%
-                flatten_chr() %>%
+                list_c() %>%
                 str_trim()
 
               raw_nodes <-
@@ -6729,16 +6729,16 @@ sec_adv_manager_sitemap <-
               }
             }) %>%
             dplyr::select(nodeText) %>%
-            mutate(idRow = 1:n())
+            mutate(idRow = seq_len(n()))
 
           drp_name_df <-
             generate_table_name_df(
               item_name = 'idCRDViolator',
               hit_word = 'CRD Number:',
               offset = 1,
-              is_numeric = T,
-              is_date = F,
-              is_employment_firm = F,
+              is_numeric = TRUE,
+              is_date = FALSE,
+              is_employment_firm = FALSE,
               replace_words = NA,
               filter_words = NA
             ) %>%
@@ -6748,9 +6748,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'namePersonEntityViolator',
                   hit_word = 'Name:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6758,9 +6758,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'entityEnforcmentAgencyViolation',
                   hit_word = 'foreign financial regulatory authority,',
                   offset = 3,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6768,9 +6768,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'sanctionPrincpalViolation',
                   hit_word = 'Principal Sanction:',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = 'Principal Sanction:',
                   filter_words = NA
                 ),
@@ -6778,9 +6778,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionSanctions',
                   hit_word = 'Other Sanctions:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = c('^3.')
                 ),
@@ -6788,9 +6788,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'dateInitiated',
                   hit_word = 'Date Initiated',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = T,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = TRUE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6798,9 +6798,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'idDocket',
                   hit_word = 'Docket/Case Number',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = 'Docket/Case Number:',
                   filter_words = NA
                 ),
@@ -6808,9 +6808,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'nameEmployingFirmViolationTime',
                   hit_word = 'Employing Firm when activity ',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = T,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = TRUE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6818,9 +6818,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'typeProductViolation',
                   hit_word = 'Principal Product Type',
                   offset = 0,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = 'Principal Product Type:',
                   filter_words = NA
                 ),
@@ -6828,9 +6828,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionProductViolation',
                   hit_word = 'Other Product Types',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words =  c('^7.')
                 ),
@@ -6838,9 +6838,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionAllegationViolation',
                   hit_word = 'Describe the allegations',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = c('\\^8.')
                 ),
@@ -6848,9 +6848,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'dateResolution',
                   hit_word = 'Resolution Date',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = T,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = TRUE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6858,9 +6858,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'amountFineViolation',
                   hit_word = 'Monetary/Fine Amount:',
                   offset = 1,
-                  is_numeric = T,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = TRUE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6868,9 +6868,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'detailOrderViolation',
                   hit_word = 'Ordered:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6878,9 +6878,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionSatisfactionConditions',
                   hit_word = 'waived:',
                   offset = 1,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 ),
@@ -6888,9 +6888,9 @@ sec_adv_manager_sitemap <-
                   item_name = 'descriptionViolationCircumstances',
                   hit_word = 'Provide a brief summary of details related to the action status:',
                   offset = 2,
-                  is_numeric = F,
-                  is_date = F,
-                  is_employment_firm = F,
+                  is_numeric = FALSE,
+                  is_date = FALSE,
+                  is_employment_firm = FALSE,
                   replace_words = NA,
                   filter_words = NA
                 )
@@ -6899,7 +6899,7 @@ sec_adv_manager_sitemap <-
             )
 
           all_drp_data <-
-            1:nrow(drp_name_df) %>%
+            seq_len(nrow(drp_name_df)) %>%
             future_map_dfr(function(x) {
               parse_drp_table_data_safe(
                 all_table_node_df = all_table_node_df,
@@ -7218,7 +7218,7 @@ sec_adv_manager_sitemap <-
     # data variable was already populated above when goto_html_scraping was set
 
     section_null <-
-      section_names %>% purrr::is_null()
+      section_names %>% is.null()
 
     if (all_sections) {
       section_names <-
@@ -7292,7 +7292,7 @@ sec_adv_manager_sitemap <-
         }
 
         all_data <-
-          1:nrow(data) %>%
+          seq_len(nrow(data)) %>%
           map_dfr(function(x) {
             f <-
               data$nameFunction[[x]] %>% lazyeval::as_name() %>% eval()
@@ -7307,7 +7307,7 @@ sec_adv_manager_sitemap <-
             nameADVPage <-
               data$nameSectionActual[[x]]
             nameADVPage %>% message()
-            paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% cat(fill = T)
+            paste0('idCRD: ', id_crd, ' - ', nameADVPage) %>% cat(fill = TRUE)
 
             g <-
               f %>%
@@ -7385,16 +7385,16 @@ sec_adv_manager_sitemap <-
           paste0(name_entity_manager,
                  '\nThey have ',
                  total_aum,
-                 ' in Total Assets Under Management') %>% cat(fill = T)
+                 ' in Total Assets Under Management') %>% cat(fill = TRUE)
       }
     }  else {
       "Parsed " %>%
         paste0(name_entity_manager) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
 
     }
 
-    for (x in 1:nrow(all_data)) {
+    for (x in seq_len(nrow(all_data))) {
       all_data$dataTable[[x]]$nameEntityManager <-
         name_entity_manager
 
@@ -7424,7 +7424,7 @@ sec_adv_manager_sitemap <-
             dplyr::filter(isDataWide)
 
           widened_data <-
-            1:nrow(widen_data) %>%
+            seq_len(nrow(widen_data)) %>%
             map_dfr(function(x) {
               data <-
                 widen_data %>%
@@ -7440,7 +7440,7 @@ sec_adv_manager_sitemap <-
             }) %>%
             distinct() %>%
             group_by(nameItem) %>%
-            mutate(countItem = 1:n()) %>%
+            mutate(countItem = seq_len(n())) %>%
             ungroup() %>%
             suppressWarnings() %>%
             dplyr::filter(!value %>% is.na()) %>%
@@ -7474,7 +7474,7 @@ sec_adv_manager_sitemap <-
       # Return flat Manager Description data directly
       # Non-wide tables are available in dataTablesNonFlat attribute
       non_wide_data <- all_data %>%
-        dplyr::filter(isDataWide == F) %>%
+        dplyr::filter(isDataWide == FALSE) %>%
         dplyr::select(idCRD, nameEntityManager,
                       nameTable = nameADVPage,
                       dataTable)
@@ -7495,14 +7495,14 @@ sec_adv_manager_sitemap <-
 .get_search_crd_ids <-
   function(entity_names = c('EJF Capital', '137 Ventures'),
            crd_ids = NULL) {
-    if (entity_names %>% purrr::is_null() & (crd_ids %>% purrr::is_null())) {
+    if (entity_names %>% is.null() & (crd_ids %>% is.null())) {
       stop("Please enter search names or CRD IDs")
     }
 
     crd_df <-
       tibble(idCRD = NA)
 
-    if (!entity_names %>% purrr::is_null()) {
+    if (!entity_names %>% is.null()) {
       finra_entities_safe <-
         purrr::possibly(finra_entities, tibble())
       search_name_df <-
@@ -7526,7 +7526,7 @@ sec_adv_manager_sitemap <-
         bind_rows(tibble(idCRD = id_crds))
     }
 
-    if (!crd_ids %>% purrr::is_null()) {
+    if (!crd_ids %>% is.null()) {
       crd_df <-
         crd_df %>%
         bind_rows(tibble(idCRD = crd_ids))
@@ -7562,7 +7562,7 @@ sec_adv_manager_sitemap <-
           data %>%
           dplyr::filter(nameTable %>% str_detect(table_name)) %>%
           dplyr::select(idCRD, nameTable, dataTable) %>%
-          mutate(idRow = 1:n())
+          mutate(idRow = seq_len(n()))
 
         crd_df <-
           data_selected %>%
@@ -7617,7 +7617,7 @@ sec_adv_manager_sitemap <-
                 nameItem = nameItem %>% str_replace_all('[0-9]', '')
               ) %>%
               group_by(idCRD, nameEntityManager, nameItem) %>%
-              mutate(countItemManager = 1:n()) %>%
+              mutate(countItemManager = seq_len(n())) %>%
               ungroup() %>%
               dplyr::select(nameTable,
                             idCRD:nameItem,
@@ -7630,7 +7630,7 @@ sec_adv_manager_sitemap <-
           assign(x = df_name, eval(data_selected %>% .mutate_adv_data()), envir = .GlobalEnv)
           section_df %>%
             dplyr::filter(nameSectionActual == table_name) %>%
-            .$idSection %>% cat(fill = T)
+            .$idSection %>% cat(fill = TRUE)
         }
         if (has_nested_list) {
           has_no_count_col <-
@@ -7706,7 +7706,7 @@ sec_adv_manager_sitemap <-
                       nameItem = nameItem %>% str_replace_all('[0-9]', '')
                     ) %>%
                     group_by(idCRD, nameEntityManager, nameItem) %>%
-                    mutate(countItemManager = 1:n()) %>%
+                    mutate(countItemManager = seq_len(n())) %>%
                     ungroup() %>%
                     dplyr::select(nameTable,
                                   idCRD:nameItem,
@@ -7808,7 +7808,7 @@ adv_managers_filings <-
 
     }
     nothing_entered <-
-      (crd_ids %>% purrr::is_null()) & (entity_names %>% purrr::is_null())
+      (crd_ids %>% is.null()) & (entity_names %>% is.null())
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
@@ -8039,7 +8039,7 @@ return(all_data)
 
         info <-
           info %>%
-          flatten_df()
+          as_tibble()
 
         sec_name_df <-
           tibble(
@@ -8275,7 +8275,7 @@ adv_managers_brochures <-
            nest_data = FALSE,
            parallel = TRUE) {
     nothing_entered <-
-      (crd_ids %>% purrr::is_null()) & (entity_names %>% purrr::is_null())
+      (crd_ids %>% is.null()) & (entity_names %>% is.null())
     if (nothing_entered) {
       stop("Please enter a CRD ID or a search name")
     }
@@ -8298,7 +8298,7 @@ adv_managers_brochures <-
           manager <- manager_pdf$nameEntityManager %>% unique()
           date_file <- manager_pdf$datetimeCreated %>% unique()
           glue::glue("Acquired ADV brochure for {manager} filed on {date_file}") %>%
-            cat(fill = T)
+            cat(fill = TRUE)
         }
 
         manager_pdf
@@ -8458,7 +8458,7 @@ adv_period_urls <-
           nrow() == 0
 
         if (no_name) {
-          glue::glue("Missing {name} in dictionary") %>% cat(fill = T)
+          glue::glue("Missing {name} in dictionary") %>% cat(fill = TRUE)
           return(name)
         }
         df_actual_names %>%
@@ -8942,7 +8942,7 @@ dictionary_sec_names <-
   function(file_path = "/Users/alexbresler/Desktop/adv_data/5010912_10044_00050000_00050000.txt") {
 
     file_path %>%
-      read_delim(delim = '|', col_names = T) %>%
+      read_delim(delim = '|', col_names = TRUE) %>%
       dplyr::select(-dplyr::matches("X26"))
 
     data
@@ -9073,7 +9073,7 @@ dictionary_sec_names <-
 
     column_ids <-
       tibble(nameActual = names(adv_data)) %>%
-      mutate(idRow = 1:n()) %>%
+      mutate(idRow = seq_len(n())) %>%
       group_by(nameActual) %>%
       filter(idRow == min(idRow)) %>%
       pull(idRow)
@@ -9199,7 +9199,7 @@ dictionary_sec_names <-
     }
 
     if (return_message) {
-      glue::glue("Parsed {url}") %>% cat(fill = T)
+      glue::glue("Parsed {url}") %>% cat(fill = TRUE)
     }
 
     adv_data <-
@@ -9217,8 +9217,9 @@ dictionary_sec_names <-
   }
 
 .parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.zip', return_message = TRUE) {
-  df <-
-    tibble()
+  state <- new.env(parent = emptyenv())
+
+  state$rows <- list()
   success <- function(res) {
 
 
@@ -9228,15 +9229,13 @@ dictionary_sec_names <-
 
     page_url <- res$url
 
-      glue::glue("parsing {page_url}") %>% cat(fill = T)
+      glue::glue("parsing {page_url}") %>% cat(fill = TRUE)
 
     data <-
       page_url %>%
       parse_sec_adv_data_url_safe(return_message = return_message)
 
-    df <<-
-      df %>%
-      bind_rows(data)
+    state$rows[[length(state$rows) + 1L]] <- data
   }
 
   failure <- function(msg) {
@@ -9249,7 +9248,7 @@ dictionary_sec_names <-
       curl_fetch_multi(url = x, success, failure)
     })
   multi_run()
-  df
+  dplyr::bind_rows(state$rows)
 }
 
 #' ADV managers periods data
@@ -9594,7 +9593,7 @@ extract_fee_references <- function(data, fee_ceiling_pct = 30,
     data %>%
     dplyr::select(idCRD, nameEntityManager, textBrochure) %>%
     tidytext::unnest_tokens(sentence, textBrochure, token = "sentences") %>% # tokenize to sentences
-    mutate(idSentence = 1:n()) %>% # create sentence IDs to check accuracy later
+    mutate(idSentence = seq_len(n())) %>% # create sentence IDs to check accuracy later
     mutate(
       hasMGMTFeeReference = sentence %>% str_detect("\\d+(?:\\.\\d+)?\\s?%")
     )
@@ -9621,7 +9620,7 @@ extract_fee_references <- function(data, fee_ceiling_pct = 30,
         setence_df$nameEntityManager %>% paste0('Manager: ',., '\n', fee_text)
       }) %>%
       paste0(collapse = '\n') %>%
-      cat(fill = T)
+      cat(fill = TRUE)
   }
 
   possible_fees %>%

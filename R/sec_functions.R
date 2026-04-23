@@ -2442,7 +2442,7 @@ sec_securities_metrics_by_exchange <-
   }
 
 .parse_xbrl_url <-
-  function(url = "http://www.sec.gov/data/financial-statements/2016q3.zip",
+  function(url = "https://www.sec.gov/data/financial-statements/2016q3.zip",
            only_all = TRUE,
            return_message = TRUE) {
 

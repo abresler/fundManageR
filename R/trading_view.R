@@ -197,7 +197,7 @@ tv_market_events <-
       glue::glue(
         "Returned {nrow(data)} events from {min(data$dateRelease)} to {max(data$dateRelease)}"
       ) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
     gc()
 
@@ -262,7 +262,7 @@ hot_list_slugs <- c(
 # https://news-headlines.tradingview.com/headlines/yahoo/symbol/FB/?locale=en -- news
 .generate_slug <-
   function(value = "nyse", sep_pre = "&",parameter = "exchange", symbol = "=", sep_post = "") {
-    if (value %>% purrr::is_null()) {
+    if (value %>% is.null()) {
       return("")
     }
     glue::glue("{sep_pre}{parameter}{symbol}{value}{sep_post}") %>%
@@ -413,7 +413,7 @@ get_tradeview_term <-
       arrange(idTicker)
 
     if (return_message) {
-      glue::glue("Acquired {nrow(data)} listed securities in {idRegion %>% str_to_title()}") %>% cat(fill = T)
+      glue::glue("Acquired {nrow(data)} listed securities in {idRegion %>% str_to_title()}") %>% cat(fill = TRUE)
     }
 
     data
@@ -422,8 +422,9 @@ get_tradeview_term <-
 .parse_regions_security_urls <-
   function(urls,
            return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res) {
       .parse_region_security_url_safe <-
         purrr::possibly(.parse_region_security_url, tibble())
@@ -432,9 +433,7 @@ get_tradeview_term <-
         page_url %>%
         .parse_region_security_url_safe(return_message = return_message)
 
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg) {
       tibble()
@@ -445,7 +444,7 @@ get_tradeview_term <-
       })
     multi_run()
 
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 
@@ -563,7 +562,7 @@ tv_regions_tickers <-
         field_name <-
           data$nameTW[[x]]
 
-        if (field %>% purrr::is_null()) {
+        if (field %>% is.null()) {
           return(tibble(idRow = x, dataField = NA))
         }
         class_field <-
@@ -607,12 +606,12 @@ tv_regions_tickers <-
       mutate(hasFields = dataField %>%  map_dbl(length) > 0)
 
     if (return_message) {
-      glue::glue("Acquired {nrow(data)} searchable metrics for {idRegion} securities") %>% cat(fill = T)
+      glue::glue("Acquired {nrow(data)} searchable metrics for {idRegion} securities") %>% cat(fill = TRUE)
     }
 
     data <-
       data %>%
-      mutate(idRow = 1:n()) %>%
+      mutate(idRow = seq_len(n())) %>%
       left_join(df_fields) %>%
       dplyr::select(-fieldMembers) %>%
       suppressWarnings() %>%
@@ -624,8 +623,9 @@ tv_regions_tickers <-
 .parse_metric_dictionaries_url <-
   function(urls,
            return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res) {
       .parse_metric_dictionary_url_safe <-
         purrr::possibly(.parse_metric_dictionary_url, tibble())
@@ -634,9 +634,7 @@ tv_regions_tickers <-
         page_url %>%
         .parse_metric_dictionary_url_safe(return_message = return_message)
 
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg) {
       tibble()
@@ -647,7 +645,7 @@ tv_regions_tickers <-
       })
     multi_run()
 
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 #' Tradingview searchable metrics by region
@@ -810,7 +808,7 @@ tv_metric <-
         options = options,
         range = range
       ) %>%
-      toJSON(auto_unbox = T)
+      toJSON(auto_unbox = TRUE)
 
     data_query
   }
@@ -842,7 +840,7 @@ tv_metric <-
     data <- data %>%
       purrr::set_names(c('idExchangeTicker', 'value')) %>%
       group_by(idExchangeTicker) %>%
-      mutate(countItem = 1:n()) %>%
+      mutate(countItem = seq_len(n())) %>%
       ungroup()
 
     data <-
@@ -864,7 +862,7 @@ tv_metric <-
         data$idTicker %>% unique() %>% length() %>% formattable::comma(digits = 0)
       glue::glue(
         "Acquired {nrow(data) %>% formattable::comma(digits = 0)} listed metrics for {tickers} securities in {idRegion %>% str_to_title()}"
-      ) %>% cat(fill = T)
+      ) %>% cat(fill = TRUE)
     }
 
     gc()
@@ -1193,7 +1191,7 @@ tv_metric_query <-
              ),
            return_message = TRUE) {
     glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
-      cat(fill = T)
+      cat(fill = TRUE)
 
     urls <-
       glue::glue("https://scanner.tradingview.com/{region}/scan")
@@ -1210,7 +1208,7 @@ tv_metric_query <-
         )
 
     } else {
-      data_query <- toJSON(query, auto_unbox = T)
+      data_query <- toJSON(query, auto_unbox = TRUE)
     }
 
     data <-
@@ -1223,7 +1221,7 @@ tv_metric_query <-
     if (!region %>% str_to_lower() %>% str_detect("cfd")) {
       metrics <-
         tibble(nameTW = c('name', query$metrics) %>% unique()) %>%
-        mutate(countItem = 1:n())
+        mutate(countItem = seq_len(n()))
 
       data <-
         data %>%
@@ -1233,7 +1231,7 @@ tv_metric_query <-
 
       metrics <-
         tibble(nameTW = c('name', query$columns) %>% unique()) %>%
-        mutate(countItem = 1:n())
+        mutate(countItem = seq_len(n()))
 
       data <-
         data %>%
@@ -1384,7 +1382,7 @@ tv_metric_query <-
       janitor::clean_names() %>%
       dplyr::select(which(colMeans(is.na(.)) < 1))
 
-    if (region %>% str_to_lower() %>% str_detect("cfd") %>% sum(na.rm = T) > 0) {
+    if (region %>% str_to_lower() %>% str_detect("cfd") %>% sum(na.rm = TRUE) > 0) {
       data <-
         data %>%
         mutate(type_security = "BOND")
@@ -1680,11 +1678,11 @@ tv_metrics_data <-
       url %>% str_replace_all("https://news-headlines.tradingview.com/headlines/yahoo/symbol/",
                               '')
 
-    ticker <- url_parse(url) %>% select(query) %>% str_split("proSymbol=") %>% flatten_chr() %>% .[[2]]
+    ticker <- url_parse(url) %>% select(query) %>% str_split("proSymbol=") %>% list_c() %>% .[[2]]
 
     if (return_message) {
       glue::glue("Acquiring Tradingview news for {ticker}") %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
 
     data <-
@@ -1720,8 +1718,9 @@ tv_metrics_data <-
 .parse_tradingview_news_urls <-
   function(urls,
            return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res) {
       .parse_trading_view_news_url_safe <-
         purrr::possibly(.parse_trading_view_news_url, tibble())
@@ -1730,9 +1729,7 @@ tv_metrics_data <-
         page_url %>%
         .parse_trading_view_news_url_safe(return_message = return_message)
 
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg) {
       tibble()
@@ -1743,7 +1740,7 @@ tv_metrics_data <-
       })
     multi_run()
 
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 

@@ -4,7 +4,7 @@
 \alias{pcaob_auditors}
 \title{PCAOB Audit Relationships}
 \usage{
-pcaob_auditors(include_denied_firms = T)
+pcaob_auditors(include_denied_firms = TRUE)
 }
 \arguments{
 \item{include_denied_firms}{adds PCAOB denied firm feature}

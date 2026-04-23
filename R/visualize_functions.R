@@ -12,7 +12,7 @@
 #' @examples
 #' visualize_tibble(mtcars)
 visualize_tibble <-
-  function(data, edit = F) {
+  function(data, edit = FALSE) {
     if (edit) {
       json_list <-
         listviewer::jsonedit_gadget(data)

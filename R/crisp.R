@@ -17,7 +17,7 @@
 crsp_files <-
   function(include_summary_files = TRUE) {
   page <-
-    "http://www.crsp.org/indexes-pages/returns-and-constituents" %>%
+    "https://www.crsp.org/indexes-pages/returns-and-constituents" %>%
     read_html()
 
   file_names <-
@@ -42,7 +42,7 @@ crsp_files <-
       if (!has_http) {
         url <-
           x %>% substr(3, nchar(.)) %>%
-          paste0('http://www.crsp.org',.)
+          paste0('https://www.crsp.org',.)
         return(url)
       }
       x
@@ -51,14 +51,14 @@ crsp_files <-
   crsp_urls <-
     tibble(nameFile = file_names, urlData = urls) %>%
     filter(urlData %>% str_detect(".xls|csv")) %>%
-    mutate(idRow = 1:n()) %>%
+    mutate(idRow = seq_len(n())) %>%
     mutate(isSummaryFile = ifelse(idRow < 4, TRUE, FALSE)) %>%
     select(-idRow)
 
   if (!include_summary_files) {
     crsp_urls <-
       crsp_urls %>%
-      filter(isSummaryFile == F)
+      filter(isSummaryFile == FALSE)
   }
 
   crsp_urls
@@ -66,10 +66,10 @@ crsp_files <-
   }
 
 .parse_crsp_index_url <-
-  function(url = "http://www.crsp.org/files/CRSP-US-Total-Market.xlsx", return_message = TRUE) {
+  function(url = "https://www.crsp.org/files/CRSP-US-Total-Market.xlsx", return_message = TRUE) {
     index_name <-
       url %>%
-      str_replace_all('http://www.crsp.org/files/|CRSP-|.xlsx|US-', '') %>%
+      str_replace_all('https://www.crsp.org/files/|CRSP-|.xlsx|US-', '') %>%
       str_replace_all('\\-|\\_', ' ') %>%
       str_replace('\\ 0', '') %>%
       str_to_upper()
@@ -88,7 +88,7 @@ crsp_files <-
     period_data <-
       data %>% select(3) %>% names() %>%
       str_split('\\ ') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       lubridate::ymd()
 
@@ -212,7 +212,7 @@ crsp_indicies_constituents <-
 #' nest_data = FALSE, return_message = TRUE)
 crsp_indicies_returns <-
   function(return_wide = FALSE,
-           nest_data = F, return_message = TRUE) {
+           nest_data = FALSE, return_message = TRUE) {
     url_df <-
       crsp_files() %>%
       filter(isSummaryFile == TRUE)

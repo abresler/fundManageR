@@ -26,8 +26,8 @@
 
     data <-
       page %>%
-      html_table(fill = F) %>%
-      flatten_df() %>%
+      html_table(fill = FALSE) %>%
+      as_tibble() %>%
       dplyr::as_tibble() %>%
       purrr::set_names(c("yearIndex", "ratioIndex", "pctChangeIndex"))
 
@@ -43,8 +43,8 @@
 
     data <-
       page %>%
-      html_table(fill = F) %>%
-      flatten_df() %>%
+      html_table(fill = FALSE) %>%
+      as_tibble() %>%
       dplyr::as_tibble() %>%
       purrr::set_names(c("yearIndex", "ratioIndex", "pctChangeIndex"))
 
@@ -67,10 +67,10 @@
 us_inflation <-
   memoise::memoise(function(base_year = 1913) {
     if (base_year == 1913) {
-      "Getting US inflation data from 1913" %>% cat(fill = T)
+      "Getting US inflation data from 1913" %>% cat(fill = TRUE)
       data <- .get_1913_inflation()
       return(data)
     }
-      "Getting US inflation data from 1800" %>% cat(fill = T)
+      "Getting US inflation data from 1800" %>% cat(fill = TRUE)
       data <- .get_1800_inflation()
   })

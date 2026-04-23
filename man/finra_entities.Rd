@@ -4,7 +4,7 @@
 \alias{finra_entities}
 \title{FINRA registered entities}
 \usage{
-finra_entities(entity_names = NULL, ocr_pdf = F, return_message = TRUE)
+finra_entities(entity_names = NULL, ocr_pdf = FALSE, return_message = TRUE)
 }
 \arguments{
 \item{entity_names}{vector of names to search}

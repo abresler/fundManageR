@@ -10,8 +10,8 @@ residual_values(
   cost_of_sale = 0.05,
   debt = 0,
   sale_date = Sys.Date(),
-  has_guarantee = F,
-  return_message = T
+  has_guarantee = FALSE,
+  return_message = TRUE
 )
 }
 \arguments{

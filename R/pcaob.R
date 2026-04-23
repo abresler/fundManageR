@@ -13,10 +13,10 @@
 pcaob_denied_firms <-
   memoise::memoise(function() {
     page <- read_html("https://pcaobus.org/International/Inspections/Pages/IssuerClientsWithoutAccess.aspx")
-    tables <- page %>% html_table(fill = T)
+    tables <- page %>% html_table(fill = TRUE)
     data <- tables[[length(tables)]] %>% as_tibble()
     data <- data %>% set_names(c("name_issuer","name_audit_firm", "country_audit_firm")) %>%
-      mutate(is_pcaob_denied = T)
+      mutate(is_pcaob_denied = TRUE)
 
     data %>%
       munge_tbl()
@@ -35,7 +35,7 @@ pcaob_denied_firms <-
 #' pcaob_auditors(include_denied_firms = TRUE)
 #' }
 pcaob_auditors <-
-  function(include_denied_firms = T) {
+  function(include_denied_firms = TRUE) {
     data <-
       "https://pcaobus.org/RUSDocuments/FirmFilings.zip" %>% .import_url_curl()
     data <- data %>% janitor::clean_names() %>% as_tibble()
@@ -110,9 +110,9 @@ pcaob_auditors <-
       data %>%
       munge_tbl(
         data = data,
-        snake_names = T,
-        unformat = T,
-        include_address = F,
+        snake_names = TRUE,
+        unformat = TRUE,
+        include_address = FALSE,
         convert_case = T
       )
 

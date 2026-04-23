@@ -7,7 +7,7 @@
 fred_symbols(
   symbols = c("DGS2", "DGS10", "DGS30"),
   transformations = c("default"),
-  widen_data = F,
+  widen_data = FALSE,
   convert_date_time = TRUE,
   nest_data = TRUE,
   include_metadata = TRUE,

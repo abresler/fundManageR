@@ -174,7 +174,7 @@
   function(data) {
     name_df <-
       .get_dtcc_name_df() %>%
-      mutate(idRow = 1:n())
+      mutate(idRow = seq_len(n()))
 
     rf_names <-
       data %>% names()
@@ -315,7 +315,7 @@
         stop(list(
           "Financial assets can only be\n",
           paste0(actual_assets, collapse = '\n')
-        ) %>% purrr::invoke(paste0, .))
+        ) %>% do.call(paste0, .))
       }
       assets <-
         assets %>%
@@ -338,7 +338,7 @@
         date,
         ".zip"
       ) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     url_df <-
       tibble(dateData = date_actual,
@@ -382,18 +382,18 @@
 
       has_desc_df <-
         data %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         filter(!descriptionUnderlyingAsset1 %>% is.na()) %>%
         select(idRow, descriptionUnderlyingAsset1) %>% nrow() > 0
       if (has_desc_df) {
         description_df <-
           data %>%
           filter(!descriptionUnderlyingAsset1 %>% is.na()) %>%
-          mutate(idRow = 1:n()) %>%
+          mutate(idRow = seq_len(n())) %>%
           select(idRow, descriptionUnderlyingAsset1)
 
         desc_df <-
-          1:nrow(description_df) %>%
+          seq_len(nrow(description_df)) %>%
           future_map_dfr(function(x) {
             row_number <-
               description_df$idRow[[x]]
@@ -405,7 +405,7 @@
             items <-
               description_df$descriptionUnderlyingAsset1[[x]] %>%
               str_split('\\.') %>%
-              flatten_chr()
+              list_c()
 
             items <-
               items[!items == 'NA']
@@ -524,7 +524,7 @@
 
         data <-
           data %>%
-          mutate(idRow = 1:n()) %>%
+          mutate(idRow = seq_len(n())) %>%
           left_join(desc_df) %>%
           select(-idRow) %>%
           suppressMessages()
@@ -547,7 +547,7 @@
         arrange(descriptionTaxonomy)
 
       df_taxonomies <-
-        1:nrow(df_taxonomy) %>%
+        seq_len(nrow(df_taxonomy)) %>%
         future_map_dfr(function(x) {
           tax <-
             df_taxonomy$descriptionTaxonomy[[x]]
@@ -559,7 +559,7 @@
           tax_items <-
             tax %>%
             str_split('\\:') %>%
-            flatten_chr()
+            list_c()
           asset <-
             tax_items[[1]] %>% str_to_upper()
 
@@ -687,11 +687,17 @@
       str_replace_all("https://kgc0418-tdw-data-0.s3.amazonaws.com/slices/CUMULATIVE_",
                       '') %>%
       str_split('\\_') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]]
 
-    url %>%
-      curl::curl_download(url = ., tmp)
+    dl_ok <- tryCatch({
+      curl::curl_download(url, destfile = tmp, mode = "wb")
+      TRUE
+    }, error = function(e) {
+      warning("Download failed for ", url, ": ", conditionMessage(e))
+      FALSE
+    })
+    if (!dl_ok) return(tibble())
 
     con <-
       unzip(tmp)
@@ -757,7 +763,7 @@
       purrr::possibly(.download_dtcc_url, tibble())
 
     all_df <-
-      1:nrow(df_date) %>%
+      seq_len(nrow(df_date)) %>%
       future_map_dfr(function(x) {
         .download_dtcc_url_safe(url = df_date$urlData[[x]], return_message = TRUE)
       })
@@ -767,12 +773,12 @@
         "Parsed ",
         all_df %>% nrow() %>% formattable::comma(digits = 0),
         ' DTCC cleared trades from ',
-        all_df$dateData %>% min(na.rm = T),
+        all_df$dateData %>% min(na.rm = TRUE),
         ' to ',
-        all_df$dateData %>% max(na.rm = T)
+        all_df$dateData %>% max(na.rm = TRUE)
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -850,8 +856,8 @@
 
     df <-
       page %>%
-      html_table(fill = F) %>%
-      flatten_df() %>%
+      html_table(fill = FALSE) %>%
+      as_tibble() %>%
       purrr::set_names(names_dtcc)
 
     df <-
@@ -866,7 +872,7 @@
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df)
@@ -922,7 +928,7 @@ dtcc_recent_trades <-
             "Assets can only be:\n",
             assets_options %>% paste0(collapse = '\n')
           ) %>%
-            purrr::invoke(paste0, .)
+            do.call(paste0, .)
         )
       }
       css_df <-
@@ -960,8 +966,8 @@ dtcc_recent_trades <-
         ' DTCC most recent cleared trades as of ',
         Sys.time()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
 
@@ -1017,7 +1023,7 @@ dtcc_recent_trades <-
         dtcc_url,
         "' -H 'DNT: 1' -H 'Accept-Encoding: gzip, deflate, sdch, br' -H 'Accept-Language: en-US,en;q=0.8' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.59 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8' -H 'Cookie: JSESSIONID_TDW01_Cluster=0000w-S0Gm-OK-9X7LvjnOgRFHE:1a9spvpvu' -H 'Connection: keep-alive' --compressed"
       ) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
     .get_c_url_data_safe <-
       purrr::possibly(.get_c_url_data, tibble())
     data <-
@@ -1034,7 +1040,7 @@ dtcc_recent_trades <-
     date_data <-
       Sys.Date() %>%
       str_split('\\-') %>%
-      flatten_chr() %>% {
+      list_c() %>% {
         list(.[2], .[3], .[1]) %>% purrr::invoke(paste, ., sep = "%2F")
       }
     nameAsset <-
@@ -1051,7 +1057,7 @@ dtcc_recent_trades <-
         types,
         '&notionalRangeLow=0&notionalRangeHigh=50000000000000&disseminationHourLow=0&disseminationMinuteLow=0&disseminationHourHigh=23&disseminationMinuteHigh=59&currency=USD&displayType=c'
       ) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     df_types <-
       tibble(nameAsset, idAssetType = types,
@@ -1072,7 +1078,7 @@ dtcc_recent_trades <-
             "Assets can only be:\n",
             assets_options %>% paste0(collapse = '\n')
           ) %>%
-            purrr::invoke(paste0, .)
+            do.call(paste0, .)
         )
       }
       df_types <-
@@ -1085,7 +1091,7 @@ dtcc_recent_trades <-
 
     all_data <-
       urls %>%
-      sort(decreasing = T) %>%
+      sort(decreasing = TRUE) %>%
       future_map_dfr(function(x) {
         .get_data_today(dtcc_url = x) %>%
           mutate(urlData = x)
@@ -1129,8 +1135,8 @@ dtcc_recent_trades <-
         ' DTCC most recent cleared trades for ',
         Sys.Date()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
     if (nest_data) {
       all_data <-

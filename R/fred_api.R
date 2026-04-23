@@ -6,7 +6,7 @@
 import_rda_file <-
   function(file = NULL,
            return_tibble = TRUE) {
-    if (file %>% purrr::is_null()) {
+    if (file %>% is.null()) {
       stop("Please enter a file path")
     }
 
@@ -129,7 +129,7 @@ parse_table_node <-
           idSeriesDetailed = series_ids,
           dateUpdated = dates
         ) %>%
-        mutate(countItem = 1:n())
+        mutate(countItem = seq_len(n()))
 
       df_series <-
         df_series %>%
@@ -154,7 +154,7 @@ parse_table_node <-
 
       df_tags <-
         tibble(countItemPage = x, nameTag = tags) %>%
-        mutate(countItem = 1:n())
+        mutate(countItem = seq_len(n()))
 
       df_tags <-
         df_tags %>%
@@ -205,7 +205,7 @@ get_fred_page_count <-
 .parse_fred_ft_html <-
   function(url = "https://fred.stlouisfed.org/search?st=China",
            page_no = 1,
-           return_message = T) {
+           return_message = TRUE) {
     page <-
       url %>%
       read_html()
@@ -349,7 +349,7 @@ get_fred_page_count <-
     .parse_fred_ft_html_safe <-
       purrr::possibly(.parse_fred_ft_html, tibble())
     df_data <-
-      1:nrow(df_urls) %>%
+      seq_len(nrow(df_urls)) %>%
       future_map_dfr(function(x) {
         .parse_fred_ft_html(
           url = df_urls$urlPage[[x]],
@@ -386,7 +386,7 @@ get_fred_page_count <-
     all_data <-
       all_data %>%
       group_by(idSeries) %>%
-      mutate(idRow = 1:n()) %>%
+      mutate(idRow = seq_len(n())) %>%
       ungroup() %>%
       filter(idRow == min(idRow)) %>%
       select(-idRow)
@@ -404,7 +404,7 @@ parse_fred_page <-
     no_page <-
       url %>%
       str_split('&pageID=') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[2]] %>%
       readr::parse_number()
 
@@ -479,7 +479,7 @@ parse_fred_page <-
       select(idPage, everything())
 
     if (return_message) {
-      glue::glue("Parsed {url}") %>% cat(fill = T)
+      glue::glue("Parsed {url}") %>% cat(fill = TRUE)
     }
     df_items
   }
@@ -503,7 +503,7 @@ parse_fred_page <-
 
     df_fred_ids <-
       df_fred_ids %>%
-      mutate(idItem = 1:n()) %>%
+      mutate(idItem = seq_len(n())) %>%
       select(idItem, everything())
 
     return(df_fred_ids)
@@ -553,7 +553,7 @@ dictionary_fred_ids <-
     fred_files <-
       c('all',  'series', 'tags', 'subindicies')
 
-    if (!fred_file %>% purrr::is_null()) {
+    if (!fred_file %>% is.null()) {
       fred_file <-
         fred_file %>%
         str_to_lower()
@@ -566,7 +566,7 @@ dictionary_fred_ids <-
       }
     }
 
-    if (fred_file %>% purrr::is_null()) {
+    if (fred_file %>% is.null()) {
       data <-
         "https://github.com/abresler/FRED_Dictionaries/blob/master/data/fred_series_data.rda?raw=true" %>%
         read_rda_file()
@@ -623,8 +623,9 @@ dictionary_fred_ids <-
 
 .parse_fred_search <-
   function(urls, return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res) {
       works <- res$status_code == 200
       if (works) {
@@ -664,15 +665,13 @@ dictionary_fred_ids <-
                  everything())
 
         if (return_message) {
-          glue::glue("Found {nrow(data)} FRED series for {search_term}") %>% cat(fill = T)
+          glue::glue("Found {nrow(data)} FRED series for {search_term}") %>% cat(fill = TRUE)
 
         }
         rm(res)
 
 
-        df <<-
-          df %>%
-          bind_rows(data)
+        state$rows[[length(state$rows) + 1L]] <- data
       }
     }
     failure <- function(msg) {
@@ -684,7 +683,7 @@ dictionary_fred_ids <-
       })
     multi_run()
 
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 .fred_terms_ids_json <-
@@ -735,7 +734,7 @@ dictionary_fred_ids <-
 fred_terms_ids <-
   function(search_terms = NULL,
            use_json_api = TRUE,
-           snake_names = F,
+           snake_names = FALSE,
            return_message = TRUE) {
     if (purrr::is_null(search_terms)) {
       stop("Please enter search terms")
@@ -773,7 +772,7 @@ fred_terms_ids <-
   function(tag = "interest rate",
            return_message = TRUE) {
     if (return_message) {
-      glue::glue("Searching for for tag {tag}\n") %>% cat(fill = T)
+      glue::glue("Searching for for tag {tag}\n") %>% cat(fill = TRUE)
     }
     term_slug <- tag %>% URLencode()
     search_url <-
@@ -787,7 +786,7 @@ fred_terms_ids <-
     .parse_fred_ft_html_safe <-
       purrr::possibly(.parse_fred_ft_html, tibble())
     df_data <-
-      1:nrow(df_urls) %>%
+      seq_len(nrow(df_urls)) %>%
       future_map_dfr(function(x) {
         .parse_fred_ft_html(
           url = df_urls$urlPage[[x]],
@@ -803,7 +802,7 @@ fred_terms_ids <-
       suppressMessages()
 
     if (return_message) {
-      glue::glue("Found {nrow(all_data)} FRED series for {tag}") %>% cat(fill = T)
+      glue::glue("Found {nrow(all_data)} FRED series for {tag}") %>% cat(fill = TRUE)
     }
 
     all_data
@@ -822,10 +821,10 @@ fred_terms_ids <-
 #' fred_tags(tags = c("spread", "swaps"))
 fred_tags <-
   function(tags = NULL,
-           return_message = T,
-           nest_data = F) {
+           return_message = TRUE,
+           nest_data = FALSE) {
 
-    if (tags %>% purrr::is_null()) {
+    if (tags %>% is.null()) {
       stop("Please Enter Tag")
     }
     .get_fred_tag_safe <-
@@ -895,7 +894,7 @@ fred_tags <-
       calculate_irr_periods_safe(
         dates = c(date_first, date_max),
         cash_flows = c(value_first, -value_last),
-        return_percentage = F,
+        return_percentage = FALSE,
         return_message = F
       )
 
@@ -978,12 +977,12 @@ fred_tags <-
         )
       )
 
-    if (transformation %>% purrr::is_null()) {
+    if (transformation %>% is.null()) {
       slug_transformation <-
         ''
     }
 
-    if (!transformation %>% purrr::is_null()) {
+    if (!transformation %>% is.null()) {
       search_transformation <-
         transformation %>%
         str_to_lower()
@@ -1020,10 +1019,10 @@ fred_tags <-
     symbol <-
       url %>%
       str_split('id=') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[2]] %>%
       str_split('\\&') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]]
 
     series_name <-
@@ -1096,8 +1095,8 @@ fred_tags <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
     return(df_data)
   }
@@ -1108,9 +1107,9 @@ fred_tags <-
            transformation = NULL,
            convert_date_time = TRUE,
            include_metadata = TRUE,
-           widen_data = F,
+           widen_data = FALSE,
            return_message = TRUE) {
-    if (symbol %>% purrr::is_null()) {
+    if (symbol %>% is.null()) {
       stop("Please enter a FRED series ID")
     }
     url <-
@@ -1183,10 +1182,10 @@ fred_tags <-
         ' values for ',
         data$nameSeries %>% unique(),
         ' from ',
-        df_data$dateData %>% min(na.rm = T),
+        df_data$dateData %>% min(na.rm = TRUE),
         ' to ',
-        df_data$dateData %>% max(na.rm = T)
-      ) %>% purrr::reduce(paste0) %>% cat(fill = T)
+        df_data$dateData %>% max(na.rm = TRUE)
+      ) %>% purrr::reduce(paste0) %>% cat(fill = TRUE)
     }
 
 
@@ -1225,7 +1224,7 @@ fred_tags <-
 fred_symbols <-
   function(symbols = c('DGS2', "DGS10", "DGS30"),
            transformations = c("default"),
-           widen_data = F,
+           widen_data = FALSE,
            convert_date_time = TRUE,
            nest_data = TRUE,
            include_metadata = TRUE,
@@ -1239,7 +1238,7 @@ fred_symbols <-
       purrr::possibly(.fred_symbol, tibble())
 
     all_data <-
-      1:nrow(df_options) %>%
+      seq_len(nrow(df_options)) %>%
       future_map_dfr(function(x) {
         fred_symbol_safe(
           symbol = df_options$symbol[[x]],
@@ -1273,7 +1272,7 @@ fred_symbols <-
 # description -------------------------------------------------------------
 
 .parse_fred_description_url <-
-  function(url = "https://fred.stlouisfed.org/series/A756RA3A086NBEA", include_tags = F) {
+  function(url = "https://fred.stlouisfed.org/series/A756RA3A086NBEA", include_tags = FALSE) {
     page <-
     url %>%
     read_html()
@@ -1284,10 +1283,10 @@ fred_symbols <-
     html_text() %>%
     str_trim() %>%
     str_split(", \n ") %>%
-    flatten_chr() %>%
+    list_c() %>%
     str_trim() %>%
     str_split("\n|\\;") %>%
-    flatten_chr() %>%
+    list_c() %>%
     str_trim() %>%
     purrr::discard(function(x){ x %in% c("", url)}) %>%
     str_c(collapse =  " -- ")
@@ -1325,7 +1324,7 @@ fred_symbols <-
 
   df_cat <-
     tibble(nameCategory = categories) %>%
-    mutate(numberCategory = 1:n()) %>%
+    mutate(numberCategory = seq_len(n())) %>%
     select(numberCategory, everything())
 
   tags <-
@@ -1334,7 +1333,7 @@ fred_symbols <-
 
   df_tags <-
     tibble(nameTag = tags) %>%
-    mutate(numberTag = 1:n()) %>%
+    mutate(numberTag = seq_len(n())) %>%
     select(numberTag, everything())
 
   data <-
@@ -1353,18 +1352,18 @@ fred_symbols <-
     "https://fred.stlouisfed.org/series/A862RS2Q224SBEA",
     "https://fred.stlouisfed.org/series/SMU34350842023600001A"
   ),
-  include_tags = F,
+  include_tags = FALSE,
   return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
 
+    state$rows <- list()
     success <- function(res) {
       url <-
         res$url
 
       if (return_message) {
         glue::glue("Parsing {url}") %>%
-          cat(fill = T)
+          cat(fill = TRUE)
       }
       .parse_fred_description_url_safe <-
         purrr::possibly(.parse_fred_description_url, tibble())
@@ -1373,9 +1372,7 @@ fred_symbols <-
         .parse_fred_description_url_safe(url = url, include_tags = include_tags)
 
 
-      df <<-
-        df %>%
-        bind_rows(all_data)
+      state$rows[[length(state$rows) + 1L]] <- all_data
     }
     failure <- function(msg) {
       tibble()
@@ -1793,9 +1790,9 @@ plot_time_series_static <-
       data$frequencyData %>% unique() %>% str_to_lower()
     series_name <- data %>% pull(nameSeries) %>% unique()
     start_date <-
-      data %>% pull(dateData) %>% min(na.rm = T) %>% .[[1]]
+      data %>% pull(dateData) %>% min(na.rm = TRUE) %>% .[[1]]
     end_date <-
-      data %>% pull(dateData) %>% max(na.rm = T) %>% .[[1]]
+      data %>% pull(dateData) %>% max(na.rm = TRUE) %>% .[[1]]
     data <-
       data %>%
       select(-c(nameSeries, typeValue, nameSource))
@@ -1827,7 +1824,7 @@ plot_time_series_static <-
 
     is_percent <- type %>% stringr::str_detect('PERCENT')
 
-    if (!data_source %>% purrr::is_null()) {
+    if (!data_source %>% is.null()) {
       caption_text <-
         glue::glue(
           "Source data: {data_source}\nReported {data_frequency}\nvia FRED from fundManageR"
@@ -1991,7 +1988,7 @@ plot_time_series_static <-
           plot +
           geom_rect(
             data = df_recessions ,
-            inherit.aes = F,
+            inherit.aes = FALSE,
             aes(
               xmin = dateStart,
               xmax = dateEnd,

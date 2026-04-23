@@ -23,7 +23,7 @@ ycombinator_alumni <-
            return_message = TRUE) {
     data <-
       "https://api.ycombinator.com/companies/export.json" %>%
-      fromJSON(simplifyDataFrame = T, flatten = T) %>%
+      fromJSON(simplifyDataFrame = TRUE, flatten = TRUE) %>%
       as_tibble() %>%
       set_names(
         c(
@@ -128,7 +128,7 @@ cb_unicorns <-
       "https://www.cbinsights.com/research-unicorn-companies" %>%
       read_html()
 
-    raw_table <- page %>% html_table(fill = T) %>% first() %>% as_tibble()
+    raw_table <- page %>% html_table(fill = TRUE) %>% first() %>% as_tibble()
 
     # Handle dynamic column structure - CB Insights adds columns over time
     expected_cols_7 <- c(
@@ -166,7 +166,7 @@ cb_unicorns <-
         amountValuation = readr::parse_number(amountValuation) * 1000000000,
         dateJoined  = lubridate::mdy(dateJoined)
       ) %>%
-      mutate(id = 1:n(),
+      mutate(id = seq_len(n()),
              amountValuation = currency(amountValuation, digits = 0),
       ) %>%
       select(id, everything())

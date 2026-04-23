@@ -26,7 +26,7 @@
     future_map_dfr(function(x) {
       year <- x %>% readr::parse_number()
       quarter <-
-        x %>% str_to_lower %>% str_split('\\ ') %>% flatten_chr() %>% .[[1]]
+        x %>% str_to_lower %>% str_split('\\ ') %>% list_c() %>% .[[1]]
       tibble(yearData = year,
                  nameQuarter = quarter) %>%
         left_join(df_quarters,by = "nameQuarter") %>%
@@ -53,8 +53,14 @@
     tf <-
       tempfile(tmpdir = td, fileext = ".xlsx")
 
-    url %>%
-      curl::curl_download(destfile = tf)
+    dl_ok <- tryCatch({
+      curl::curl_download(url, destfile = tf, mode = "wb")
+      TRUE
+    }, error = function(e) {
+      warning("Download failed for ", url, ": ", conditionMessage(e))
+      FALSE
+    })
+    if (!dl_ok) return(tibble())
 
     sheet_names <-
       tf %>%
@@ -132,7 +138,7 @@
       select(-c(nameQuarter, dateEnd))
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     unlink(tf)
     unlink(td)
@@ -186,7 +192,7 @@ dallas_fed_international_housing <-
       suppressWarnings()
 
     spec_ind <-
-      !indicies %>% purrr::is_null()
+      !indicies %>% is.null()
     if (spec_ind) {
       indicies <-
         indicies %>% str_to_upper()

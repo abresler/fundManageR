@@ -4,7 +4,7 @@
 \alias{fred_tags}
 \title{FRED tag search}
 \usage{
-fred_tags(tags = NULL, return_message = T, nest_data = F)
+fred_tags(tags = NULL, return_message = TRUE, nest_data = FALSE)
 }
 \arguments{
 \item{tags}{vector of tags}

@@ -4,7 +4,7 @@
 \alias{visualize_tibble}
 \title{Data frame visualization}
 \usage{
-visualize_tibble(data, edit = F)
+visualize_tibble(data, edit = FALSE)
 }
 \arguments{
 \item{data}{A data frame}

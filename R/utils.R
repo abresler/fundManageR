@@ -241,7 +241,7 @@ tidy_column_relations <-
 
     data <-
       data %>%
-      mutate(idRow = 1:n()) %>%
+      mutate(idRow = seq_len(n())) %>%
       select(idRow, everything())
     df <-
       tibble()
@@ -294,7 +294,7 @@ tidy_column_relations <-
 
     if (has_lists) {
       df_list <-
-        1:nrow(df_lists) %>%
+        seq_len(nrow(df_lists)) %>%
         future_map_dfr(function(x) {
           column <-
             df_lists$nameColumn[x]
@@ -309,12 +309,12 @@ tidy_column_relations <-
             data %>%
             select(idRow, any_of(c(column_keys, column)))
           col_length_df <-
-            1:nrow(df) %>%
+            seq_len(nrow(df)) %>%
             future_map_dfr(function(x) {
               value <-
                 df[[column]][[x]]
 
-              if (value %>% purrr::is_null()) {
+              if (value %>% is.null()) {
                 return(tibble(idRow = x))
               }
               columns_matching <-

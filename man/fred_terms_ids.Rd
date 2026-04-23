@@ -7,7 +7,7 @@
 fred_terms_ids(
   search_terms = NULL,
   use_json_api = TRUE,
-  snake_names = F,
+  snake_names = FALSE,
   return_message = TRUE
 )
 }

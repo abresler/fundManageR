@@ -11,8 +11,8 @@
     sale_date = Sys.Date(),
     pct_lp = .8,
     promote_structure = c("20 over 12", "40 over 18"),
-    has_guarantee = F,
-    calculate_irr = T,
+    has_guarantee = FALSE,
+    calculate_irr = TRUE,
     return_message = T
     ) {
     if (length(net_operating_income) == 0) {
@@ -158,8 +158,8 @@ residual_values <-
     cost_of_sale = .05,
     debt = 0,
     sale_date = Sys.Date(),
-    has_guarantee = F,
-    return_message = T) {
+    has_guarantee = FALSE,
+    return_message = TRUE) {
     df_inputs <-
       expand.grid(
         net_operating_income = net_operating_income,
@@ -174,7 +174,7 @@ residual_values <-
     .residual_value_safe <- purrr::possibly(.residual_value, tibble())
 
     all_data <-
-      1:nrow(df_inputs) %>%
+      seq_len(nrow(df_inputs)) %>%
       map_dfr(function(x) {
         df_row <- df_inputs %>% slice(x)
         if (return_message) {
