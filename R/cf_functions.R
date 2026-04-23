@@ -12,8 +12,12 @@
 #' @importFrom formattable currency
 parse_for_currency_value <-
   function(x) {
+    if (is.numeric(x)) {
+      return(formattable::currency(x))
+    }
     value <-
       x %>%
+      as.character() %>%
       readr::parse_number() %>%
       formattable::currency()
     return(value)
@@ -34,11 +38,16 @@ parse_for_currency_value <-
 #' @importFrom formattable percent
 parse_for_percentage <-
   function(x) {
-    value <-
-      x %>%
-      parse_number()
+    if (is.numeric(x)) {
+      value <- x
+    } else {
+      value <-
+        x %>%
+        as.character() %>%
+        parse_number()
+    }
 
-    if (value >= 1) {
+    if (!is.na(value) && value >= 1) {
       value <-
         value /  100
     }
@@ -62,9 +71,13 @@ parse_for_percentage <-
 #' @importFrom readr parse_number
 parse_multiple <-
   function(x) {
+    if (is.numeric(x)) {
+      return(x)
+    }
     value <-
       x %>%
-      parse_number
+      as.character() %>%
+      parse_number()
 
     return(value)
   }
@@ -90,10 +103,13 @@ cap_rate_valuation <-
            net_operating_income = "$27,500,000",
            cost_of_sale = "5%",
            debt_balance = "$350,000,000",
-           return_wide = T) {
+           return_wide = TRUE) {
+    if (is.numeric(cap_rate) && cap_rate <= 0) {
+      stop("cap_rate must be > 0")
+    }
     noi <-
       net_operating_income %>%
-      parse_for_currency_value
+      parse_for_currency_value()
 
     debt <-
       debt_balance %>%
@@ -108,7 +124,7 @@ cap_rate_valuation <-
       parse_for_percentage()
 
     amountValuationGross <-
-      noi  / cap_rate
+      noi  / as.numeric(pct_cap_rate)
 
     amountCostSale <-
       -((pct_sale_cost %>% as.numeric) * amountValuationGross)
@@ -123,7 +139,10 @@ cap_rate_valuation <-
       -max(0, amountValuationNet + amountDebtRepayment) %>% currency
 
     cash_check <-
-      !amountValuationGross + amountCostSale + amountDebtRepayment + amountEquityDistribution == 0
+      !isTRUE(dplyr::near(
+        amountValuationGross + amountCostSale + amountDebtRepayment + amountEquityDistribution,
+        0
+      ))
 
     if (cash_check) {
       stop("Cash waterfall does not tie")
@@ -178,15 +197,18 @@ cap_rate_valuation <-
 #'   cost of sale, debt repayment, and equity distribution
 #' @keywords internal
 #' @family residual value calculation
-ebtida_multiple_value <-
+ebitda_multiple_value <-
   function(ebitda_multiple = 10,
            ebitda = "$27,500,000",
            cost_of_sale = "5%",
            debt_balance = "$350,000,000",
-           return_wide = T) {
+           return_wide = TRUE) {
+    if (is.numeric(ebitda_multiple) && ebitda_multiple <= 0) {
+      stop("ebitda_multiple must be > 0")
+    }
     ebitda <-
       ebitda %>%
-      parse_for_currency_value
+      parse_for_currency_value()
 
     debt <-
       debt_balance %>%
@@ -216,7 +238,10 @@ ebtida_multiple_value <-
       -max(0, amountValuationNet + amountDebtRepayment) %>% currency
 
     cash_check <-
-      !amountValuationGross + amountCostSale + amountDebtRepayment + amountEquityDistribution == 0
+      !isTRUE(dplyr::near(
+        amountValuationGross + amountCostSale + amountDebtRepayment + amountEquityDistribution,
+        0
+      ))
 
     if (cash_check) {
       stop("Cash waterfall does not tie")
@@ -274,34 +299,44 @@ ebtida_multiple_value <-
 #'
 #' @examples
 #' calculate_residual_valuation_cap_rates(cap_rates = c(.05, .0525, .06, .2),
-#' net_operating_income = "$27,500,000", cost_of_sale = "5%",debt_balance = "$350,000,000", return_wide = T)
+#' net_operating_income = "$27,500,000", cost_of_sale = "5%",debt_balance = "$350,000,000", return_wide = TRUE)
 calculate_residual_valuation_cap_rates <-
   function(cap_rates = c(.05, .0525, .06, .2),
            net_operating_income = "$27,500,000",
            cost_of_sale = "5%",
            debt_balance = "$350,000,000",
-           return_wide = T) {
+           return_wide = TRUE) {
+    n_scenarios <- length(cap_rates) * length(net_operating_income) *
+      length(cost_of_sale) * length(debt_balance)
+    if (n_scenarios > 1e6) {
+      stop("Refusing to build > 1,000,000 scenarios (got ", n_scenarios, ")")
+    }
     scenario_matrix <-
       expand.grid(
         cap_rate = cap_rates,
         noi = net_operating_income,
         cost_sale = cost_of_sale,
-        debt = debt_balance
+        debt = debt_balance,
+        stringsAsFactors = FALSE
       ) %>%
       as_tibble
 
+    if (nrow(scenario_matrix) == 0) {
+      return(tibble())
+    }
+
     scenario_df <-
-      1:nrow(scenario_matrix) %>%
-      future_map_dfr(function(x) {
+      seq_len(nrow(scenario_matrix)) %>%
+      purrr::map_dfr(function(x) {
         cap_rate_valuation(
           cap_rate = scenario_matrix$cap_rate[[x]],
           net_operating_income = scenario_matrix$noi[[x]],
           cost_of_sale = scenario_matrix$cost_sale[[x]],
           debt_balance = scenario_matrix$debt[[x]],
-          return_wide = T
+          return_wide = TRUE
         )
       }) %>%
-      mutate(idScenario = 1:n()) %>%
+      mutate(idScenario = seq_len(n())) %>%
       dplyr::select(idScenario, everything())
 
     scenario_df <-
@@ -348,34 +383,44 @@ calculate_residual_valuation_cap_rates <-
 #' @family calculation
 #' @family residual value calculation
 #' @examples
-#' calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20), ebitda = "$27,500,000", cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = T)
+#' calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20), ebitda = "$27,500,000", cost_of_sale = "5%", debt_balance = "$350,000,000", return_wide = TRUE)
 calculate_residual_valuation_ebitda_multiples <-
   function(ebitda_multiples = c(5, 10, 15, 20),
            ebitda = "$27,500,000",
            cost_of_sale = "5%",
            debt_balance = "$350,000,000",
-           return_wide = T) {
+           return_wide = TRUE) {
+    n_scenarios <- length(ebitda_multiples) * length(ebitda) *
+      length(cost_of_sale) * length(debt_balance)
+    if (n_scenarios > 1e6) {
+      stop("Refusing to build > 1,000,000 scenarios (got ", n_scenarios, ")")
+    }
     scenario_matrix <-
       expand.grid(
         ebitda_multiple = ebitda_multiples,
         ebitda = ebitda,
         cost_sale = cost_of_sale,
-        debt = debt_balance
+        debt = debt_balance,
+        stringsAsFactors = FALSE
       ) %>%
       as_tibble
 
+    if (nrow(scenario_matrix) == 0) {
+      return(tibble())
+    }
+
     scenario_df <-
-      1:nrow(scenario_matrix) %>%
-      future_map_dfr(function(x) {
-        ebtida_multiple_value(
+      seq_len(nrow(scenario_matrix)) %>%
+      purrr::map_dfr(function(x) {
+        ebitda_multiple_value(
           ebitda_multiple = scenario_matrix$ebitda_multiple[[x]],
           ebitda = scenario_matrix$ebitda[[x]],
           cost_of_sale = scenario_matrix$cost_sale[[x]],
           debt_balance = scenario_matrix$debt[[x]],
-          return_wide = T
+          return_wide = TRUE
         )
       }) %>%
-      mutate(idScenario = 1:n()) %>%
+      mutate(idScenario = seq_len(n())) %>%
       dplyr::select(idScenario, everything())
 
     scenario_df <-
@@ -459,27 +504,36 @@ post_money_valuation <-
 #' @export
 #'
 #' @examples
-#' calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold = "10%", return_wide = T)
+#' calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold = "10%", return_wide = TRUE)
 calculate_valuation_post_money <-
   function(pre_money_valuation = "$45,000,000",
            percent_sold = "10%",
-           return_wide = T) {
+           return_wide = TRUE) {
+    n_scenarios <- length(pre_money_valuation) * length(percent_sold)
+    if (n_scenarios > 1e6) {
+      stop("Refusing to build > 1,000,000 scenarios (got ", n_scenarios, ")")
+    }
     scenario_matrix <-
       expand.grid(
         pre_money_valuation = pre_money_valuation,
-        percent_sold = percent_sold
+        percent_sold = percent_sold,
+        stringsAsFactors = FALSE
       ) %>%
       as_tibble
 
+    if (nrow(scenario_matrix) == 0) {
+      return(tibble())
+    }
+
     scenario_df <-
-      1:nrow(scenario_matrix) %>%
-      future_map_dfr(function(x) {
+      seq_len(nrow(scenario_matrix)) %>%
+      purrr::map_dfr(function(x) {
         post_money_valuation(
           pre_money_valuation = scenario_matrix$pre_money_valuation[[x]],
           percent_sold = scenario_matrix$percent_sold[[x]]
         )
       }) %>%
-      mutate(idScenario = 1:n()) %>%
+      mutate(idScenario = seq_len(n())) %>%
       dplyr::select(idScenario, everything())
 
     scenario_df <-
@@ -547,10 +601,10 @@ calculate_share_proceeds <-
 #' )
 calculate_basis <-
   function(purchase_price = "$10,000,000",
-           capitalized_acquisition_costs = "$300,0000",
+           capitalized_acquisition_costs = "$300,000",
            capital_investment = "$1,200,000") {
 
-    if (purchase_price %>% is_null) {
+    if (is.null(purchase_price)) {
       stop("Please enter a purchase price")
     }
 
@@ -558,22 +612,22 @@ calculate_basis <-
       purchase_price %>%
       parse_for_currency_value()
 
-    if (!capitalized_acquisition_costs %>% is_null) {
+    if (!is.null(capitalized_acquisition_costs)) {
       amountCapitalizedCosts <-
         capitalized_acquisition_costs %>%
         parse_for_currency_value()
     } else {
       amountCapitalizedCosts <-
-        0
+        formattable::currency(0)
     }
 
-    if (!capitalized_acquisition_costs %>% is_null) {
+    if (!is.null(capital_investment)) {
       amountCapitalInvestment <-
         capital_investment %>%
         parse_for_currency_value()
     } else {
-      capital_investment <-
-        0
+      amountCapitalInvestment <-
+        formattable::currency(0)
     }
 
     basis_df <-
@@ -615,14 +669,14 @@ calculate_capitalization <-
            capitalized_acquisition_costs = "$300,000",
            capital_investment = "$0",
            loan_to_cost = .7,
-           borrow_capital_investment = T,
-           borrow_capitalized_costs = F,
+           borrow_capital_investment = TRUE,
+           borrow_capitalized_costs = FALSE,
            leverage_threshold = .95) {
-    if (loan_to_cost %>% is_null()) {
+    if (is.null(loan_to_cost)) {
       stop("Please enter a loan to cost even if it is zero")
     }
 
-    if (leverage_threshold %>% is_null()) {
+    if (is.null(leverage_threshold)) {
       leverage_threshold <-
         1
     }
@@ -693,8 +747,8 @@ calculate_capitalization <-
 #' @export
 #' @family calculation
 #' @family leveraged finance calculation
-#' @importFrom lubridate ymd %m+%
-#' @importFrom timeDate timeLastDayInMonth
+#' @importFrom lubridate ymd %m+% ceiling_date days
+#' @importFrom dplyr if_else
 #'
 #' @examples
 #' get_data_monthly_periods(
@@ -706,55 +760,26 @@ get_data_monthly_periods <-
   function(start_date = "2016-06-01",
            term_years = 25,
            term_months = 0) {
-    periods <-
-      term_years * 12 + term_months
-
-    periods <-
-      0:periods
+    n_periods <- term_years * 12 + term_months
+    if (is.null(n_periods) || is.na(n_periods) || n_periods < 0) {
+      stop("term_years*12 + term_months must be >= 0")
+    }
+    periods <- 0:n_periods
 
     start_date <-
-      start_date %>% lubridate::ymd %>% as.Date()
+      start_date %>% lubridate::ymd() %>% as.Date()
 
-    get_end_of_period <-
-      function(period = 0) {
-        if (period == 0) {
-          period_date <-
-            start_date %m+% months(period) %>%
-            as.character() %>%
-            as.Date()
-        }
+    period_anchor <- pmax(periods - 1L, 0L)
+    anchor_dates <- start_date %m+% months(period_anchor)
+    eom_dates <- (lubridate::ceiling_date(anchor_dates, "month") - lubridate::days(1)) %>%
+      as.Date()
 
-        if (period == 1) {
-          period_date <-
-            start_date %m+% months(0) %>%
-            timeDate::timeLastDayInMonth %>%
-            as.character() %>%
-            as.Date()
-        }
+    period_dates <- dplyr::if_else(periods == 0L, start_date, eom_dates)
 
-        if (period > 1) {
-          period_date <-
-            start_date %m+% months(period - 1) %>%
-            timeDate::timeLastDayInMonth %>%
-            as.character() %>%
-            as.Date()
-        }
-        period_df <-
-          tibble(idPeriod = period, datePeriod = period_date)
-        return(period_df)
-
-      }
-
-    all_periods <-
-      periods %>%
-      future_map(function(x) {
-        get_end_of_period(period = x)
-      }) %>%
-      compact %>%
-      bind_rows()
-
-    all_periods <-
-      all_periods %>%
+    all_periods <- tibble(
+      idPeriod = periods,
+      datePeriod = period_dates
+    ) %>%
       mutate(yearPeriod = ifelse(idPeriod == 0, 0, (idPeriod %/% 12) + 1)) %>%
       dplyr::select(idPeriod, yearPeriod, everything())
 
@@ -778,13 +803,14 @@ get_data_monthly_periods <-
 pmt <-
   function (r, n, pv, fv, type = 0) {
     if (type != 0 && type != 1) {
-      print("Error: type should be 0 or 1!")
+      stop("type should be 0 (end of period) or 1 (beginning of period)")
     }
-    else {
-      pmt <- (pv + fv / (1 + r) ^ n) * r / (1 - 1 / (1 + r) ^ n) * (-1) *
-        (1 + r) ^ (-1 * type)
-      return(pmt)
+    if (is.null(n) || is.na(n) || n <= 0) {
+      stop("n (periods) must be > 0")
     }
+    pmt <- (pv + fv / (1 + r) ^ n) * r / (1 - 1 / (1 + r) ^ n) * (-1) *
+      (1 + r) ^ (-1 * type)
+    return(pmt)
   }
 
 #' Loan payment calculation
@@ -814,15 +840,15 @@ pmt <-
 #' @family leveraged finance calculation
 #' @family calculation
 #' @examples
-#' calculate_loan_payment(loan_start_date = "2016-06-01", amount_initial_draw = 3000, is_interest_only = F, interest_only_periods = 24,
+#' calculate_loan_payment(loan_start_date = "2016-06-01", amount_initial_draw = 3000, is_interest_only = FALSE, interest_only_periods = 24,
 #' interest_rate = "10%", is_actual_360 = TRUE, amortization_years = 10, amortization_months = 0,
 #' term_years = 10, term_months = 0, pct_loan_fee = 0, balloon_year = 10,
 #' override_monthly_interest = FALSE, interest_reserve_period = 0, balloon_month = 0,
-#' return_annual_summary = F)
+#' return_annual_summary = FALSE)
 calculate_loan_payment <-
   function(loan_start_date = "2016-06-01",
            amount_initial_draw = 3000,
-           is_interest_only = F,
+           is_interest_only = FALSE,
            interest_only_periods = 24,
            interest_rate = "10%",
            is_actual_360 = TRUE,
@@ -835,13 +861,19 @@ calculate_loan_payment <-
            override_monthly_interest = FALSE,
            interest_reserve_period = 0,
            balloon_month = 0,
-           return_annual_summary = F) {
+           return_annual_summary = FALSE) {
     options(digits = 10)
+
+    amortization_periods <-
+      (amortization_years * 12) + amortization_months
+    if (amortization_periods <= 0) {
+      stop("amortization_years*12 + amortization_months must be > 0")
+    }
 
     interest_rate <-
       interest_rate %>%
       parse_for_percentage()
-    if (is_actual_360 == T) {
+    if (isTRUE(is_actual_360)) {
       daily_interest <-
         interest_rate / 360
       net_rate <-
@@ -853,9 +885,6 @@ calculate_loan_payment <-
         interest_rate
     }
 
-    amortization_periods <-
-      (amortization_years * 12) + amortization_months
-
     loan_periods <-
       (balloon_year * 12) + balloon_month
 
@@ -866,21 +895,23 @@ calculate_loan_payment <-
     loan_period_df <-
       loan_period_df %>%
       mutate(
-        isIO = ifelse(is_interest_only == T &
-                        idPeriod <= interest_only_periods, T, F),
-        isActiveLoan = ifelse(idPeriod <= loan_periods, T, F),
+        isIO = ifelse(isTRUE(is_interest_only) &
+                        idPeriod <= interest_only_periods, TRUE, FALSE),
+        isActiveLoan = ifelse(idPeriod <= loan_periods, TRUE, FALSE),
         amountInitialDraw = ifelse(idPeriod == 0, amount_initial_draw, 0),
         amountLoanFee = amountInitialDraw * pct_loan_fee
       )
 
     loan_period_df <-
       loan_period_df %>%
-      dplyr::filter(isActiveLoan == T)
+      dplyr::filter(isActiveLoan)
 
     periods <-
       loan_period_df$idPeriod
-    all_payment_data <-
-      tibble()
+    period_rows <- vector("list", length(periods))
+    row_idx <- 0L
+    cum_initial_draw <- 0
+    cum_additional_draw <- 0
 
     for (period in periods) {
       period_index <-
@@ -919,15 +950,13 @@ calculate_loan_payment <-
           mutate(balanceEnd = amountInitialDraw + amountAdditionalDraw)
       }
       if (period > 0) {
-        initial_balance <-
-          all_payment_data$balanceEnd[period_index - 1]
+        prev_row <- period_rows[[row_idx]]
+        initial_balance <- prev_row$balanceEnd
 
         total_balance <-
           initial_balance + drawInitial + drawAdditional
 
-        balance_basis <-
-          (all_payment_data$amountInitialDraw %>% sum()) +
-          all_payment_data$amountAdditionalDraw %>% sum()
+        balance_basis <- cum_initial_draw + cum_additional_draw
 
         start_month <-
           timeDate::timeFirstDayInMonth(datePeriod) %>% as.Date()
@@ -938,7 +967,7 @@ calculate_loan_payment <-
         month_days <-
           as.numeric(days, units = 'days')
 
-        if (override_monthly_interest == T) {
+        if (isTRUE(override_monthly_interest)) {
           monthly_interest <-
             net_rate / 12
         } else {
@@ -955,7 +984,7 @@ calculate_loan_payment <-
             0
         }
 
-        if (is_interest_only == T) {
+        if (isTRUE(is_interest_only)) {
           paymentTotal <-
             paymentInterest
         } else {
@@ -1001,11 +1030,13 @@ calculate_loan_payment <-
 
       }
 
-      all_payment_data <-
-        month_df %>%
-        bind_rows(all_payment_data) %>%
-        arrange((idPeriod))
+      row_idx <- row_idx + 1L
+      period_rows[[row_idx]] <- month_df
+      cum_initial_draw <- cum_initial_draw + drawInitial
+      cum_additional_draw <- cum_additional_draw + drawAdditional
     }
+
+    all_payment_data <- dplyr::bind_rows(period_rows)
 
     all_payment_data <-
       all_payment_data %>%
@@ -1024,7 +1055,7 @@ calculate_loan_payment <-
                                  0)) %>%
       dplyr::select(yearPeriod, everything())
 
-    if (return_annual_summary == T) {
+    if (isTRUE(return_annual_summary)) {
       all_payment_data <-
         all_payment_data %>%
         group_by(yearPeriod) %>%
@@ -1087,22 +1118,21 @@ calculate_loan_payment <-
 #' )
 calculate_average_payment <-
   function(amount_initial_draw = 3000,
-           is_interest_only = F,
+           is_interest_only = FALSE,
            interest_only_periods = 24,
            interest_rate = "10%",
-           is_actual_360 = T,
+           is_actual_360 = TRUE,
            amortization_years = 10,
            amortization_months = 0,
            term_years = 10,
            term_months = 0,
            pct_loan_fee = 0,
            balloon_year = 10,
-           override_monthly_interest = F,
+           override_monthly_interest = FALSE,
            interest_reserve_period = 0,
            balloon_month = 0) {
-    library(lubridate)
     first_of_the_month <-
-      (ceiling_date((Sys.Date() %m+% months(0)), "month") - days(1)) + 1
+      as.character((lubridate::ceiling_date((Sys.Date() %m+% months(0)), "month") - lubridate::days(1)) + 1)
 
     pmt_df <-
       calculate_loan_payment(
@@ -1119,21 +1149,23 @@ calculate_average_payment <-
         pct_loan_fee = pct_loan_fee,
         balloon_year = balloon_year,
         balloon_month = balloon_month,
-        return_annual_summary = F
+        override_monthly_interest = override_monthly_interest,
+        interest_reserve_period = interest_reserve_period,
+        return_annual_summary = FALSE
       )
 
     pmt_df <-
       pmt_df %>%
-      dplyr::filter(!idPeriod == 0) %>%
+      dplyr::filter(idPeriod > 0) %>%
       group_by(yearPeriod) %>%
       summarise(
-        paymentPrincipal = sum(paymentPrincipal, na.rm = T),
-        paymentInterest = sum(paymentInterest, na.rm = T)
+        paymentPrincipal = sum(paymentPrincipal, na.rm = TRUE),
+        paymentInterest = sum(paymentInterest, na.rm = TRUE)
       ) %>%
       ungroup %>%
       summarise(
-        meanPrincipal = mean(paymentPrincipal, na.rm = T) %>% formattable::currency(),
-        meanInterest = mean(paymentInterest, na.rm = T) %>% formattable::currency()
+        meanPrincipal = mean(paymentPrincipal, na.rm = TRUE) %>% formattable::currency(),
+        meanInterest = mean(paymentInterest, na.rm = TRUE) %>% formattable::currency()
       ) %>%
       mutate(meanPayment = meanPrincipal + meanInterest)
 
@@ -1178,8 +1210,8 @@ calculate_leverage_metric <-
            revenue = "$1,500,000",
            expenses = "$115,000",
            loan_to_cost = .7,
-           borrow_capital_investment = F,
-           borrow_capitalized_costs = T,
+           borrow_capital_investment = FALSE,
+           borrow_capitalized_costs = TRUE,
            leverage_threshold = .95,
            is_interest_only = TRUE,
            interest_only_periods = 12,
@@ -1192,7 +1224,9 @@ calculate_leverage_metric <-
            pct_loan_fee = 0,
            balloon_year = 10,
            balloon_month = 0,
-           return_message = F) {
+           override_monthly_interest = FALSE,
+           interest_reserve_period = 0,
+           return_message = FALSE) {
     basis_df <-
       calculate_capitalization(
         purchase_price = purchase_price,
@@ -1261,7 +1295,11 @@ calculate_leverage_metric <-
         ratioDSCRMean = (amountEBITDA_NOI / -meanPayment) %>% as.numeric() %>% formattable::digits(3),
         pctCashOnCashMean = (amountLNCFMean / -amountEquity) %>% formattable::percent(),
         pctReturnOnEquity = ((amountEBITDA_NOI + meanInterest) / -amountEquity) %>% formattable::percent(),
-        rule72Multiple2x = (72 / (pctCashOnCashMean * 100)) %>% as.numeric()
+        rule72Multiple2x = ifelse(
+          is.na(pctCashOnCashMean) | as.numeric(pctCashOnCashMean) == 0,
+          NA_real_,
+          72 / (as.numeric(pctCashOnCashMean) * 100)
+        )
       )
     if (return_message) {
       metric_message <-
@@ -1289,7 +1327,7 @@ calculate_leverage_metric <-
           ' years\n'
         )
 
-      metric_message %>% cat(fill = T)
+      metric_message %>% cat(fill = TRUE)
     }
 
     return(data)
@@ -1348,8 +1386,8 @@ calculate_leverage_metrics <-
            expenses = 0,
            loan_to_cost = 0,
            interest_rate = 0,
-           borrow_capital_investment = F,
-           borrow_capitalized_costs = T,
+           borrow_capital_investment = FALSE,
+           borrow_capitalized_costs = TRUE,
            leverage_threshold = .95,
            is_interest_only = FALSE,
            interest_only_periods = 0,
@@ -1359,8 +1397,28 @@ calculate_leverage_metrics <-
            term_years = 30,
            term_months = 0,
            pct_loan_fee = 0,
-           return_wide = T,
-           return_message = T) {
+           balloon_year = NULL,
+           balloon_month = NULL,
+           return_wide = TRUE,
+           return_message = TRUE) {
+    if (is.null(balloon_year)) balloon_year <- term_years
+    if (is.null(balloon_month)) balloon_month <- term_months
+
+    n_scenarios <- prod(c(
+      length(purchase_price), length(capitalized_acquisition_costs),
+      length(capital_investment), length(revenue), length(expenses),
+      length(loan_to_cost), length(borrow_capital_investment),
+      length(borrow_capitalized_costs), length(leverage_threshold),
+      length(is_interest_only), length(interest_only_periods),
+      length(interest_rate), length(is_actual_360),
+      length(amortization_years), length(amortization_months),
+      length(term_years), length(term_months), length(pct_loan_fee),
+      length(balloon_year), length(balloon_month)
+    ))
+    if (n_scenarios > 1e6) {
+      stop("Refusing to build > 1,000,000 scenarios (got ", n_scenarios, ")")
+    }
+
     variable_matrix <-
       expand.grid(
         purchase_price = purchase_price,
@@ -1380,13 +1438,20 @@ calculate_leverage_metrics <-
         amortization_months = amortization_months,
         term_years = term_years,
         term_months = term_months,
-        pct_loan_fee = pct_loan_fee
+        pct_loan_fee = pct_loan_fee,
+        balloon_year = balloon_year,
+        balloon_month = balloon_month,
+        stringsAsFactors = FALSE
       ) %>%
       as_tibble()
 
+    if (nrow(variable_matrix) == 0) {
+      return(tibble())
+    }
+
     all_data <-
-      1:nrow(variable_matrix) %>%
-      future_map_dfr(function(x) {
+      seq_len(nrow(variable_matrix)) %>%
+      purrr::map_dfr(function(x) {
         calculate_leverage_metric(
           purchase_price = variable_matrix$purchase_price[[x]],
           capitalized_acquisition_costs = variable_matrix$capitalized_acquisition_costs[[x]],
@@ -1405,8 +1470,8 @@ calculate_leverage_metrics <-
           term_years = variable_matrix$term_years[[x]],
           term_months = variable_matrix$term_months[[x]],
           pct_loan_fee = variable_matrix$pct_loan_fee[[x]],
-          balloon_year = variable_matrix$term_years[[x]],
-          balloon_month = variable_matrix$term_months[[x]],
+          balloon_year = variable_matrix$balloon_year[[x]],
+          balloon_month = variable_matrix$balloon_month[[x]],
           return_message = return_message
         ) %>%
           mutate(idScenario = x) %>%

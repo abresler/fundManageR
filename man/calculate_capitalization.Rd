@@ -9,8 +9,8 @@ calculate_capitalization(
   capitalized_acquisition_costs = "$300,000",
   capital_investment = "$0",
   loan_to_cost = 0.7,
-  borrow_capital_investment = T,
-  borrow_capitalized_costs = F,
+  borrow_capital_investment = TRUE,
+  borrow_capitalized_costs = FALSE,
   leverage_threshold = 0.95
 )
 }

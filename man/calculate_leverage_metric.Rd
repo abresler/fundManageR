@@ -11,8 +11,8 @@ calculate_leverage_metric(
   revenue = "$1,500,000",
   expenses = "$115,000",
   loan_to_cost = 0.7,
-  borrow_capital_investment = F,
-  borrow_capitalized_costs = T,
+  borrow_capital_investment = FALSE,
+  borrow_capitalized_costs = TRUE,
   leverage_threshold = 0.95,
   is_interest_only = TRUE,
   interest_only_periods = 12,
@@ -25,7 +25,9 @@ calculate_leverage_metric(
   pct_loan_fee = 0,
   balloon_year = 10,
   balloon_month = 0,
-  return_message = F
+  override_monthly_interest = FALSE,
+  interest_reserve_period = 0,
+  return_message = FALSE
 )
 }
 \arguments{

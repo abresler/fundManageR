@@ -6,17 +6,17 @@
 \usage{
 calculate_average_payment(
   amount_initial_draw = 3000,
-  is_interest_only = F,
+  is_interest_only = FALSE,
   interest_only_periods = 24,
   interest_rate = "10\%",
-  is_actual_360 = T,
+  is_actual_360 = TRUE,
   amortization_years = 10,
   amortization_months = 0,
   term_years = 10,
   term_months = 0,
   pct_loan_fee = 0,
   balloon_year = 10,
-  override_monthly_interest = F,
+  override_monthly_interest = FALSE,
   interest_reserve_period = 0,
   balloon_month = 0
 )

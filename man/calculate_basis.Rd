@@ -6,7 +6,7 @@
 \usage{
 calculate_basis(
   purchase_price = "$10,000,000",
-  capitalized_acquisition_costs = "$300,0000",
+  capitalized_acquisition_costs = "$300,000",
   capital_investment = "$1,200,000"
 )
 }

@@ -12,8 +12,8 @@ calculate_leverage_metrics(
   expenses = 0,
   loan_to_cost = 0,
   interest_rate = 0,
-  borrow_capital_investment = F,
-  borrow_capitalized_costs = T,
+  borrow_capital_investment = FALSE,
+  borrow_capitalized_costs = TRUE,
   leverage_threshold = 0.95,
   is_interest_only = FALSE,
   interest_only_periods = 0,
@@ -23,8 +23,10 @@ calculate_leverage_metrics(
   term_years = 30,
   term_months = 0,
   pct_loan_fee = 0,
-  return_wide = T,
-  return_message = T
+  balloon_year = NULL,
+  balloon_month = NULL,
+  return_wide = TRUE,
+  return_message = TRUE
 )
 }
 \arguments{

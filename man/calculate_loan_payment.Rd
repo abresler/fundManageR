@@ -7,7 +7,7 @@
 calculate_loan_payment(
   loan_start_date = "2016-06-01",
   amount_initial_draw = 3000,
-  is_interest_only = F,
+  is_interest_only = FALSE,
   interest_only_periods = 24,
   interest_rate = "10\%",
   is_actual_360 = TRUE,
@@ -20,7 +20,7 @@ calculate_loan_payment(
   override_monthly_interest = FALSE,
   interest_reserve_period = 0,
   balloon_month = 0,
-  return_annual_summary = F
+  return_annual_summary = FALSE
 )
 }
 \arguments{
@@ -64,11 +64,11 @@ Calculate loan payment information
 based upon specified parameters.
 }
 \examples{
-calculate_loan_payment(loan_start_date = "2016-06-01", amount_initial_draw = 3000, is_interest_only = F, interest_only_periods = 24,
+calculate_loan_payment(loan_start_date = "2016-06-01", amount_initial_draw = 3000, is_interest_only = FALSE, interest_only_periods = 24,
 interest_rate = "10\%", is_actual_360 = TRUE, amortization_years = 10, amortization_months = 0,
 term_years = 10, term_months = 0, pct_loan_fee = 0, balloon_year = 10,
 override_monthly_interest = FALSE, interest_reserve_period = 0, balloon_month = 0,
-return_annual_summary = F)
+return_annual_summary = FALSE)
 }
 \seealso{
 Other leveraged finance calculation: 

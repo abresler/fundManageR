@@ -7,7 +7,7 @@
 calculate_valuation_post_money(
   pre_money_valuation = "$45,000,000",
   percent_sold = "10\%",
-  return_wide = T
+  return_wide = TRUE
 )
 }
 \arguments{
@@ -25,7 +25,7 @@ This function calculates the the post-money
 ownership splits of an entity for specified inputs.
 }
 \examples{
-calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold = "10\%", return_wide = T)
+calculate_valuation_post_money(pre_money_valuation = "$45,000,000", percent_sold = "10\%", return_wide = TRUE)
 }
 \seealso{
 Other calculation: 

@@ -9,7 +9,7 @@ calculate_residual_valuation_cap_rates(
   net_operating_income = "$27,500,000",
   cost_of_sale = "5\%",
   debt_balance = "$350,000,000",
-  return_wide = T
+  return_wide = TRUE
 )
 }
 \arguments{
@@ -33,7 +33,7 @@ EBITDA multiple method.
 }
 \examples{
 calculate_residual_valuation_cap_rates(cap_rates = c(.05, .0525, .06, .2),
-net_operating_income = "$27,500,000", cost_of_sale = "5\%",debt_balance = "$350,000,000", return_wide = T)
+net_operating_income = "$27,500,000", cost_of_sale = "5\%",debt_balance = "$350,000,000", return_wide = TRUE)
 }
 \seealso{
 Other calculation: 
@@ -57,7 +57,7 @@ Other calculation:
 Other residual value calculation: 
 \code{\link{calculate_residual_valuation_ebitda_multiples}()},
 \code{\link{cap_rate_valuation}()},
-\code{\link{ebtida_multiple_value}()}
+\code{\link{ebitda_multiple_value}()}
 }
 \concept{calculation}
 \concept{residual value calculation}

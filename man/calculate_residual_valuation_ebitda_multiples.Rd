@@ -9,7 +9,7 @@ calculate_residual_valuation_ebitda_multiples(
   ebitda = "$27,500,000",
   cost_of_sale = "5\%",
   debt_balance = "$350,000,000",
-  return_wide = T
+  return_wide = TRUE
 )
 }
 \arguments{
@@ -32,7 +32,7 @@ based upon the specified inputs.  See \code{\link{calculate_residual_valuation_c
 capitalization rate method.
 }
 \examples{
-calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20), ebitda = "$27,500,000", cost_of_sale = "5\%", debt_balance = "$350,000,000", return_wide = T)
+calculate_residual_valuation_ebitda_multiples(ebitda_multiples = c(5, 10, 15, 20), ebitda = "$27,500,000", cost_of_sale = "5\%", debt_balance = "$350,000,000", return_wide = TRUE)
 }
 \seealso{
 Other calculation: 
@@ -56,7 +56,7 @@ Other calculation:
 Other residual value calculation: 
 \code{\link{calculate_residual_valuation_cap_rates}()},
 \code{\link{cap_rate_valuation}()},
-\code{\link{ebtida_multiple_value}()}
+\code{\link{ebitda_multiple_value}()}
 }
 \concept{calculation}
 \concept{residual value calculation}

@@ -9,7 +9,7 @@ cap_rate_valuation(
   net_operating_income = "$27,500,000",
   cost_of_sale = "5\%",
   debt_balance = "$350,000,000",
-  return_wide = T
+  return_wide = TRUE
 )
 }
 \arguments{
@@ -36,7 +36,7 @@ helper function used by \code{\link{calculate_residual_valuation_cap_rates}}.
 Other residual value calculation: 
 \code{\link{calculate_residual_valuation_cap_rates}()},
 \code{\link{calculate_residual_valuation_ebitda_multiples}()},
-\code{\link{ebtida_multiple_value}()}
+\code{\link{ebitda_multiple_value}()}
 }
 \concept{residual value calculation}
 \keyword{internal}
