@@ -4,14 +4,19 @@
 \alias{extract_fee_references}
 \title{Extract fee references}
 \usage{
-extract_fee_references(data, word_threshhold = 5, print_sentences = TRUE)
+extract_fee_references(
+  data,
+  fee_ceiling_pct = 30,
+  print_sentences = TRUE,
+  word_threshhold = NULL
+)
 }
 \arguments{
 \item{data}{A \code{tibble} with the OCR'd brochure data}
 
-\item{word_threshhold}{numeric threshold for filtering fee percentage values}
-
 \item{print_sentences}{if \code{TRUE} prints fee reference data}
+
+\item{word_threshhold}{numeric threshold for filtering fee percentage values}
 }
 \value{
 A tibble containing extracted fee references and related sentences from brochure data

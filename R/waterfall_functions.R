@@ -111,6 +111,9 @@ calculate_irr_periods <-
     times <-
       difftime(cfDate, cfDate[1], units = "days") %>% as.numeric() / 365.24
 
+    if (all(cash_flows >= 0) || all(cash_flows <= 0)) {
+      stop("calculate_irr_periods: cash_flows must contain at least one sign change; all-positive or all-negative has no IRR")
+    }
     s <-
       secant(
         par = c(0, 0.1),
@@ -120,6 +123,9 @@ calculate_irr_periods <-
       )
     irr <-
       s$par
+    if (is.null(irr) || !is.finite(irr)) {
+      stop("calculate_irr_periods: secant method failed to converge; check cash_flows for meaningful sign changes")
+    }
 
     if (isTRUE(return_percentage) && isTRUE(scale_to_100)) {
       stop("Sorry you cannot return a percentage and scale to 100")
@@ -140,18 +146,26 @@ calculate_irr_periods <-
     dateEnd <-
       max(dates) %>% ymd
 
+    equityContributionsNumeric <-
+      sum(cash_flows[cash_flows > 0])
     equityContributions <-
-      cash_flows[cash_flows > 0] %>%
-      sum() %>%
+      equityContributionsNumeric %>%
       formattable::currency(digits = 2)
 
+    equityDistributionsNumeric <-
+      sum(cash_flows[cash_flows < 0])
     equityDistributions <-
-      cash_flows[cash_flows < 0] %>%
-      sum() %>%
+      equityDistributionsNumeric %>%
       formattable::currency(digits = 2)
 
     multipleCapital <-
-      (abs(equityDistributions) / equityContributions) %>% digits(digits = 3)
+      if (equityContributionsNumeric == 0) {
+        NA_real_
+      } else {
+        abs(equityDistributionsNumeric) / equityContributionsNumeric
+      }
+    multipleCapital <-
+      multipleCapital %>% digits(digits = 3)
     amountProfit <-
       -(equityDistributions + equityContributions)
 
@@ -1672,7 +1686,7 @@ calculate_cash_flow_waterfall <-
             waterfall_df %>%
             mutate(across(where(is.numeric), as.numeric)) %>%
             bind_rows(period_waterfall) %>%
-            distinct()
+            dplyr::distinct(idPeriod, tierWaterfall, .keep_all = TRUE)
 
           period_equity <-
             tibble(idPeriod = period, equityBB, equityDraw, toEquity, equityEB)
@@ -1680,7 +1694,7 @@ calculate_cash_flow_waterfall <-
           equity_df <-
             equity_df %>%
             bind_rows(period_equity) %>%
-            distinct()
+            dplyr::distinct(idPeriod, .keep_all = TRUE)
         }
       }
     }
@@ -1691,7 +1705,9 @@ calculate_cash_flow_waterfall <-
     }
     if (remove_zero_cols) {
       waterfall_df <-
-        waterfall_df %>% dplyr::select(which(colSums(abs(.) != 0) > 0))
+        waterfall_df %>% dplyr::select(
+          where(~ !is.numeric(.x) || sum(abs(as.numeric(.x)), na.rm = TRUE) != 0)
+        )
     }
 
     waterfall_df <-

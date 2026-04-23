@@ -941,10 +941,8 @@
 
 .get_manager_sec_page <-
   function(url = 'https://files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=156663') {
-    httr::set_config(httr::config(ssl_verifypeer = 0L))
+    Sys.sleep(0.2)
 
-    # Convert new URL format (adviserinfo.sec.gov/firm/summary/CRD) to old format
-    # (files.adviserinfo.sec.gov/IAPD/IAPDFirmSummary.aspx?ORG_PK=CRD)
     if (str_detect(url, "adviserinfo\\.sec\\.gov/firm/summary/")) {
       crd_id <- url %>%
         str_extract("summary/([0-9]+)") %>%
@@ -954,7 +952,7 @@
 
     page_status <-
       url %>%
-      GET()
+      GET(httr::config(ssl_verifypeer = 0L, ssl_verifyhost = 0L))
 
     if (page_status$url == 'https://files.adviserinfo.sec.gov/IAPD/SearchNoResult.aspx') {
       idCRD <-
@@ -9582,8 +9580,12 @@ adv_managers_current_period_summary <-
 #' brochure_data <- adv_managers_brochures(crd_ids = 156663)
 #' extract_fee_references(brochure_data)
 #' }
-extract_fee_references <- function(data, word_threshhold = 5,
-                                   print_sentences = TRUE) {
+extract_fee_references <- function(data, fee_ceiling_pct = 30,
+                                   print_sentences = TRUE, word_threshhold = NULL) {
+  if (!is.null(word_threshhold)) {
+    warning("extract_fee_references: 'word_threshhold' is deprecated (and the prior default 5 silently dropped all fees >5%). Use 'fee_ceiling_pct' instead (default 30 = keep fees up to 30%)")
+    fee_ceiling_pct <- word_threshhold
+  }
   data <-
     data %>%
     filter(!nameAuthor %>% is.na())
@@ -9594,16 +9596,16 @@ extract_fee_references <- function(data, word_threshhold = 5,
     tidytext::unnest_tokens(sentence, textBrochure, token = "sentences") %>% # tokenize to sentences
     mutate(idSentence = 1:n()) %>% # create sentence IDs to check accuracy later
     mutate(
-      hasMGMTFeeReference = sentence %>% str_detect('[0-99]%')  # add column for possible fee reference
+      hasMGMTFeeReference = sentence %>% str_detect("\\d+(?:\\.\\d+)?\\s?%")
     )
   possible_fees <-
     data %>%
-    dplyr::filter(hasMGMTFeeReference == T) %>%  # filter down to possible sentences
+    dplyr::filter(hasMGMTFeeReference == TRUE) %>%
     dplyr::select(idCRD, nameEntityManager, sentence, idSentence) %>%
-    tidytext::unnest_tokens(word, sentence, token = 'words') %>%  # tokenize to words
-    dplyr::filter(word %>% str_detect("^[0-9]")) %>%  # look for numbers 1-9
-    mutate(word = word %>% as.numeric()) %>%  # convert number to numeric
-    dplyr::filter(word <= word_threshhold) # look for numbers <=
+    tidytext::unnest_tokens(word, sentence, token = 'words') %>%
+    dplyr::filter(word %>% str_detect("^[0-9]")) %>%
+    mutate(word = word %>% readr::parse_number()) %>%
+    dplyr::filter(!is.na(word), word > 0, word <= fee_ceiling_pct)
 
 
   if (print_sentences) {
