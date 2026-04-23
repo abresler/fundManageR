@@ -12,7 +12,7 @@ calculate_cash_flow_dates(
   working_capital = 125000,
   remove_cumulative_cols = TRUE,
   include_final_day = TRUE,
-  is_annual_budget = T,
+  is_annual_budget = TRUE,
   distribution_frequency = NA
 )
 }

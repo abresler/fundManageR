@@ -31,7 +31,7 @@ This function calcuates accrued
 preferences for a specified inputs
 }
 \examples{
-calculate_days_accrued_pref(pct_pref = .1, is_actual_360 = T, days = 31, equity_bb = 1700000.00, pref_accrued_bb = 0)
+calculate_days_accrued_pref(pct_pref = .1, is_actual_360 = TRUE, days = 31, equity_bb = 1700000.00, pref_accrued_bb = 0)
 }
 \seealso{
 Other calculation: 

@@ -10,13 +10,13 @@ calculate_cash_flows_returns(
   cash_flows = c(-4151601, 119499.036215643, 257186.036215643, 447646.036215643,
     200652.036215643, 510409.036215643, 193.036215643166, 8788626.76409155),
   working_capital = 125000,
-  remove_cumulative_cols = T,
+  remove_cumulative_cols = TRUE,
   distribution_frequency = "annually",
   date_format = "\%Y-\%m-\%d",
-  scale_to_100 = F,
-  return_percentage = F,
-  return_df = T,
-  return_message = T
+  scale_to_100 = FALSE,
+  return_percentage = FALSE,
+  return_df = TRUE,
+  return_message = TRUE
 )
 }
 \arguments{

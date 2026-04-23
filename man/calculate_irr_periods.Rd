@@ -11,11 +11,11 @@ calculate_irr_periods(
     -478.515738547242, -478.515738547242, -478.515738547242, -478.515738547242,
     -478.515738547242, -478.515738547242, -478.515738547278),
   date_format = "\%Y-\%m-\%d",
-  scale_to_100 = F,
-  return_percentage = F,
-  return_df = T,
-  return_wide = T,
-  return_message = T
+  scale_to_100 = FALSE,
+  return_percentage = FALSE,
+  return_df = TRUE,
+  return_wide = TRUE,
+  return_message = TRUE
 )
 }
 \arguments{

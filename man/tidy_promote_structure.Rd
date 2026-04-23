@@ -6,7 +6,7 @@
 \usage{
 tidy_promote_structure(
   promote_structures = c("20 over a 12", "30 / 18", "40 over a 10x"),
-  return_wide = F
+  return_wide = FALSE
 )
 }
 \arguments{
@@ -25,7 +25,7 @@ whether the promote is based upon an internal rate of return
 or capital multiple hurdle.
 }
 \examples{
-tidy_promote_structure(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"), return_wide = T)
+tidy_promote_structure(promote_structures = c("20 over a 12", '30 / 18', "40 over a 10x"), return_wide = TRUE)
 }
 \seealso{
 Other calculation: 
