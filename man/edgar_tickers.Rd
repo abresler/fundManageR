@@ -5,10 +5,10 @@
 \title{SEC listed public companys}
 \usage{
 edgar_tickers(
-  include_ticker_information = F,
-  join_sic = T,
-  snake_names = F,
-  return_message = T
+  include_ticker_information = FALSE,
+  join_sic = TRUE,
+  snake_names = FALSE,
+  return_message = TRUE
 )
 }
 \arguments{

@@ -1,5 +1,5 @@
 .build_address <-
-  function(data, end_slug, end_slugs, address_parts, return_message = T) {
+  function(data, end_slug, end_slugs, address_parts, return_message = TRUE) {
 
     if (return_message) {
       glue("Building location for {end_slug}") %>% message()
@@ -83,7 +83,7 @@
               state,
               sep = ", ",
               ,
-              remove = F) %>%
+              remove = FALSE) %>%
         filter(!!sym(city_state) != "NA, NA")
 
       df_locs <-
@@ -150,10 +150,10 @@
 build_address <-
   function(data,
            address_search_slugs = c("^address", "^streetAddress", "^city", "^state", "^codeState", "^codeCountry", "^country", "^zipcode"),
-           include_snake_versions = T,
+           include_snake_versions = TRUE,
            part_threshold = 3,
-           snake_names = F,
-           return_message = T) {
+           snake_names = FALSE,
+           return_message = TRUE) {
 
     if (include_snake_versions) {
       clean_n <- address_search_slugs %>% make_clean_names()
@@ -174,7 +174,7 @@ build_address <-
     end_slugs <-
       tibble(part = address_parts %>%
                str_remove_all(address_slugs)) %>%
-      count(part, sort = T) %>%
+      count(part, sort = TRUE) %>%
       filter(n >= part_threshold) %>%
       pull(part)
 
@@ -215,9 +215,9 @@ build_address <-
 #' munge_tbl(data)
 #' }
 munge_tbl <-
-  function(data, snake_names = F, unformat = F, convert_case = T,
+  function(data, snake_names = FALSE, unformat = FALSE, convert_case = TRUE,
            amount_digits = 2,
-           include_address = T) {
+           include_address = TRUE) {
 
     data <- data %>%
       mutate(across(where(is.character),
@@ -336,8 +336,8 @@ munge_tbl <-
       )
 
     url_json <-
-      list('http://rankandfiled.com/data/filer/', cik, '/', slugs) %>%
-      purrr::invoke(paste0, .)
+      list('https://rankandfiled.com/data/filer/', cik, '/', slugs) %>%
+      do.call(paste0, .)
 
     url_df <-
       dplyr::tibble(
@@ -358,7 +358,7 @@ munge_tbl <-
   }
 
 .parse_json_general_filing <-
-  function(url = "http://rankandfiled.com/data/filer/1468327/general",
+  function(url = "https://rankandfiled.com/data/filer/1468327/general",
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -385,7 +385,7 @@ munge_tbl <-
       .resolve_name_df()
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/filer/', '') %>%
       str_replace_all('\\/general', '') %>%
       as.numeric()
 
@@ -455,7 +455,7 @@ munge_tbl <-
             stateEntity,
             ', ',
             zipcodeEntity
-          ) %>% purrr::invoke(paste0, .)
+          ) %>% do.call(paste0, .)
         ) %>%
         select(idCIK, dplyr::matches("nameEntity"), addressEntity, everything())
     }
@@ -489,7 +489,7 @@ munge_tbl <-
           values <-
             detail_value %>% str_replace('\\|', '') %>%
             str_split('\\|') %>%
-            flatten_chr()
+            list_c()
 
           df_data <-
             tibble(value = values) %>%
@@ -506,7 +506,7 @@ munge_tbl <-
                    idRow = x) %>%
             pivot_longer(cols = -idRow, names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
             group_by(item) %>%
-            mutate(count = 1:n() - 1) %>%
+            mutate(count = seq_len(n()) - 1) %>%
             ungroup() %>%
             arrange((count)) %>%
             mutate(item = ifelse(count == 0, item, paste0(item, count))) %>%
@@ -536,7 +536,7 @@ munge_tbl <-
 
       data <-
         data %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         select(-detailsOwns) %>%
         left_join(detail_df) %>%
         select(-idRow) %>%
@@ -555,7 +555,7 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(data)
@@ -563,14 +563,14 @@ munge_tbl <-
   }
 
 .parse_json_filings <-
-  function(url = "http://rankandfiled.com/data/filer/1138621/filings",
+  function(url = "https://rankandfiled.com/data/filer/1138621/filings",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(tibble())
     }
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/filings', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/filer/|/filings', '') %>%
       as.numeric()
 
     json_data <-
@@ -603,7 +603,7 @@ munge_tbl <-
             idCIK,
             '/',
             slugSEC
-          ) %>% purrr::invoke(paste0, .)
+          ) %>% do.call(paste0, .)
         ),
         pageSlug = idSECSlug %>% str_replace_all('\\-',''),
         urlSECFilingDirectory = ifelse(
@@ -627,14 +627,14 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(json_data)
   }
 
 .parse_json_private <-
-  function(url = "http://rankandfiled.com/data/filer/1438171/private",
+  function(url = "https://rankandfiled.com/data/filer/1438171/private",
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -647,13 +647,13 @@ munge_tbl <-
 
 
     status_df <-
-      json_data$status_history %>% flatten_df() %>%
+      json_data$status_history %>% as_tibble() %>%
       mutate(date = date %>% lubridate::ymd())
 
     offering_history_class_df <-
       json_data$offering_history %>% future_map_dfr(class) %>%
       pivot_longer(cols = everything(), names_to = "column", values_to = "type") %>%
-      mutate(idName = 1:n())
+      mutate(idName = seq_len(n()))
 
     offering_data <-
       json_data$offering_history %>%
@@ -734,12 +734,12 @@ munge_tbl <-
         resolve_names_to_upper()
 
       relation_df <-
-        1:nrow(relation_df) %>%
+        seq_len(nrow(relation_df)) %>%
         future_map_dfr(function(x) {
           person_title <-
             relation_df$nameRelation[[x]] %>%
             str_split('\\&') %>%
-            flatten_chr() %>%
+            list_c() %>%
             str_to_upper() %>%
             str_trim()
 
@@ -750,7 +750,7 @@ munge_tbl <-
               sep = '\\-',
               into = c('nameRelatedParty', 'titleRelatedParty')
             ) %>%
-            mutate(countItem = 1:n() - 1) %>%
+            mutate(countItem = seq_len(n()) - 1) %>%
             pivot_longer(cols = -c(idRow, countItem), names_to = "item", values_to = "value") %>%
             arrange(countItem)
 
@@ -776,7 +776,7 @@ munge_tbl <-
 
       offering_data <-
         offering_data %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(relation_df) %>%
         suppressMessages() %>%
         select(-idRow)
@@ -806,12 +806,12 @@ munge_tbl <-
         resolve_names_to_upper()
 
       broker_df <-
-        1:nrow(broker_df) %>%
+        seq_len(nrow(broker_df)) %>%
         future_map_dfr(function(x) {
           broker_crd <-
             broker_df$nameBrokerCRD[[x]] %>%
             str_split('\\|') %>%
-            flatten_chr() %>%
+            list_c() %>%
             str_to_upper() %>%
             str_trim()
 
@@ -835,7 +835,7 @@ munge_tbl <-
             tidyr::separate(broker_crd,
                             sep = '\\&',
                             into = c('nameBroker', 'idCRDBroker')) %>%
-            mutate(countItem = 1:n() - 1) %>%
+            mutate(countItem = seq_len(n()) - 1) %>%
             pivot_longer(cols = -c(idRow, countItem), names_to = "item", values_to = "value") %>%
             arrange(countItem) %>%
             mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
@@ -865,7 +865,7 @@ munge_tbl <-
 
       offering_data <-
         offering_data %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(broker_df) %>%
         suppressMessages() %>%
         select(-idRow)
@@ -929,13 +929,13 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     return(offering_data)
   }
 
 .parse_json_fundraising <-
-  function(url = "http://rankandfiled.com/data/filer/1138621/fundraising",
+  function(url = "https://rankandfiled.com/data/filer/1138621/fundraising",
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -957,8 +957,8 @@ munge_tbl <-
         'offeringsValues'
       )) %>%
       mutate(
-        idPerson = 1:n(),
-        idCIK = url %>% str_replace_all('http://rankandfiled.com/data/filer/|/fundraising', '') %>% as.numeric(),
+        idPerson = seq_len(n()),
+        idCIK = url %>% str_replace_all('https://rankandfiled.com/data/filer/|/fundraising', '') %>% as.numeric(),
         namePerson = namePerson %>% str_replace_all('\\-', '') %>% stringr::str_to_upper() %>% str_trim(),
         urlJSONFundraising = url
       ) %>%
@@ -973,13 +973,13 @@ munge_tbl <-
         company_name_data <-
           company_name_data %>%
           str_split('\\*') %>%
-          flatten_chr() %>%
+          list_c() %>%
           str_to_upper()
 
         df <-
           tibble(value = company_name_data) %>%
           mutate(item = 'nameCompanyFundraisingRelated') %>%
-          mutate(countRow = 1:n()) %>%
+          mutate(countRow = seq_len(n())) %>%
           mutate(
             countRow = countRow - 1,
             item = ifelse(countRow == 0, item, item %>% paste0(countRow)),
@@ -1014,7 +1014,7 @@ munge_tbl <-
         offering_value_data <-
           offering_value_data %>%
           str_split('\\*') %>%
-          flatten_chr()
+          list_c()
 
         df <-
           tibble(offering = offering_value_data) %>%
@@ -1027,7 +1027,7 @@ munge_tbl <-
             ),
             sep = '\\|'
           ) %>%
-          mutate(countRow = 1:n()) %>%
+          mutate(countRow = seq_len(n())) %>%
           pivot_longer(cols = -countRow, names_to = "item", values_to = "value") %>%
           mutate(
             countRow = countRow - 1,
@@ -1065,13 +1065,13 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     return(fundraising_df)
   }
 
 .parse_json_traders <-
-  function(url = "http://rankandfiled.com/data/filer/1326801/traders",
+  function(url = "https://rankandfiled.com/data/filer/1326801/traders",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(tibble())
@@ -1082,7 +1082,7 @@ munge_tbl <-
       jsonlite::fromJSON()
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/traders', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/filer/|/traders', '') %>%
       as.numeric()
     traders <-
       json_data$owners$count
@@ -1102,14 +1102,14 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df)
   }
 
 .parse_json_clevel <-
-  function(url = "http://rankandfiled.com/data/filer/1326801/clevel",
+  function(url = "https://rankandfiled.com/data/filer/1326801/clevel",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(tibble())
@@ -1120,7 +1120,7 @@ munge_tbl <-
       jsonlite::fromJSON()
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/clevel', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/filer/|/clevel', '') %>%
       as.numeric()
 
     clevel_df <-
@@ -1155,14 +1155,14 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(clevel_df)
   }
 
 .parse_json_mda <-
-  function(url = "http://rankandfiled.com/data/filer/1326801/mda",
+  function(url = "https://rankandfiled.com/data/filer/1326801/mda",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(tibble())
@@ -1174,7 +1174,7 @@ munge_tbl <-
 
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/mda', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/filer/|/mda', '') %>%
       as.numeric()
 
     data <-
@@ -1198,14 +1198,14 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(data)
   }
 
 .parse_json_owners <-
-  function(url = "http://rankandfiled.com/data/filer/1326801/owners",
+  function(url = "https://rankandfiled.com/data/filer/1326801/owners",
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
@@ -1217,7 +1217,7 @@ munge_tbl <-
       jsonlite::fromJSON()
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/owners', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/filer/|/owners', '') %>%
       as.numeric()
 
     general_df <-
@@ -1280,7 +1280,7 @@ munge_tbl <-
             values <-
               detail_value %>% str_replace('\\|', '') %>%
               str_split('\\|') %>%
-              flatten_chr()
+              list_c()
 
             df_data <-
               tibble(value = values) %>%
@@ -1297,7 +1297,7 @@ munge_tbl <-
                      idRow = x) %>%
               pivot_longer(cols = -idRow, names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
               group_by(item) %>%
-              mutate(count = 1:n() - 1) %>%
+              mutate(count = seq_len(n()) - 1) %>%
               ungroup() %>%
               arrange((count)) %>%
               mutate(item = ifelse(count == 0, item, paste0(item, count))) %>%
@@ -1330,7 +1330,7 @@ munge_tbl <-
 
         filing_df <-
           filing_df %>%
-          mutate(idRow = 1:n()) %>%
+          mutate(idRow = seq_len(n())) %>%
           select(-detailsOwner) %>%
           left_join(detail_df) %>%
           select(-idRow) %>%
@@ -1347,7 +1347,7 @@ munge_tbl <-
 
     if (has_companies) {
       company_df <-
-        1:nrow(general_df) %>%
+        seq_len(nrow(general_df)) %>%
         future_map_dfr(function(x) {
           has_no_data <-
             json_data$insiders$companies[[x]] %>%
@@ -1381,7 +1381,7 @@ munge_tbl <-
             company_df %>%
             pivot_longer(cols = -c(nameFiler, idRow), names_to = "item", values_to = "value") %>%
             group_by(item) %>%
-            mutate(count = 1:n() - 1) %>%
+            mutate(count = seq_len(n()) - 1) %>%
             ungroup() %>%
             arrange((count)) %>%
             mutate(item = ifelse(count == 0, item, paste0(item, count))) %>%
@@ -1416,7 +1416,7 @@ munge_tbl <-
 
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(company_df %>% select(-dplyr::matches("idCIKOwned"))) %>%
         select(-idRow) %>%
         suppressMessages()
@@ -1424,7 +1424,7 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     general_df <-
@@ -1440,7 +1440,7 @@ munge_tbl <-
   }
 
 .parse_json_public_filers <-
-  function(url = "http://rankandfiled.com/data/filer/1680780/all?start=0",
+  function(url = "https://rankandfiled.com/data/filer/1680780/all?start=0",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(tibble())
@@ -1452,9 +1452,9 @@ munge_tbl <-
 
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/all', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/filer/|/all', '') %>%
       str_split('\\?') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.numeric()
 
@@ -1509,7 +1509,7 @@ munge_tbl <-
             idCIK,
             '/',
             slugSEC
-          ) %>% purrr::invoke(paste0, .)
+          ) %>% do.call(paste0, .)
         )
       ) %>%
       select(-pageSlug) %>%
@@ -1539,13 +1539,13 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     return(filing_df)
   }
 
 .parse_json_subsidiaries <-
-  function(url = "http://rankandfiled.com/data/filer/34088/subsidiaries",
+  function(url = "https://rankandfiled.com/data/filer/34088/subsidiaries",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(tibble())
@@ -1570,7 +1570,7 @@ munge_tbl <-
           'pctSubsidiaryOwned'
         )
       ) %>%
-      mutate(idRow = 1:n())
+      mutate(idRow = seq_len(n()))
 
     data <-
       url %>%
@@ -1662,7 +1662,7 @@ munge_tbl <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     return(data)
   }
@@ -1671,8 +1671,8 @@ munge_tbl <-
   function(cik = 1527559,
            return_message = TRUE) {
     general_url <-
-      list('http://rankandfiled.com/data/filer/', cik, '/general') %>%
-      purrr::invoke(paste0, .)
+      list('https://rankandfiled.com/data/filer/', cik, '/general') %>%
+      do.call(paste0, .)
 
     data_js <-
       general_url %>% jsonlite::fromJSON() %>% data.frame()
@@ -1709,20 +1709,20 @@ munge_tbl <-
     if (filing_pages > 0) {
       filing_urls <-
         list(
-          'http://rankandfiled.com/data/filer/',
+          'https://rankandfiled.com/data/filer/',
           cik,
           '/all?start=',
           seq(0, by = 50, length.out = filing_pages)
         ) %>%
-        purrr::invoke(paste0, .)
+        do.call(paste0, .)
     }
 
     if (filing_pages == 0) {
       filing_urls <-
-        list('http://rankandfiled.com/data/filer/',
+        list('https://rankandfiled.com/data/filer/',
              cik,
              '/all?start=0') %>%
-        purrr::invoke(paste0, .)
+        do.call(paste0, .)
     }
 
     .parse_json_public_filers_safe <-
@@ -1753,12 +1753,12 @@ munge_tbl <-
 
       report_df <-
         .all_filings %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         select(typeReport, idRow) %>%
         filter(!typeReport %>% is.na())
 
       report_df <-
-        1:nrow(report_df) %>%
+        seq_len(nrow(report_df)) %>%
         future_map_dfr(function(x) {
           is_none <-
             report_df$typeReport[[x]] == 'None'
@@ -1777,14 +1777,14 @@ munge_tbl <-
           reports <-
             row_df$typeReport %>%
             str_split('\\|') %>%
-            flatten_chr()
+            list_c()
 
           item_df <-
             tibble(idFormType = reports, idRow = row_df$idRow) %>%
             left_join(report_dict_df) %>%
             pivot_longer(cols = -idRow, names_to = "item", values_to = "value") %>%
             group_by(item) %>%
-            mutate(countItems = 1:n() - 1) %>%
+            mutate(countItems = seq_len(n()) - 1) %>%
             ungroup() %>%
             mutate(item = ifelse(countItems == 0, item, paste0(item, countItems))) %>%
             arrange(countItems) %>%
@@ -1804,7 +1804,7 @@ munge_tbl <-
 
       .all_filings <-
         .all_filings %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         dplyr::rename(typesReport = typeReport) %>%
         left_join(report_df) %>%
         suppressMessages() %>%
@@ -1819,8 +1819,8 @@ munge_tbl <-
         ' SEC Filings for ',
         entity
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
     .all_filings <-
       .all_filings %>%
@@ -1880,7 +1880,7 @@ munge_tbl <-
         '\n',
         paste0(table_options, collapse = '\n')
       ) %>%
-        purrr::invoke(paste0, .))
+        do.call(paste0, .))
     }
 
     table_options <-
@@ -2228,8 +2228,8 @@ munge_tbl <-
            ' - ',
            nameEntity,
            "\n") %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     all_data <-
@@ -2397,7 +2397,7 @@ sec_filer <-
         }) %>%
         mutate(
           urlRankAndFiled =
-            list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>% purrr::invoke(paste0, .)
+            list('https://rankandfiled.com/#/filers/', idCIK, '/filings') %>% do.call(paste0, .)
         ) %>%
         select(idCIK, nameEntity, urlRankAndFiled, nameTable, dataTable) %>%
         distinct() %>%
@@ -2480,8 +2480,8 @@ sec_filer <-
 
     if (missing_ciks) {
       list("Missing ", all_ciks[!all_ciks %in% all_data$idCIK] %>% paste(collapse = ', ')) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     all_data <-
@@ -2717,14 +2717,14 @@ sec_filer <-
         distinct() %>%
         mutate(
           nameDF =
-            list('dataFiler', nameTable %>% str_replace_all('\\ ', '')) %>% purrr::invoke(paste0, .)
+            list('dataFiler', nameTable %>% str_replace_all('\\ ', '')) %>% do.call(paste0, .)
         )
 
-      1:nrow(table_name_df) %>%
+      seq_len(nrow(table_name_df)) %>%
         walk(function(x) {
           df_name <-
             table_name_df %>% slice(x) %>% .$nameDF
-          df_name %>% cat(fill = T)
+          df_name %>% cat(fill = TRUE)
           df_data <-
             all_data %>%
             filter(nameTable == table_name_df$nameTable[[x]]) %>%
@@ -2823,9 +2823,9 @@ sec_filer <-
 
                 select_cols <-
                   tibble(nameData = names(df_data)) %>%
-                  mutate(idColumn = 1:n()) %>%
+                  mutate(idColumn = seq_len(n())) %>%
                   group_by(nameData) %>%
-                  mutate(countColumn = 1:n()) %>%
+                  mutate(countColumn = seq_len(n())) %>%
                   ungroup() %>%
                   filter(countColumn == min(countColumn)) %>%
                   .$idColumn
@@ -2867,8 +2867,8 @@ sec_filer <-
            nest_data = TRUE,
            return_message = TRUE) {
     url <-
-      list('http://rankandfiled.com/data/insider/', cik, '/general') %>%
-      purrr::invoke(paste0, .)
+      list('https://rankandfiled.com/data/insider/', cik, '/general') %>%
+      do.call(paste0, .)
     if (!url %>% httr::url_ok()) {
       return(tibble())
     }
@@ -2898,7 +2898,7 @@ sec_filer <-
     if (has_filer) {
       filing_df <-
         data$filer %>%
-        flatten_df() %>%
+        as_tibble() %>%
         .resolve_name_df()
 
       if ('name' %in% names(filing_df)) {
@@ -2934,7 +2934,7 @@ sec_filer <-
             values <-
               detail_value %>% str_replace('\\|', '') %>%
               str_split('\\|') %>%
-              flatten_chr()
+              list_c()
 
             df_data <-
               tibble(value = values) %>%
@@ -2951,7 +2951,7 @@ sec_filer <-
                      idRow = x) %>%
               pivot_longer(cols = -idRow, names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
               group_by(item) %>%
-              mutate(count = 1:n() - 1) %>%
+              mutate(count = seq_len(n()) - 1) %>%
               ungroup() %>%
               arrange((count)) %>%
               mutate(item = ifelse(count == 0, item, paste0(item, count))) %>%
@@ -2983,7 +2983,7 @@ sec_filer <-
 
         filing_df <-
           filing_df %>%
-          mutate(idRow = 1:n()) %>%
+          mutate(idRow = seq_len(n())) %>%
           select(-detailsOwns) %>%
           left_join(detail_df) %>%
           select(-idRow) %>%
@@ -3010,7 +3010,7 @@ sec_filer <-
         select(-dplyr::matches("status_history")) %>%
         pivot_longer(cols = -c(idCIK, nameFiler), names_to = "item", values_to = "value") %>%
         group_by(item) %>%
-        mutate(countItem = 1:n() - 1) %>%
+        mutate(countItem = seq_len(n()) - 1) %>%
         ungroup() %>%
         mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
         select(-countItem) %>%
@@ -3032,7 +3032,7 @@ sec_filer <-
 
       companies_df <-
         companies_df %>%
-        mutate(idRow = 1:n())
+        mutate(idRow = seq_len(n()))
 
       if ('status_history' %in% names(companies_df)) {
         status_df <-
@@ -3056,7 +3056,7 @@ sec_filer <-
               )) %>%
               select(-item) %>%
               group_by(nameItem) %>%
-              mutate(countItem = 1:n() - 1) %>%
+              mutate(countItem = seq_len(n()) - 1) %>%
               ungroup() %>%
               mutate(item = ifelse(countItem == 0, nameItem, nameItem %>% paste0(countItem))) %>%
               select(idRow, item, value) %>%
@@ -3083,7 +3083,7 @@ sec_filer <-
           suppressMessages() %>%
           pivot_longer(cols = -c(idCIK, nameFiler, idRow), names_to = "item", values_to = "value") %>%
           group_by(item, idRow) %>%
-          mutate(countItem = 1:n() - 1) %>%
+          mutate(countItem = seq_len(n()) - 1) %>%
           ungroup() %>%
           mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
           select(-countItem) %>%
@@ -3113,14 +3113,14 @@ sec_filer <-
       if (nest_data) {
         companies_df <-
           companies_df %>%
-          mutate(idRow = 1:n()) %>%
+          mutate(idRow = seq_len(n())) %>%
           nest(dataDetailsCompaniesOwned = -c(idRow, idCIK)) %>%
           as_tibble()
       }
 
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(companies_df) %>%
         select(-idRow) %>%
         suppressMessages()
@@ -3139,7 +3139,7 @@ sec_filer <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(general_df)
@@ -3148,7 +3148,7 @@ sec_filer <-
   }
 
 .parse_insider_trade_json_url <-
-  function(url = "http://rankandfiled.com/data/insider/1070844/trades?start=0",
+  function(url = "https://rankandfiled.com/data/insider/1070844/trades?start=0",
            return_message = TRUE) {
     if (!url %>% httr::url_ok()) {
       return(tibble())
@@ -3160,9 +3160,9 @@ sec_filer <-
 
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/insider/|/trades', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/insider/|/trades', '') %>%
       str_split('\\?') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.numeric()
 
@@ -3182,7 +3182,7 @@ sec_filer <-
 
     column_names <-
       list("X", 1:count_columns) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     trade_df <-
       trade_df %>%
@@ -3240,7 +3240,7 @@ sec_filer <-
     trade_df <-
       trade_df %>%
       mutate(
-        countShares = ifelse(isBought == T, countShares, -countShares),
+        countShares = ifelse(isBought == TRUE, countShares, -countShares),
         amountTransaction = countShares * amountPrice,
         urlJSON = url
       )
@@ -3248,7 +3248,7 @@ sec_filer <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(trade_df)
@@ -3260,8 +3260,8 @@ sec_filer <-
            nest_data = TRUE,
            return_message = TRUE) {
     url_general <-
-      list('http://rankandfiled.com/data/insider/', cik, '/general') %>%
-      purrr::invoke(paste0, .)
+      list('https://rankandfiled.com/data/insider/', cik, '/general') %>%
+      do.call(paste0, .)
 
     general_df <-
       .parse_json_general_insider(cik = cik,
@@ -3280,12 +3280,12 @@ sec_filer <-
 
     trade_urls <-
       list(
-        'http://rankandfiled.com/data/insider/',
+        'https://rankandfiled.com/data/insider/',
         cik,
         '/trades?start=',
         seq(0, by = 50, length.out = count_trades)
       ) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     parse_insider_trade_json_url_safe <-
       purrr::possibly(.parse_insider_trade_json_url, tibble())
@@ -3301,10 +3301,10 @@ sec_filer <-
       all_data$idCIKOwns %>% unique()
 
     company_urls_general <-
-      list('http://rankandfiled.com/data/filer/',
+      list('https://rankandfiled.com/data/filer/',
            ciks_owned,
            '/general') %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     owned_company_df <-
       company_urls_general %>%
@@ -3352,8 +3352,8 @@ sec_filer <-
         ' insider transactions for ',
         insider
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
     return(all_data)
   }
@@ -3379,12 +3379,12 @@ sec_filer <-
 
     filing_urls <-
       list(
-        'http://rankandfiled.com/data/filer/',
+        'https://rankandfiled.com/data/filer/',
         cik,
         '/all?start=',
         seq(0, by = 50, length.out = count_filings)
       ) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     .parse_json_public_filers_safe <-
       purrr::possibly(.parse_json_public_filers, NULL)
@@ -3401,8 +3401,8 @@ sec_filer <-
 
     if (return_message) {
       list("Parsed ", .all_filings %>% nrow(), ' SEC Filings for ', insider) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(.all_filings)
@@ -3413,7 +3413,7 @@ sec_filer <-
 .generate_fund_general_url <-
   function(cik = 1034621) {
 
-    glue("http://rankandfiled.com/data/fund/{cik}/general") %>% as.character()
+    glue("https://rankandfiled.com/data/fund/{cik}/general") %>% as.character()
 
   }
 
@@ -3492,10 +3492,10 @@ sec_filer <-
 
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(
           filer_df %>%
-            mutate(idRow = 1:n()) %>%
+            mutate(idRow = seq_len(n())) %>%
             dplyr::rename(idCIKFiler = idCIK) %>%
             select(any_of(merge_cols))
         ) %>%
@@ -3515,7 +3515,7 @@ sec_filer <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(general_df)
@@ -3696,7 +3696,7 @@ sec_filer <-
 # filing_stream -----------------------------------------------------------
 
 .get_most_recent_rf_id <-
-  function(url = "http://rankandfiled.com/data/latest") {
+  function(url = "https://rankandfiled.com/data/latest") {
     json_data <-
       url %>%
       jsonlite::fromJSON()
@@ -3706,7 +3706,7 @@ sec_filer <-
 
 
 .parse_filing_stream <-
-  function(url = "http://rankandfiled.com/data/latest?group=ALL&filer=All",
+  function(url = "https://rankandfiled.com/data/latest?group=ALL&filer=All",
            nest_data = TRUE,
            return_message = TRUE) {
     json_data <-
@@ -3717,7 +3717,7 @@ sec_filer <-
     filing_class_df <-
       json_data$filings %>% future_map_dfr(class) %>%
       pivot_longer(cols = everything(), names_to = "column", values_to = "type") %>%
-      mutate(idName = 1:n())
+      mutate(idName = seq_len(n()))
 
     general_df <-
       json_data$filings %>%
@@ -3755,7 +3755,7 @@ sec_filer <-
           idCIK,
           '/',
           slugSEC
-        ) %>% purrr::invoke(paste0, .)
+        ) %>% do.call(paste0, .)
       ))
 
     if ('idFormType' %in% names(general_df)) {
@@ -3796,16 +3796,16 @@ sec_filer <-
 
         filer_df <-
           filer_df %>%
-          mutate(idRow = 1:n(),
+          mutate(idRow = seq_len(n()),
                  detailsOwns = detailsOwns %>% str_replace("\\|", ''))
 
         owns_df <-
-          1:nrow(filer_df) %>%
+          seq_len(nrow(filer_df)) %>%
           future_map_dfr(function(x) {
             owns <-
               filer_df$detailsOwns[[x]] %>%
               str_split("\\|") %>%
-              flatten_chr()
+              list_c()
 
             df <-
               tibble(idRow = x, owns) %>%
@@ -3820,7 +3820,7 @@ sec_filer <-
                 into = c('typeOwnerOwns', 'dateOwnershipOwns'),
                 sep = '\\#'
               ) %>%
-              mutate(countItem = 1:n() - 1) %>%
+              mutate(countItem = seq_len(n()) - 1) %>%
               mutate(
                 nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                 idTickerOwns = idTickerOwns %>% str_to_upper()
@@ -3862,10 +3862,10 @@ sec_filer <-
 
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(
           filer_df %>%
-            mutate(idRow = 1:n()) %>%
+            mutate(idRow = seq_len(n())) %>%
             dplyr::rename(idCIKFiler = idCIK) %>%
             select(any_of(
               c('idCIKFiler', 'idRow'), names(filer_df)[!names(filer_df) %in% names(general_df)]
@@ -3883,10 +3883,10 @@ sec_filer <-
     if (has_offerings) {
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n())
+        mutate(idRow = seq_len(n()))
 
       offering_df <-
-        1:nrow(general_df) %>%
+        seq_len(nrow(general_df)) %>%
         future_map_dfr(function(x) {
           offering <-
             json_data$filings$offerings[[x]]
@@ -3908,7 +3908,7 @@ sec_filer <-
             mutate(idRow = x) %>%
             pivot_longer(cols = -idRow, names_to = "item", values_to = "value") %>%
             group_by(item) %>%
-            mutate(countItem = 1:n() - 1) %>%
+            mutate(countItem = seq_len(n()) - 1) %>%
             ungroup() %>%
             mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
             arrange(countItem) %>%
@@ -3945,7 +3945,7 @@ sec_filer <-
 
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         select(-dplyr::matches("nameIndustry")) %>%
         left_join(offering_df) %>%
         select(-idRow) %>%
@@ -3965,10 +3965,10 @@ sec_filer <-
     if (has_trades) {
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n())
+        mutate(idRow = seq_len(n()))
 
       trade_df <-
-        1:nrow(general_df) %>%
+        seq_len(nrow(general_df)) %>%
         future_map_dfr(function(x) {
           trades <-
             json_data$filings$trades[[x]]
@@ -4009,7 +4009,7 @@ sec_filer <-
               trades %>%
               mutate(
                 isBought = ifelse(isBought %>% is.na(), FALSE, TRUE),
-                countShares = ifelse(isBought == T, countShares, -countShares),
+                countShares = ifelse(isBought == TRUE, countShares, -countShares),
                 amountTransaction = countShares * amountPrice
               )
           }
@@ -4018,7 +4018,7 @@ sec_filer <-
             trades %>%
             pivot_longer(cols = -idRow, names_to = "item", values_to = "value") %>%
             group_by(item) %>%
-            mutate(countItem = 1:n() - 1) %>%
+            mutate(countItem = seq_len(n()) - 1) %>%
             ungroup %>%
             mutate(item = ifelse(countItem == 0, item, item %>% paste0(countItem))) %>%
             arrange(countItem) %>%
@@ -4055,7 +4055,7 @@ sec_filer <-
 
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         select(-dplyr::matches("nameIndustry")) %>%
         left_join(trade_df %>% select(-dplyr::matches("idTicker")), by = 'idRow') %>%
         select(-idRow) %>%
@@ -4079,7 +4079,7 @@ sec_filer <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     general_df
   }
@@ -4104,9 +4104,9 @@ sec_filer <-
         seq(start, rf_id, by = 30)
 
       urls <-
-        list('http://rankandfiled.com/data/latest?id=',
+        list('https://rankandfiled.com/data/latest?id=',
              rf_ds) %>%
-        purrr::invoke(paste0, .)
+        do.call(paste0, .)
 
       parse_filing_stream_safe <-
         purrr::possibly(.parse_filing_stream, tibble())
@@ -4132,8 +4132,8 @@ sec_filer <-
           everything()
         ) %>%
         mutate(
-          urlRankAndFiled = list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>%
-            purrr::invoke(paste0, .)
+          urlRankAndFiled = list('https://rankandfiled.com/#/filers/', idCIK, '/filings') %>%
+            do.call(paste0, .)
         )
 
 
@@ -4172,7 +4172,7 @@ sec_filer <-
             "Filers can only be:\n",
             filer_names %>%  stringr::str_to_title() %>% paste0(collapse = '\n')
           ) %>%
-            purrr::invoke(paste0, .)
+            do.call(paste0, .)
         )
       }
       no_filing_names <-
@@ -4184,7 +4184,7 @@ sec_filer <-
             "Filing names can only be:\n",
             filing_names %>%  stringr::str_to_title() %>% paste0(collapse = '\n')
           ) %>%
-            purrr::invoke(paste0, .)
+            do.call(paste0, .)
         )
       }
 
@@ -4230,14 +4230,14 @@ sec_filer <-
 
       url_json <-
         list(
-          'http://rankandfiled.com/data/latest?id=',
+          'https://rankandfiled.com/data/latest?id=',
           mr_id,
           '&group=',
           slug_type,
           '&filer=',
           slug_filer
         ) %>%
-        purrr::invoke(paste0, .)
+        do.call(paste0, .)
 
       data <-
         url_json %>%
@@ -4257,8 +4257,8 @@ sec_filer <-
           everything()
         ) %>%
         mutate(
-          urlRankAndFiled = list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>%
-            purrr::invoke(paste0, .)
+          urlRankAndFiled = list('https://rankandfiled.com/#/filers/', idCIK, '/filings') %>%
+            do.call(paste0, .)
         )
     }
 
@@ -4268,8 +4268,8 @@ sec_filer <-
            ' Filers\n',
            filing_name,
            ' Form Type\n') %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
     return(data)
   }
@@ -4345,7 +4345,7 @@ sec_filing_streams_rf <-
       purrr::possibly(.sec_filing_stream, NULL)
 
     all_data <-
-      1:nrow(type_df) %>%
+      seq_len(nrow(type_df)) %>%
       future_map_dfr(function(x) {
         sec_filing_stream_safe(
           filers = type_df$nameFiler[[x]],
@@ -4355,7 +4355,7 @@ sec_filing_streams_rf <-
         )
       }) %>%
       distinct() %>%
-      mutate(idRow = 1:n()) %>%
+      mutate(idRow = seq_len(n())) %>%
       group_by(idRF) %>%
       filter(idRow == min(idRow)) %>%
       ungroup() %>%
@@ -4374,12 +4374,12 @@ sec_filing_streams_rf <-
 # publics -----------------------------------------------------------------
 .generate_ticker_general_url <-
   function(ticker = "FB") {
-    glue("http://rankandfiled.com/data/company/{ticker}/general") %>% as.character()
+    glue("https://rankandfiled.com/data/company/{ticker}/general") %>% as.character()
   }
 
 
 .parse_json_public_general <-
-  function(url = "http://rankandfiled.com/data/company/BX/general",
+  function(url = "https://rankandfiled.com/data/company/BX/general",
            nest_data = TRUE,
            return_message = TRUE) {
     if (!url %>% httr::url_ok()) {
@@ -4391,20 +4391,20 @@ sec_filing_streams_rf <-
       jsonlite::fromJSON()
 
     ticker <-
-      url %>% str_replace("http://rankandfiled.com/data/company/", '') %>%
-      str_split('\\/') %>% flatten_chr() %>%
+      url %>% str_replace("https://rankandfiled.com/data/company/", '') %>%
+      str_split('\\/') %>% list_c() %>%
       .[[1]]
 
     general_class_df <-
       json_data %>% future_map_dfr(class) %>%
       pivot_longer(cols = everything(), names_to = "column", values_to = "type") %>%
-      mutate(idName = 1:n())
+      mutate(idName = seq_len(n()))
 
     general_df <-
       json_data[general_class_df %>%
                   filter(!type %in% c('list', 'data.frame')) %>%
                   .$idName] %>%
-      flatten_df() %>%
+      as_tibble() %>%
       .resolve_name_df() %>%
       select(-dplyr::matches("idTicker")) %>%
       mutate(idTicker = ticker)
@@ -4416,7 +4416,7 @@ sec_filing_streams_rf <-
       general_df <-
         general_df %>%
         bind_cols(json_data$market %>%
-                    flatten_df() %>%
+                    as_tibble() %>%
                     .resolve_name_df() %>%
                     select(-dplyr::matches("codeExchange")))
 
@@ -4516,16 +4516,16 @@ sec_filing_streams_rf <-
 
         filer_df <-
           filer_df %>%
-          mutate(idRow = 1:n(),
+          mutate(idRow = seq_len(n()),
                  detailsOwns = detailsOwns %>% str_replace("\\|", ''))
 
         owns_df <-
-          1:nrow(filer_df) %>%
+          seq_len(nrow(filer_df)) %>%
           future_map_dfr(function(x) {
             owns <-
               filer_df$detailsOwns[[x]] %>%
               str_split("\\|") %>%
-              flatten_chr()
+              list_c()
 
             df <-
               tibble(idRow = x, owns) %>%
@@ -4540,7 +4540,7 @@ sec_filing_streams_rf <-
                 into = c('typeOwnerOwns', 'dateOwnershipOwns'),
                 sep = '\\#'
               ) %>%
-              mutate(countItem = 1:n() - 1) %>%
+              mutate(countItem = seq_len(n()) - 1) %>%
               mutate(
                 nameCompanyOwns = nameCompanyOwns %>% str_to_upper(),
                 idTickerOwns = idTickerOwns %>% str_to_upper()
@@ -4605,7 +4605,7 @@ sec_filing_streams_rf <-
               stateEntity,
               ', ',
               zipcodeEntity
-            ) %>% purrr::invoke(paste0, .)
+            ) %>% do.call(paste0, .)
           ) %>%
           select(nameEntity, addressEntity, everything())
       }
@@ -4641,7 +4641,7 @@ sec_filing_streams_rf <-
           values <-
             detail_value %>% str_replace('\\|', '') %>%
             str_split('\\|') %>%
-            flatten_chr()
+            list_c()
 
           df_data <-
             tibble(value = values) %>%
@@ -4659,7 +4659,7 @@ sec_filing_streams_rf <-
             pivot_longer(cols = -idRow, names_to = "item", values_to = "value", values_drop_na = TRUE) %>%
             group_by(item) %>%
             mutate(value = ifelse(value == '', NA, value),
-                   count = 1:n() - 1) %>%
+                   count = seq_len(n()) - 1) %>%
             ungroup() %>%
             arrange((count)) %>%
             mutate(item = ifelse(count == 0, item, paste0(item, count))) %>%
@@ -4690,7 +4690,7 @@ sec_filing_streams_rf <-
 
       general_df <-
         general_df %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         select(-detailsOwns) %>%
         left_join(detail_df) %>%
         select(-idRow) %>%
@@ -4700,13 +4700,13 @@ sec_filing_streams_rf <-
     general_df <-
       general_df %>%
       mutate(
-        urlTickerRankandFiled = list('http://rankandfiled.com/#/public/', idTicker, '/filings') %>% purrr::invoke(paste0, .),
+        urlTickerRankandFiled = list('https://rankandfiled.com/#/public/', idTicker, '/filings') %>% do.call(paste0, .),
         urlJSON = url
       )
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(general_df)
@@ -4729,10 +4729,10 @@ sec_filing_streams_rf <-
         select(-dplyr::matches("dateiso"))
     } else {
       df_name <-
-        list('http://rankandfiled.com/data/filer/',
+        list('https://rankandfiled.com/data/filer/',
              data$idCIK,
              '/general') %>%
-        purrr::invoke(paste0, .) %>%
+        do.call(paste0, .) %>%
         .parse_json_general_filing()
 
       entity <-
@@ -4754,7 +4754,7 @@ sec_filing_streams_rf <-
 .parse_company_general_safe <-
   purrr::possibly(.parse_company_general, tibble())
 .parse_json_trades <-
-  function(url = "http://rankandfiled.com/data/filer/1326801/trades?start=0",
+  function(url = "https://rankandfiled.com/data/filer/1326801/trades?start=0",
            return_message = TRUE) {
     if (!url %>% httr::url_ok() %>% suppressWarnings()) {
       return(tibble())
@@ -4766,9 +4766,9 @@ sec_filing_streams_rf <-
 
 
     cik <-
-      url %>% str_replace_all('http://rankandfiled.com/data/filer/|/trades', '') %>%
+      url %>% str_replace_all('https://rankandfiled.com/data/filer/|/trades', '') %>%
       str_split('\\?') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.numeric()
 
@@ -4829,7 +4829,7 @@ sec_filing_streams_rf <-
     trade_df <-
       trade_df %>%
       mutate(
-        countShares = ifelse(isBought == T, countShares, -countShares),
+        countShares = ifelse(isBought == TRUE, countShares, -countShares),
         amountTransaction = countShares * amountPrice,
         urlJSON = url
       )
@@ -4853,7 +4853,7 @@ sec_filing_streams_rf <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     return(trade_df)
   }
@@ -4869,8 +4869,8 @@ sec_filing_streams_rf <-
       general_df$idCIK
 
     trader_url <-
-      list("http://rankandfiled.com/data/filer/", cik, '/traders') %>%
-      purrr::invoke(paste0, .)
+      list("https://rankandfiled.com/data/filer/", cik, '/traders') %>%
+      do.call(paste0, .)
 
     count_trades <-
       .parse_json_traders(url = trader_url) %>%
@@ -4878,12 +4878,12 @@ sec_filing_streams_rf <-
 
     trade_urls <-
       list(
-        'http://rankandfiled.com/data/filer/',
+        'https://rankandfiled.com/data/filer/',
         cik,
         '/trades?start=',
         seq(0, by = 50, length.out = count_trades)
       ) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     .parse_json_trades_safe <-
       purrr::possibly(.parse_json_trades, NULL)
@@ -4897,8 +4897,8 @@ sec_filing_streams_rf <-
       suppressWarnings()
 
     owners_df <-
-      list("http://rankandfiled.com/data/filer/", cik, '/owners') %>%
-      purrr::invoke(paste0, .) %>%
+      list("https://rankandfiled.com/data/filer/", cik, '/owners') %>%
+      do.call(paste0, .) %>%
       .parse_json_owners(nest_data = nest_data)
 
     entity <-
@@ -4939,8 +4939,8 @@ sec_filing_streams_rf <-
 
     if (return_message) {
       list("Parsed ", all_trades %>% nrow(), ' trades for ', entity) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(all_trades)
@@ -4961,12 +4961,12 @@ sec_filing_streams_rf <-
 
     filing_urls <-
       list(
-        'http://rankandfiled.com/data/filer/',
+        'https://rankandfiled.com/data/filer/',
         cik,
         '/all?start=',
         seq(0, by = 50, length.out = filing_pages)
       ) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     .parse_json_public_filers_safe <-
       purrr::possibly(.parse_json_public_filers, NULL)
@@ -4997,8 +4997,8 @@ sec_filing_streams_rf <-
 
     if (return_message) {
       list("Parsed ", .all_filings %>% nrow(), ' SEC Filings for ', entity) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
     return(.all_filings)
   }
@@ -5084,8 +5084,8 @@ sec_filing_streams_rf <-
 
     if (return_message) {
       list("Acquired all data for ", all_data$nameEntity %>% unique()) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(all_data)
@@ -5131,13 +5131,13 @@ us_public_companies <-
     }
 
     json_data <-
-      "http://rankandfiled.com/data/public_companies" %>%
+      "https://rankandfiled.com/data/public_companies" %>%
       jsonlite::fromJSON()
 
     company_data <-
       tibble(df = json_data$result$data %>%
                str_split(pattern = '\\|') %>%
-               flatten_chr()) %>%
+               list_c()) %>%
       tidyr::separate(
         df,
         sep = '\\*',
@@ -5212,7 +5212,7 @@ us_public_companies <-
                               )),
                               NA),
         amountEquityMarketCap = (amountEquityMarketCap),
-        urlTickerRankandFiled = list('http://rankandfiled.com/#/public/', idTicker, '/filings') %>% purrr::invoke(paste0, .)
+        urlTickerRankandFiled = list('https://rankandfiled.com/#/public/', idTicker, '/filings') %>% do.call(paste0, .)
       ) %>%
       select(idTicker:idSector, nameSector, everything()) %>%
       suppressMessages()
@@ -5331,8 +5331,8 @@ us_public_companies <-
           ' US stocks with a combined market capitalization of ',
           company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)
         ) %>%
-          purrr::invoke(paste0, .) %>%
-          cat(fill = T)
+          do.call(paste0, .) %>%
+          cat(fill = TRUE)
       }
 
       return(company_data)
@@ -5490,8 +5490,8 @@ us_public_companies <-
           ' US Stocks with a combined market capitalization of ',
           company_data$amountEquityMarketCap %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0)
         ) %>%
-          purrr::invoke(paste0, .) %>%
-          cat(fill = T)
+          do.call(paste0, .) %>%
+          cat(fill = TRUE)
       }
 
       company_data <-
@@ -5510,7 +5510,7 @@ us_public_companies <-
     url %>%
       str_replace_all("https://www.sec.gov/Archives/edgar/data/", '') %>%
       str_split('\\/') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.numeric()
   }
@@ -5952,7 +5952,7 @@ us_public_companies <-
       items_bold <-
         items_bold %>%
         str_split('\\-') %>%
-        flatten_chr() %>%
+        list_c() %>%
         str_trim()
     } else {
       items_bold <-
@@ -5965,7 +5965,7 @@ us_public_companies <-
       items_bold <-
         items_bold %>%
         str_split('\\-') %>%
-        flatten_chr() %>%
+        list_c() %>%
         str_trim() %>%
         unique()
     }
@@ -5988,13 +5988,13 @@ us_public_companies <-
       str_to_upper() %>%
       unique() %>%
       append(list('(', letters, ')') %>%
-               purrr::invoke(paste0, .)) %>%
+               do.call(paste0, .)) %>%
       paste0(collapse = '|')
 
 
     hit_terms_in <-
       hit_terms %>% str_split('\\|') %>%
-      flatten_chr()
+      list_c()
 
     locations <-
       .get_loc_df() %>%
@@ -6077,7 +6077,7 @@ us_public_companies <-
       filter(!value %>% str_detect(hit_terms))
 
     count_df <-
-      all_data %>% count(item, sort = T) %>%
+      all_data %>% count(item, sort = TRUE) %>%
       arrange(item) %>%
       pivot_wider(names_from = item, values_from = n)
 
@@ -6112,7 +6112,7 @@ us_public_companies <-
               filter(!value %>% is.na()) %>%
               filter(!value == '') %>%
               filter(!value %>% str_detect(hit_terms)) %>%
-              mutate(idSubsidiary = 1:n())
+              mutate(idSubsidiary = seq_len(n()))
           }
         }) %>%
         filter(!value %>% str_detect(hit_terms)) %>%
@@ -6131,7 +6131,7 @@ us_public_companies <-
       if (has_property) {
         tables <-
           page %>%
-          html_table(fill = T)
+          html_table(fill = TRUE)
         df <-
           seq_along(tables) %>%
           future_map_dfr(function(x) {
@@ -6143,7 +6143,7 @@ us_public_companies <-
             column_df <-
               table_df %>% slice(1) %>%
               pivot_longer(cols = everything(), names_to = "column", values_to = "value") %>%
-              mutate(idColumn = 1:n()) %>%
+              mutate(idColumn = seq_len(n())) %>%
               filter(!value %>% is.na()) %>%
               left_join(tibble(
                 value = c(
@@ -6243,10 +6243,10 @@ us_public_companies <-
           mutate(value = ifelse(value == '', NA, value)) %>%
           filter(!value %>% is.na()) %>%
           group_by(item) %>%
-          mutate(idSubsidiary = 1:n()) %>%
+          mutate(idSubsidiary = seq_len(n())) %>%
           pivot_wider(names_from = item, values_from = value) %>%
           filter(!X1 == '') %>%
-          mutate(idSubsidiary = 1:n()) %>%
+          mutate(idSubsidiary = seq_len(n())) %>%
           pivot_longer(cols = -c(X1, idSubsidiary), names_to = "item", values_to = "value") %>%
           ungroup() %>%
           filter(!value %>% str_detect(hit_terms)) %>%
@@ -6345,7 +6345,7 @@ us_public_companies <-
 
         if (return_message) {
           list("Parsed: ", url) %>%
-            purrr::invoke(paste0, .) %>% cat(fill = T)
+            do.call(paste0, .) %>% cat(fill = TRUE)
         }
 
         return(df)
@@ -6372,7 +6372,7 @@ us_public_companies <-
 
         df <-
           tibble(nameSubsidiary = data) %>%
-          mutate(idRow = 1:n())
+          mutate(idRow = seq_len(n()))
 
         .loc_df <-
           tibble(nameSubsidiary = locations) %>%
@@ -6401,7 +6401,7 @@ us_public_companies <-
           select(-dplyr::matches("idSubsidiary"))
         if (return_message) {
           list("Parsed: ", url) %>%
-            purrr::invoke(paste0, .) %>% cat(fill = T)
+            do.call(paste0, .) %>% cat(fill = TRUE)
         }
 
         return(df)
@@ -6477,7 +6477,7 @@ us_public_companies <-
 
       hit_terms_in <-
         hit_terms %>% str_split('\\|') %>%
-        flatten_chr()
+        list_c()
 
       has_pct_col <-
         all_data %>%
@@ -6512,7 +6512,7 @@ us_public_companies <-
         all_data %>%
         select(-valueNC) %>%
         group_by(item) %>%
-        mutate(idSubsidiary = 1:n()) %>%
+        mutate(idSubsidiary = seq_len(n())) %>%
         pivot_wider(names_from = item, values_from = value) %>%
         ungroup() %>%
         dplyr::rename(nameSubsidiary = X1)
@@ -6540,7 +6540,7 @@ us_public_companies <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% cat(fill = T)
+          do.call(paste0, .) %>% cat(fill = TRUE)
       }
 
       return(all_data)
@@ -6561,7 +6561,7 @@ us_public_companies <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df %>% select(-dplyr::matches("idSubsidiary")))
@@ -6605,7 +6605,7 @@ us_public_companies <-
           item %>%
           str_replace_all('\\   ', '\\:') %>%
           str_split('\\:') %>%
-          flatten_chr() %>%
+          list_c() %>%
           str_trim() %>%
           str_to_upper()
 
@@ -6660,7 +6660,7 @@ us_public_companies <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df)
@@ -6715,7 +6715,7 @@ us_public_companies <-
         pieces <-
           name_pieces %>%
           str_split('\\.') %>%
-          flatten_chr()
+          list_c()
 
         pieces_no_num <-
           pieces[!pieces %>% str_detect("[0-9]")]
@@ -6723,7 +6723,7 @@ us_public_companies <-
           pieces_no_num %>% length()
 
         is_street <-
-          pieces %>% str_detect("street1|street2|Street1|Street2") %>% sum(na.rm = T) > 0
+          pieces %>% str_detect("street1|street2|Street1|Street2") %>% sum(na.rm = TRUE) > 0
 
         name_item <-
           pieces_no_num[length(pieces_no_num)]
@@ -6769,7 +6769,7 @@ us_public_companies <-
         if (is_issuer) {
 
           items <-
-            sec_name %>% str_split('\\.') %>% flatten_chr()
+            sec_name %>% str_split('\\.') %>% list_c()
 
           countItem <-
             pieces[2] %>% as.character() %>% readr::parse_number() %>% suppressWarnings()
@@ -6950,13 +6950,13 @@ us_public_companies <-
         }
         if (xml_nodes %>% length() > 100) {
           list("Be patient there are ", xml_nodes %>% length() %>% formattable::comma(digits = 0), ' nodes to parse') %>%
-            purrr::reduce(paste0) %>% cat(fill = T)
+            purrr::reduce(paste0) %>% cat(fill = TRUE)
         }
         value_list <-
           xml_nodes %>% as_list()
 
         value_list <-
-          value_list[value_list %>% future_map(length) %>% flatten_dbl() > 0]
+          value_list[value_list %>% future_map(length) %>% list_c() > 0]
 
         json_data <-
           value_list %>%
@@ -7042,7 +7042,7 @@ us_public_companies <-
     }
 
     cik <-
-      url %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>% str_split('/') %>% flatten_chr() %>% .[[1]] %>% as.character() %>% readr::parse_number() %>% suppressMessages()
+      url %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>% str_split('/') %>% list_c() %>% .[[1]] %>% as.character() %>% readr::parse_number() %>% suppressMessages()
 
     df_title <-
       .sec_form_title_df()
@@ -7112,7 +7112,7 @@ us_public_companies <-
         filter(nameTable %>% is.na()) %>%
         select(nameActual, value) %>%
         group_by(nameActual) %>%
-        mutate(countItem = 1:n() - 1) %>%
+        mutate(countItem = seq_len(n()) - 1) %>%
         arrange(countItem) %>%
         ungroup() %>%
         filter(!nameActual %>% str_detect('idCCC')) %>%
@@ -7157,7 +7157,7 @@ us_public_companies <-
           select(dplyr::matches("countItem"), nameActual, value) %>%
           select(which(colMeans(is.na(.)) < 1)) %>%
           group_by(nameActual) %>%
-          mutate(countItem = 1:n() - 1) %>%
+          mutate(countItem = seq_len(n()) - 1) %>%
           ungroup()
 
         has_counts <-
@@ -7213,7 +7213,7 @@ us_public_companies <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     rm(df_metadata)
@@ -7322,10 +7322,10 @@ us_public_companies <-
     cik <-
       url %>%
       str_split('data/') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[2]] %>%
       str_split('/') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.numeric()
     td <-
@@ -7333,8 +7333,14 @@ us_public_companies <-
     tf <-
       tempfile(tmpdir = td, fileext = ".xml")
 
-    url %>%
-      curl::curl_download(destfile = tf)
+    dl_ok <- tryCatch({
+      curl::curl_download(url, destfile = tf, mode = "wb")
+      TRUE
+    }, error = function(e) {
+      warning("Download failed for ", url, ": ", conditionMessage(e))
+      FALSE
+    })
+    if (!dl_ok) return(tibble())
 
     doc <-
       tf %>%
@@ -7475,7 +7481,7 @@ us_public_companies <-
     tf %>% unlink()
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     return(data)
   }
@@ -9199,7 +9205,7 @@ dictionary_sec_rules <-
         pieces <-
           name_pieces %>%
           str_split('\\.') %>%
-          flatten_chr()
+          list_c()
 
         pieces_no_num <-
           pieces[!pieces %>% str_detect("[0-9]")]
@@ -9207,7 +9213,7 @@ dictionary_sec_rules <-
           pieces_no_num %>% length()
 
         is_street <-
-          pieces %>% str_detect("street1|street2|Street1|Street2") %>% sum(na.rm = T) > 0
+          pieces %>% str_detect("street1|street2|Street1|Street2") %>% sum(na.rm = TRUE) > 0
 
         name_item <-
           pieces_no_num[length(pieces_no_num)]
@@ -9253,7 +9259,7 @@ dictionary_sec_rules <-
         if (is_issuer) {
 
           items <-
-            sec_name %>% str_split('\\.') %>% flatten_chr()
+            sec_name %>% str_split('\\.') %>% list_c()
 
           countItem <-
             pieces[2] %>% as.character() %>%  readr::parse_number() %>% suppressWarnings()
@@ -9437,14 +9443,14 @@ dictionary_sec_rules <-
         }
         if (xml_nodes %>% length() > 100) {
           list("Be patient there are ", xml_nodes %>% length() %>% formattable::comma(digits = 0), ' nodes to parse') %>%
-            purrr::reduce(paste0) %>% cat(fill = T)
+            purrr::reduce(paste0) %>% cat(fill = TRUE)
         }
         value_list <-
           xml_nodes %>%
           as_list()
 
         value_list <-
-          value_list[value_list %>% future_map(length) %>% flatten_dbl() > 0]
+          value_list[value_list %>% future_map(length) %>% list_c() > 0]
 
         json_data <-
           value_list %>%
@@ -9530,7 +9536,7 @@ dictionary_sec_rules <-
     }
 
     cik <-
-      url %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>% str_split('/') %>% flatten_chr() %>% .[[1]] %>% as.character() %>% readr::parse_number() %>% suppressMessages()
+      url %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>% str_split('/') %>% list_c() %>% .[[1]] %>% as.character() %>% readr::parse_number() %>% suppressMessages()
 
     df_title <-
       .sec_form_title_df()
@@ -9600,7 +9606,7 @@ dictionary_sec_rules <-
         filter(nameTable %>% is.na()) %>%
         select(nameActual, value) %>%
         group_by(nameActual) %>%
-        mutate(countItem = 1:n() - 1) %>%
+        mutate(countItem = seq_len(n()) - 1) %>%
         arrange(countItem) %>%
         ungroup() %>%
         filter(!nameActual %>% str_detect('idCCC')) %>%
@@ -9645,7 +9651,7 @@ dictionary_sec_rules <-
           select(dplyr::matches("countItem"), nameActual, value) %>%
           select(which(colMeans(is.na(.)) < 1)) %>%
           group_by(nameActual) %>%
-          mutate(countItem = 1:n() - 1) %>%
+          mutate(countItem = seq_len(n()) - 1) %>%
           ungroup()
 
         has_counts <-
@@ -9744,7 +9750,7 @@ dictionary_sec_rules <-
       urls_df <-
         df_search %>% select(urlSECFiling, urlSECFilingDirectory)
       df_13f_urls <-
-        1:nrow(urls_df) %>%
+        seq_len(nrow(urls_df)) %>%
         future_map_dfr(function(x){
 
           row_df <-
@@ -9757,7 +9763,7 @@ dictionary_sec_rules <-
             url %>%
             str_replace_all("https://www.sec.gov/Archives/edgar/data/", '') %>%
             str_split('\\/') %>%
-            flatten_chr()
+            list_c()
           idCIKFiler <-
             parts[[1]] %>% as.numeric()
           slugAccession <-
@@ -9910,11 +9916,12 @@ dictionary_sec_rules <-
 # index_parsing -----------------------------------------------------------
 .parse_sec_filing_index <-
   function(urls, return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res) {
       if (return_message) {
-        list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% cat(fill = T)
+        list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% cat(fill = TRUE)
       }
       page <-
         res$content %>%
@@ -9926,10 +9933,10 @@ dictionary_sec_rules <-
       cik <-
         res$url %>%
         str_split('data/') %>%
-        flatten_chr() %>%
+        list_c() %>%
         .[[2]] %>%
         str_split('/') %>%
-        flatten_chr() %>%
+        list_c() %>%
         .[[1]] %>%
         as.numeric()
       if (not_503){
@@ -9978,7 +9985,7 @@ dictionary_sec_rules <-
 
             name_items <-
               x %>% str_split('\\ ') %>%
-              flatten_chr()
+              list_c()
 
             first <-
               name_items[name_items %>% length()] %>% str_to_lower()
@@ -9989,7 +9996,7 @@ dictionary_sec_rules <-
               str_to_title()
 
             final_name <-
-              list(first, end) %>% purrr::invoke(paste0, .)
+              list(first, end) %>% do.call(paste0, .)
             return(final_name)
           })
         search_url <-
@@ -10114,9 +10121,7 @@ dictionary_sec_rules <-
                  urlSECFilingDirectory = search_url)
       }
 
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg){
       tibble()
@@ -10126,7 +10131,7 @@ dictionary_sec_rules <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 .all_filings <-
@@ -10157,7 +10162,7 @@ dictionary_sec_rules <-
           idAccession <-
             x %>% str_replace_all('https://www.sec.gov/Archives/edgar/data/', '') %>%
             str_split('\\/') %>%
-            flatten_chr() %>% {
+            list_c() %>% {
               .[length(.)] %>% str_replace_all('-index.htm', '')
             }
           tibble(idAccession, urlSECFilingDirectory)
@@ -10173,7 +10178,7 @@ dictionary_sec_rules <-
       select(-dplyr::matches("hasAssetFile|isFormD|is13F|isForm3_4|hasSmallOfferingData")) %>%
       filter(typeFile %>% str_detect("htm")) %>%
       group_by(idAccession) %>%
-      mutate(countAccension = 1:n()) %>%
+      mutate(countAccension = seq_len(n())) %>%
       filter(countAccension == max(countAccension)) %>%
       ungroup() %>%
       arrange(dateFiling)
@@ -10292,7 +10297,7 @@ dictionary_sec_rules <-
   df_headers <- tibble(text = header_text) %>%
     tidyr::separate(col = text, into = c('nameSEC', 'value'), sep = '\\:') %>%
     mutate(value = value %>% str_replace_all("\t", '')) %>%
-    mutate(idRow = 1:n())
+    mutate(idRow = seq_len(n()))
 
   df_parents <-
     df_headers %>%
@@ -10344,7 +10349,7 @@ dictionary_sec_rules <-
       future_map_dfr(function(x){
         parts <-
           x %>% str_replace_all('\\-', ' ') %>%
-          str_split('\\ ') %>% flatten_chr()
+          str_split('\\ ') %>% list_c()
 
 
         first <-
@@ -10386,7 +10391,7 @@ dictionary_sec_rules <-
     select(nameItem, value) %>%
     suppressWarnings() %>%
     group_by(nameItem) %>%
-    mutate(countItem = 1:n() - 1) %>%
+    mutate(countItem = seq_len(n()) - 1) %>%
     ungroup() %>%
     mutate(nameItem = ifelse(countItem == 0, nameItem, paste0(nameItem, countItem))) %>%
     suppressMessages() %>%
@@ -10436,7 +10441,7 @@ dictionary_sec_rules <-
 
   df_text <-
     tibble(textRow = text_blob[text_start:text_end]) %>%
-    mutate(idRow = 1:n()) %>%
+    mutate(idRow = seq_len(n())) %>%
     select(idRow, everything())
 
   return(df_text)
@@ -10480,20 +10485,19 @@ dictionary_sec_rules <-
 .sec_complete_filings <-
   function(urls = c("https://www.sec.gov/Archives/edgar/data/732712/000119312517030264/0001193125-17-030264.txt", "https://www.sec.gov/Archives/edgar/data/732712/000161159317000024/0001611593-17-000024.txt", "https://www.sec.gov/Archives/edgar/data/1629703/000161159317000025/0001611593-17-000025.txt", "https://www.sec.gov/Archives/edgar/data/1284999/000161159317000014/0001611593-17-000014.txt"),
            return_message =  TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res) {
       url <-
         res$url
       if (return_message) {
-        list("Parsing: ", url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = T)
+        list("Parsing: ", url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = TRUE)
       }
 
       data <-
         .parse_text_filing(url = url)
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg) {
       tibble()
@@ -10503,7 +10507,7 @@ dictionary_sec_rules <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 
@@ -10515,10 +10519,10 @@ dictionary_sec_rules <-
     cik <-
       url %>%
       str_split('data/') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[2]] %>%
       str_split('/') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.numeric()
     td <-
@@ -10526,8 +10530,14 @@ dictionary_sec_rules <-
     tf <-
       tempfile(tmpdir = td, fileext = ".xml")
 
-    url %>%
-      curl::curl_download(destfile = tf)
+    dl_ok <- tryCatch({
+      curl::curl_download(url, destfile = tf, mode = "wb")
+      TRUE
+    }, error = function(e) {
+      warning("Download failed for ", url, ": ", conditionMessage(e))
+      FALSE
+    })
+    if (!dl_ok) return(tibble())
 
     doc <-
       tf %>%
@@ -12402,19 +12412,19 @@ dictionary_sec_rules <-
 #' @examples
 #' edgar_tickers()
 edgar_tickers <-
-  function(include_ticker_information = F,
-           join_sic = T,
-           snake_names = F,
+  function(include_ticker_information = FALSE,
+           join_sic = TRUE,
+           snake_names = FALSE,
 
-           return_message = T) {
+           return_message = TRUE) {
     json_data <-
       "https://www.sec.gov/data/company_tickers.json" %>%
-      jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = F)
+      jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = FALSE)
 
     data <-
       seq_along(json_data) %>%
       map_dfr(function(x) {
-        json_data[[x]] %>% flatten_dfr()
+        json_data[[x]] %>% list_rbind()
       }) %>%
       setNames(c('idCIK',
                  'idTicker',
@@ -12423,12 +12433,12 @@ edgar_tickers <-
       mutate(nameCompany = nameCompany %>% str_to_upper())
 
     if (include_ticker_information) {
-      "\n\nAcquiring ticker information\n\n" %>% cat(fill = T)
+      "\n\nAcquiring ticker information\n\n" %>% cat(fill = TRUE)
       sec_tickers_info_safe <-
         possibly(sec_tickers_info, tibble())
 
       df_tickers <-
-        sec_tickers_info(tickers = data$idTicker, return_message = return_message, join_sic = join_sic, unformat = T, snake_names = F, convert_case = T, include_address = T)
+        sec_tickers_info(tickers = data$idTicker, return_message = return_message, join_sic = join_sic, unformat = TRUE, snake_names = FALSE, convert_case = TRUE, include_address = TRUE)
 
       df_tickers <-
         df_tickers %>%
@@ -12497,7 +12507,7 @@ edgar_tickers <-
     if (return_message) {
       list("CIK: ", cik, " has ", filings %>% formattable::comma(digits = 0), ' Filings') %>%
         purrr::reduce(paste0) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
     df
   }
@@ -12515,7 +12525,7 @@ edgar_tickers <-
 #' cik_filing_counts(cik = 886982)
 #' }
 cik_filing_counts <-
-  function(cik, return_message = T) {
+  function(cik, return_message = TRUE) {
     .cik_filing_count_safe <-
       possibly(.cik_filing_count, tibble())
     cik %>%
@@ -12571,7 +12581,7 @@ cik_filing_counts <-
     if (return_message) {
       list("SIC: ", sic, " has ", filings %>% formattable::comma(digits = 0), ' Filings') %>%
         purrr::reduce(paste0) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
     df
   }
@@ -12595,10 +12605,10 @@ cik_filing_counts <-
 #' sic_filing_count(sic = 6282)
 #' }
 sic_filing_count <-
-  function(sic = NULL, join_sic = T, snake_names = F,
-           use_all_sic_codes = F,
-           return_message = T,
-           unformat = F) {
+  function(sic = NULL, join_sic = TRUE, snake_names = FALSE,
+           use_all_sic_codes = FALSE,
+           return_message = TRUE,
+           unformat = FALSE) {
     if (use_all_sic_codes) {
       sic <-
         dictionary_sic_codes() %>%
@@ -12623,7 +12633,7 @@ sic_filing_count <-
 
     data <-
       data %>%
-      munge_tbl(snake_names = snake_names, unformat = F)
+      munge_tbl(snake_names = snake_names, unformat = FALSE)
 
     data
   }
@@ -12681,9 +12691,9 @@ dictionary_sic_codes <-
       "https://www.sec.gov/info/edgar/siccodes.htm" %>%
       read_html()
 
-    page %>% html_table(fill = T) %>% first() %>% as_tibble() %>%
+    page %>% html_table(fill = TRUE) %>% first() %>% as_tibble() %>%
       setNames(c("idSIC", "nameOfficeAD", "nameIndustry")) %>%
-      munge_tbl(convert_case = T)
+      munge_tbl(convert_case = TRUE)
   })
 
 # Form Descriptions
@@ -12758,9 +12768,9 @@ dictionary_sec_forms <-
       str_replace_all('\\TOPIC(S):','') %>%
       str_split('\\:') %>%
       future_map(function(x){
-        x %>% str_split('\\:') %>% purrr::flatten_chr() %>% .[[2]]
+        x %>% str_split('\\:') %>% purrr::list_c() %>% .[[2]]
       }) %>%
-      purrr::flatten_chr()
+      purrr::list_c()
 
     data <-
       tibble(
@@ -13026,10 +13036,10 @@ parse_for_tables <-
         distinct() %>%
         mutate(
           nameDF =
-            list('data', nameTable %>% str_replace_all('\\ ', ''), 'EDGAR') %>% purrr::invoke(paste0, .)
+            list('data', nameTable %>% str_replace_all('\\ ', ''), 'EDGAR') %>% do.call(paste0, .)
         )
 
-      1:nrow(table_name_df) %>%
+      seq_len(nrow(table_name_df)) %>%
         walk(function(x) {
           df_data <-
             all_tables %>%
@@ -13108,11 +13118,12 @@ parse_for_tables <-
 
 .parse_ft_filing_page <-
   function(urls, return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res) {
       if (return_message) {
-        list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% cat(fill = T)
+        list("Parsing: ", res$url) %>% purrr::reduce(paste0) %>% cat(fill = TRUE)
       }
       page <-
         res$content %>%
@@ -13141,16 +13152,16 @@ parse_for_tables <-
         map_chr(function(x){
           x %>%
             str_split('\\,') %>%
-            flatten_chr() %>%
+            list_c() %>%
             .[[1]]
         })
 
       ciks <-
         urlFiling %>%
         map_dbl(function(x){
-          x %>% str_replace_all('http://www.sec.gov/Archives/edgar/data/','') %>%
+          x %>% str_replace_all('https?://www.sec.gov/Archives/edgar/data/','') %>%
             str_split('/') %>%
-            flatten_chr() %>%
+            list_c() %>%
             .[[1]] %>%
             as.character() %>%
             readr::parse_number()
@@ -13185,9 +13196,7 @@ parse_for_tables <-
         suppressWarnings() %>%
         suppressMessages()
 
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg){
       tibble()
@@ -13197,7 +13206,7 @@ parse_for_tables <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 #' EDGAR Full Text Search by Terms
@@ -13215,7 +13224,7 @@ parse_for_tables <-
 #' }
 edgar_ft_terms <-
   function(search_terms = c('"Jared Kushner"', '"EJF Capital"', '"Blackstone Real Estate"'),
-           include_counts = F,
+           include_counts = FALSE,
            nest_data = FALSE,
            return_message = TRUE) {
     .generate_ft_search_urls_safe <-
@@ -13266,7 +13275,7 @@ edgar_ft_terms <-
         "\nSEC free text search filing mentions in the last 4 years:\n",
         results %>% paste0(collapse = '\n')
       ) %>%
-        purrr::reduce(paste0) %>% cat(fill = T)
+        purrr::reduce(paste0) %>% cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -13339,11 +13348,12 @@ edgar_ft_terms <-
 # https://www.sec.gov/edgar/searchedgar/search_help.htm
 .parse_boolean_search_page <-
   function(urls, return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res){
       if (return_message) {
-        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = T)
+        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = TRUE)
       }
       page <-
         res$content %>%
@@ -13386,7 +13396,7 @@ edgar_ft_terms <-
               stem %>%
               str_replace_all('/Archives/edgar/data/','') %>%
               str_split('/') %>%
-              flatten_chr()
+              list_c()
 
             cik <-
               items[[1]] %>% as.numeric()
@@ -13477,9 +13487,7 @@ edgar_ft_terms <-
           )
         )
 
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg){
       tibble()
@@ -13489,7 +13497,7 @@ edgar_ft_terms <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 
@@ -13632,7 +13640,7 @@ edgar_ft_terms <-
          search_message, ' to parse'
     ) %>%
       purrr::reduce(paste0) %>%
-      cat(fill = T)
+      cat(fill = TRUE)
 
 
     page_count <-
@@ -13697,7 +13705,7 @@ edgar_ft_terms <-
         '\n'
       ) %>%
         purrr::reduce(paste0) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
 
     all_data <-
@@ -13808,10 +13816,10 @@ edgar_search_terms <-
         distinct() %>%
         mutate(
           nameDF =
-            list('dataFiler', nameTable %>% str_replace_all('\\ ', '')) %>% purrr::invoke(paste0, .)
+            list('dataFiler', nameTable %>% str_replace_all('\\ ', '')) %>% do.call(paste0, .)
         )
 
-      1:nrow(table_name_df) %>%
+      seq_len(nrow(table_name_df)) %>%
         walk(function(x) {
           df_name <-
             table_name_df %>% slice(x) %>% .$nameDF
@@ -13858,9 +13866,9 @@ edgar_search_terms <-
                 unnest(cols = where(is.list))
 
               select_cols <- tibble(nameData = names(df_data)) %>%
-                mutate(idColumn = 1:n()) %>%
+                mutate(idColumn = seq_len(n())) %>%
                 group_by(nameData) %>%
-                mutate(countColumn = 1:n()) %>%
+                mutate(countColumn = seq_len(n())) %>%
                 ungroup() %>%
                 filter(countColumn == min(countColumn)) %>%
                 .$idColumn
@@ -13897,7 +13905,7 @@ edgar_search_terms <-
 # Most Recent Filings -----------------------------------------------------
 
 .parse_most_recent_filing_form_page <-
-  function(url = "https://www.sec.gov/cgi-bin/current?q1=0&q2=6&q3=10-D", return_message = F) {
+  function(url = "https://www.sec.gov/cgi-bin/current?q1=0&q2=6&q3=10-D", return_message = FALSE) {
     page <-
       url %>%
       read_html()
@@ -13923,11 +13931,11 @@ edgar_search_terms <-
     if (data_match) {
       data <-
         data %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(
           tibble(urlCIKFiler = urls[c(FALSE,TRUE)] %>% paste0('&start=0&count=100'),
                  urlSECFilingDirectory = urls[c(FALSE, TRUE)]) %>%
-            mutate(idRow = 1:n())
+            mutate(idRow = seq_len(n()))
 
         ) %>%
         suppressWarnings() %>%
@@ -13936,7 +13944,7 @@ edgar_search_terms <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)}
+        do.call(paste0, .) %>% cat(fill = TRUE)}
     data
   }
 
@@ -14014,7 +14022,7 @@ edgar_search_terms <-
           items <-
             description %>%
             str_split("ACCESSION NUMBER: ") %>%
-            flatten_chr() %>%
+            list_c() %>%
             str_replace_all('\n','')
 
           filing_description <-
@@ -14023,7 +14031,7 @@ edgar_search_terms <-
           items <-
             items[[2]] %>%
             str_split('ACT:') %>%
-            flatten_chr() %>%
+            list_c() %>%
             str_trim()
 
           accession <-
@@ -14032,7 +14040,7 @@ edgar_search_terms <-
           items <-
             items[[2]] %>%
             str_split("SIZE:") %>%
-            flatten_chr() %>%
+            list_c() %>%
             str_trim()
 
           df <-
@@ -14048,7 +14056,7 @@ edgar_search_terms <-
         items <-
           description %>%
           str_split("ACCESSION NUMBER: ") %>%
-          flatten_chr() %>%
+          list_c() %>%
           str_replace_all('\n','')
 
         filing_description <-
@@ -14057,7 +14065,7 @@ edgar_search_terms <-
         items <-
           items[[2]] %>%
           str_split('SIZE:') %>%
-          flatten_chr() %>%
+          list_c() %>%
           str_trim()
 
         df <-
@@ -14087,7 +14095,7 @@ edgar_search_terms <-
           values <-
             filer %>%
             str_split('\\(') %>%
-            flatten_chr() %>%
+            list_c() %>%
             str_replace_all('[\\)]','') %>%
             str_trim()
 
@@ -14107,7 +14115,7 @@ edgar_search_terms <-
           values <-
             filer %>%
             str_split('\\(') %>%
-            flatten_chr() %>%
+            list_c() %>%
             str_replace_all('[\\)]','') %>%
             str_trim()
 
@@ -14155,7 +14163,7 @@ edgar_search_terms <-
       seq_along(file_film) %>%
       future_map_dfr(function(x){
         parts <-
-          file_film[[x]] %>% str_split('\n') %>% flatten_chr()
+          file_film[[x]] %>% str_split('\n') %>% list_c()
         tibble(
           idRow = x,
           idFile = parts[[1]] %>% stringr::str_trim(),
@@ -14188,14 +14196,14 @@ edgar_search_terms <-
     if (df_films %>% nrow() == data %>% nrow()) {
       data <-
         data %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         left_join(df_films, by = "idRow") %>%
         select(-idRow)
     }
 
     if(return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     data <-
       data %>%
@@ -14305,7 +14313,7 @@ edgar_search_terms <-
 
     df_mr_urls <-
       tibble(urlPageFiling = urls) %>%
-      mutate(countPage = 1:n())
+      mutate(countPage = seq_len(n()))
 
     if (length(filing_type) > 0) {
       df_mr_urls <-
@@ -14350,7 +14358,7 @@ edgar_search_terms <-
       list("\nReturned ", all_data %>% nrow() %>% formattable::comma(digits = 0),
            ' of the most recent filings from ', filing_type, ' forms\n') %>%
         purrr::reduce(paste0) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
     return(all_data)
   }
@@ -14520,7 +14528,7 @@ edgar_recent_filings <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df_urls)
@@ -14538,11 +14546,11 @@ edgar_recent_filings <-
     url_slug <-
       url %>%
       str_split('\\/') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[length(.)] %>%
       str_replace_all('\\.idx', '') %>%
       str_split('\\.') %>%
-      flatten_chr()
+      list_c()
 
     index_type <-
       url_slug[[1]]
@@ -14641,7 +14649,7 @@ edgar_recent_filings <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% cat(fill = T)
+          do.call(paste0, .) %>% cat(fill = TRUE)
       }
       return(df)
     }
@@ -14716,7 +14724,7 @@ edgar_recent_filings <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% cat(fill = T)
+          do.call(paste0, .) %>% cat(fill = TRUE)
       }
 
       return(df)
@@ -14769,7 +14777,7 @@ edgar_recent_filings <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df)
@@ -14947,12 +14955,12 @@ edgar_filing_streams <-
         "Parsed ",
         all_data %>% nrow() %>% formattable::comma(digits = 0),
         " SEC filings from ",
-        all_data$dateIndex %>% min(na.rm = T),
+        all_data$dateIndex %>% min(na.rm = TRUE),
         ' to ',
         all_data$dateIndex %>% max(na.rm = TRUE)
       ) %>%
         purrr::reduce(paste0) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
 
     all_data <-
@@ -15009,10 +15017,10 @@ edgar_filing_streams <-
 
     page_count <-
       url %>% str_split('start=') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[2]] %>%
       str_split('&') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.character() %>%
       readr::parse_number()
@@ -15037,7 +15045,7 @@ edgar_filing_streams <-
       no_page %>%
       length() > 0
     is_end <-
-      !items %>% str_detect("NEXT 100") %>% sum(na.rm = T) > 0
+      !items %>% str_detect("NEXT 100") %>% sum(na.rm = TRUE) > 0
 
     if (is_end & (!no_page)) {
       return(tibble(isEnd = TRUE, countStart = page_count))
@@ -15055,11 +15063,12 @@ edgar_filing_streams <-
 .parse_search_page <-
   function(urls = "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=Bank&owner=exclude&match=&start=500&count=100&hidefilings=0",
            return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res){
       if (return_message) {
-        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = T)
+        list("Parsing: ", res$url, "\n") %>% purrr::reduce(paste0) %>% cat(fill = TRUE)
       }
       page <-
         res$content %>%
@@ -15118,9 +15127,7 @@ edgar_filing_streams <-
         suppressWarnings() %>%
         suppressMessages() %>%
         select(-dplyr::matches("idLocationEntity"))
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg){
       tibble()
@@ -15130,7 +15137,7 @@ edgar_filing_streams <-
         curl_fetch_multi(url = x, success, failure)
       })
     multi_run()
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 .parse_search_page_length <-
@@ -15197,7 +15204,7 @@ edgar_filing_streams <-
 
     df_filing_urls <-
       tibble(nameSearch = search_term, urlCIKPageFiling = urls) %>%
-      mutate(countPage = 1:n())
+      mutate(countPage = seq_len(n()))
     if('dfEnd' %>% exists()){
       rm(list = c('dfEnd'), pos = ".GlobalEnv")
     }
@@ -15225,7 +15232,7 @@ edgar_filing_streams <-
       list("Returned ", nrow(data) %>% formattable::comma(digits = 0),
            ' SEC registered entities for the term ', search_term) %>%
         purrr::reduce(paste0) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
 
     return(data)
@@ -15306,7 +15313,7 @@ edgar_entities_cik <-
 
 .parse_city_state <-
   function(x = "MENLO PARK CA 94025") {
-    parts <- x %>% str_split('\\ ') %>% flatten_chr()
+    parts <- x %>% str_split('\\ ') %>% list_c()
     over_2 <- parts %>% length() > 2
     if (over_2) {
       zipcode <- parts[parts %>% length()]
@@ -15339,7 +15346,7 @@ edgar_entities_cik <-
       page %>%
       .extract_info(css_node = '.companyName') %>%
       str_split('\\ CIK') %>%
-      flatten_chr()
+      list_c()
 
     if (length(name_parts) == 0) {
       stop("Invalid company symbol")
@@ -15348,7 +15355,7 @@ edgar_entities_cik <-
 
     cik <-
       page %>% .extract_info(".companyName a") %>% str_split("\\(") %>%
-      flatten_chr() %>%
+      list_c() %>%
       str_trim() %>%
       .[[1]]
 
@@ -15411,8 +15418,9 @@ edgar_entities_cik <-
 .parse_company_pages <-
   function(urls,
            return_message = TRUE) {
-    df <-
-      tibble()
+    state <- new.env(parent = emptyenv())
+
+    state$rows <- list()
     success <- function(res) {
       parse_company_info_safe <-
         purrr::possibly(.parse_company_info, tibble())
@@ -15421,9 +15429,7 @@ edgar_entities_cik <-
         .parse_company_info(url = res$url)
 
 
-      df <<-
-        df %>%
-        bind_rows(data)
+      state$rows[[length(state$rows) + 1L]] <- data
     }
     failure <- function(msg) {
       cat(sprintf("Fail: %s (%s)\n", res$url, msg))
@@ -15434,14 +15440,14 @@ edgar_entities_cik <-
       })
     multi_run()
 
-    df
+    dplyr::bind_rows(state$rows)
   }
 
 .sec_ticker_info <-
   function(ticker = "VNO",
            return_message = TRUE) {
     if (return_message) {
-      glue::glue("Acquiring company information for {ticker}") %>% cat(fill = T)
+      glue::glue("Acquiring company information for {ticker}") %>% cat(fill = TRUE)
     }
     .parse_company_pages_safe <-
       purrr::possibly(.parse_company_pages, tibble())
@@ -15480,12 +15486,12 @@ edgar_entities_cik <-
 #' }
 sec_tickers_info <-
   function(tickers = c("VNO", "NVDA", "FB"),
-           join_sic = T,
-           snake_names = F,
-           unformat = F,
-           convert_case = T,
+           join_sic = TRUE,
+           snake_names = FALSE,
+           unformat = FALSE,
+           convert_case = TRUE,
            amount_digits = 2,
-           include_address = T,
+           include_address = TRUE,
            return_message = TRUE) {
     all_data <-
       tickers %>%
@@ -15537,10 +15543,10 @@ sec_tickers_info <-
     page_count <-
       url %>%
       str_split('count=') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[2]] %>%
       str_split('&') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.character() %>%
       readr::parse_number()
@@ -15565,7 +15571,7 @@ sec_tickers_info <-
       no_page %>%
       length() > 0
     is_end <-
-      !items %>% str_detect("NEXT 100") %>% sum(na.rm = T) > 0
+      !items %>% str_detect("NEXT 100") %>% sum(na.rm = TRUE) > 0
 
     if (is_end & (!no_page)) {
       return(tibble(isEnd = TRUE, countStart = page_count))
@@ -15639,7 +15645,7 @@ sec_tickers_info <-
 
     df_filing_urls <-
       tibble(idCIK = cik, urlCIKPageFiling = urls) %>%
-      mutate(countPage = 1:n())
+      mutate(countPage = seq_len(n()))
     if('dfEnd' %>% exists()){
       rm(list = c('dfEnd'), pos = ".GlobalEnv")
     }
@@ -15704,7 +15710,7 @@ sec_tickers_info <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df_page_items)
@@ -15948,7 +15954,7 @@ sec_tickers_info <-
       df_general %>%
       select(-c(nameSEC,countItem)) %>%
       group_by(nameActual) %>%
-      mutate(idRow = 1:n()) %>%
+      mutate(idRow = seq_len(n())) %>%
       filter(idRow == min(idRow)) %>%
       ungroup() %>%
       suppressMessages()
@@ -16010,7 +16016,7 @@ sec_tickers_info <-
       df_filings %>%
       select(-countPageFiling) %>%
       arrange(dateFiling) %>%
-      mutate(countFilingEntity = 1:n()) %>%
+      mutate(countFilingEntity = seq_len(n())) %>%
       arrange(desc(dateFiling)) %>%
       select(countFilingEntity, idCIK, nameEntity, everything())
 
@@ -16076,7 +16082,7 @@ sec_tickers_info <-
 
     df_sic_urls <-
       tibble(idSIC = sic, urlSICPageFiling = urls) %>%
-      mutate(countPage = 1:n())
+      mutate(countPage = seq_len(n()))
     if('dfEnd' %>% exists()){
       rm(list = c('dfEnd'), pos = ".GlobalEnv")
     }
@@ -16110,7 +16116,7 @@ sec_tickers_info <-
       list('\nReturned ', all_data %>% nrow() %>% formattable::comma(digits = 0),
            ' SEC registered entities for SIC industry code ', sic,'\n') %>%
         purrr::reduce(paste0) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
     return(all_data)
   }
@@ -16173,7 +16179,7 @@ edgar_sic_filers <-
     url %>%
       str_replace_all("https://www.sec.gov/Archives/edgar/data/", '') %>%
       str_split('\\/') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.numeric()
   }
@@ -16612,7 +16618,7 @@ edgar_sic_filers <-
         str_replace_all('\n', ' ') %>%
         stringi::stri_trans_general("Latin-ASCII")
       str_split('\\-') %>%
-        flatten_chr() %>%
+        list_c() %>%
         str_trim()
     } else {
       items_bold <-
@@ -16623,7 +16629,7 @@ edgar_sic_filers <-
         str_replace_all('\n', ' ') %>%
         stringi::stri_trans_general("Latin-ASCII") %>%
         str_split('\\-') %>%
-        flatten_chr() %>%
+        list_c() %>%
         str_trim() %>%
         unique()
     }
@@ -16646,13 +16652,13 @@ edgar_sic_filers <-
       str_to_upper() %>%
       unique() %>%
       append(list('(', letters, ')') %>%
-               purrr::invoke(paste0, .)) %>%
+               do.call(paste0, .)) %>%
       paste0(collapse = '|')
 
 
     hit_terms_in <-
       hit_terms %>% str_split('\\|') %>%
-      flatten_chr()
+      list_c()
 
     locations <-
       .loc_df() %>%
@@ -16735,7 +16741,7 @@ edgar_sic_filers <-
       filter(!value %>% str_detect(hit_terms))
 
     count_df <-
-      all_data %>% count(item, sort = T) %>%
+      all_data %>% count(item, sort = TRUE) %>%
       arrange(item) %>%
       pivot_wider(names_from = item, values_from = n)
 
@@ -16770,7 +16776,7 @@ edgar_sic_filers <-
               filter(!value %>% is.na()) %>%
               filter(!value == '') %>%
               filter(!value %>% str_detect(hit_terms)) %>%
-              mutate(idSubsidiary = 1:n())
+              mutate(idSubsidiary = seq_len(n()))
           }
         }) %>%
         filter(!value %>% str_detect(hit_terms)) %>%
@@ -16789,7 +16795,7 @@ edgar_sic_filers <-
       if (has_property) {
         tables <-
           page %>%
-          html_table(fill = T)
+          html_table(fill = TRUE)
         df <-
           seq_along(tables) %>%
           future_map_dfr(function(x) {
@@ -16801,7 +16807,7 @@ edgar_sic_filers <-
             column_df <-
               table_df %>% slice(1) %>%
               pivot_longer(cols = everything(), names_to = "column", values_to = "value") %>%
-              mutate(idColumn = 1:n()) %>%
+              mutate(idColumn = seq_len(n())) %>%
               filter(!value %>% is.na()) %>%
               left_join(tibble(
                 value = c(
@@ -16901,10 +16907,10 @@ edgar_sic_filers <-
           mutate(value = ifelse(value == '', NA, value)) %>%
           filter(!value %>% is.na()) %>%
           group_by(item) %>%
-          mutate(idSubsidiary = 1:n()) %>%
+          mutate(idSubsidiary = seq_len(n())) %>%
           pivot_wider(names_from = item, values_from = value) %>%
           filter(!X1 == '') %>%
-          mutate(idSubsidiary = 1:n()) %>%
+          mutate(idSubsidiary = seq_len(n())) %>%
           pivot_longer(cols = -c(X1, idSubsidiary), names_to = "item", values_to = "value") %>%
           ungroup() %>%
           filter(!value %>% str_detect(hit_terms)) %>%
@@ -17003,7 +17009,7 @@ edgar_sic_filers <-
 
         if (return_message) {
           list("Parsed: ", url) %>%
-            purrr::invoke(paste0, .) %>% cat(fill = T)
+            do.call(paste0, .) %>% cat(fill = TRUE)
         }
 
         return(df)
@@ -17030,7 +17036,7 @@ edgar_sic_filers <-
 
         df <-
           tibble(nameSubsidiary = data) %>%
-          mutate(idRow = 1:n())
+          mutate(idRow = seq_len(n()))
 
         .loc_df <-
           tibble(nameSubsidiary = locations) %>%
@@ -17059,7 +17065,7 @@ edgar_sic_filers <-
           select(-dplyr::matches("idSubsidiary"))
         if (return_message) {
           list("Parsed: ", url) %>%
-            purrr::invoke(paste0, .) %>% cat(fill = T)
+            do.call(paste0, .) %>% cat(fill = TRUE)
         }
 
         return(df)
@@ -17135,7 +17141,7 @@ edgar_sic_filers <-
 
       hit_terms_in <-
         hit_terms %>% str_split('\\|') %>%
-        flatten_chr()
+        list_c()
 
       has_pct_col <-
         all_data %>%
@@ -17170,7 +17176,7 @@ edgar_sic_filers <-
         all_data %>%
         select(-valueNC) %>%
         group_by(item) %>%
-        mutate(idSubsidiary = 1:n()) %>%
+        mutate(idSubsidiary = seq_len(n())) %>%
         pivot_wider(names_from = item, values_from = value) %>%
         ungroup() %>%
         dplyr::rename(nameSubsidiary = X1)
@@ -17198,7 +17204,7 @@ edgar_sic_filers <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% cat(fill = T)
+          do.call(paste0, .) %>% cat(fill = TRUE)
       }
 
       return(all_data)
@@ -17219,7 +17225,7 @@ edgar_sic_filers <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df %>% select(-dplyr::matches("idSubsidiary")))
@@ -17263,7 +17269,7 @@ edgar_sic_filers <-
           item %>%
           str_replace_all('\\   ', '\\:') %>%
           str_split('\\:') %>%
-          flatten_chr() %>%
+          list_c() %>%
           str_trim() %>%
           str_to_upper()
 
@@ -17318,7 +17324,7 @@ edgar_sic_filers <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(df)

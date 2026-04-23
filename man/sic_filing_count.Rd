@@ -6,11 +6,11 @@
 \usage{
 sic_filing_count(
   sic = NULL,
-  join_sic = T,
-  snake_names = F,
-  use_all_sic_codes = F,
-  return_message = T,
-  unformat = F
+  join_sic = TRUE,
+  snake_names = FALSE,
+  use_all_sic_codes = FALSE,
+  return_message = TRUE,
+  unformat = FALSE
 )
 }
 \arguments{

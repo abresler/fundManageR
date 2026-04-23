@@ -6,11 +6,11 @@
 \usage{
 munge_tbl(
   data,
-  snake_names = F,
-  unformat = F,
-  convert_case = T,
+  snake_names = FALSE,
+  unformat = FALSE,
+  convert_case = TRUE,
   amount_digits = 2,
-  include_address = T
+  include_address = TRUE
 )
 }
 \arguments{

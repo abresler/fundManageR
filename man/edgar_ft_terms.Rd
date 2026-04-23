@@ -7,7 +7,7 @@
 edgar_ft_terms(
   search_terms = c("\\"Jared Kushner\\"", "\\"EJF Capital\\"",
     "\\"Blackstone Real Estate\\""),
-  include_counts = F,
+  include_counts = FALSE,
   nest_data = FALSE,
   return_message = TRUE
 )

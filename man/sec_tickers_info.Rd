@@ -6,12 +6,12 @@
 \usage{
 sec_tickers_info(
   tickers = c("VNO", "NVDA", "FB"),
-  join_sic = T,
-  snake_names = F,
-  unformat = F,
-  convert_case = T,
+  join_sic = TRUE,
+  snake_names = FALSE,
+  unformat = FALSE,
+  convert_case = TRUE,
   amount_digits = 2,
-  include_address = T,
+  include_address = TRUE,
   return_message = TRUE
 )
 }

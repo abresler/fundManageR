@@ -4,7 +4,7 @@
 \alias{cik_filing_counts}
 \title{CIK Filing Counts}
 \usage{
-cik_filing_counts(cik, return_message = T)
+cik_filing_counts(cik, return_message = TRUE)
 }
 \arguments{
 \item{cik}{CIK codes}

@@ -8,10 +8,10 @@ build_address(
   data,
   address_search_slugs = c("^address", "^streetAddress", "^city", "^state", "^codeState",
     "^codeCountry", "^country", "^zipcode"),
-  include_snake_versions = T,
+  include_snake_versions = TRUE,
   part_threshold = 3,
-  snake_names = F,
-  return_message = T
+  snake_names = FALSE,
+  return_message = TRUE
 )
 }
 \arguments{
