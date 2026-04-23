@@ -135,9 +135,9 @@ remove_duplicate_columns <-
   function(data) {
     column_ids <-
       tibble(name = names(data)) %>%
-      mutate(idColumn = 1:n()) %>%
+      mutate(idColumn = seq_len(n())) %>%
       group_by(name) %>%
-      mutate(countCol = 1:n()) %>%
+      mutate(countCol = seq_len(n())) %>%
       filter(idColumn == min(idColumn)) %>%
       .$idColumn
 
@@ -924,7 +924,7 @@ separate_column <-
       map_dbl(function(x) {
         x %>% str_count('\\|')
       }) %>%
-      sum(na.rm = T) > 0
+      sum(na.rm = TRUE) > 0
 
     if (!has_splits) {
       return(data)
@@ -963,7 +963,7 @@ resolve_cik_url <-
         mutate(urlCIKRankandFiled =
                  ifelse(
                    !idCIK %>% is.na(),
-                   list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>% purrr::invoke(paste0, .),
+                   list('https://rankandfiled.com/#/filers/', idCIK, '/filings') %>% do.call(paste0, .),
                    NA
                  ))
       return(data)
@@ -1017,14 +1017,14 @@ clean_names <-
   }
 
 .parse_rank_and_filed_data <-
-  function(url = "http://rankandfiled.com/static/export/sic_naics.csv",
+  function(url = "https://rankandfiled.com/static/export/sic_naics.csv",
            column_names = c('idSIC',
                             'classificationSIC',
                             'idNAICS',
                             'classificationNAICS')) {
     data <-
       url %>%
-      readr::read_csv(col_names = F)
+      readr::read_csv(col_names = FALSE)
 
     data <-
       data %>%
@@ -1045,8 +1045,8 @@ print_message <-
          data %>% nrow() %>% formattable::comma(digits = 0),
          ' ',
          table_name) %>%
-      purrr::invoke(paste0, .) %>%
-      cat(fill = T)
+      do.call(paste0, .) %>%
+      cat(fill = TRUE)
   }
 
 .resolve_name_df <-
@@ -1055,7 +1055,7 @@ print_message <-
       general_name_df() %>%
       bind_rows(private_name_df()) %>%
       distinct() %>%
-      mutate(idRow = 1:n())
+      mutate(idRow = seq_len(n()))
 
     rf_names <-
       data %>% names()
@@ -1141,7 +1141,7 @@ print_message <-
 sic_naics_codes <-
   function(filter_duplicates = TRUE) {
     sic <-
-      "http://rankandfiled.com/static/export/sic_naics.csv" %>%
+      "https://rankandfiled.com/static/export/sic_naics.csv" %>%
       .parse_rank_and_filed_data(column_names = c(
         'idSIC',
         'classificationSIC',
@@ -1162,7 +1162,7 @@ sic_naics_codes <-
     if (filter_duplicates) {
       sic <-
         sic %>%
-        mutate(idRow = 1:n()) %>%
+        mutate(idRow = seq_len(n())) %>%
         group_by(idSIC, idNAICS) %>%
         filter(idRow == min(idRow)) %>%
         ungroup() %>%
@@ -1196,7 +1196,7 @@ sic_naics_codes <-
 sec_rules <-
   function() {
     codes <-
-      "http://rankandfiled.com/static/export/file_numbers.csv" %>%
+      "https://rankandfiled.com/static/export/file_numbers.csv" %>%
       .parse_rank_and_filed_data(column_names = c("idPrefixSEC", "typeFiling", "nameLawSEC")) %>%
       mutate(typeFiling = ifelse(typeFiling == '', NA, typeFiling)) %>%
       mutate(across(everything(), str_to_upper))
@@ -1221,7 +1221,7 @@ sec_rules <-
 location_codes <-
   function() {
     countries <-
-      "http://rankandfiled.com/static/export/edgar_state_country.csv" %>%
+      "https://rankandfiled.com/static/export/edgar_state_country.csv" %>%
       data.table::fread() %>%
       as_tibble() %>%
       setNames(c('codeLocation', 'nameLocation'))
@@ -1254,7 +1254,7 @@ location_codes <-
 rf_leis <-
   function(return_message = TRUE) {
     leis <-
-      "http://rankandfiled.com/static/export/cik_lei.csv" %>%
+      "https://rankandfiled.com/static/export/cik_lei.csv" %>%
       .parse_rank_and_filed_data(column_names = c('idCIK',
                                                  'nameEntity', 'idLEI', 'typeEntity')) %>%
       mutate(nameEntity = nameEntity %>% str_to_upper(),
@@ -1270,7 +1270,7 @@ rf_leis <-
         leis %>% nrow() %>% formattable::comma(digits = 0),
         " United States legal entities"
       ) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     return(leis)
   }
@@ -1292,7 +1292,7 @@ rf_leis <-
 rf_us_tickers <-
   function(return_message = TRUE) {
     data <-
-      "http://rankandfiled.com/static/export/cik_ticker.csv" %>%
+      "https://rankandfiled.com/static/export/cik_ticker.csv" %>%
       .parse_rank_and_filed_data(
         column_names = c(
           'idCIK',
@@ -1381,7 +1381,7 @@ rf_us_tickers <-
       left_join(
         sic_naics_codes(filter_duplicates = TRUE) %>%
           dplyr::select(idSIC, classificationSIC) %>%
-          mutate(idRow = 1:n()) %>%
+          mutate(idRow = seq_len(n())) %>%
           group_by(idSIC) %>%
           filter(idRow == min(idRow)) %>%
           dplyr::select(-idRow)
@@ -1391,10 +1391,10 @@ rf_us_tickers <-
         urlTickerRankandFiled =
           ifelse(
             !idExchange %>% is.na(),
-            list('http://rankandfiled.com/#/public/', idTicker, '/filings') %>% purrr::invoke(paste0, .),
+            list('https://rankandfiled.com/#/public/', idTicker, '/filings') %>% do.call(paste0, .),
             NA
           ),
-        urlCIKRankandFiled = list('http://rankandfiled.com/#/filers/', idCIK, '/filings') %>% purrr::invoke(paste0, .)
+        urlCIKRankandFiled = list('https://rankandfiled.com/#/filers/', idCIK, '/filings') %>% do.call(paste0, .)
       ) %>%
       suppressMessages() %>%
       arrange(idTicker)
@@ -1405,7 +1405,7 @@ rf_us_tickers <-
         data %>% nrow() %>% formattable::comma(digits = 0),
         " United States publicly traded companies"
       ) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
     return(data)
   }
@@ -1436,7 +1436,7 @@ rf_us_tickers <-
 mmf_owned_debt_securities <-
   function(return_message = TRUE) {
     debt <-
-      "http://rankandfiled.com/static/export/mmf_cusips.csv" %>%
+      "https://rankandfiled.com/static/export/mmf_cusips.csv" %>%
       .parse_rank_and_filed_data(
         column_names = c(
           'idCIK',
@@ -1493,7 +1493,7 @@ mmf_owned_debt_securities <-
 rf_sec_13F_companies <-
   function(return_message = TRUE) {
     data <-
-      "http://rankandfiled.com/static/export/13f_cusips.csv" %>%
+      "https://rankandfiled.com/static/export/13f_cusips.csv" %>%
       .parse_rank_and_filed_data(column_names = c('idCIK', 'nameIssuer', 'idCUSIP', 'classSecurity')) %>%
       mutate(
         nameIssuer = nameIssuer %>% stringr::str_to_upper(),
@@ -1547,7 +1547,7 @@ recent_insider_trades <-
   function(nest_data = FALSE,
            return_message = TRUE) {
     json_data <-
-      "http://rankandfiled.com/data/buy_sell" %>%
+      "https://rankandfiled.com/data/buy_sell" %>%
       jsonlite::fromJSON()
     insider_name_df <-
       tibble(
@@ -1685,7 +1685,7 @@ recent_insider_trades <-
     if (return_message) {
       list("You got ", all_data %>% nrow() %>% formattable::comma(digits = 0), ' Insider Transactions from the last 7 days') %>%
         purrr::reduce(paste0) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
 
     all_data <-
@@ -1731,8 +1731,8 @@ sec_securities_filing_counts <-
       ) %>% stringr::str_to_upper()
     )
     data <-
-      "http://rankandfiled.com/data/registered_offerings" %>%
-      jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = T)
+      "https://rankandfiled.com/data/registered_offerings" %>%
+      jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = TRUE)
 
 
     data <-
@@ -1746,7 +1746,7 @@ sec_securities_filing_counts <-
         year_no <-
           names(data[x]) %>% as.numeric()
         df_row %>%
-          flatten_df() %>%
+          as_tibble() %>%
           as_tibble() %>%
           pivot_longer(cols = everything(), names_to = "idForm", values_to = "countFilings") %>%
           mutate(yearFiling = year_no) %>%
@@ -1774,8 +1774,8 @@ sec_securities_filing_counts <-
         ' to ',
         filing_count_data$yearFiling %>% max
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     filing_count_data
@@ -1789,21 +1789,21 @@ sec_securities_filing_counts <-
       mutate(lengthOut = ceiling(countFilings/50) + 1)
 
     url_df <-
-      1:nrow(count_df) %>%
+      seq_len(nrow(count_df)) %>%
       future_map_dfr(function(x) {
         row_df <-
           count_df %>%
           slice(x)
         url_data <-
           list(
-            "http://rankandfiled.com/data/registered_selection?form=",
+            "https://rankandfiled.com/data/registered_selection?form=",
             row_df$idForm,
             '&year=',
             row_df$yearFiling,
             '&start=',
             seq(0, by = 50, length.out = row_df$lengthOut)
           ) %>%
-          purrr::invoke(paste0, .)
+          do.call(paste0, .)
 
         tibble(
           idForm = row_df$idForm,
@@ -1816,7 +1816,7 @@ sec_securities_filing_counts <-
   }
 
 .parse_securities_url <-
-  function(url = "http://rankandfiled.com/data/registered_selection?form=S-4&year=1996&start=400",
+  function(url = "https://rankandfiled.com/data/registered_selection?form=S-4&year=1996&start=400",
            column_names =  c('idCIK', 'nameIssuer', 'idTicker', 'idForm'),
            return_message = TRUE) {
     has_data <-
@@ -1854,7 +1854,7 @@ sec_securities_filing_counts <-
 
       if (return_message) {
         list("Parsed: ", url) %>%
-          purrr::invoke(paste0, .) %>% cat(fill = T)
+          do.call(paste0, .) %>% cat(fill = TRUE)
       }
 
       return(data)
@@ -1900,7 +1900,7 @@ securities_offerings <-
     url_df <-
       .generate_securities_urls()
 
-    if ('forms' %>% exists() & !forms %>% purrr::is_null()) {
+    if ('forms' %>% exists() & !forms %>% is.null()) {
       url_df <-
         url_df %>%
         dplyr::filter(idForm %in% forms)
@@ -1908,7 +1908,7 @@ securities_offerings <-
     }
 
     if ('year_forms' %>% exists() &
-        !year_forms %>% purrr::is_null()) {
+        !year_forms %>% is.null()) {
       url_df <-
         url_df %>%
         dplyr::filter(yearFiling %in% year_forms)
@@ -1960,8 +1960,8 @@ securities_offerings <-
         ' to ',
         all_data$dateFiling %>% max()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -1982,16 +1982,16 @@ securities_offerings <-
   function(entity_name = "Rockwood Capital") {
     json_url <-
       list(
-        "http://rankandfiled.com/data/search?q=",
+        "https://rankandfiled.com/data/search?q=",
         entity_name %>% stringr::str_to_lower() %>% URLencode()
       ) %>%
-      purrr::invoke(paste0, .)
+      do.call(paste0, .)
 
     return(json_url)
   }
 
 .parse_rf_search_name <-
-  function(url = "http://rankandfiled.com/data/search?q=kav") {
+  function(url = "https://rankandfiled.com/data/search?q=kav") {
     data <-
       url %>%
       jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
@@ -2029,12 +2029,12 @@ securities_offerings <-
       mutate(
         urlDataRF =
           list(
-            'http://rankandfiled.com/#/',
+            'https://rankandfiled.com/#/',
             slugFiler,
             '/',
             idCIKTicker,
             '/filings'
-          ) %>% purrr::invoke(paste0, .)
+          ) %>% do.call(paste0, .)
       ) %>%
       select(-slugFiler)
 
@@ -2107,7 +2107,7 @@ securities_offerings <-
         ' SEC registered entities matching the name ',
         entity_name
       ) %>%
-        purrr::invoke(paste0, .) %>% cat(fill = T)
+        do.call(paste0, .) %>% cat(fill = TRUE)
     }
 
     return(data)
@@ -2136,7 +2136,7 @@ sec_filing_entities <-
   function(entity_names = c('Rockwood Capital', 'Vornado', 'Two Sigma'),
            return_message = TRUE) {
     no_entry <-
-      (entity_names %>% purrr::is_null() |
+      (entity_names %>% is.null() |
          !'entity_names' %>% exists())
 
     if (no_entry) {
@@ -2157,15 +2157,15 @@ sec_filing_entities <-
       map_dbl(function(x) {
         x %>% str_count('\\|')
       }) %>%
-      sum(na.rm = T) > 0
+      sum(na.rm = TRUE) > 0
 
     if (has_double_entities) {
       all_data <-
         all_data %>%
-        mutate(idRow = 1:n())
+        mutate(idRow = seq_len(n()))
 
       entites_df <-
-        1:nrow(all_data) %>%
+        seq_len(nrow(all_data)) %>%
         future_map_dfr(function(x) {
           entity <-
             all_data$nameEntity[[x]]
@@ -2178,7 +2178,7 @@ sec_filing_entities <-
           entities <-
             entity %>%
             str_split('\\|') %>%
-            flatten_chr()
+            list_c()
 
           if (entities %>% length() == 2) {
             entities <-
@@ -2189,7 +2189,7 @@ sec_filing_entities <-
             tibble(idRow = x,
                        item = 'nameEntity',
                        value = entities) %>%
-            mutate(countItems = 1:n() - 1,
+            mutate(countItems = seq_len(n()) - 1,
                    item = ifelse(countItems == 0, item, paste0(item, countItems))) %>%
             select(-countItems) %>%
             pivot_wider(names_from = item, values_from = value)
@@ -2288,7 +2288,7 @@ sec_form_ds <-
 
     now_period <-
       list(now_year, now_month) %>%
-      purrr::invoke(paste0, .) %>%
+      do.call(paste0, .) %>%
       as.numeric()
 
     years <-
@@ -2316,7 +2316,7 @@ sec_form_ds <-
       tidyr::crossing(year = form_years, month = months_names) %>%
       tidyr::unite(namePeriod, year, month, sep = '', remove = FALSE) %>%
       mutate(
-        idPeriod = 1:n(),
+        idPeriod = seq_len(n()),
         codeMonth = month,
         month = month %>% as.numeric()
       )
@@ -2331,13 +2331,13 @@ sec_form_ds <-
       filter(as.numeric(namePeriod) <= now_period)
 
     if ('form_years' %>% exists() &
-        !form_years %>% purrr::is_null()) {
+        !form_years %>% is.null()) {
       period_df <-
         period_df %>%
         filter(year %in% form_years)
     }
 
-    if ('months' %>% exists() & !months %>% purrr::is_null()) {
+    if ('months' %>% exists() & !months %>% is.null()) {
       period_df <-
         period_df %>%
         filter(month %in% months)
@@ -2362,13 +2362,13 @@ sec_form_ds <-
           "TECHNOLOGY",
           "TRAVEL AND LEISURE"
         )
-      if (industries %in% industry_names %>% sum(na.rm = T) == 0) {
+      if (industries %in% industry_names %>% sum(na.rm = TRUE) == 0) {
         stop(
           list(
             "Sorry industries can only be\n",
             industry_names %>% paste0(collapse = '\n')
           ) %>%
-            purrr::invoke(paste0, .)
+            do.call(paste0, .)
         )
       }
 
@@ -2384,11 +2384,11 @@ sec_form_ds <-
       tidyr::crossing(namePeriod = periods, idCategory = category_ids) %>%
       mutate(
         urlJSON = list(
-          'http://rankandfiled.com/data/private_selection?month=',
+          'https://rankandfiled.com/data/private_selection?month=',
           namePeriod,
           '&ind=',
           idCategory
-        ) %>% purrr::invoke(paste0, .)
+        ) %>% do.call(paste0, .)
       ) %>%
       .$urlJSON
 
@@ -2440,14 +2440,14 @@ sec_form_ds <-
         "You acquired data from ",
         all_data %>% nrow() %>% formattable::comma(digits = 0),
         " Form D's totaling ",
-        all_data$amountSold %>% sum(na.rm = T) %>% formattable::currency(digits = 0),
+        all_data$amountSold %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0),
         ' in raised capital from ',
         all_data$dateFiling %>% min(),
         ' to ',
         all_data$dateFiling %>% max()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
