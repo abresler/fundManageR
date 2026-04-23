@@ -36,18 +36,14 @@ adv_managers_current_period_summary(
 )
 }
 \arguments{
-\item{return_message}{return a message after parsing data}
+\item{select_names}{Character vector of column names to include in the output.
+Default includes key identifiers, contact info, AUM, and registration status fields.}
 
-\item{file_directory}{directory you want to save your data into, if none specified a temporary file will be created}
-
-\item{folder_name}{older you want the data to be downloaded into}
-
-\item{remove_files}{remove the files from the folders}
-
-\item{empty_trash}{empty the trash after being read into R}
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-a data frame
+A tibble containing ADV summary data for the most recent period with
+  columns specified by \code{select_names}.
 }
 \description{
 This function returns abbreviated ADV data for

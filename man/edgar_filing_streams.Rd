@@ -28,20 +28,41 @@ edgar_filing_streams(
 
 \item{end_date}{ending date starting in year-month-date form}
 
-\item{only_most_recent_data}{\code{TRUE} return only most recent day's filing stream}
+\item{only_most_recent_data}{Logical. If \code{TRUE}, returns only most recent day's filing stream.}
 
 \item{index_type}{type of index to parse \itemize{
 \item \code{master}: parses master log (default)
-\item \code{compamy}: parses company log
+\item \code{company}: parses company log
 \item \code{filer}: parses filer log
 }}
 
-\item{nest_data}{\code{TRUE} return nested data frame}
+\item{table_name_initial}{Character. Initial table name for assignment (default "Filing Logs").}
 
-\item{return_message}{\code{TRUE} return a message after data import}
+\item{parse_all_filings}{Logical. If \code{TRUE}, parses all filing types.}
+
+\item{parse_complete_text_filings}{Logical. If \code{TRUE}, parses complete text of filings.}
+
+\item{parse_form_d}{Logical. If \code{TRUE}, parses Form D filings.}
+
+\item{parse_13F}{Logical. If \code{TRUE}, parses 13F filings.}
+
+\item{parse_small_offerings}{Logical. If \code{TRUE}, parses small offering filings.}
+
+\item{parse_form_3_4s}{Logical. If \code{TRUE}, parses Form 3 and 4 insider trading filings.}
+
+\item{parse_asset_files}{Logical. If \code{TRUE}, parses asset-backed security filings.}
+
+\item{parse_xbrl}{Logical. If \code{TRUE}, parses XBRL financial data.}
+
+\item{assign_to_environment}{Logical. If \code{TRUE} (default), assigns results to global environment.}
+
+\item{nest_data}{Logical. If \code{TRUE}, returns nested data frame.}
+
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+When \code{nest_data} is \code{TRUE}, a nested tibble. When \code{FALSE}, a flat tibble
+  containing SEC filing stream data.
 }
 \description{
 This function parses daily
@@ -51,9 +72,8 @@ for specified periods
 \examples{
 \dontrun{
 edgar_filing_streams(start_date = "2016-01-01",
-end_date = Sys.Date(), only_most_recent_data = FALSE, index_type = 'master',
-nest_data = TRUE,
-return_message = TRUE)
+  end_date = Sys.Date(), only_most_recent_data = FALSE, index_type = 'master',
+  nest_data = TRUE, return_message = TRUE)
 }
 }
 \references{

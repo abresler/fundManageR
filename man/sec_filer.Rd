@@ -62,7 +62,13 @@ filing entities (default)}
 \item{parse_small_offerings}{\code{TRUE} parses \href{https://www.sec.gov/info/smallbus/secg/rccomplianceguide-051316.htm}{Regulation CrowdFunding}
 Form 1-A data if any exists for a filer (default)}
 
-\item{assign_to_environment}{\code{true} assigns individual data frames to your environment}
+\item{parse_complete_text_filings}{Logical. If \code{TRUE}, parses complete text of filings.}
+
+\item{parse_form_d}{Logical. If \code{TRUE}, parses Form D private placement filings.}
+
+\item{parse_form_3_4s}{Logical. If \code{TRUE}, parses Form 3 and 4 insider trading filings.}
+
+\item{assign_to_environment}{\code{TRUE} assigns individual data frames to your environment}
 
 \item{return_message}{\code{TRUE} return a message after data import}
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/waterfall_functions.R
 \name{calculate_irr_periods}
 \alias{calculate_irr_periods}
-\title{Interal rate of return}
+\title{Internal rate of return}
 \usage{
 calculate_irr_periods(
   dates = c("2016-06-01", "2017-05-31", "2018-05-31", "2019-05-31", "2020-05-31",
@@ -23,7 +23,7 @@ calculate_irr_periods(
 
 \item{cash_flows}{vector of cash flows}
 
-\item{date_format}{date format}
+\item{date_format}{date format (default \code{'\%Y-\%m-\%d'})}
 
 \item{scale_to_100}{\code{TRUE} scale to 100}
 
@@ -31,10 +31,12 @@ calculate_irr_periods(
 
 \item{return_df}{\code{TRUE} returns a data frame}
 
+\item{return_wide}{Logical. If \code{TRUE} (default), returns data in wide format.}
+
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-\code{tibble}
+A tibble containing IRR calculations with annual, monthly, and daily rates.
 }
 \description{
 This function returns a data frame that produces
@@ -42,10 +44,16 @@ the \href{https://en.wikipedia.org/wiki/Internal_rate_of_return}{internal rate o
 for specified dates and cash flows
 }
 \examples{
-calculate_irr_periods(dates = c("2016-06-01","2017-05-31", "2018-05-31", "2019-05-31", "2020-05-31", "2021-05-31",
-"2022-05-31", "2023-05-31", "2024-05-31", "2025-05-31", "2026-05-31"), cash_flows = c( -3000, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242,
-478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547242, 478.515738547278 ), date_format = '\%Y-\%m-\%d', scale_to_100 = FALSE,
-return_percentage = FALSE, return_df = TRUE, return_wide = TRUE, return_message = TRUE)
+\dontrun{
+calculate_irr_periods(
+  dates = c("2016-06-01", "2017-05-31", "2018-05-31", "2019-05-31",
+            "2020-05-31", "2021-05-31", "2022-05-31", "2023-05-31",
+            "2024-05-31", "2025-05-31", "2026-05-31"),
+  cash_flows = c(-3000, rep(478.52, 10)),
+  date_format = '\%Y-\%m-\%d', scale_to_100 = FALSE,
+  return_percentage = FALSE, return_df = TRUE, return_wide = TRUE,
+  return_message = TRUE)
+}
 }
 \seealso{
 Other calculation: 

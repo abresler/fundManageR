@@ -19,25 +19,9 @@ visualize_fred_time_series(
 \arguments{
 \item{series_id}{any FRED series ID}
 
-\item{use_random}{if \code{TRUE} a random FRED series ID is chosen}
+\item{use_random}{Logical. If \code{TRUE}, a random FRED series ID is chosen.}
 
-\item{date_start}{data start date, if \code{NULL} all chosen}
-
-\item{date_end}{data end date}
-
-\item{plot_transformations}{Any plot transformations you wish to apply \itemize{
-\code{median}: Median value
-\code{mean}: Mean value
-\code{smooth}: GAM smooth line
-}}
-
-\item{use_hrbr_theme}{uses Bob Rudis theme}
-
-\item{plot_labels}{if \code{TRUE} text of any plot transformations are plotted}
-
-\item{interactive}{if \code{TRUE} visualization turned into an interactive plotly widget}
-
-\item{fred_data_transformations}{Any FRED transformation \itemize{
+\item{fred_data_transformation}{Any FRED transformation \itemize{
 \item \code{default}
 \item \code{change}
 \item \code{change prior year}
@@ -49,9 +33,25 @@ visualize_fred_time_series(
 \item \code{natural log}
 \item \code{index}
 }}
+
+\item{date_start}{data start date, if \code{NULL} all data is chosen}
+
+\item{date_end}{data end date}
+
+\item{plot_transformations}{Any plot transformations you wish to apply \itemize{
+\item \code{median}: Median value
+\item \code{mean}: Mean value
+\item \code{smooth}: GAM smooth line
+}}
+
+\item{use_hrbr_theme}{Logical. If \code{TRUE}, uses Bob Rudis theme.}
+
+\item{plot_labels}{Logical. If \code{TRUE}, text of any plot transformations are plotted.}
+
+\item{interactive}{Logical. If \code{TRUE}, visualization turned into an interactive plotly widget.}
 }
 \value{
-if \code{interactive} a plotly htmlwidget or else a static ggplot2 visualization
+If \code{interactive} is TRUE, a plotly htmlwidget. Otherwise, a static ggplot2 visualization.
 }
 \description{
 Plot any FRED time series

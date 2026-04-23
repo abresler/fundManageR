@@ -34,28 +34,30 @@ edgar_search_terms(
 
 \item{table_name_initial}{initial table name for assignment}
 
-\item{parse_all_filings}{if \code{TRUE} parses all filings}
+\item{parse_all_filings}{Logical. If \code{TRUE}, parses all filings.}
 
-\item{parse_form_d}{if \code{TRUE} parses Form D filings}
+\item{parse_complete_text_filings}{Logical. If \code{TRUE}, parses complete text of filings.}
 
-\item{parse_13F}{if \code{TRUE} parses 13F filings}
+\item{parse_form_d}{Logical. If \code{TRUE}, parses Form D filings.}
 
-\item{parse_small_offerings}{if \code{TRUE} parses small offerings}
+\item{parse_13F}{Logical. If \code{TRUE}, parses 13F filings.}
 
-\item{parse_form_3_4s}{if \code{TRUE} parses Form 3 and 4 filings}
+\item{parse_small_offerings}{Logical. If \code{TRUE}, parses small offerings.}
 
-\item{parse_asset_files}{if \code{TRUE} parses asset files}
+\item{parse_form_3_4s}{Logical. If \code{TRUE}, parses Form 3 and 4 filings.}
 
-\item{parse_xbrl}{if \code{TRUE} parses XBRL data}
+\item{parse_asset_files}{Logical. If \code{TRUE}, parses asset files.}
 
-\item{assign_to_environment}{if \code{TRUE} assigns results to environment}
+\item{parse_xbrl}{Logical. If \code{TRUE}, parses XBRL data.}
 
-\item{nest_data}{if \code{TRUE} nests data}
+\item{assign_to_environment}{Logical. If \code{TRUE}, assigns results to environment.}
 
-\item{return_message}{if \code{TRUE} returns a message}
+\item{nest_data}{Logical. If \code{TRUE}, nests data.}
+
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-A tibble containing EDGAR filings matching the search terms
+A tibble containing EDGAR filings matching the search terms.
 }
 \description{
 EDGAR Search for Terms

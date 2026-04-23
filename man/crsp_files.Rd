@@ -7,17 +7,19 @@
 crsp_files(include_summary_files = TRUE)
 }
 \arguments{
-\item{include_summary_file}{\code{TRUE} (default) or \code{FALSE} to exclude}
+\item{include_summary_files}{Logical. If \code{TRUE} (default), includes summary files.}
 }
 \value{
-a \code{tibble}
+A tibble containing CRSP file metadata with URLs and file names.
 }
 \description{
 This function returns information about available
 CRSP index data
 }
 \examples{
+\dontrun{
 crsp_files()
+}
 }
 \references{
 \href{http://crsp.com}{The Center for Research in Security Prices}

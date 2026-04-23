@@ -9,12 +9,18 @@ rf_leis(return_message = TRUE)
 \arguments{
 \item{return_message}{\code{TRUE} return a message after data import}
 }
+\value{
+A tibble containing Legal Entity Identifier (LEI) data for SEC-registered
+  entities with columns including idCIK, nameEntity, idLEI, typeEntity, and URL references.
+}
 \description{
 This function returns \href{https://en.wikipedia.org/wiki/Legal_Entity_Identifier}{Legal Entity Identifier}s
 for entities registered with the SEC
 }
 \examples{
+\dontrun{
 rf_leis()
+}
 }
 \seealso{
 Other entity search: 

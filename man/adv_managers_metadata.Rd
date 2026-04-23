@@ -15,12 +15,14 @@ adv_managers_metadata(
 \arguments{
 \item{entity_names}{vector of entities to search}
 
-\item{crd_ids}{numric vector of crds to search}
+\item{crd_ids}{numeric vector of CRDs to search}
 
-\item{score_threshold}{matching score threshold for the search name
-if \code{NULL} there is no threshold}
+\item{score_threshold}{matching score threshold for the search name.
+If \code{NULL} there is no threshold.}
 
-\item{return_message}{return a message}
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
+
+\item{parallel}{Logical. If \code{TRUE} (default), uses parallel processing via furrr.}
 }
 \value{
 a data frame
@@ -30,12 +32,14 @@ This function returns meta data
 on any Investment Adviser Public Disclosure [IAPD]
 filing manager.  This function can be used to discover
 managers to power the
-\code{\link{adv_managers_filing()}} function.
+\code{\link{adv_managers_filings}} function.
 }
 \examples{
+\dontrun{
 adv_managers_metadata(entity_names = c('Divco', 'EJF'), score_threshold = .2)
 adv_managers_metadata(entity_names = "Blackstone", score_threshold = NULL)
 adv_managers_metadata(crd_ids = 173787)
+}
 }
 \seealso{
 Other IAPD: 

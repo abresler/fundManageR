@@ -42,6 +42,8 @@ searches all sections}
 \item{gather_data}{\code{TRUE} returns a long data frame}
 
 \item{assign_to_environment}{\code{TRUE} assign individual data frames to your environment}
+
+\item{parallel}{Logical. If \code{TRUE} (default), uses parallel processing via furrr.}
 }
 \value{
 a \code{tibble}
@@ -51,10 +53,12 @@ This function parses the specified sections of the
 \href{https://www.sec.gov/answers/formadv.htm}{Form ADV} for specified managers.
 }
 \examples{
+\dontrun{
 adv_managers_filings(entity_names = c('Blackstone Real Estate'), crd_ids = NULL,
  all_sections = TRUE,  section_names = NULL,
  flatten_tables = TRUE, gather_data = FALSE,
  assign_to_environment = TRUE)
+}
 }
 \seealso{
 Other IAPD: 

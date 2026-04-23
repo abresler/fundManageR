@@ -6,8 +6,8 @@
 \usage{
 calculate_cash_flow_waterfall_partnership(
   dates = c("2016-09-01", "2017-08-31"),
-  cash_flows = c(-1500000, 1.05e+08),
-  working_capital = 2e+05,
+  cash_flows = c(-1500000, 105000000),
+  working_capital = 200000,
   promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
   assign_to_environment = TRUE,
   general_partner_pct = 0.05,
@@ -31,7 +31,9 @@ calculate_cash_flow_waterfall_partnership(
 
 \item{promote_structure}{vector of the promote structure}
 
-\item{general_partner_pct}{ercentage of capital provided by general partner}
+\item{assign_to_environment}{Logical. If \code{TRUE} (default), assigns result data frames to the global environment.}
+
+\item{general_partner_pct}{percentage of capital provided by general partner}
 
 \item{gp_promote_share}{share of promote to general partner}
 
@@ -52,7 +54,8 @@ calculate_cash_flow_waterfall_partnership(
 \item{widen_waterfall}{\code{TRUE} returns waterfall in wide form}
 }
 \value{
-\code{tibble}O
+A tibble containing partnership waterfall calculations with cash flow
+  allocations to GP and LP including promote distributions.
 }
 \description{
 This function is a variant of the \code{\link{calculate_cash_flow_waterfall}}
@@ -60,13 +63,17 @@ function that also includes the calculation of the share of cash flow available
 to each member based upon the specified percentage equity splits and promote allocation
 }
 \examples{
-calculate_cash_flow_waterfall_partnership(dates =c("2016-09-01", "2017-08-31"), cash_flows = c(-1500000, 105000000),
-working_capital = 200000, promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
-general_partner_pct = .05, gp_promote_share = 1, unnest_data = F,
-exclude_partnership_total = F,
-distribution_frequency = 'annually', is_actual_360 = TRUE,
-widen_promote_structure = FALSE, bind_to_cf = FALSE, remove_zero_cols = TRU,
-widen_waterfall = FALSE)
+\dontrun{
+calculate_cash_flow_waterfall_partnership(
+  dates = c("2016-09-01", "2017-08-31"),
+  cash_flows = c(-1500000, 105000000),
+  working_capital = 200000,
+  promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
+  general_partner_pct = .05, gp_promote_share = 1, unnest_data = FALSE,
+  exclude_partnership_total = FALSE, distribution_frequency = 'annually',
+  is_actual_360 = TRUE, widen_promote_structure = FALSE, bind_to_cf = FALSE,
+  remove_zero_cols = TRUE, widen_waterfall = FALSE)
+}
 }
 \seealso{
 Other calculation: 

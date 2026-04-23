@@ -46,7 +46,7 @@ tv_metrics_data(
     "exchange", "price_sales", "eps_surprise_percent_fq"), 
      sort = list(sortBy =
     "market_cap_basic", sortOrder = "desc"), options = list(lang = "eng"), range = c(0,
-    1.5e+13)),
+    15000000000000)),
   return_message = TRUE
 )
 }

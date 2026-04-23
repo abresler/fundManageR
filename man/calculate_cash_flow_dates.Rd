@@ -27,8 +27,10 @@ calculate_cash_flow_dates(
 
 \item{include_final_day}{\code{TRUE} include the final day in calculation}
 
+\item{is_annual_budget}{Logical. If \code{TRUE} (default), treats cash flows as annual budget figures.}
+
 \item{distribution_frequency}{frequency of distribution \itemize{
-\\item \code{NA}: NA
+\item \code{NA}: NA
 \item \code{weekly}: weekly distributions
 \item \code{monthly}: monthly distributions
 \item \code{quarterly}: quarterly distributions
@@ -37,16 +39,22 @@ calculate_cash_flow_dates(
 }}
 }
 \value{
-tibble
+A tibble containing cash flow summary data with period dates,
+  contributions, distributions, and cumulative balances.
 }
 \description{
 This function returns a data frame of
 summarised cash flows for given a set of inputs.
 }
 \examples{
-calculate_cash_flow_dates(dates = c( "2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31", "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31" ),
-cash_flows = c( -4151601, 119499.036215643, 257186.036215643, 447646.036215643, 200652.036215643, 510409.036215643, 193.036215643166, 8788626.7640915 ),
-working_capital = 125000, remove_cumulative_cols = TRUE, include_final_day = TRUE, distribution_frequency = NA)
+\dontrun{
+calculate_cash_flow_dates(
+  dates = c("2016-09-01", "2017-08-31", "2018-08-31", "2019-08-31",
+            "2020-08-31", "2021-08-31", "2022-08-31", "2023-08-31"),
+  cash_flows = c(-4151601, 119499, 257186, 447646, 200652, 510409, 193, 8788627),
+  working_capital = 125000, remove_cumulative_cols = TRUE,
+  include_final_day = TRUE, distribution_frequency = NA)
+}
 }
 \seealso{
 Other calculation: 

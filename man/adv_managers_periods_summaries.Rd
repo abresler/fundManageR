@@ -15,19 +15,23 @@ adv_managers_periods_summaries(
 )
 }
 \arguments{
-\item{periods}{dates in year-month form}
+\item{periods}{dates in year-month form (e.g., "2018-06")}
 
-\item{all_periods}{include all periods}
+\item{all_periods}{Logical. If \code{TRUE}, includes all available periods.}
 
-\item{nest_data}{return a nested data frame}
+\item{only_most_recent}{Logical. If \code{TRUE}, returns only the most recent period.}
 
-\item{return_message}{return a message after parsing data}
+\item{include_exempt}{Logical. If \code{TRUE} (default), includes exempt filers.}
 
-\item{is_exempt}{exempt, non-exempt filers}
+\item{nest_data}{Logical. If \code{TRUE}, returns a nested data frame.}
+
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
+
+\item{parallel}{Logical. If \code{TRUE} (default), uses parallel processing via furrr.}
 }
 \value{
-where \code{nest_data} is \code{TRUE} a nested tibble by period and type of filer,
-where \code{nest_data} is \code{FALSE} a tibble
+When \code{nest_data} is \code{TRUE}, a nested tibble by period and type of filer.
+  When \code{nest_data} is \code{FALSE}, a flat tibble with ADV summary data.
 }
 \description{
 This function returns monthly summary
@@ -36,7 +40,8 @@ from 2006 onwards.
 }
 \examples{
 \dontrun{
-adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"), all_periods = FALSE, is_exempt = c(FALSE,TRUE), only_most_recent = FALSE, nest_data = FALSE)
+adv_managers_periods_summaries(periods = c("2006-06", "2016-12", "2017-01"),
+  all_periods = FALSE, include_exempt = TRUE, only_most_recent = FALSE, nest_data = FALSE)
 
 adv_managers_periods_summaries(only_most_recent = TRUE)
 }

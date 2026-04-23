@@ -9,15 +9,12 @@ finra_entities(entity_names = NULL, ocr_pdf = F, return_message = TRUE)
 \arguments{
 \item{entity_names}{vector of names to search}
 
-\item{ocr_pdf}{if \code{TRUE} returns OCR'd broker report PDF}
+\item{ocr_pdf}{Logical. If \code{TRUE}, returns OCR'd broker report PDF.}
 
-\item{return_message}{return a message upon parsing \code{TRUE, FALS}}
-
-\item{score_threshold}{matching score threshold for the search name
-if \code{NULL} there is no threshold}
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-a \code{data frame}
+A tibble with FINRA registered entity information.
 }
 \description{
 This function returns information for any
@@ -28,8 +25,9 @@ entity.
 Use \code{\link{finra_people}} for registered people
 }
 \examples{
-finra_entities(entity_names = c("EJF", "Blackstone", "Next Play", "Simple Capital"),
-ocr_pdf = TRUE)
+\dontrun{
+finra_entities(entity_names = c("EJF", "Blackstone"), ocr_pdf = TRUE)
+}
 }
 \references{
 \href{http://www.finra.org/}{FINRA}

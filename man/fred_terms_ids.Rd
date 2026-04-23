@@ -14,20 +14,24 @@ fred_terms_ids(
 \arguments{
 \item{search_terms}{vector of search terms}
 
-\item{use_json_api}{if \code{TRUE} uses faster json API but results limted to 100
-default \code{FALSE}}
+\item{use_json_api}{Logical. If \code{TRUE} (default), uses faster JSON API
+but results limited to 100.}
 
-\item{return_message}{if \code{TRUE} returns message}
+\item{snake_names}{Logical. If \code{TRUE}, converts column names to snake_case.}
+
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-a \code{tibble}
+A tibble containing matching FRED series IDs and metadata.
 }
 \description{
 This function returns
 matching FRED series ID for a given
 search term.  When using
-`use_json_api` search results limited to 100,
+`use_json_api` search results limited to 100.
 }
 \examples{
+\dontrun{
 fred_terms_ids(search_terms = c("China Debt", "China Housing"))
+}
 }

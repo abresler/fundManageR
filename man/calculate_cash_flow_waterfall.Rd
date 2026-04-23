@@ -6,7 +6,7 @@
 \usage{
 calculate_cash_flow_waterfall(
   dates = c("2015-03-11", "2015-11-20", "2016-10-15"),
-  cash_flows = c(-1e+05, -2e+05, 698906.76849),
+  cash_flows = c(-100000, -200000, 698906.76849),
   working_capital = 0,
   promote_structure = c("20 / 12", "30 / 18"),
   distribution_frequency = NA,

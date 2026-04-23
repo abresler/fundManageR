@@ -7,12 +7,13 @@
 sec_investment_companies(nest_data = TRUE, return_message = TRUE)
 }
 \arguments{
-\item{return_message}{\code{TRUE} return a message after data import}
+\item{nest_data}{Logical. If \code{TRUE} (default), returns nested tibble.}
 
-\item{only_most_recent}{\code{TRUE} return only the most recent year}
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+A tibble containing SEC registered investment company data including
+  fund names, CIKs, and organization types.
 }
 \description{
 This function returns information about SEC
@@ -24,7 +25,9 @@ registered investment companies including:\itemize{
 }
 }
 \examples{
+\dontrun{
 sec_investment_companies(nest_data = TRUE, return_message = TRUE)
+}
 }
 \references{
 \href{http://sec.gov}{The Securities and Exchange Commission}

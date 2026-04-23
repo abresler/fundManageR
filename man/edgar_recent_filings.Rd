@@ -25,18 +25,30 @@ edgar_recent_filings(
 
 \item{table_name_initial}{initial table name for assignment}
 
-\item{parse_all_filings}{if \code{TRUE} parses all filings}
+\item{parse_all_filings}{Logical. If \code{TRUE}, parses all filings.}
 
-\item{parse_form_d}{if \code{TRUE} parses Form D filings}
+\item{parse_form_d}{Logical. If \code{TRUE}, parses Form D filings.}
 
-\item{parse_complete_text_filings}{if \code{TRUE} parses complete text filings}
+\item{parse_complete_text_filings}{Logical. If \code{TRUE}, parses complete text filings.}
 
-\item{nest_data}{if \code{TRUE} nests data}
+\item{parse_13F}{Logical. If \code{TRUE}, parses 13F institutional holdings filings.}
 
-\item{return_message}{if \code{TRUE} returns a message}
+\item{parse_small_offerings}{Logical. If \code{TRUE}, parses small offering filings.}
+
+\item{parse_form_3_4s}{Logical. If \code{TRUE}, parses Form 3 and 4 insider trading filings.}
+
+\item{parse_asset_files}{Logical. If \code{TRUE}, parses asset-backed security filings.}
+
+\item{parse_xbrl}{Logical. If \code{TRUE}, parses XBRL financial data.}
+
+\item{assign_to_environment}{Logical. If \code{TRUE} (default), assigns results to global environment.}
+
+\item{nest_data}{Logical. If \code{TRUE}, nests data.}
+
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-A tibble containing recent EDGAR filings
+A tibble containing recent EDGAR filings with form types and metadata.
 }
 \description{
 Most recent EDGAR filings by type

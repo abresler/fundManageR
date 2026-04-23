@@ -18,14 +18,28 @@ sec_tickers_info(
 \arguments{
 \item{tickers}{character vector of ticker symbols}
 
-\item{return_message}{if \code{true} return a message}
+\item{join_sic}{Logical. If \code{TRUE} (default), joins SIC code descriptions.}
+
+\item{snake_names}{Logical. If \code{TRUE}, converts column names to snake_case.}
+
+\item{unformat}{Logical. If \code{TRUE}, returns unformatted numeric values.}
+
+\item{convert_case}{Logical. If \code{TRUE} (default), converts text to uppercase.}
+
+\item{amount_digits}{Integer. Number of decimal digits for currency formatting (default 2).}
+
+\item{include_address}{Logical. If \code{TRUE} (default), includes company address data.}
+
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-a \code{tibble}
+A tibble with SEC company information including CIK, SIC codes, and filings metadata.
 }
 \description{
 Get Ticker SEC company information
 }
 \examples{
+\dontrun{
 sec_tickers_info(tickers = c("BXP", "AVB", "AAPL"))
+}
 }

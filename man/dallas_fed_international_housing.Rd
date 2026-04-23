@@ -11,17 +11,23 @@ dallas_fed_international_housing(
 )
 }
 \arguments{
-\item{nest_data}{if \code{TRUE} returns nested tibble}
+\item{indicies}{Character vector of index codes to filter. If \code{NULL} (default),
+returns all available indices.}
 
-\item{return_message}{if \code{TRUE} returns a message}
+\item{nest_data}{Logical. If \code{TRUE}, returns nested tibble.}
+
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-a \code{tibble} with international house price data
+A tibble with international house price data including country,
+  date, and index values.
 }
 \description{
 This retrieves data for the international house
 price database maintained by the Dallas FED
 }
 \examples{
+\dontrun{
 dallas_fed_international_housing()
+}
 }

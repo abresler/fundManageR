@@ -207,3 +207,19 @@ list("Parsed: ", url) %>% purrr::invoke(paste0, .) %>% cat(fill = T)
 ## Testing
 
 Tests are minimal - primarily integration tests that hit live APIs (skipped on CRAN). When adding functionality, wrap API calls with `purrr::possibly()` for graceful API failures.
+
+
+## Large File Handling - MANDATORY
+
+**NEVER read large files directly.** Use `tools/sheldon-toolkit/` scripts to inspect, sample, or extract what you need.
+
+| Need | Command |
+|------|---------|
+| Understand structure | `python ~/.claude/tools/sheldon-toolkit/inspector.py <file>` |
+| Sample rows | `python ~/.claude/tools/sheldon-toolkit/sampler.py <file> --count 10` |
+| Get slice | `python ~/.claude/tools/sheldon-toolkit/slicer.py <file> --start 0 --end 100` |
+| Infer schema | `python ~/.claude/tools/sheldon-toolkit/structurer.py <file>` |
+| Filter rows | `python ~/.claude/tools/sheldon-toolkit/filterer.py <file> --field X --value Y` |
+
+**Thresholds:** Code >300 lines, Data >100 rows = use toolkit first.
+

@@ -9,26 +9,25 @@ finra_people(search_name = NULL, ocr_pdf = TRUE, return_message = TRUE)
 \arguments{
 \item{search_name}{vector of names to search}
 
-\item{ocr_pdf}{if \code{TRUE} returns OCR'd broker report PDF}
+\item{ocr_pdf}{Logical. If \code{TRUE}, returns OCR'd broker report PDF.}
 
-\item{return_message}{return a message upon parsing \code{TRUE, FALS}}
-
-\item{score_threshold}{matching score threshold for the search name
-if \code{NULL} there is no threshold}
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-a \code{data frame}
+A tibble with FINRA registered person information.
 }
 \description{
 This function returns information for any
 Financial Industry Regulatory Authority [FINRA] registered
-entity.
+person.
 }
 \note{
-Use \code{\link{finra_people()}} for registered people
+Use \code{\link{finra_entities}} for registered entities
 }
 \examples{
-finra_people(search_name = 'Llyod Blankfein', ocr_pdf = TRUE)
+\dontrun{
+finra_people(search_name = 'Lloyd Blankfein', ocr_pdf = TRUE)
+}
 }
 \references{
 \href{http://www.finra.org/}{FINRA}

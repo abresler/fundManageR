@@ -11,14 +11,14 @@ nareit_mergers_acquisitions(
 )
 }
 \arguments{
-\item{nest_data}{\code{TRUE} return nested data frame}
+\item{pages}{Integer vector. Page numbers to OCR from the PDF (default 32:33).}
 
-\item{return_message}{\code{TRUE} return a message after data import}
+\item{nest_data}{Logical. If \code{TRUE}, returns nested data frame.}
 
-\item{return_wide}{\code{TRUE} return data in wide form}
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+A tibble containing NAREIT M&A activity data.
 }
 \description{
 This function OCRs data on NAREIT member

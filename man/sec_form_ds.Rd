@@ -39,8 +39,10 @@ sec_form_ds(
 \item{return_message}{\code{TRUE} return a message after data import}
 }
 \value{
-where \code{nest_data} is \code{TRUE} a nested tibble by asset,
-where \code{nest_data} is \code{FALSE} a tibble
+A tibble containing SEC Form-D filing data. When \code{nest_data} is
+  \code{TRUE}, returns a nested tibble grouped by asset. When \code{nest_data}
+  is \code{FALSE}, returns a flat tibble with columns including filing dates,
+  issuer information, offering amounts, and investor details.
 }
 \description{
 This function returns data for SEC Form D's by

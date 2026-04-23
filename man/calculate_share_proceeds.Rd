@@ -4,7 +4,7 @@
 \alias{calculate_share_proceeds}
 \title{Share proceeds}
 \usage{
-calculate_share_proceeds(price = 10, shares = 1e+06)
+calculate_share_proceeds(price = 10, shares = 1000000)
 }
 \arguments{
 \item{price}{numeric price}

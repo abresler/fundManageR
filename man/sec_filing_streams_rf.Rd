@@ -37,10 +37,12 @@ sec_filing_streams_rf(
 \item \code{Confidential}: confidential information
 }}
 
-\item{return_message}{return a message}
+\item{nest_data}{Logical. If \code{TRUE} (default), returns nested tibble.}
+
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-A tibble containing SEC filing stream data
+A tibble containing SEC filing stream data grouped by filer and filing type.
 }
 \description{
 This function returns the most recent SEC filings
@@ -48,7 +50,7 @@ for specified filer type by filing type.
 }
 \examples{
 \dontrun{
-sec_filing_streams(filers = 'All', filing_names = 'Annual Reports')
+sec_filing_streams_rf(filers = 'All', filing_names = 'Annual Reports')
 }
 
 }

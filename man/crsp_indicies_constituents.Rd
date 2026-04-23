@@ -7,19 +7,20 @@
 crsp_indicies_constituents(return_message = TRUE)
 }
 \arguments{
-\item{return_message}{\code{TRUE} return a message after data import}
-
-\item{nest_data}{\code{TRUE} return nested data frame}
+\item{return_message}{Logical. If \code{TRUE}, returns progress messages.}
 }
 \value{
-nested \code{tibble} or \code{tibble} if \code{nest_data = FALSE}
+A tibble containing CRSP index constituent data including ticker,
+  company name, and weight.
 }
 \description{
 This function returns information
 about a CRSP index's constituents
 }
 \examples{
-crsp_indicies_constituents(nest_data = FALSE, return_message = TRUE)
+\dontrun{
+crsp_indicies_constituents(return_message = TRUE)
+}
 }
 \references{
 \href{http://crsp.com}{The Center for Research in Security Prices}
