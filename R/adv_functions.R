@@ -8187,7 +8187,7 @@ return(all_data)
           mutate(urlPDFManagerADVBrochure = url) %>%
           right_join(info) %>%
           suppressMessages() %>%
-          dplyr::select(datetimeCreated,
+          dplyr::select(dplyr::any_of("datetimeCreated"),
                         textBrochure,
                         everything())
 
@@ -8305,15 +8305,15 @@ adv_managers_brochures <-
       })
 
     if (nest_data) {
-      all_data <-
-        all_data %>%
-        nest(dataBrochure = -c(
-          idCRD,
-          nameEntityManager,
-          titleDocument,
-          datetimeCreated,
-          countPages
-        ))
+      keep_cols <- intersect(
+        c("idCRD", "nameEntityManager", "titleDocument", "datetimeCreated", "countPages"),
+        names(all_data)
+      )
+      if (length(keep_cols) > 0 && nrow(all_data) > 0) {
+        all_data <-
+          all_data %>%
+          nest(dataBrochure = -dplyr::all_of(keep_cols))
+      }
     }
     all_data
   }
@@ -9586,9 +9586,12 @@ extract_fee_references <- function(data, fee_ceiling_pct = 30,
     warning("extract_fee_references: 'word_threshhold' is deprecated (and the prior default 5 silently dropped all fees >5%). Use 'fee_ceiling_pct' instead (default 30 = keep fees up to 30%)")
     fee_ceiling_pct <- word_threshhold
   }
-  data <-
-    data %>%
-    filter(!nameAuthor %>% is.na())
+  if (!"textBrochure" %in% names(data)) {
+    stop("extract_fee_references requires a 'textBrochure' column (from adv_managers_brochures)")
+  }
+  if ("nameAuthor" %in% names(data)) {
+    data <- data %>% dplyr::filter(!is.na(nameAuthor))
+  }
 
   data <-
     data %>%
