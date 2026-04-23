@@ -4,7 +4,7 @@
 \alias{nareit_entities}
 \title{NAREIT constituents}
 \usage{
-nareit_entities(parse_member_data = TRUE, return_message = T)
+nareit_entities(parse_member_data = TRUE, return_message = TRUE)
 }
 \arguments{
 \item{parse_member_data}{if \code{TRUE} parses information about the member companies including
