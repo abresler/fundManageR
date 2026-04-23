@@ -5,10 +5,10 @@
 \title{SEC quarterly securities transaction metrics}
 \usage{
 sec_securities_metrics_by_exchange(
-  only_most_recent = T,
+  only_most_recent = TRUE,
   years = NULL,
   months = NULL,
-  nest_data = F,
+  nest_data = FALSE,
   return_message = TRUE
 )
 }

@@ -8,7 +8,7 @@ sec_money_market_funds(
   only_most_recent = TRUE,
   years = NULL,
   months = NULL,
-  nest_data = F,
+  nest_data = FALSE,
   return_message = TRUE
 )
 }

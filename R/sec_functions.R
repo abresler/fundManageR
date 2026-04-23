@@ -48,7 +48,7 @@ sec_ciks <-
       html_nodes("p") %>%
       html_text()
 
-    entities <- entities %>% str_split("\n") %>% flatten_chr()
+    entities <- entities %>% str_split("\n") %>% list_c()
     data <-
       tibble(X1 = entities) %>%
       tidyr::separate(X1,
@@ -61,12 +61,12 @@ sec_ciks <-
       ) %>%
       mutate(
         nameIssuer = nameIssuer %>% str_to_upper(),
-        urlRankAndFiled = paste0('http://rankandfiled.com/#/', idCIK, '/table'),
+        urlRankAndFiled = paste0('https://rankandfiled.com/#/', idCIK, '/table'),
         urlEDGAR = list(
           'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=',
           codeCIK,
           '&type=&dateb=&owner=exclude&start=0&count=100&output=xml'
-        ) %>% purrr::invoke(paste0, .),
+        ) %>% do.call(paste0, .),
         datetimeData = Sys.time()
       ) %>%
       dplyr::select(idCIK, nameIssuer, everything()) %>%
@@ -80,7 +80,7 @@ sec_ciks <-
           data %>% nrow %>% formattable::comma(digits = 0),
           ' entities with registered CIK codes'
         ) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
     }
     data
   }
@@ -97,10 +97,10 @@ sec_ciks <-
 
     slugs <-
       page %>%
-      html_nodes('td:nth-child(1) a ')
-      html_nodes('.views-field-extension a') %>%
+      html_nodes('td:nth-child(1) a, .views-field-extension a') %>%
       html_attr('href') %>%
-      str_replace_all('http://www.sec.gov', '')
+      purrr::discard(is.na) %>%
+      str_replace_all('https?://www.sec.gov', '')
 
     urls <-
       slugs %>%
@@ -113,7 +113,7 @@ sec_ciks <-
           x %>%
           str_replace_all('/foia/logs/foia-log-fy|.csv', '') %>%
           str_split('\\-') %>%
-          flatten_chr()
+          list_c()
 
         if (items %>% length() == 2) {
           df <-
@@ -213,8 +213,8 @@ sec_ciks <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(data)
@@ -285,8 +285,8 @@ sec_foia_requests <-
         ' to ',
         url_df$yearData %>% unique() %>% max()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -345,7 +345,7 @@ sec_foia_requests <-
             quarter,
             idPeriod,
             sep = '',
-            remove = F) %>%
+            remove = FALSE) %>%
       select(-quarter)
 
     current_year <-
@@ -444,27 +444,27 @@ sec_foia_requests <-
            table_area = "113.14286-64.42471-727.78378-520.05405",
            return_message) {
     list("Be patient ocr'ing ", url, ' may take a while') %>%
-      purrr::invoke(paste0, .) %>%
-      cat(fill = T)
+      do.call(paste0, .) %>%
+      cat(fill = TRUE)
 
     if (!table_area %>% is.na()) {
       table_area <-
         table_area %>%
         str_split('\\-') %>%
-        flatten_chr %>%
+        list_c() %>%
         as.numeric()
     }
 
     df_metadata <-
       url %>%
       tabulapdf::extract_metadata() %>%
-      flatten_df()
+      as_tibble()
 
     if ('modified' %in% names(df_metadata)) {
       date_parts <-
         df_metadata$modified %>% str_replace_all(" EDT | EST ", ' ') %>%
         str_split('\\ ') %>%
-        flatten_chr()
+        list_c()
 
       date_year <-
         date_parts[date_parts %>% length()]
@@ -540,7 +540,7 @@ sec_foia_requests <-
     all_data <-
       all_data %>%
       left_join(
-        all_data %>% mutate(idRow = 1:n()) %>% group_by(idCUSIPBase) %>% filter(idRow == min(idRow)) %>%
+        all_data %>% mutate(idRow = seq_len(n())) %>% group_by(idCUSIPBase) %>% filter(idRow == min(idRow)) %>%
           ungroup() %>% select(idCUSIPBase, nameEntity = nameIssuer)
       ) %>%
       select(idCUSIP:codeCUSIP2,
@@ -556,7 +556,7 @@ sec_foia_requests <-
       all_data %>%
       mutate(
         isDebtSecurity = descriptionIssuer %>% str_detect("%"),
-        pctRateNote = ifelse(isDebtSecurity == T, descriptionIssuer, NA)
+        pctRateNote = ifelse(isDebtSecurity == TRUE, descriptionIssuer, NA)
       ) %>%
       tidyr::separate(pctRateNote,
                       sep = '\\%',
@@ -578,8 +578,8 @@ sec_foia_requests <-
         ' CUSIPs as of ',
         datetime_file
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(all_data)
@@ -666,7 +666,7 @@ sec_cusips <-
       purrr::possibly(.parse_sec_cusip_url, tibble())
 
     all_data <-
-      1:nrow(urls_df) %>%
+      seq_len(nrow(urls_df)) %>%
       future_map_dfr(function(x) {
         parse_sec_cusip_url_safe(
           url = urls_df$urlSEC[[x]],
@@ -689,7 +689,7 @@ sec_cusips <-
           all_data %>% dplyr::select(idCUSIP) %>% distinct() %>% nrow() %>% formattable::comma(digits = 0),
           ' securities with cusips codes'
         ) %>%
-        cat(fill = T)
+        cat(fill = TRUE)
 
     }
 
@@ -771,7 +771,7 @@ sec_cusips <-
           stateEntity,
           " ",
           zipcodeEntity
-        ) %>% purrr::invoke(paste0, .),
+        ) %>% do.call(paste0, .),
         nameManager = ifelse(hasCO == TRUE, addressStreet1Entity, NA) %>% str_replace_all("C/O", ""),
         nameManager1 = ifelse(hasCO1 == TRUE, addressStreet2Entity, NA) %>% str_replace_all("C/O", ""),
         nameManager = ifelse(!nameManager1 %>% is.na(), nameManager1, nameManager),
@@ -790,8 +790,8 @@ sec_cusips <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(df)
@@ -820,9 +820,9 @@ sec_cusips <-
 #' sec_closed_end_funds(years = 2015:2017)
 #' }
 sec_closed_end_funds <-
-  function(only_most_recent = T,
+  function(only_most_recent = TRUE,
            years =NULL,
-           nest_data = F,
+           nest_data = FALSE,
            return_message = TRUE) {
     url_df <-
       .get_closed_end_fund_url_df()
@@ -875,8 +875,8 @@ sec_closed_end_funds <-
       list("Acquired ",
            all_data %>% nrow() %>% formattable::comma(digits = 0),
            ' Closed End Funds') %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -968,7 +968,7 @@ sec_investment_companies <-
           stateManager,
           " ",
           zipcodeManager
-        ) %>% purrr::invoke(paste0, .)
+        ) %>% do.call(paste0, .)
       )
 
     df <-
@@ -994,8 +994,8 @@ sec_investment_companies <-
         df %>% nrow() %>% formattable::comma(digits = 0),
         ' SEC registered investment funds'
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -1028,7 +1028,7 @@ sec_investment_companies <-
 
     urls_csv %>% str_extract("(\\d)")
 
-    dates <- urls_csv %>% str_split("/mmf|/mm-") %>% flatten_chr()
+    dates <- urls_csv %>% str_split("/mmf|/mm-") %>% list_c()
     dates <-
       dates[dates %>% str_detect(".csv")] %>% str_remove_all(".csv|\\-|\\_0")
 
@@ -1125,8 +1125,8 @@ sec_investment_companies <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(df)
@@ -1162,7 +1162,7 @@ sec_money_market_funds <-
   function(only_most_recent = TRUE,
            years = NULL,
            months = NULL,
-           nest_data = F,
+           nest_data = FALSE,
            return_message = TRUE) {
     missing <-
       only_most_recent == F & (length(years) ==0)
@@ -1237,7 +1237,7 @@ sec_money_market_funds <-
     all_data <-
       all_data %>%
       mutate(
-        urlRankandFiled = list('http://rankandfiled.com/', '#/filers/', idCIK, '/table') %>% purrr::invoke(paste0, .)
+        urlRankandFiled = list('https://rankandfiled.com/', '#/filers/', idCIK, '/table') %>% do.call(paste0, .)
       )
 
     if (return_message) {
@@ -1246,8 +1246,8 @@ sec_money_market_funds <-
         all_data %>% select(idCIK, nameIssuer) %>% distinct() %>% nrow() %>% formattable::comma(digits = 0),
         " money market funds"
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -1300,8 +1300,8 @@ sec_money_market_funds <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(df)
@@ -1343,8 +1343,9 @@ sec_bankruptcies <-
                       '') %>%
       readr::parse_number()
 
-    years[[1]] <-
-      2009
+    if (length(years) >= 1) {
+      years[[1]] <- 2009
+    }
 
     url_df <-
       tibble(yearData = years,
@@ -1380,8 +1381,8 @@ sec_bankruptcies <-
         all_data$amountLiabilities %>% sum(na.rm = TRUE) %>% formattable::currency(digits = 0),
         ' in Liabilities'
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -1421,7 +1422,7 @@ sec_bankruptcies <-
     periods <-
       slugs %>%
       str_split("/bd") %>%
-      flatten_chr()
+      list_c()
 
     periods <-
       periods[periods %>% str_detect(".txt")] %>%
@@ -1491,7 +1492,7 @@ sec_bankruptcies <-
           stateEntity,
           " ",
           zipcodeEntity
-        ) %>% purrr::invoke(paste0, .),
+        ) %>% do.call(paste0, .),
         urlData = url
       ) %>%
       mutate(across(c('idCIK', 'idReportingFilingNumber'), ~as.numeric(.))) %>%
@@ -1501,8 +1502,8 @@ sec_bankruptcies <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(df)
@@ -1607,8 +1608,8 @@ sec_broker_dealers <-
         ' to ',
         all_data$dateData %>% max()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -1642,8 +1643,8 @@ sec_broker_dealers <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(df)
@@ -1781,8 +1782,8 @@ sec_municipal_advisors <-
         ' to ',
         all_data$dateData %>% max()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -1808,8 +1809,14 @@ sec_municipal_advisors <-
     tf <-
       tempfile(tmpdir = td, fileext = ".zip")
 
-    url %>%
-      curl::curl_download(destfile = tf)
+    dl_ok <- tryCatch({
+      curl::curl_download(url, destfile = tf, mode = "wb")
+      TRUE
+    }, error = function(e) {
+      warning("Download failed for ", url, ": ", conditionMessage(e))
+      FALSE
+    })
+    if (!dl_ok) return(tibble())
 
     con <-
       unzip(tf, exdir = td)
@@ -1844,8 +1851,8 @@ sec_municipal_advisors <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(df)
@@ -1868,7 +1875,7 @@ sec_municipal_advisors <-
     periods <-
       slugs %>%
       str_split("/") %>%
-      flatten_chr()
+      list_c()
 
     periods <- periods[periods %>% str_detect("zip")] %>%
       str_remove_all(".zip") %>%
@@ -1932,7 +1939,7 @@ sec_failed_to_deliver_securities <-
   function(only_most_recent = TRUE,
            years = 2016,
            months = NULL,
-           nest_data = F,
+           nest_data = FALSE,
            return_message = TRUE) {
     missing <-
       only_most_recent == F & (length(years) == 0)
@@ -1970,7 +1977,7 @@ sec_failed_to_deliver_securities <-
         urls_df %>%
         filter(yearData %in% years)
 
-      if (!months %>% is_null()) {
+      if (!months %>% is.null()) {
         url_df <-
           url_df %>%
           filter(monthData %in% months)
@@ -2004,8 +2011,8 @@ sec_failed_to_deliver_securities <-
         ' to ',
         all_data$dateData %>% max()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -2044,7 +2051,7 @@ sec_failed_to_deliver_securities <-
     periods <-
       slugs %>%
       str_split("/") %>%
-      flatten_chr() %>%
+      list_c() %>%
       keep(function(x){
         x %>% str_detect("zip")
       }) %>%
@@ -2078,8 +2085,14 @@ sec_failed_to_deliver_securities <-
     tf <-
       tempfile(tmpdir = td, fileext = ".zip")
 
-    url %>%
-      curl::curl_download(destfile = tf)
+    dl_ok <- tryCatch({
+      curl::curl_download(url, destfile = tf, mode = "wb")
+      TRUE
+    }, error = function(e) {
+      warning("Download failed for ", url, ": ", conditionMessage(e))
+      FALSE
+    })
+    if (!dl_ok) return(tibble())
 
     con <-
       unzip(tf, exdir = td)
@@ -2126,8 +2139,8 @@ sec_failed_to_deliver_securities <-
 
     if (return_message) {
       list("Parsed: ", url) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
    df
@@ -2158,10 +2171,10 @@ sec_failed_to_deliver_securities <-
 #' sec_securities_metrics_by_exchange(years = 2016)
 #' }
 sec_securities_metrics_by_exchange <-
-  function(only_most_recent = T,
+  function(only_most_recent = TRUE,
            years = NULL,
            months = NULL,
-           nest_data = F,
+           nest_data = FALSE,
            return_message = TRUE) {
     missing <-
       only_most_recent == F & (length(years) == 0)
@@ -2183,22 +2196,9 @@ sec_securities_metrics_by_exchange <-
       possibly_years <-
         (urls_df$yearData %>% min()):(urls_df$yearData %>% max())
 
-      if (years %in% possibly_years %>% sum()  == 0) {
+      if (sum(years %in% possibly_years) == 0) {
         stop("Only possible years are " %>% paste0(paste0(years, collapse = ', ')))
       }
-
-      if (years %>% length() > 1) {
-        only_most_recent <-
-          FALSE
-      }
-
-      if (only_most_recent) {
-        urls <-
-          urls_df %>%
-          slice(1) %>%
-          .$urlData
-      }
-
 
       url_df <-
         urls_df %>%
@@ -2250,8 +2250,8 @@ sec_securities_metrics_by_exchange <-
         ' to ',
         all_data$dateData %>% max()
       ) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     if (nest_data) {
@@ -2409,7 +2409,7 @@ sec_securities_metrics_by_exchange <-
       page %>%
       html_nodes('.views-field-field-display-title a') %>%
       html_attr('href') %>%
-      str_replace_all('http://www.sec.gov', '')
+      str_replace_all('https?://www.sec.gov', '')
 
 
     periods <-
@@ -2447,19 +2447,19 @@ sec_securities_metrics_by_exchange <-
            return_message = TRUE) {
 
     period_data <-
-      url %>% str_replace_all("http://www.sec.gov/data/financial-statements/|.zip|/files/dera/data/financial-statement-data-sets/", '')
+      url %>% str_replace_all("https?://www.sec.gov/data/financial-statements/|.zip|/files/dera/data/financial-statement-data-sets/", '')
 
     year_data <-
       period_data %>%
       str_split('\\q') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[1]] %>%
       as.numeric()
 
     quarter_data <-
       period_data %>%
       str_split('\\q') %>%
-      flatten_chr() %>%
+      list_c() %>%
       .[[2]] %>%
       as.numeric()
 
@@ -2479,8 +2479,14 @@ sec_securities_metrics_by_exchange <-
 
     tmp <-
       tempfile()
-    url %>%
-      curl::curl_download(url = ., tmp)
+    dl_ok <- tryCatch({
+      curl::curl_download(url, destfile = tmp, mode = "wb")
+      TRUE
+    }, error = function(e) {
+      warning("Download failed for ", url, ": ", conditionMessage(e))
+      FALSE
+    })
+    if (!dl_ok) return(tibble())
     con <-
       unzip(tmp)
 
@@ -2517,7 +2523,7 @@ sec_securities_metrics_by_exchange <-
             idEDGARAccession %>% str_replace_all('\\-', ''),
             '/',
             slugXBRLInstance
-          ) %>% purrr::invoke(paste0, .),
+          ) %>% do.call(paste0, .),
         addressStreetFilerBusiness = ifelse(
           addressStreet2FilerBusiness %>% is.na(),
           addressStreet1FilerBusiness,
@@ -2532,7 +2538,7 @@ sec_securities_metrics_by_exchange <-
           stateprovinceFilerBusiness,
           " ",
           zipcodeFilerBusiness
-        ) %>% purrr::invoke(paste0, .),
+        ) %>% do.call(paste0, .),
         addressStreetFilerMailing = ifelse(
           addressStreet2FilerMailing %>% is.na(),
           addressStreet1FilerMailing,
@@ -2547,7 +2553,7 @@ sec_securities_metrics_by_exchange <-
           stateprovinceFilerMailing,
           " ",
           zipcodeFilerMailing
-        ) %>% purrr::invoke(paste0, .)
+        ) %>% do.call(paste0, .)
       ) %>%
       left_join(tibble(
         idAFS = c("1-LAF", "2-ACC", "3-SRA", "4-NON", "5-SML", NA),
@@ -2730,8 +2736,8 @@ sec_securities_metrics_by_exchange <-
            sub %>% nrow() %>% comma(digits = 0),
            " filers for ",
            period_data) %>%
-        purrr::invoke(paste0, .) %>%
-        cat(fill = T)
+        do.call(paste0, .) %>%
+        cat(fill = TRUE)
     }
 
     return(all_data)
@@ -2831,7 +2837,7 @@ sec_xbrl_periods <-
         select(nameTable) %>%
         distinct() %>%
         mutate(nameDF =
-                 list('xbrl', nameTable %>% str_replace_all('\\ ', '')) %>% purrr::invoke(paste0, .))
+                 list('xbrl', nameTable %>% str_replace_all('\\ ', '')) %>% do.call(paste0, .))
 
       if (length(tables) > 0) {
         all_data <-

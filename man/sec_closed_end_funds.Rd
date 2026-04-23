@@ -5,9 +5,9 @@
 \title{SEC registered closed-end funds}
 \usage{
 sec_closed_end_funds(
-  only_most_recent = T,
+  only_most_recent = TRUE,
   years = NULL,
-  nest_data = F,
+  nest_data = FALSE,
   return_message = TRUE
 )
 }
