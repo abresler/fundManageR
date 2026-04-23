@@ -8351,79 +8351,81 @@ adv_managers_brochures <-
 #' }
 adv_period_urls <-
   function(use_api = TRUE) {
+    # Authoritative source: SEC data-research page lists actual current + historical
+    # Form ADV zip/xlsx URLs with inconsistent paths + extensions (verified 2026-04-23).
+    # Pattern: `/files/investment/data/...` or `/files/investment/data/other/...`;
+    # recent=.zip, 2025=.xlsx, dates encoded as MMDDYY or MMDDYYYY.
 
-    if (use_api) {
-      # Fetch URLs from data.gov API - this returns verified, available files
-      api_url <- "https://catalog.data.gov/api/3/action/package_show?id=information-about-registered-investment-advisers-and-exempt-reporting-advisers"
+    page_url <- "https://www.sec.gov/data-research/sec-markets-data/information-about-registered-investment-advisers-exempt-reporting-advisers"
 
-      response <- tryCatch({
-        httr::GET(
-          api_url,
-          httr::add_headers(
-            "User-Agent" = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-            "Accept" = "application/json"
-          ),
-          httr::timeout(30)
-        )
-      }, error = function(e) NULL)
+    # SEC requires contact info in UA (RFC 7231 + SEC rate-limit policy).
+    # Format: "name email@domain" — no URLs, no browser strings.
+    scrape_ok <- tryCatch({
+      page <- page_url %>%
+        httr::GET(httr::add_headers(
+          "User-Agent" = Sys.getenv("FUND_MANAGER_UA",
+                                    unset = "fundManageR alex@asbcllc.com")
+        ), httr::timeout(30))
+      if (httr::status_code(page) != 200) stop("HTTP ", httr::status_code(page))
+      xml2::read_html(httr::content(page, as = "text", encoding = "UTF-8"))
+    }, error = function(e) NULL)
 
-      if (!is.null(response) && httr::status_code(response) == 200) {
-        json_data <- httr::content(response, as = "text", encoding = "UTF-8") %>%
-          jsonlite::fromJSON(flatten = TRUE)
+    if (!is.null(scrape_ok)) {
+      hrefs <- scrape_ok %>%
+        rvest::html_elements("a") %>%
+        rvest::html_attr("href") %>%
+        purrr::discard(is.na)
 
-        resources <- json_data$result$resources
+      zip_urls <- hrefs[stringr::str_detect(hrefs, "\\.(zip|xlsx)$") &
+                          stringr::str_detect(hrefs, "/ia[0-9]+") &
+                          !stringr::str_detect(hrefs, "/node/")]
 
-        if (!is.null(resources) && nrow(resources) > 0) {
-          # Filter to only zip and xlsx files (exclude "no-data" PDFs)
-          data <- resources %>%
-            as_tibble() %>%
-            dplyr::filter(str_detect(url, "\\.(zip|xlsx)$")) %>%
-            dplyr::select(urlZip = url) %>%
-            mutate(
-              baseNameURL = basename(urlZip),
-              isExempt = str_detect(baseNameURL, "exempt"),
-              typeReport = ifelse(isExempt, "EXEMPT INVESTMENT ADVISERS", "REGISTERED INVESTMENT ADVISERS")
-            )
+      # Absolutize
+      zip_urls <- ifelse(
+        stringr::str_starts(zip_urls, "http"),
+        zip_urls,
+        paste0("https://www.sec.gov", zip_urls)
+      )
 
-          # Extract dates from filenames
-          # Pattern: ia{MMDDYY}.zip or ia{MMDDYYYY}.xlsx
-          data <- data %>%
-            mutate(
-              date_str = str_extract(baseNameURL, "ia([0-9]+)") %>% str_remove("ia"),
-              dateData = case_when(
-                nchar(date_str) == 6 ~ lubridate::mdy(date_str),
-                nchar(date_str) == 8 ~ lubridate::mdy(date_str),
-                TRUE ~ NA_Date_
-              ),
-              periodReport = format(dateData, "%B %Y"),
-              quarterData = lubridate::quarter(dateData),
-              yearData = lubridate::year(dateData),
-              periodData = format(dateData, "%Y-%m")
-            ) %>%
-            dplyr::select(-date_str) %>%
-            dplyr::filter(!is.na(dateData)) %>%
-            arrange(desc(dateData), isExempt)
-
-          gc()
-          return(data)
-        }
+      if (length(zip_urls) > 0) {
+        data <- tibble::tibble(urlZip = zip_urls) %>%
+          mutate(
+            baseNameURL = basename(urlZip),
+            isExempt = stringr::str_detect(baseNameURL, "exempt"),
+            typeReport = ifelse(isExempt, "EXEMPT INVESTMENT ADVISERS", "REGISTERED INVESTMENT ADVISERS"),
+            date_str = stringr::str_extract(baseNameURL, "ia[0-9]+") %>% stringr::str_remove("ia"),
+            dateData = dplyr::case_when(
+              nchar(date_str) == 6 ~ lubridate::mdy(date_str),
+              nchar(date_str) == 8 ~ lubridate::mdy(date_str),
+              TRUE ~ as.Date(NA)
+            ),
+            periodReport = format(dateData, "%B %Y"),
+            quarterData = lubridate::quarter(dateData),
+            yearData = lubridate::year(dateData),
+            periodData = format(dateData, "%Y-%m")
+          ) %>%
+          dplyr::select(-date_str) %>%
+          dplyr::filter(!is.na(dateData)) %>%
+          dplyr::distinct(urlZip, .keep_all = TRUE) %>%
+          dplyr::arrange(desc(dateData), isExempt)
+        gc()
+        return(data)
       }
     }
 
-    # Fallback: Generate URLs based on date patterns
-    base_url <- "https://www.sec.gov/files/investment/data/information-about-registered-investment-advisers-exempt-reporting-advisers/"
+    # Fallback: compute with most-likely path (April 2026 was at /other/).
+    # If SEC changes again, the authoritative scrape above will pick up.
+    base_url_current <- "https://www.sec.gov/files/investment/data/other/information-about-registered-investment-advisers-exempt-reporting-advisers/"
+    base_url_legacy  <- "https://www.sec.gov/files/investment/data/information-about-registered-investment-advisers-exempt-reporting-advisers/"
     start_dt <- lubridate::ymd("2023-01-01")
     end_dt <- Sys.Date()
-
-    dates <- seq(
-      from = lubridate::floor_date(start_dt, "month"),
-      to = lubridate::floor_date(end_dt, "month"),
-      by = "month"
-    )
+    dates <- seq(lubridate::floor_date(start_dt, "month"),
+                 lubridate::floor_date(end_dt, "month"), by = "month")
 
     data <- purrr::map_dfr(dates, function(dt) {
       date_str <- format(dt, "%m%d%y")
-      tibble(
+      base <- if (dt >= as.Date("2026-02-01")) base_url_current else base_url_legacy
+      tibble::tibble(
         typeReport = c("REGISTERED INVESTMENT ADVISERS", "EXEMPT INVESTMENT ADVISERS"),
         periodReport = format(dt, "%B %Y"),
         isExempt = c(FALSE, TRUE),
@@ -8433,14 +8435,13 @@ adv_period_urls <-
           baseNameURL = ifelse(isExempt,
                                paste0("ia", date_str, "-exempt.zip"),
                                paste0("ia", date_str, ".zip")),
-          urlZip = paste0(base_url, baseNameURL),
+          urlZip = paste0(base, baseNameURL),
           quarterData = lubridate::quarter(dateData),
           yearData = lubridate::year(dateData),
           periodData = format(dateData, "%Y-%m")
         )
     }) %>%
-      arrange(desc(dateData), isExempt)
-
+      dplyr::arrange(desc(dateData), isExempt)
     gc()
     data
   }
@@ -8949,7 +8950,7 @@ dictionary_sec_names <-
   }
 
 .parse_sec_adv_data_url <-
-  function(url = 'https://www.sec.gov/foia/iareports/ia090116.zip',
+  function(url = 'https://adviserinfo.sec.gov/content/Adv_Monthly/ia090116.zip',
            return_message = TRUE) {
     base_url <- url %>% basename()
 
@@ -9216,7 +9217,7 @@ dictionary_sec_names <-
     adv_data
   }
 
-.parse_adv_urls <- function(urls = 'https://www.sec.gov/foia/iareports/ia090116.zip', return_message = TRUE) {
+.parse_adv_urls <- function(urls = 'https://adviserinfo.sec.gov/content/Adv_Monthly/ia090116.zip', return_message = TRUE) {
   state <- new.env(parent = emptyenv())
 
   state$rows <- list()
