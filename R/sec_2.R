@@ -12586,6 +12586,84 @@ sec_cik_master <-
   }
 
 
+# SEC Form D bulk datasets ------------------------------------------------
+
+#' SEC Form D Bulk Quarterly Dataset
+#'
+#' Downloads the SEC DERA quarterly Form D structured-data ZIP
+#' (\code{https://www.sec.gov/files/structureddata/data/form-d-data-sets/\{YYYY\}q\{Q\}_d.zip})
+#' and parses the six component TSVs into a named list of tibbles:
+#' \code{FORMDSUBMISSION} (filing header), \code{ISSUERS} (issuer entity +
+#' jurisdiction), \code{OFFERING} (amounts, fund type, Reg D exemption,
+#' sale date), \code{RECIPIENTS} (placement agents), \code{RELATEDPERSONS}
+#' (directors/officers/promoters), \code{SIGNATURES} (officer signatures).
+#' All tables join on \code{ACCESSIONNUMBER}.
+#'
+#' @param year numeric year (default = current year).
+#' @param quarter numeric 1-4 (default = prior quarter).
+#' @param snake_names if \code{TRUE} return snake_case column names.
+#' @param return_message if \code{TRUE} emit status message.
+#' @return A named list of tibbles (one per TSV).
+#' @export
+#' @family SEC Form D
+#' @examples
+#' \dontrun{
+#' fd <- sec_form_d_bulk(year = 2026, quarter = 1)
+#' dplyr::count(fd$OFFERING, investmentfundtype, sort = TRUE)
+#' }
+sec_form_d_bulk <-
+  function(year = NULL, quarter = NULL,
+           snake_names = TRUE, return_message = TRUE) {
+    if (is.null(year) || is.null(quarter)) {
+      # default to prior completed quarter
+      d <- Sys.Date()
+      qnow <- lubridate::quarter(d)
+      ynow <- lubridate::year(d)
+      if (qnow == 1) { year <- ynow - 1; quarter <- 4 }
+      else           { year <- ynow;     quarter <- qnow - 1 }
+    }
+    ua <- getOption("fundManageR.sec_user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+    url <- sprintf(
+      "https://www.sec.gov/files/structureddata/data/form-d-data-sets/%dq%d_d.zip",
+      year, quarter
+    )
+    tmp <- tempfile(fileext = ".zip")
+    resp <- httr::GET(url, httr::user_agent(ua),
+                      httr::write_disk(tmp, overwrite = TRUE))
+    httr::stop_for_status(resp)
+    outdir <- tempfile()
+    utils::unzip(tmp, exdir = outdir)
+    unlink(tmp)
+
+    tsvs <- list.files(outdir, pattern = "\\.tsv$",
+                       recursive = TRUE, full.names = TRUE)
+    names(tsvs) <- tools::file_path_sans_ext(basename(tsvs))
+
+    out <- lapply(tsvs, function(f) {
+      df <- suppressMessages(suppressWarnings(
+        readr::read_tsv(f, show_col_types = FALSE, progress = FALSE,
+                        guess_max = 20000,
+                        col_types = readr::cols(.default = readr::col_character()))
+      ))
+      df %>%
+        dplyr::mutate(year_quarter = sprintf("%dQ%d", year, quarter)) %>%
+        munge_tbl(snake_names = snake_names)
+    })
+    unlink(outdir, recursive = TRUE)
+
+    if (return_message) {
+      n_total <- sum(vapply(out, nrow, integer(1)))
+      try(.fm_data_acquired(
+        n_rows = n_total, source = "SEC DERA",
+        entity = sprintf("Form D bulk %dQ%d", year, quarter),
+        extra  = sprintf("%d tables", length(out))
+      ), silent = TRUE)
+    }
+    out
+  }
+
+
 # SEC 13F CUSIP list ------------------------------------------------------
 
 #' SEC Official List of Section 13(f) Securities (CUSIP dump)

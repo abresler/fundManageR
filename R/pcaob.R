@@ -1,6 +1,102 @@
 #
 # https://rasr.pcaobus.org/Search/Search.aspx
 
+# PCAOB bulk inspection CSVs ------------------------------------------------
+# Discovered 2026-04-24 via SIGINT. Public endpoints at
+# pcaobus.org/docs/default-source/generated-reports/*.csv refreshed daily.
+
+.pcaob_fetch <- function(url, encoding = "UTF-8") {
+  ua <- getOption("fundManageR.user_agent",
+                  "SHELDON Research alexbresler@pwcommunications.com")
+  tmp <- tempfile(fileext = ".csv")
+  resp <- httr::GET(url, httr::user_agent(ua),
+                    httr::write_disk(tmp, overwrite = TRUE))
+  httr::stop_for_status(resp)
+  df <- suppressMessages(suppressWarnings(
+    readr::read_csv(tmp, locale = readr::locale(encoding = encoding),
+                    show_col_types = FALSE, progress = FALSE)
+  ))
+  unlink(tmp)
+  df
+}
+
+#' PCAOB Inspection Reports (firm-summary level)
+#'
+#' Downloads the PCAOB's bulk firm-inspection summary CSV — one row per
+#' inspected audit firm per inspection year, with country, global network,
+#' deficiency rate, inspection type (Annually/Triennially Inspected),
+#' audit counts, and PDF report URL. ~4,300 rows. Refreshed daily.
+#'
+#' @param snake_names if \code{TRUE} return snake_case column names (default TRUE).
+#' @param return_message if \code{TRUE} emit status message.
+#' @return A tibble of inspected-firm summaries.
+#' @export
+#' @family PCAOB
+pcaob_inspection_reports <-
+  function(snake_names = TRUE, return_message = TRUE) {
+    # CSV is UTF-16LE encoded
+    df <- .pcaob_fetch(
+      "https://pcaobus.org/docs/default-source/generated-reports/inspecton-reports-csv.csv",
+      encoding = "UTF-16LE"
+    )
+    if (return_message) {
+      try(.fm_data_acquired(
+        n_rows = nrow(df), source = "PCAOB",
+        entity = "Inspection Reports (firm-level)"
+      ), silent = TRUE)
+    }
+    df %>% munge_tbl(snake_names = snake_names)
+  }
+
+#' PCAOB Part I.A Deficiencies (Issuer Audits)
+#'
+#' Downloads the PCAOB's bulk Part I.A deficiency CSV — one row per
+#' specific audit deficiency identified in issuer audits (revenue
+#' recognition, fraud risk, ICFR, etc.) with auditing-standard citation
+#' and natural-language description. ~13,700 rows. Refreshed daily.
+#'
+#' @inheritParams pcaob_inspection_reports
+#' @return A tibble of issuer-audit deficiencies.
+#' @export
+#' @family PCAOB
+pcaob_inspection_part_1a <-
+  function(snake_names = TRUE, return_message = TRUE) {
+    df <- .pcaob_fetch(
+      "https://pcaobus.org/docs/default-source/generated-reports/inspection-reports-part-1a-csv.csv"
+    )
+    if (return_message) {
+      try(.fm_data_acquired(
+        n_rows = nrow(df), source = "PCAOB",
+        entity = "Part I.A Deficiencies (issuer audits)"
+      ), silent = TRUE)
+    }
+    df %>% munge_tbl(snake_names = snake_names)
+  }
+
+#' PCAOB Part I.B Deficiencies (Broker-Dealer Audits)
+#'
+#' Downloads the PCAOB's bulk Part I.B deficiency CSV — broker-dealer
+#' audit deficiencies with auditing-standard citation. ~3,000 rows.
+#' Refreshed daily.
+#'
+#' @inheritParams pcaob_inspection_reports
+#' @return A tibble of broker-dealer audit deficiencies.
+#' @export
+#' @family PCAOB
+pcaob_inspection_part_1b <-
+  function(snake_names = TRUE, return_message = TRUE) {
+    df <- .pcaob_fetch(
+      "https://pcaobus.org/docs/default-source/generated-reports/inspection-reports-part-1b-csv.csv"
+    )
+    if (return_message) {
+      try(.fm_data_acquired(
+        n_rows = nrow(df), source = "PCAOB",
+        entity = "Part I.B Deficiencies (broker-dealer audits)"
+      ), silent = TRUE)
+    }
+    df %>% munge_tbl(snake_names = snake_names)
+  }
+
 #' Firms Denying PCAOB Audits
 #'
 #' @return a \code{tibble} with firms that have denied PCAOB audit access
