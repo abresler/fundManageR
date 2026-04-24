@@ -12794,6 +12794,145 @@ sec_financial_statement_data_sets <-
   }
 
 
+# SEC Fails-to-Deliver bulk (bi-monthly CUSIP dump) -----------------------
+
+#' SEC Fails-to-Deliver Bulk Data
+#'
+#' Downloads and parses SEC's Fails-to-Deliver bi-monthly ZIP files
+#' from \code{https://www.sec.gov/data-research/sec-markets-data/fails-deliver-data}.
+#' Every US security that had a settlement fail in the period is listed
+#' with CUSIP + SYMBOL + issuer DESCRIPTION + PRICE — ~13k distinct
+#' CUSIPs per 2-week period. Aggregated 2004-present covers essentially
+#' every actively-traded US security.
+#'
+#' @param period_slug character period slug like "202603b" (= 2nd half
+#'   March 2026). If NULL, auto-discovers most-recent.
+#' @param snake_names if TRUE convert column names to snake_case.
+#' @param return_message if TRUE emit data-acquired Ferrara message.
+#' @return tibble with columns: dateSettlement, idCUSIP, idTicker,
+#'   countSharesFailed, nameIssuer, amountPrice, periodSlug.
+#' @export
+#' @family SEC EDGAR
+sec_fails_to_deliver <-
+  function(period_slug = NULL, snake_names = TRUE, return_message = TRUE) {
+    ua <- getOption("fundManageR.sec_user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+    if (is.null(period_slug)) {
+      resp <- httr::GET(
+        "https://www.sec.gov/data-research/sec-markets-data/fails-deliver-data",
+        httr::user_agent(ua)
+      )
+      httr::stop_for_status(resp)
+      slugs <- stringr::str_extract_all(
+        httr::content(resp, as = "text", encoding = "UTF-8"),
+        "cnsfails\\d{6}[ab]"
+      )[[1]] %>% unique() %>% sort(decreasing = TRUE)
+      if (length(slugs) == 0) stop("No FTD periods found on SEC page")
+      period_slug <- stringr::str_remove(slugs[1], "cnsfails")
+    }
+
+    url <- sprintf("https://www.sec.gov/files/data/fails-deliver-data/cnsfails%s.zip",
+                   period_slug)
+    tmp <- tempfile(fileext = ".zip")
+    resp <- httr::GET(url, httr::user_agent(ua),
+                      httr::write_disk(tmp, overwrite = TRUE))
+    httr::stop_for_status(resp)
+    outdir <- tempfile()
+    utils::unzip(tmp, exdir = outdir); unlink(tmp)
+
+    inner <- list.files(outdir, full.names = TRUE, recursive = TRUE)
+    raw <- suppressMessages(suppressWarnings(
+      readr::read_delim(inner[1], delim = "|", show_col_types = FALSE,
+                        progress = FALSE, guess_max = 100000)
+    ))
+    unlink(outdir, recursive = TRUE)
+
+    data <- raw %>%
+      dplyr::transmute(
+        dateSettlement     = suppressWarnings(as.Date(as.character(.data$`SETTLEMENT DATE`),
+                                                      format = "%Y%m%d")),
+        idCUSIP            = as.character(.data$CUSIP),
+        idTicker           = as.character(.data$SYMBOL),
+        countSharesFailed  = suppressWarnings(as.numeric(.data$`QUANTITY (FAILS)`)),
+        nameIssuer         = as.character(.data$DESCRIPTION),
+        amountPrice        = suppressWarnings(as.numeric(.data$PRICE))
+      ) %>%
+      dplyr::filter(!is.na(.data$idCUSIP), nchar(.data$idCUSIP) == 9) %>%
+      dplyr::mutate(periodSlug = period_slug)
+
+    if (return_message) {
+      try(.fm_data_acquired(
+        n_rows = nrow(data), source = "SEC",
+        entity = sprintf("Fails-to-Deliver %s", period_slug)
+      ), silent = TRUE)
+    }
+    data %>% munge_tbl(snake_names = snake_names)
+  }
+
+
+# SEC N-PORT bulk (mutual fund holdings, mass CUSIP source) ---------------
+
+#' SEC Form N-PORT Bulk Holdings
+#'
+#' Downloads the SEC DERA Form N-PORT quarterly ZIP
+#' (\code{https://www.sec.gov/files/dera/data/form-n-port-data-sets/\{YYYY\}q\{Q\}_nport.zip}).
+#' N-PORT-P filings report ALL holdings of registered mutual funds,
+#' ETFs, and closed-end funds monthly (public disclosure quarterly).
+#' Contains CUSIP for every position — 10M+ rows per quarter covering
+#' millions of distinct CUSIPs across debt + equity + derivatives.
+#'
+#' @param year numeric year.
+#' @param quarter numeric 1-4.
+#' @param snake_names if TRUE convert column names to snake_case.
+#' @param return_message if TRUE emit Ferrara status.
+#' @return Named list of tibbles — one per TSV table in the DERA ZIP.
+#'   Typical tables: SUBMISSION, REGISTRANT, FUND_REPORTED_INFO,
+#'   FUND_REPORTED_HOLDING (CORE — has CUSIP), DERIVATIVE_*, etc.
+#' @export
+#' @family SEC EDGAR
+sec_nport_bulk <-
+  function(year, quarter, snake_names = TRUE, return_message = TRUE) {
+    stopifnot(is.numeric(year), is.numeric(quarter), quarter %in% 1:4)
+    ua <- getOption("fundManageR.sec_user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+    url <- sprintf(
+      "https://www.sec.gov/files/dera/data/form-n-port-data-sets/%dq%d_nport.zip",
+      year, quarter
+    )
+    tmp <- tempfile(fileext = ".zip")
+    resp <- httr::GET(url, httr::user_agent(ua),
+                      httr::write_disk(tmp, overwrite = TRUE))
+    httr::stop_for_status(resp)
+    outdir <- tempfile()
+    utils::unzip(tmp, exdir = outdir); unlink(tmp)
+
+    tsvs <- list.files(outdir, pattern = "\\.tsv$",
+                       recursive = TRUE, full.names = TRUE)
+    names(tsvs) <- tools::file_path_sans_ext(basename(tsvs))
+
+    out <- lapply(tsvs, function(f) {
+      df <- suppressMessages(suppressWarnings(
+        readr::read_tsv(f, show_col_types = FALSE, progress = FALSE,
+                        guess_max = 100000,
+                        col_types = readr::cols(.default = readr::col_character()))
+      ))
+      df$year_quarter <- sprintf("%dQ%d", year, quarter)
+      munge_tbl(df, snake_names = snake_names)
+    })
+    unlink(outdir, recursive = TRUE)
+
+    if (return_message) {
+      n_total <- sum(vapply(out, nrow, integer(1)))
+      try(.fm_data_acquired(
+        n_rows = n_total, source = "SEC DERA",
+        entity = sprintf("N-PORT %dQ%d", year, quarter),
+        extra  = sprintf("%d tables", length(out))
+      ), silent = TRUE)
+    }
+    out
+  }
+
+
 # SEC Form D bulk datasets ------------------------------------------------
 
 #' SEC Form D Bulk Quarterly Dataset
