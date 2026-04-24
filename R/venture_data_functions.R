@@ -21,87 +21,73 @@
 ycombinator_alumni <-
   function(nest_data = FALSE,
            return_message = TRUE) {
-    data <-
-      "https://api.ycombinator.com/companies/export.json" %>%
-      fromJSON(simplifyDataFrame = TRUE, flatten = TRUE) %>%
-      as_tibble() %>%
-      set_names(
-        c(
-          'nameCompany',
-          'urlCompany',
-          'batchYC',
-          'verticalCompany',
-          'descriptionCompany',
-          'isDeadCompany',
-          "hasFF",
-          "hasFFAll"
-        )
-      )
-
-
-    data <-
-      data %>%
-      mutate(yearYC = batchYC %>% readr::parse_number(),
-             idSeasonYC = batchYC %>% substr(1, 1),) %>%
-      mutate(across(where(is.character), ~ifelse(. == "", NA, .))) %>%
-      left_join(tibble(
-        idSeasonYC = c('w', 's'),
-        nameSeasonYC = c('Winter', 'Summer'),
-      ),  by = "idSeasonYC") %>%
-      mutate(
-        description = descriptionCompany %>% str_to_upper(),
-        isAcquiredCompany = description %>% str_detect("ACQUIRED|WE SOLD|SOLD TO")
+    # Source migrated 2026: api.ycombinator.com retired; the community-
+    # maintained yc-oss/api mirrors the YC directory from the official
+    # website into a stable JSON endpoint hosted on GitHub Pages.
+    ua <- getOption("fundManageR.user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+    resp <- httr::GET(
+      "https://yc-oss.github.io/api/companies/all.json",
+      httr::user_agent(ua)
+    )
+    httr::stop_for_status(resp)
+    raw <- jsonlite::fromJSON(
+      httr::content(resp, as = "text", encoding = "UTF-8"),
+      simplifyDataFrame = TRUE, flatten = TRUE
+    )
+    data <- tibble::as_tibble(raw) %>%
+      dplyr::transmute(
+        idYC = as.integer(.data$id),
+        nameCompany = stringr::str_to_upper(as.character(.data$name)),
+        slugCompany = as.character(.data$slug),
+        urlCompany = as.character(.data$website),
+        batchYC = as.character(.data$batch),
+        locationCompany = as.character(.data$all_locations),
+        industryCompany = as.character(.data$industry),
+        subIndustryCompany = as.character(.data$subindustry),
+        descriptionOneLiner = as.character(.data$one_liner),
+        descriptionCompany = as.character(.data$long_description),
+        countTeamSize = suppressWarnings(as.integer(.data$team_size)),
+        stageCompany = as.character(.data$stage),
+        statusCompany = as.character(.data$status),
+        isTopCompany = as.logical(.data$top_company),
+        isHiring = as.logical(.data$isHiring),
+        isNonprofit = as.logical(.data$nonprofit),
+        dateLaunched = suppressWarnings(as.POSIXct(.data$launched_at, origin = "1970-01-01", tz = "UTC")),
+        tags = .data$tags,
+        regions = .data$regions,
+        industries = .data$industries,
+        urlLogo = as.character(.data$small_logo_thumb_url),
+        urlYCProfile = as.character(.data$url),
+        urlApi = as.character(.data$api)
       ) %>%
-      dplyr::select(-description) %>%
-      dplyr::select(-idSeasonYC) %>%
-      dplyr::select(
-        nameCompany,
-        isDeadCompany,
-        isAcquiredCompany,
-        batchYC,
-        yearYC,
-        nameSeasonYC,
-        everything()
+      dplyr::mutate(
+        yearYC = suppressWarnings(readr::parse_number(.data$batchYC)),
+        idSeasonYC = substr(.data$batchYC, 1, 1),
+        isDeadCompany = .data$statusCompany %in% c("Inactive", "Dead"),
+        isAcquiredCompany = .data$statusCompany == "Acquired"
       ) %>%
-      suppressMessages() %>%
-      arrange(desc(yearYC), nameSeasonYC)
+      dplyr::left_join(
+        tibble::tibble(
+          idSeasonYC   = c("W", "S", "F", "X"),
+          nameSeasonYC = c("Winter", "Summer", "Fall", "Special")
+        ),
+        by = "idSeasonYC"
+      ) %>%
+      dplyr::select(-.data$idSeasonYC) %>%
+      dplyr::arrange(dplyr::desc(.data$yearYC), .data$nameSeasonYC, .data$nameCompany)
 
-    data <-
-      data %>%
-      mutate(across(matches("name"), ~str_to_upper(.))) %>%
-      mutate(across("urlCompany", ~ifelse(. == '', NA, .))) %>%
-      mutate(across(where(is.character), ~str_trim(.)))
-
-
-    if (return_message)  {
-      random_company <-
-        data %>%
-        dplyr::filter(!descriptionCompany %>% is.na) %>%
-        sample_n(1)
-
-      .fm_time_range(
-        start_year = min(data$yearYC),
-        end_year = max(data$yearYC),
-        n_records = nrow(data),
-        data_type = "YCombinator companies"
-      )
-
-      .fm_spotlight(
-        company = random_company$nameCompany,
-        description = random_company$descriptionCompany,
-        url = random_company$urlCompany,
-        extra = list(
-          "Batch" = paste(random_company$nameSeasonYC, random_company$yearYC)
-        )
-      )
+    if (return_message) {
+      try(.fm_time_range(
+        start_year = min(data$yearYC, na.rm = TRUE),
+        end_year   = max(data$yearYC, na.rm = TRUE),
+        n_records  = nrow(data),
+        data_type  = "YCombinator companies"
+      ), silent = TRUE)
     }
-
     if (nest_data) {
-      data <-
-        data %>%
-        nest(dataClass = -batchYC)
+      data <- data %>% tidyr::nest(dataClass = -.data$batchYC)
     }
-    gc()
     data
   }
 

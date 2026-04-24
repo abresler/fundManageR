@@ -1,48 +1,37 @@
 .dallas_fed_housing_urls <-
   function() {
-  page <-
-    "https://www.dallasfed.org/institute/houseprice#tab2" %>%
-    xml2::read_html()
-
-  quarter_names <-
-    page %>%
-    html_nodes('#tab2 a:nth-child(1)') %>%
-    html_text()
-
-  urls <-
-    page %>%
-    html_nodes('#tab2 a:nth-child(1)') %>%
-    html_attr("href") %>%
-    paste0('https://www.dallasfed.org',.)
-
-  df_quarters <-
-    tibble(
-      nameQuarter = c('first', 'second', 'third', 'fourth'),
-      idQuarter = 1:4,
-      dateEnd = c('03-31', "06-30", "09-30", "12-31")
+    # Page moved 2023 from /institute/houseprice to /research/international/houseprice.
+    # File naming: hp{YY}{QQ}.xlsx where QQ = 01..04 = quarter ending Mar/Jun/Sep/Dec.
+    ua <- getOption("fundManageR.user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+    resp <- httr::GET(
+      "https://www.dallasfed.org/research/international/houseprice",
+      httr::user_agent(ua)
     )
-  df <-
-    quarter_names %>%
-    future_map_dfr(function(x) {
-      year <- x %>% readr::parse_number()
-      quarter <-
-        x %>% str_to_lower %>% str_split('\\ ') %>% list_c() %>% .[[1]]
-      tibble(yearData = year,
-                 nameQuarter = quarter) %>%
-        left_join(df_quarters,by = "nameQuarter") %>%
-        mutate(
-          dateData = list(yearData, dateEnd) %>% purrr::reduce(paste0) %>% lubridate::ymd(),
-          periodData = list(yearData, ".", idQuarter) %>% purrr::reduce(paste0)
-        ) %>%
-        select(dateData, periodData, yearData, idQuarter) %>%
-        suppressMessages()
-    })
-
-  df <-
-    df %>%
-    mutate(urlData = urls)
-
-  return(df)
+    httr::stop_for_status(resp)
+    body <- httr::content(resp, as = "text", encoding = "UTF-8")
+    # Grep all /~/media/.../hp{yymm}.xlsx occurrences (main HP series, not
+    # the "hpta" transformation appendix).
+    hrefs <- stringr::str_extract_all(
+      body,
+      "/[^\"']*hp\\d{4}\\.xlsx"
+    )[[1]] %>% unique()
+    if (length(hrefs) == 0) return(tibble::tibble())
+    df <- tibble::tibble(
+      url_rel = hrefs,
+      yymm    = sub(".*hp(\\d{4})\\.xlsx$", "\\1", hrefs)
+    ) %>%
+      dplyr::mutate(
+        yearData  = 2000L + as.integer(substr(yymm, 1, 2)),
+        idQuarter = as.integer(substr(yymm, 3, 4)),
+        dateEnd   = c("03-31", "06-30", "09-30", "12-31")[idQuarter],
+        dateData  = lubridate::ymd(paste0(yearData, "-", dateEnd)),
+        periodData = paste0(yearData, ".", idQuarter),
+        urlData   = paste0("https://www.dallasfed.org", url_rel)
+      ) %>%
+      dplyr::select(dateData, periodData, yearData, idQuarter, urlData) %>%
+      dplyr::arrange(dplyr::desc(dateData))
+    df
   }
 
 .parse_housing_excel <-

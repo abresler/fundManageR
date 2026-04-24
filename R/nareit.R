@@ -1622,61 +1622,66 @@ nareit_state_info <-
 nareit_monthly_returns <-
   function(return_wide = TRUE,
            return_message = TRUE) {
-    url <-
-      "https://www.reit.com/sites/default/files/returns/MonthlyHistoricalReturns.xls"
+    # Layout (verified 2026-04):
+    # Sheet 1 only. Rows 1-4 = title/metadata; row 6 = index name (forward-
+    # filled across columns); row 7 = metric group; row 8 = metric detail;
+    # row 10+ = data. Col 1 = Excel-serial date.
+    url <- "https://www.reit.com/sites/default/files/returns/MonthlyHistoricalReturns.xls"
+    ua  <- getOption("fundManageR.user_agent",
+                     "SHELDON Research alexbresler@pwcommunications.com")
+    tmp <- tempfile(fileext = ".xls")
+    resp <- tryCatch(
+      httr::GET(url, httr::user_agent(ua), httr::write_disk(tmp, overwrite = TRUE)),
+      error = function(e) NULL
+    )
+    if (is.null(resp) || httr::status_code(resp) >= 400) {
+      warning("NAREIT download failed"); return(tibble::tibble())
+    }
 
-    tmp <-
-      tempfile()
-    dl_ok <- tryCatch({
-      curl::curl_download(url, tmp, mode = "wb")
-      TRUE
-    }, error = function(e) {
-      warning("Download failed for ", url, ": ", conditionMessage(e))
-      FALSE
-    })
-    if (!dl_ok) return(tibble())
-    data <-
-      xlsx::read.xlsx(file = tmp, sheetIndex = 2) %>%
-      data.frame() %>%
-      suppressWarnings()
+    raw <- suppressMessages(readxl::read_excel(
+      tmp, sheet = 1, col_names = FALSE, .name_repair = "minimal"
+    ))
+    unlink(tmp)
 
-    tmp %>%
-      unlink()
+    # Extract 3-row header into per-column (index, metric_group, metric)
+    hdr <- raw[6:8, -1, drop = FALSE]
+    fill_forward <- function(v) {
+      v <- as.character(v); last <- NA_character_
+      for (i in seq_along(v)) {
+        if (!is.na(v[i]) && nzchar(trimws(v[i]))) last <- v[i]
+        v[i] <- last
+      }
+      v
+    }
+    idx_row    <- fill_forward(as.character(hdr[1, ]))
+    metric_row1<- fill_forward(as.character(hdr[2, ]))
+    metric_row2<- as.character(hdr[3, ])
+    col_labels <- paste(
+      stringr::str_to_upper(stringr::str_replace_all(idx_row, "\\s+", "_")),
+      trimws(paste(metric_row1, metric_row2)),
+      sep = "::"
+    )
 
-    index_items <-
-      data %>%
-      select(-1) %>%
-      slice(5:7) %>%
-      t() %>%
-      as_tibble() %>%
-      fill(V1) %>%
-      fill(V2) %>%
-      purrr::set_names(c('nameIndex', 'item1', 'item2')) %>%
-      mutate(
-        nameIndex = nameIndex %>% str_replace_all('\\ ', '\\_') %>% str_to_upper(),
-        item = list(item1, item2) %>% do.call(paste0, .),
-        indexItem = paste(nameIndex, item, sep = ':')
-      ) %>%
-      .$indexItem
+    data_body <- raw[10:nrow(raw), ]
+    colnames(data_body) <- c("dateData", col_labels)
+    # drop columns with empty/NA label or pure NA group
+    keep <- !is.na(col_labels) & nzchar(trimws(col_labels)) &
+      !grepl("^NA::", col_labels)
+    data_body <- data_body[, c(TRUE, keep)]
 
-    items <-
-      c('dateData', index_items)
-
-    data <-
-      data %>%
-      slice(7:nrow(data)) %>%
-      as_tibble() %>%
-      mutate(across(everything(), as.character)) %>%
-      purrr::set_names(items)
-
-    data <-
-      data %>%
-      mutate(dateData = dateData %>% as.numeric() %>% as.Date(origin = "1899-12-30")) %>%
-      pivot_longer(cols = -dateData, names_to = "item", values_to = "valueItem") %>%
-      mutate(valueItem = valueItem %>% as.numeric()) %>%
-      filter(!valueItem %>% is.na()) %>%
-      tidyr::separate(item, c('nameIndex', 'metricItem'), sep = '\\:') %>%
-      mutate(
+    data <- data_body %>%
+      dplyr::mutate(dateData = as.Date(suppressWarnings(as.numeric(.data$dateData)),
+                                       origin = "1899-12-30")) %>%
+      dplyr::filter(!is.na(.data$dateData)) %>%
+      tidyr::pivot_longer(cols = -.data$dateData,
+                          names_to = "item", values_to = "valueItem",
+                          values_transform = list(valueItem = as.character)) %>%
+      dplyr::mutate(valueItem = suppressWarnings(as.numeric(.data$valueItem))) %>%
+      dplyr::filter(!is.na(.data$valueItem)) %>%
+      tidyr::separate(.data$item,
+                      into = c("nameIndex", "metricItem"),
+                      sep = "::", extra = "merge") %>%
+      dplyr::mutate(
         nameIndex = nameIndex %>% str_replace_all('\\_', '\\ '),
         metricItem = metricItem %>% str_replace_all('\\ ', '')
       ) %>%
