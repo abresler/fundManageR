@@ -12586,6 +12586,214 @@ sec_cik_master <-
   }
 
 
+# SEC EDGAR quarterly master filings index -------------------------------
+
+#' SEC EDGAR Quarterly Filings Master Index
+#'
+#' Downloads and parses \code{master.idx} from EDGAR's quarterly
+#' full-index archive — the authoritative pipe-delimited manifest of
+#' every filing (10-K, 10-Q, 8-K, 13D, 13F, 10-D, S-1, etc.) by every
+#' registrant in a given quarter. Columns: idCIK, nameCompany, typeForm,
+#' dateFiled, urlFilingPartial (relative to /Archives/edgar/),
+#' idAccession, urlFiling (full https URL), yearQuarter.
+#'
+#' @param year numeric year (>= 1993).
+#' @param quarter numeric 1-4.
+#' @param snake_names if \code{TRUE} return snake_case column names.
+#' @param return_message if \code{TRUE} emit status message.
+#' @return A tibble, typically ~200-400k rows per quarter.
+#' @export
+#' @family SEC EDGAR
+#' @examples
+#' \dontrun{
+#' sec_edgar_quarterly_index(2026, 1)
+#' }
+sec_edgar_quarterly_index <-
+  function(year, quarter,
+           snake_names = TRUE, return_message = TRUE) {
+    stopifnot(is.numeric(year), is.numeric(quarter), quarter %in% 1:4)
+    ua <- getOption("fundManageR.sec_user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+    url <- sprintf("https://www.sec.gov/Archives/edgar/full-index/%d/QTR%d/master.idx",
+                   year, quarter)
+    resp <- httr::GET(url, httr::user_agent(ua))
+    httr::stop_for_status(resp)
+    raw <- httr::content(resp, as = "text", encoding = "UTF-8")
+
+    # master.idx format: 10 lines of header, then a dashed separator,
+    # then pipe-delimited rows. Skip lines until the dashed separator.
+    lines <- stringr::str_split(raw, "\n")[[1]]
+    sep_idx <- which(grepl("^---", lines))[1]
+    data_lines <- lines[(sep_idx + 1):length(lines)]
+    data_lines <- data_lines[nchar(data_lines) > 0]
+
+    df <- suppressMessages(suppressWarnings(
+      readr::read_delim(
+        I(paste(data_lines, collapse = "\n")),
+        delim = "|",
+        col_names = c("idCIK", "nameCompany", "typeForm",
+                      "dateFiled", "urlFilingPartial"),
+        col_types = "iccDc",
+        progress = FALSE
+      )
+    ))
+
+    df <- df %>%
+      dplyr::mutate(
+        idAccession = stringr::str_replace(
+          basename(.data$urlFilingPartial), "\\.txt$", ""
+        ),
+        urlFiling = paste0("https://www.sec.gov/", .data$urlFilingPartial),
+        yearQuarter = sprintf("%dQ%d", year, quarter),
+        nameCompany = stringr::str_to_upper(.data$nameCompany)
+      ) %>%
+      dplyr::filter(!is.na(.data$idCIK))
+
+    if (return_message) {
+      try(.fm_data_acquired(
+        n_rows = nrow(df), source = "SEC EDGAR",
+        entity = sprintf("master.idx %dQ%d", year, quarter)
+      ), silent = TRUE)
+    }
+    df %>% munge_tbl(snake_names = snake_names)
+  }
+
+
+# SEC 13F Information Tables (bulk holdings) ------------------------------
+
+#' SEC 13F Information Tables Bulk (rolling 3-month)
+#'
+#' Downloads the SEC DERA Form 13F Information Table bulk ZIP
+#' (\code{https://www.sec.gov/files/structureddata/data/form-13f-data-sets/\{period\}_form13f.zip}).
+#' As of 2024-09 the SEC switched from quarterly to rolling 3-month periods
+#' (e.g. "01dec2025-28feb2026"). Extracts 4 tables: SUBMISSION, COVERPAGE,
+#' INFOTABLE (holdings), SIGNATURE — joined on accession_number.
+#'
+#' @param period character — dataset slug like "01dec2025-28feb2026". If
+#'   \code{NULL}, auto-discovers most-recent period from DERA landing page.
+#' @param snake_names if \code{TRUE} return snake_case column names.
+#' @param return_message if \code{TRUE} emit status message.
+#' @return Named list of tibbles (SUBMISSION, COVERPAGE, INFOTABLE, SIGNATURE).
+#' @export
+#' @family SEC EDGAR
+sec_13f_holdings_bulk <-
+  function(period = NULL, snake_names = TRUE, return_message = TRUE) {
+    ua <- getOption("fundManageR.sec_user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+
+    if (is.null(period)) {
+      resp <- httr::GET(
+        "https://www.sec.gov/dera/data/form-13f",
+        httr::user_agent(ua)
+      )
+      httr::stop_for_status(resp)
+      body <- httr::content(resp, as = "text", encoding = "UTF-8")
+      hrefs <- stringr::str_extract_all(body,
+        "\\d{2}[a-z]{3}\\d{4}-\\d{2}[a-z]{3}\\d{4}_form13f")[[1]]
+      if (length(hrefs) == 0) stop("No 13F period found in DERA listing")
+      period <- hrefs[1]
+    }
+
+    url <- sprintf(
+      "https://www.sec.gov/files/structureddata/data/form-13f-data-sets/%s.zip",
+      period
+    )
+    tmp <- tempfile(fileext = ".zip")
+    resp <- httr::GET(url, httr::user_agent(ua),
+                      httr::write_disk(tmp, overwrite = TRUE))
+    httr::stop_for_status(resp)
+    outdir <- tempfile()
+    utils::unzip(tmp, exdir = outdir)
+    unlink(tmp)
+
+    tsvs <- list.files(outdir, pattern = "\\.tsv$",
+                       recursive = TRUE, full.names = TRUE)
+    names(tsvs) <- tools::file_path_sans_ext(basename(tsvs))
+
+    out <- lapply(tsvs, function(f) {
+      df <- suppressMessages(suppressWarnings(
+        readr::read_tsv(f, show_col_types = FALSE, progress = FALSE,
+                        guess_max = 50000,
+                        col_types = readr::cols(.default = readr::col_character()))
+      ))
+      df$period_13f <- period
+      munge_tbl(df, snake_names = snake_names)
+    })
+    unlink(outdir, recursive = TRUE)
+
+    if (return_message) {
+      n_total <- sum(vapply(out, nrow, integer(1)))
+      try(.fm_data_acquired(
+        n_rows = n_total, source = "SEC DERA",
+        entity = sprintf("Form 13F bulk %s", period),
+        extra  = sprintf("%d tables", length(out))
+      ), silent = TRUE)
+    }
+    out
+  }
+
+
+# SEC Financial Statement Data Sets (DERA 10-K/10-Q XBRL facts) -----------
+
+#' SEC Financial Statement Data Sets Bulk (quarterly)
+#'
+#' Downloads the SEC DERA Financial Statement Data Sets quarterly ZIP
+#' (\code{https://www.sec.gov/files/dera/data/financial-statement-data-sets/\{YYYY\}q\{Q\}.zip}).
+#' Contains XBRL-tagged facts from 10-K/10-Q/40-F/20-F filings normalized
+#' into 4 tables: SUB (submission metadata), TAG (tag dictionary),
+#' NUM (numeric facts), PRE (presentation order).
+#'
+#' @param year numeric year.
+#' @param quarter numeric 1-4.
+#' @param snake_names if \code{TRUE} return snake_case column names.
+#' @param return_message if \code{TRUE} emit status message.
+#' @return Named list of tibbles (SUB, TAG, NUM, PRE).
+#' @export
+#' @family SEC EDGAR
+sec_financial_statement_data_sets <-
+  function(year, quarter, snake_names = TRUE, return_message = TRUE) {
+    stopifnot(is.numeric(year), is.numeric(quarter), quarter %in% 1:4)
+    ua <- getOption("fundManageR.sec_user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+    url <- sprintf(
+      "https://www.sec.gov/files/dera/data/financial-statement-data-sets/%dq%d.zip",
+      year, quarter
+    )
+    tmp <- tempfile(fileext = ".zip")
+    resp <- httr::GET(url, httr::user_agent(ua),
+                      httr::write_disk(tmp, overwrite = TRUE))
+    httr::stop_for_status(resp)
+    outdir <- tempfile()
+    utils::unzip(tmp, exdir = outdir)
+    unlink(tmp)
+
+    tsvs <- list.files(outdir, pattern = "\\.(tsv|txt)$",
+                       recursive = TRUE, full.names = TRUE)
+    names(tsvs) <- toupper(tools::file_path_sans_ext(basename(tsvs)))
+
+    out <- lapply(tsvs, function(f) {
+      df <- suppressMessages(suppressWarnings(
+        readr::read_tsv(f, show_col_types = FALSE, progress = FALSE,
+                        guess_max = 50000,
+                        col_types = readr::cols(.default = readr::col_character()))
+      ))
+      df$year_quarter <- sprintf("%dQ%d", year, quarter)
+      munge_tbl(df, snake_names = snake_names)
+    })
+    unlink(outdir, recursive = TRUE)
+
+    if (return_message) {
+      n_total <- sum(vapply(out, nrow, integer(1)))
+      try(.fm_data_acquired(
+        n_rows = n_total, source = "SEC DERA",
+        entity = sprintf("Financial Statement Data Sets %dQ%d", year, quarter),
+        extra  = sprintf("%d tables", length(out))
+      ), silent = TRUE)
+    }
+    out
+  }
+
+
 # SEC Form D bulk datasets ------------------------------------------------
 
 #' SEC Form D Bulk Quarterly Dataset
