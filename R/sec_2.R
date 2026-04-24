@@ -12414,23 +12414,32 @@ dictionary_sec_rules <-
 edgar_tickers <-
   function(include_ticker_information = FALSE,
            join_sic = TRUE,
-           snake_names = FALSE,
+           snake_names = TRUE,
 
            return_message = TRUE) {
-    json_data <-
-      "https://www.sec.gov/data/company_tickers.json" %>%
-      jsonlite::fromJSON(simplifyDataFrame = TRUE, flatten = FALSE)
+    ua <- getOption(
+      "fundManageR.sec_user_agent",
+      "SHELDON Research alexbresler@pwcommunications.com"
+    )
+    resp <- httr::GET(
+      "https://www.sec.gov/files/company_tickers.json",
+      httr::user_agent(ua)
+    )
+    httr::stop_for_status(resp)
+    json_data <- jsonlite::fromJSON(
+      httr::content(resp, as = "text", encoding = "UTF-8"),
+      simplifyVector = FALSE
+    )
 
     data <-
-      seq_along(json_data) %>%
-      map_dfr(function(x) {
-        json_data[[x]] %>% list_rbind()
+      purrr::map_dfr(json_data, function(rec) {
+        dplyr::tibble(
+          idCIK       = as.numeric(rec$cik_str),
+          idTicker    = as.character(rec$ticker),
+          nameCompany = stringr::str_to_upper(as.character(rec$title))
+        )
       }) %>%
-      setNames(c('idCIK',
-                 'idTicker',
-                 "nameCompany")) %>%
-      distinct() %>%
-      mutate(nameCompany = nameCompany %>% str_to_upper())
+      dplyr::distinct()
 
     if (include_ticker_information) {
       "\n\nAcquiring ticker information\n\n" %>% cat(fill = TRUE)
@@ -12456,6 +12465,251 @@ edgar_tickers <-
     data <- data %>% munge_tbl(snake_names = snake_names)
 
     data
+  }
+
+
+# SEC Tickers (with exchange) ---------------------------------------------
+
+#' SEC listed public companies with exchange
+#'
+#' Pulls the SEC's authoritative `company_tickers_exchange.json` bulk
+#' dump which includes the listing exchange (NYSE / Nasdaq / OTC / CBOE).
+#' Requires a User-Agent header (SEC returns HTTP 403 without one); the
+#' default is read from `getOption("fundManageR.sec_user_agent")`.
+#'
+#' @param snake_names if \code{TRUE} returns snake_case column names
+#' @param return_message if \code{TRUE} emits a Ferrara-style status message
+#'
+#' @return A tibble with columns idCIK, idTicker, nameCompany, nameExchange.
+#' @export
+#' @family SEC EDGAR
+#' @examples
+#' \dontrun{
+#' sec_tickers_exchange()
+#' }
+sec_tickers_exchange <-
+  function(snake_names = TRUE,
+           return_message = TRUE) {
+    ua <- getOption(
+      "fundManageR.sec_user_agent",
+      "SHELDON Research alexbresler@pwcommunications.com"
+    )
+    resp <- httr::GET(
+      "https://www.sec.gov/files/company_tickers_exchange.json",
+      httr::user_agent(ua)
+    )
+    httr::stop_for_status(resp)
+    js <- jsonlite::fromJSON(
+      httr::content(resp, as = "text", encoding = "UTF-8"),
+      simplifyDataFrame = TRUE, flatten = FALSE
+    )
+    mat <- js$data
+    colnames(mat) <- js$fields
+    data <-
+      dplyr::as_tibble(mat) %>%
+      dplyr::transmute(
+        idCIK        = as.numeric(.data$cik),
+        idTicker     = as.character(.data$ticker),
+        nameCompany  = stringr::str_to_upper(as.character(.data$name)),
+        nameExchange = as.character(.data$exchange)
+      ) %>%
+      dplyr::distinct()
+
+    if (return_message) {
+      try(.fm_data_acquired(
+        n_rows = nrow(data),
+        source = "SEC EDGAR",
+        entity = "company_tickers_exchange.json"
+      ), silent = TRUE)
+    }
+
+    data %>% munge_tbl(snake_names = snake_names)
+  }
+
+
+# SEC CIK master lookup ---------------------------------------------------
+
+#' SEC full historical CIK registry
+#'
+#' Downloads `cik-lookup-data.txt`, the authoritative SEC pipe-delimited
+#' dump of every CIK ever registered with SEC EDGAR (~600k rows). One
+#' row per registrant (entities, funds, individuals). Format is
+#' `NAME:CIK:` with a trailing colon.
+#'
+#' @param snake_names if \code{TRUE} returns snake_case column names
+#' @param return_message if \code{TRUE} emits a Ferrara-style status message
+#'
+#' @return A tibble with columns idCIK, nameEntity.
+#' @export
+#' @family SEC EDGAR
+#' @examples
+#' \dontrun{
+#' sec_cik_master()
+#' }
+sec_cik_master <-
+  function(snake_names = TRUE,
+           return_message = TRUE) {
+    ua <- getOption(
+      "fundManageR.sec_user_agent",
+      "SHELDON Research alexbresler@pwcommunications.com"
+    )
+    resp <- httr::GET(
+      "https://www.sec.gov/Archives/edgar/cik-lookup-data.txt",
+      httr::user_agent(ua)
+    )
+    httr::stop_for_status(resp)
+    raw <- httr::content(resp, as = "text", encoding = "ISO-8859-1")
+    lines <- stringr::str_split(raw, "\n")[[1]]
+    lines <- lines[nchar(lines) > 0]
+
+    m <- stringr::str_match(lines, "^(.+):(\\d+):\\s*$")
+    data <- dplyr::tibble(
+      nameEntity = stringr::str_to_upper(stringr::str_trim(m[, 2])),
+      idCIK      = as.numeric(m[, 3])
+    ) %>%
+      dplyr::filter(
+        !is.na(.data$idCIK),
+        !is.na(.data$nameEntity),
+        nchar(.data$nameEntity) > 0
+      ) %>%
+      dplyr::distinct()
+
+    if (return_message) {
+      try(.fm_data_acquired(
+        n_rows = nrow(data),
+        source = "SEC EDGAR",
+        entity = "cik-lookup-data.txt"
+      ), silent = TRUE)
+    }
+
+    data %>% munge_tbl(snake_names = snake_names)
+  }
+
+
+# SEC 13F CUSIP list ------------------------------------------------------
+
+#' SEC Official List of Section 13(f) Securities (CUSIP dump)
+#'
+#' Downloads and parses the SEC's quarterly Official List of Section 13(f)
+#' Securities published at
+#' `https://www.sec.gov/rules-regulations/staff-guidance/official-list-section-13f-securities`.
+#'
+#' The current quarter is published as both TXT and PDF. Prior quarters
+#' are PDF-only. This function parses the TXT when available (fast, clean,
+#' ~24k rows) and falls back to OCR-free `pdftools::pdf_text()` parsing
+#' for historical quarters.
+#'
+#' @param year numeric year (e.g. 2026). Defaults to current year.
+#' @param quarter numeric 1-4. If NULL, uses most-recent published quarter.
+#' @param snake_names if \code{TRUE} returns snake_case column names
+#' @param return_message if \code{TRUE} emits a Ferrara-style status message
+#'
+#' @return A tibble with columns idCUSIP (9-char), nameIssuer, typeClass
+#'   (e.g. "SHS", "CALL", "PUT"), typeStatus (single-char: E/I/M/Z),
+#'   isNewAdded, yearQuarter (YYYYQn).
+#' @export
+#' @family SEC EDGAR
+#' @examples
+#' \dontrun{
+#' sec_13f_cusips()
+#' sec_13f_cusips(year = 2025, quarter = 4)
+#' }
+sec_13f_cusips <-
+  function(year = NULL,
+           quarter = NULL,
+           snake_names = TRUE,
+           return_message = TRUE) {
+    ua <- getOption(
+      "fundManageR.sec_user_agent",
+      "SHELDON Research alexbresler@pwcommunications.com"
+    )
+
+    if (is.null(year) || is.null(quarter)) {
+      # scrape the landing page for the most-recent listed file
+      resp <- httr::GET(
+        "https://www.sec.gov/rules-regulations/staff-guidance/official-list-section-13f-securities",
+        httr::user_agent(ua)
+      )
+      httr::stop_for_status(resp)
+      hrefs <- stringr::str_extract_all(
+        httr::content(resp, as = "text", encoding = "UTF-8"),
+        "13flist\\d{4}q[1-4]"
+      )[[1]]
+      latest <- sort(unique(hrefs), decreasing = TRUE)[1]
+      year <- as.integer(stringr::str_sub(latest, 8, 11))
+      quarter <- as.integer(stringr::str_sub(latest, 13, 13))
+    }
+
+    yq <- sprintf("%dq%d", year, quarter)
+    txt_url <- sprintf("https://www.sec.gov/files/investment/13flist%s.txt", yq)
+    pdf_url <- sprintf("https://www.sec.gov/files/investment/13flist%s.pdf", yq)
+
+    parse_fixed <- function(lines) {
+      keep <- stringr::str_detect(lines, "^[0-9A-Z]{8}[0-9A-Z*]")
+      lines <- lines[keep]
+      # SEC fixed-width: 1-9 CUSIP | 10 asterisk-or-space | 11-40 issuer (30)
+      # | 41-78 class (38) | 79-80 status (2 for 'E '/'I '/etc, strip)
+      dplyr::tibble(
+        idCUSIP     = stringr::str_trim(stringr::str_sub(lines, 1, 9)),
+        isNewAdded  = stringr::str_sub(lines, 10, 10) == "*",
+        nameIssuer  = stringr::str_trim(stringr::str_sub(lines, 11, 40)),
+        typeClass   = stringr::str_trim(stringr::str_sub(lines, 41, 78)),
+        typeStatus  = stringr::str_trim(stringr::str_sub(lines, 79, 80))
+      ) %>%
+        dplyr::filter(
+          nchar(.data$idCUSIP) == 9,
+          !is.na(.data$nameIssuer),
+          nchar(.data$nameIssuer) > 0
+        )
+    }
+
+    # Try TXT first
+    resp_txt <- tryCatch(
+      httr::GET(txt_url, httr::user_agent(ua)),
+      error = function(e) NULL
+    )
+    have_txt <- !is.null(resp_txt) && httr::status_code(resp_txt) == 200
+
+    if (have_txt) {
+      raw <- httr::content(resp_txt, as = "text", encoding = "UTF-8")
+      lines <- stringr::str_split(raw, "\n")[[1]]
+      data <- parse_fixed(lines)
+      src <- paste0("13flist", yq, ".txt")
+    } else {
+      # PDF fallback — parse fixed-width text from each page
+      if (!requireNamespace("pdftools", quietly = TRUE)) {
+        stop("pdftools required to parse historical 13F PDF lists")
+      }
+      tmp <- tempfile(fileext = ".pdf")
+      httr::GET(pdf_url, httr::user_agent(ua), httr::write_disk(tmp, overwrite = TRUE))
+      pages <- pdftools::pdf_text(tmp)
+      lines <- unlist(stringr::str_split(pages, "\n"))
+      # strip whitespace inserts in CUSIP field (PDF renders "B38564 10 8")
+      lines <- stringr::str_replace(
+        lines,
+        "^([A-Z0-9]{6}) ([0-9]{2}) ([0-9]{1})",
+        "\\1\\2\\3"
+      )
+      # drop page headers
+      lines <- lines[!stringr::str_detect(lines, "Run Date|Run Time|CUSIP NO|Page ")]
+      data <- parse_fixed(lines)
+      src <- paste0("13flist", yq, ".pdf")
+    }
+
+    data <- data %>%
+      dplyr::mutate(yearQuarter = yq) %>%
+      dplyr::distinct()
+
+    if (return_message) {
+      try(.fm_data_acquired(
+        n_rows = nrow(data),
+        source = "SEC EDGAR",
+        entity = src,
+        extra = sprintf("Section 13F CUSIP list %s", yq)
+      ), silent = TRUE)
+    }
+
+    data %>% munge_tbl(snake_names = snake_names)
   }
 
 

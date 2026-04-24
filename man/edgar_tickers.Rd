@@ -29,4 +29,10 @@ SEC listed public companys
 \examples{
 edgar_tickers()
 }
+\seealso{
+Other SEC EDGAR: 
+\code{\link{sec_13f_cusips}()},
+\code{\link{sec_cik_master}()},
+\code{\link{sec_tickers_exchange}()}
+}
 \concept{SEC EDGAR}
