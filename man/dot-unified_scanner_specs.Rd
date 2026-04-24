@@ -7,7 +7,6 @@
 .unified_scanner_specs()
 }
 \description{
-Returns the list of columns (in strict positional order) that each
-TradingView scanner endpoint accepts. Maintained against live probes.
+Scanner endpoint column specs per asset class
 }
 \keyword{internal}

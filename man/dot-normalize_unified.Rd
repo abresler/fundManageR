@@ -2,11 +2,11 @@
 % Please edit documentation in R/unified_securities.R
 \name{.normalize_unified}
 \alias{.normalize_unified}
-\title{Normalize a scanner result into the unified schema}
+\title{Normalize a scanner result into the unified snake_case schema}
 \usage{
 .normalize_unified(df, asset_class, endpoint, snapshot_time)
 }
 \description{
-Normalize a scanner result into the unified schema
+Normalize a scanner result into the unified snake_case schema
 }
 \keyword{internal}

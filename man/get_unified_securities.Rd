@@ -2,7 +2,7 @@
 % Please edit documentation in R/unified_securities.R
 \name{get_unified_securities}
 \alias{get_unified_securities}
-\title{Pull all major publicly traded securities in a unified schema}
+\title{Pull all major publicly traded securities in a unified snake_case schema}
 \usage{
 get_unified_securities(
   asset_classes = c("equity", "bond", "futures", "crypto", "coin", "forex", "cfd"),
@@ -15,37 +15,33 @@ get_unified_securities(
 \code{"equity"}, \code{"bond"}, \code{"futures"}, \code{"crypto"},
 \code{"coin"}, \code{"forex"}, \code{"cfd"}.}
 
-\item{max_rows_per_class}{integer cap on rows per class. Default 250,000
-(covers the largest class, bonds, at ~253k live).}
+\item{max_rows_per_class}{integer cap on rows per class.}
 
 \item{return_message}{if \code{TRUE}, prints per-class fetch counts.}
 }
 \value{
-a \code{tibble} with one row per security and these columns:
-  \code{idSecurity}, \code{idTicker}, \code{nameExchange},
-  \code{typeAsset}, \code{typeSecurity}, \code{typeSpecs},
-  \code{nameSecurity}, \code{nameCurrency}, \code{nameCountry},
-  \code{nameSector}, \code{nameIndustry},
-  \code{priceClose}, \code{priceOpen}, \code{priceHigh}, \code{priceLow},
-  \code{priceBid}, \code{priceAsk}, \code{pctChangeDaily}, \code{amountChange},
-  \code{countVolume}, \code{amountMarketCap}, \code{pctCoupon},
-  \code{dateMaturity}, \code{dateExpiration}, \code{slugLogo},
-  \code{endpointScanner}, \code{dateSnapshot}, \code{datetimeSnapshot}.
+a \code{tibble} with one row per security. Columns:
+  \code{id_security}, \code{id_ticker}, \code{name_exchange},
+  \code{type_asset}, \code{type_security}, \code{type_specs},
+  \code{name_security}, \code{name_currency}, \code{name_country},
+  \code{name_sector}, \code{name_industry},
+  \code{price_close}, \code{price_open}, \code{price_high},
+  \code{price_low}, \code{price_bid}, \code{price_ask},
+  \code{pct_change_daily}, \code{amount_change}, \code{count_volume},
+  \code{amount_market_cap}, \code{pct_coupon}, \code{date_maturity},
+  \code{date_expiration}, \code{slug_logo}, \code{endpoint_scanner},
+  \code{date_snapshot}, \code{datetime_snapshot}.
 }
 \description{
-Fetches a same-time snapshot of equities, bonds, futures, crypto spot/swap,
-coin-market-cap view, forex pairs, and CFD indices from TradingView's
-public scanner endpoints and returns a single tibble with a consistent
-schema suitable for parquet mirroring to a data lake.
-}
-\details{
-Each asset class is fetched in 50k-row pages up to \code{max_rows_per_class}.
-Network failures degrade gracefully to an empty tibble for that class.
+Fetches a same-time snapshot of equities, bonds, futures, crypto, coin
+market-cap view, forex, and CFD from TradingView's public scanner
+endpoints. Output column names use \code{snake_case} to match the
+convention used by the dq data lake.
 }
 \examples{
 \dontrun{
 df <- get_unified_securities(asset_classes = c("equity","bond"),
                              max_rows_per_class = 5000)
-dplyr::count(df, typeAsset)
+dplyr::count(df, type_asset)
 }
 }

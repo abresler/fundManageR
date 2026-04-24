@@ -4,7 +4,7 @@
 \alias{sec_cik_master}
 \title{SEC full historical CIK registry}
 \usage{
-sec_cik_master(snake_names = FALSE, return_message = TRUE)
+sec_cik_master(snake_names = TRUE, return_message = TRUE)
 }
 \arguments{
 \item{snake_names}{if \code{TRUE} returns snake_case column names}
@@ -29,6 +29,9 @@ sec_cik_master()
 Other SEC EDGAR: 
 \code{\link{edgar_tickers}()},
 \code{\link{sec_13f_cusips}()},
+\code{\link{sec_13f_holdings_bulk}()},
+\code{\link{sec_edgar_quarterly_index}()},
+\code{\link{sec_financial_statement_data_sets}()},
 \code{\link{sec_tickers_exchange}()}
 }
 \concept{SEC EDGAR}

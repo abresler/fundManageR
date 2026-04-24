@@ -7,7 +7,7 @@
 edgar_tickers(
   include_ticker_information = FALSE,
   join_sic = TRUE,
-  snake_names = FALSE,
+  snake_names = TRUE,
   return_message = TRUE
 )
 }
@@ -32,7 +32,10 @@ edgar_tickers()
 \seealso{
 Other SEC EDGAR: 
 \code{\link{sec_13f_cusips}()},
+\code{\link{sec_13f_holdings_bulk}()},
 \code{\link{sec_cik_master}()},
+\code{\link{sec_edgar_quarterly_index}()},
+\code{\link{sec_financial_statement_data_sets}()},
 \code{\link{sec_tickers_exchange}()}
 }
 \concept{SEC EDGAR}

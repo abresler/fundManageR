@@ -22,7 +22,7 @@ tibble(nameFirm = 'Goldman Sachs', countSuperHeros = NA, countCriminals = 0, cou
 \seealso{
 Other utility function: 
 \code{\link{get_class_df}()},
-\code{\link{tidy_column_formats}()},
-\code{\link{tidy_column_relations}()}
+\code{\link{tidy_column_relations}()},
+\code{\link{tidy_snake_case}()}
 }
 \concept{utility function}
