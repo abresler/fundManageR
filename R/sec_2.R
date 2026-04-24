@@ -13227,13 +13227,30 @@ sic_filing_count <-
 #' dictionary_sic_codes()
 dictionary_sic_codes <-
   memoise::memoise(function() {
-    page <-
-      "https://www.sec.gov/info/edgar/siccodes.htm" %>%
-      read_html()
-
-    page %>% html_table(fill = TRUE) %>% first() %>% as_tibble() %>%
-      setNames(c("idSIC", "nameOfficeAD", "nameIndustry")) %>%
-      munge_tbl(convert_case = TRUE)
+    # URL migrated 2024 from /info/edgar/siccodes.htm -> /search-filings/...
+    ua <- getOption("fundManageR.sec_user_agent",
+                    "SHELDON Research alexbresler@pwcommunications.com")
+    resp <- httr::GET(
+      "https://www.sec.gov/search-filings/standard-industrial-classification-sic-code-list",
+      httr::user_agent(ua)
+    )
+    httr::stop_for_status(resp)
+    tbls <- httr::content(resp, as = "text", encoding = "UTF-8") %>%
+      rvest::read_html() %>%
+      rvest::html_table(fill = TRUE)
+    data <- tbls[[1]] %>% dplyr::as_tibble()
+    # Normalize to 3 columns regardless of table-header variance
+    if (ncol(data) >= 3) data <- data[, 1:3]
+    data <- data %>%
+      stats::setNames(c("idSIC", "nameOfficeAD", "nameIndustry")) %>%
+      dplyr::mutate(
+        idSIC = suppressWarnings(as.numeric(.data$idSIC)),
+        nameOfficeAD = stringr::str_trim(.data$nameOfficeAD),
+        nameIndustry = stringr::str_trim(.data$nameIndustry)
+      ) %>%
+      dplyr::filter(!is.na(.data$idSIC)) %>%
+      dplyr::distinct()
+    munge_tbl(data, convert_case = TRUE)
   })
 
 # Form Descriptions
