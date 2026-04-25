@@ -229,7 +229,8 @@ munge_tbl <-
     is_has <-
       data %>%
       select(where(is.character)) %>%
-      dplyr::select(dplyr::matches("^is|^has")) %>% names()
+      names()
+    is_has <- is_has[grepl("^is_|^has_|^is[A-Z]|^has[A-Z]", is_has)]
 
 
     if (length(is_has) > 0) {
