@@ -7799,13 +7799,18 @@ adv_managers_filings <-
            gather_data = FALSE,
            assign_to_environment = TRUE,
            parallel = TRUE) {
-    if (section_names %>% length() == 1) {
-      flatten_tables <-
-        FALSE
-
-      all_sections <-
-        FALSE
-
+    # Any time the caller passes a non-default subset of section_names, treat it
+    # as an explicit filter. This lets callers opt-out of expensive sections
+    # without having to remember to also pass all_sections = FALSE.
+    .default_sections <- c(
+      "Registration", "Identifying Information", "Organization", "Successions",
+      "Private Fund Reporting", "Direct Manager Owners", "Indirect Manager Owners",
+      "Other Manager Information", "Manager Signatories"
+    )
+    if (!is.null(section_names) &&
+        !identical(sort(as.character(section_names)), sort(.default_sections))) {
+      all_sections <- FALSE
+      if (length(section_names) == 1L) flatten_tables <- FALSE
     }
     nothing_entered <-
       (crd_ids %>% is.null()) & (entity_names %>% is.null())
@@ -7816,7 +7821,7 @@ adv_managers_filings <-
       possibly(.get_search_crd_ids, tibble())
 
     crds <-
-      .get_search_crd_ids(entity_names = entity_names,
+      .get_search_crd_ids_safe(entity_names = entity_names,
                               crd_ids = crd_ids)
 
     .get_crd_sections_data_safe <-
@@ -7829,7 +7834,7 @@ adv_managers_filings <-
     all_data <-
       seq_along(crds) %>%
       map_dfr(function(x) {
-        .get_crd_sections_data(
+        .get_crd_sections_data_safe(
           id_crd = crds[x],
           all_sections = all_sections,
           section_names = section_names,
@@ -8350,7 +8355,7 @@ adv_managers_brochures <-
 #' adv_period_urls()
 #' }
 adv_period_urls <-
-  function(use_api = TRUE) {
+  function(use_api = TRUE, snake_case = TRUE) {
     # Authoritative source: SEC data-research page lists actual current + historical
     # Form ADV zip/xlsx URLs with inconsistent paths + extensions (verified 2026-04-23).
     # Pattern: `/files/investment/data/...` or `/files/investment/data/other/...`;
@@ -8408,6 +8413,7 @@ adv_period_urls <-
           dplyr::filter(!is.na(dateData)) %>%
           dplyr::distinct(urlZip, .keep_all = TRUE) %>%
           dplyr::arrange(desc(dateData), isExempt)
+        if (isTRUE(snake_case)) data <- tidy_snake_case(data)
         gc()
         return(data)
       }
@@ -8442,6 +8448,7 @@ adv_period_urls <-
         )
     }) %>%
       dplyr::arrange(desc(dateData), isExempt)
+    if (isTRUE(snake_case)) data <- tidy_snake_case(data)
     gc()
     data
   }
@@ -9289,10 +9296,11 @@ adv_managers_periods_summaries <-
            include_exempt = TRUE,
            nest_data = FALSE,
            return_message = TRUE,
-           parallel = TRUE) {
+           parallel = TRUE,
+           snake_case = TRUE) {
     if (!'sec_adv_url_df' %>% exists()) {
       sec_adv_url_df <-
-        adv_period_urls()
+        adv_period_urls(snake_case = FALSE)
 
       assign(x = 'sec_url_df', eval(sec_adv_url_df),  envir = .GlobalEnv)
     }
@@ -9445,6 +9453,10 @@ adv_managers_periods_summaries <-
         nest(dataADV = -c(dateData, isExempt))
     }
 
+    if (isTRUE(snake_case)) {
+      all_adv_data <- tidy_snake_case(all_adv_data)
+    }
+
       gc()
 
 
@@ -9545,13 +9557,22 @@ adv_managers_current_period_summary <-
     "hasFelonyCharge",
     "hasMisdemeanorPleaConviction"
   ),
-  return_message = TRUE) {
+  return_message = TRUE,
+  snake_case = TRUE) {
     adv_managers_periods_summaries_safe <-
       purrr::possibly(adv_managers_periods_summaries, tibble())
 
     all_data <-
       adv_managers_periods_summaries(only_most_recent = TRUE,
-                                              include_exempt = TRUE)
+                                              include_exempt = TRUE,
+                                              snake_case = snake_case)
+
+    # Normalize select_names to match the casing of the data frame so legacy
+    # camelCase callers continue to work after the snake_case rebuild.
+    if (isTRUE(snake_case)) {
+      tmp <- tibble::as_tibble(setNames(rep(list(NA), length(select_names)), select_names))
+      select_names <- names(tidy_snake_case(tmp))
+    }
 
     all_data <-
       all_data %>%

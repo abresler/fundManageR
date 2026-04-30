@@ -32,7 +32,8 @@ adv_managers_current_period_summary(
     
     "countEmployeesSolicitAdvisoryClients", "hasFelonyPleaConviction", "hasFelonyCharge",
     "hasMisdemeanorPleaConviction"),
-  return_message = TRUE
+  return_message = TRUE,
+  snake_case = TRUE
 )
 }
 \arguments{

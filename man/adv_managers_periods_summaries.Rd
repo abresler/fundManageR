@@ -11,7 +11,8 @@ adv_managers_periods_summaries(
   include_exempt = TRUE,
   nest_data = FALSE,
   return_message = TRUE,
-  parallel = TRUE
+  parallel = TRUE,
+  snake_case = TRUE
 )
 }
 \arguments{

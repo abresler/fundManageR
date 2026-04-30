@@ -4,7 +4,7 @@
 \alias{adv_period_urls}
 \title{Get ADV summary filing urls for all available periods}
 \usage{
-adv_period_urls(use_api = TRUE)
+adv_period_urls(use_api = TRUE, snake_case = TRUE)
 }
 \arguments{
 \item{use_api}{If \code{TRUE} (default), fetch URLs from data.gov API.
