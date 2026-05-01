@@ -1,4 +1,46 @@
 
+# ---- Internal TradingView helpers (added 2026-05-01 per LandMine sweep) ----
+
+`%||%` <- function(a, b) if (is.null(a) || length(a) == 0) b else a
+
+#' Retry an httr call with exponential backoff on 429/5xx + network errors
+#' @keywords internal
+.tv_with_retry <- function(call_fn, max_tries = 3, base_sleep = 0.5) {
+  for (i in seq_len(max_tries)) {
+    resp <- tryCatch(call_fn(), error = function(e) e)
+    if (inherits(resp, "error")) {
+      if (i == max_tries) stop("TradingView call failed after ", max_tries, " tries: ", conditionMessage(resp))
+      Sys.sleep(base_sleep * (2 ^ (i - 1)))
+      next
+    }
+    code <- httr::status_code(resp)
+    if (code < 400) return(resp)
+    if (code == 429 || code >= 500) {
+      if (i == max_tries) stop("TradingView returned HTTP ", code, " after ", max_tries, " tries")
+      Sys.sleep(base_sleep * (2 ^ (i - 1)))
+      next
+    }
+    stop("TradingView returned HTTP ", code, ": ", httr::content(resp, as = "text", encoding = "UTF-8"))
+  }
+}
+
+#' Parse JSON response and verify expected top-level keys exist
+#' @keywords internal
+.tv_safe_fromJSON <- function(resp, expect = NULL, context = "tradingview") {
+  body_text <- httr::content(resp, as = "text", encoding = "UTF-8")
+  if (!nzchar(body_text)) stop(context, ": empty response body")
+  parsed <- tryCatch(jsonlite::fromJSON(body_text, simplifyDataFrame = TRUE),
+                     error = function(e) stop(context, ": JSON parse failed: ", conditionMessage(e)))
+  if (!is.null(expect)) {
+    missing <- setdiff(expect, names(parsed))
+    if (length(missing) > 0) {
+      warning(context, ": response schema drift — missing keys: ",
+              paste(missing, collapse = ", "), call. = FALSE)
+    }
+  }
+  parsed
+}
+
 .get_dictionary_tradeview_types <- function() {
   tibble(
     type = c(
@@ -201,7 +243,7 @@ tv_market_events <-
     }
     gc()
 
-    data
+    janitor::clean_names(data)
   }
 
 
@@ -328,51 +370,47 @@ get_tradeview_term <-
   function(term = "FB",
            exchange = NULL,
            type = NULL) {
-    url <- 'https://data.tradingview.com/search/'
-    df_ref <- .generate_url_reference()
-    headers <-
-      list(
-        'Origin' = 'https://www.tradingview.com',
-        'Accept-Encoding' = 'gzip, deflate, br',
-        'Accept-Language' = 'en-US,en;q=0.9',
-        'User-Agent' = df_ref$userAgent,
-        'Accept' = 'application/json, text/javascript, */*; q=0.01',
-        'Referer' = df_ref$urlReferer,
-        'Connection' = 'close',
-        'DNT' = '1'
-      ) %>%
-      dict()
-
-
-    params <-
-      tuple(
-        tuple('text', term),
-        tuple('exchange', ''),
-        tuple('type', ''),
-        tuple('hl', 'true'),
-        tuple('lang', 'eng'),
-        tuple('domain', 'production')
+    # Migrated 2026-05-01: legacy data.tradingview.com/search endpoint
+    # is dead (Empty reply from server). Modern endpoint requires full
+    # browser-shaped headers and returns a richer payload under `symbols`.
+    url <- 'https://symbol-search.tradingview.com/symbol_search/v3/'
+    query <- list(
+      text = term,
+      hl = '1',
+      exchange = exchange %||% '',
+      lang = 'en',
+      search_type = type %||% 'undefined',
+      domain = 'production'
+    )
+    resp <- .tv_with_retry(function() {
+      httr::GET(
+        url,
+        query = query,
+        httr::add_headers(
+          `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+          Accept = 'application/json',
+          Origin = 'https://www.tradingview.com',
+          Referer = 'https://www.tradingview.com/',
+          `Sec-Fetch-Mode` = 'cors',
+          `Sec-Fetch-Site` = 'same-site'
+        )
       )
-
-
-    r <- reticulate::import("requests")
-    resp <- r$get(url = url,
-      headers = headers,
-      params = params)
-    data <-
-      resp$text %>%
-      jsonlite::fromJSON(simplifyDataFrame = TRUE)
-
-    data <-
-      data %>%
-      mutate(across(c("symbol", "description"),
-                ~str_replace_all(., "<em>|</em>", ""))) %>%
+    })
+    body <- .tv_safe_fromJSON(resp, expect = c('symbols'), context = 'get_tradeview_term')
+    syms <- body$symbols
+    if (is.null(syms) || (is.data.frame(syms) && nrow(syms) == 0)) {
+      return(tibble::tibble(term_search = term))
+    }
+    syms %>%
       tibble::as_tibble() %>%
-      mutate(termSearch = term) %>%
-      dplyr::select(termSearch, everything()) %>%
+      janitor::clean_names() %>%
       mutate(across(where(is.character),
-                str_trim))
-    data
+                    ~ str_replace_all(.x, "<em>|</em>", "") %>% str_trim())) %>%
+      mutate(term_search = term) %>%
+      dplyr::select(term_search, dplyr::any_of(c("symbol", "description", "type", "exchange",
+                                                  "country", "currency_code", "isin", "cusip",
+                                                  "cik_code", "source_id", "provider_id")),
+                    dplyr::everything())
   }
 
 # scan --------------------------------------------------------------------
@@ -522,7 +560,7 @@ tv_regions_tickers <-
         nest(dataTickers = -c(urlJSON, regionSecurities))
     }
 
-    all_data
+    janitor::clean_names(all_data)
   }
 
 
@@ -540,84 +578,46 @@ tv_regions_tickers <-
       json_data$fields %>%
       as_tibble()
 
+    if (nrow(data) == 0 || ncol(data) == 0) {
+      return(tibble())
+    }
+
+    legacy_names <- c('nameTW', 'typeField', 'fieldMembers', 'isHH', 'isRR')
+    raw_names <- names(data)
+    n_cols <- ncol(data)
+    new_names <- character(n_cols)
+    for (i in seq_len(n_cols)) {
+      new_names[i] <- if (i <= length(legacy_names)) legacy_names[i] else raw_names[i]
+    }
+    data <- data %>% purrr::set_names(new_names)
+
+    fc <- if (!is.null(json_data$financial_currency)) json_data$financial_currency else NA_character_
+
     data <-
       data %>%
-      purrr::set_names(c('nameTW',
-                         'typeField',
-                         'fieldMembers', "isHH", "isRR")) %>%
       mutate(regionSecurities = idRegion,
-             urlJSON = url) %>%
-      dplyr::select(regionSecurities, everything()) %>%
-      separate(nameTW,
+             urlJSON = url,
+             financialCurrency = fc) %>%
+      dplyr::select(regionSecurities, financialCurrency, everything()) %>%
+      tidyr::separate(nameTW,
                into = c('nameTW', 'baseTimeframe'),
-               sep = '\\|') %>%
+               sep = '\\|',
+               fill = "right",
+               extra = "merge") %>%
       suppressWarnings()
 
-
-    df_fields <-
-      seq_along(data$fieldMembers) %>%
-      future_map_dfr(function(x) {
-        field <-
-          data$fieldMembers[[x]]
-        field_name <-
-          data$nameTW[[x]]
-
-        if (field %>% is.null()) {
-          return(tibble(idRow = x, dataField = NA))
-        }
-        class_field <-
-          class(field)
-        if (class_field == 'data.frame') {
-          field <- field %>% as_tibble()
-
-          if (field_name == "component") {
-            field <-
-              field %>%
-              tidyr::separate(name, into = c("idExchange", "idTicker"), sep = "\\:")
-          }
-
-          if (field_name == "index") {
-            field <- field %>%
-              tidyr::separate(id, into = c("slugIndex", "idIndexTicker"), sep = "\\:") %>%
-              tidyr::separate(name, into = c("nameIndex", "typeIndex"), sep = "\\(") %>%
-              mutate(isSectorIndex = typeIndex %>% str_detect("SECTOR")) %>%
-              select(-typeIndex) %>%
-              mutate(across(where(is.character), str_trim)) %>%
-              suppressWarnings() %>%
-              suppressMessages()
-
-          }
-          d <-
-            tibble(idRow = x, dataField = list(field), classField = "tibble")
-          return(d)
-        }
-
-        tibble(
-          idRow = x,
-          dataField = list(field),
-          classField = class_field
-        )
-
-
-      })
-
-    df_fields <-
-      df_fields %>%
-      mutate(hasFields = dataField %>%  map_dbl(length) > 0)
+    # Drop non-atomic columns (list-cols) — they break parquet write and
+    # the catalog only needs scalar metadata (name + type + flags).
+    list_cols <- names(data)[purrr::map_lgl(data, is.list)]
+    if (length(list_cols) > 0) {
+      data <- data %>% dplyr::select(-dplyr::any_of(list_cols))
+    }
 
     if (return_message) {
       glue::glue("Acquired {nrow(data)} searchable metrics for {idRegion} securities") %>% cat(fill = TRUE)
     }
 
-    data <-
-      data %>%
-      mutate(idRow = seq_len(n())) %>%
-      left_join(df_fields) %>%
-      dplyr::select(-fieldMembers) %>%
-      suppressWarnings() %>%
-      suppressMessages()
     data
-
   }
 
 .parse_metric_dictionaries_url <-
@@ -721,7 +721,7 @@ tv_regions_metrics <-
         nest(dataMetrics = -c(urlJSON, regionSecurities))
     }
 
-    all_data
+    janitor::clean_names(all_data)
   }
 
 
@@ -1672,45 +1672,69 @@ tv_metrics_data <-
   }
 
 .parse_trading_view_news_url <-
-  function(url = "https://news-headlines.tradingview.com/headlines/yahoo/symbol/FB",
+  function(url = "https://news-headlines.tradingview.com/v2/headlines?category=stock&client=web&lang=en&symbol=NASDAQ:AAPL",
            return_message = TRUE) {
-    ticker <-
-      url %>% str_replace_all("https://news-headlines.tradingview.com/headlines/yahoo/symbol/",
-                              '')
-
-    ticker <- url_parse(url) %>% select(query) %>% str_split("proSymbol=") %>% list_c() %>% .[[2]]
+    # Extract symbol from query string. Supports both legacy proSymbol= and v2 symbol=.
+    # Base-R only — avoid latent urltools dep.
+    q <- sub("^[^?]+\\?", "", url)
+    parts <- strsplit(q, "&")[[1]]
+    sym_param <- parts[grepl("^(symbol|proSymbol)=", parts)]
+    raw_sym <- if (length(sym_param) > 0) {
+      utils::URLdecode(sub("^(symbol|proSymbol)=", "", sym_param[1]))
+    } else {
+      NA_character_
+    }
+    # symbol may be EXCHANGE:TICKER — keep both
+    if (!is.na(raw_sym) && grepl(":", raw_sym, fixed = TRUE)) {
+      idExchange <- sub(":.*$", "", raw_sym)
+      ticker <- sub("^[^:]+:", "", raw_sym)
+    } else {
+      idExchange <- NA_character_
+      ticker <- raw_sym
+    }
 
     if (return_message) {
-      glue::glue("Acquiring Tradingview news for {ticker}") %>%
+      glue::glue("Acquiring Tradingview news for {raw_sym}") %>%
         cat(fill = TRUE)
     }
 
-    data <-
-      url %>%
-      jsonlite::fromJSON(simplifyDataFrame = TRUE) %>%
-      as_tibble()
+    json_data <-
+      tryCatch(
+        jsonlite::fromJSON(url, flatten = TRUE, simplifyDataFrame = TRUE),
+        error = function(e) NULL
+      )
 
-    data <- data %>%
-      dplyr::as_tibble() %>%
-      dplyr::select(-1) %>%
-      purrr::set_names(c(
-        'urlArticle',
-        'titleArticle',
-        'descriptionArticle',
-        'datetimePublished',
-        "sourceArticle"
-      )) %>%
+    if (is.null(json_data) || is.null(json_data$items) || length(json_data$items) == 0) {
+      return(tibble())
+    }
+
+    items <- json_data$items %>% as_tibble()
+
+    # v2 schema: id, title, provider, sourceLogoId, published (unix), source, urgency,
+    # relatedSymbols (list), storyPath
+    data <- items %>%
       mutate(
         idTicker = ticker,
-        datetimePublished = anytime::anytime(datetimePublished),
+        idExchange = idExchange,
+        symbolFull = raw_sym,
+        datetimePublished = anytime::anytime(.data$published),
+        titleArticle = .data$title,
+        sourceArticle = .data$source,
+        urlArticle = ifelse(
+          !is.null(.data$storyPath),
+          paste0("https://www.tradingview.com", .data$storyPath),
+          NA_character_
+        ),
         urlJSON = url
       ) %>%
-      dplyr::select(idTicker,
-                    datetimePublished,
-                    titleArticle,
-                    descriptionArticle,
-                    everything())
-    gc()
+      dplyr::select(
+        idTicker, idExchange, symbolFull,
+        datetimePublished, titleArticle, sourceArticle, urlArticle,
+        idArticle = .data$id,
+        providerArticle = .data$provider,
+        urgencyArticle = .data$urgency,
+        urlJSON
+      )
 
     data
   }
@@ -1762,10 +1786,17 @@ tv_metrics_data <-
 
 tv_tickers_news <-
   function(tickers = c("FB", "AAPL", "NFLX", "GOOG", "VNO", "EQR", "BXP"),
+           default_exchange = "NASDAQ",
            return_message = TRUE,
            nest_data = FALSE) {
+    # Accept either bare tickers ("AAPL") or EXCHANGE:TICKER ("NASDAQ:AAPL").
+    # Bare tickers get prefixed with default_exchange for v2 endpoint compatibility.
+    symbols <- ifelse(grepl(":", tickers, fixed = TRUE),
+                      tickers,
+                      paste0(default_exchange, ":", tickers))
+    encoded <- utils::URLencode(symbols, reserved = TRUE)
     urls <-
-      glue::glue("https://news-headlines.tradingview.com/headlines/yahoo/?category=stock&locale=en&proSymbol={tickers}")
+      glue::glue("https://news-headlines.tradingview.com/v2/headlines?category=stock&client=web&lang=en&symbol={encoded}")
 
     all_data <-
       urls %>%
@@ -1776,11 +1807,11 @@ tv_tickers_news <-
       suppressMessages() %>%
       suppressWarnings()
 
-    if (nest_data) {
+    if (nest_data && nrow(all_data) > 0) {
       all_data <-
         all_data %>%
         tidyr::nest(tickerNews = -c(idTicker, urlJSON))
     }
 
-    all_data
+    janitor::clean_names(all_data)
   }
