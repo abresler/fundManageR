@@ -112,3 +112,89 @@ lakes:
       liveness_url: "https://scanner.tradingview.com/america/scan"
       row_floor:    0.5    # event count varies week-to-week
       snake_case:   true
+
+  # ─── Orchestrator-driven lakes (existing $HOME-fixed cron entries) ───
+  # These call lakes_orchestrator/run_schedule.R via shell (source_command).
+  # Registry tracks them for audit + crontab regen, doesn't take over execution.
+
+  - name: market_unified
+    description: "Unified securities snapshot (equity+bond+futures+crypto+coin+forex+cfd)"
+    source_pkg: fundManageR
+    source_command: "/Library/Frameworks/R.framework/Versions/Current/Resources/bin/Rscript /Users/alexbresler/cronR_jobs/securities_lake/code/build_market_unified.R"
+    lake_root: "~/Desktop/data/securities"
+    partition_key: "snapshot"
+    partition_value: "current"
+    cadence:
+      cron: "3 13 * * 1-5"   # weekday afternoon (caffeinate auto-applied by lake_to_cron)
+      timezone: America/New_York
+      max_age_days: 2
+    gates:
+      row_floor: 0.8
+
+  - name: fpds_nightly
+    description: "FPDS contracts last-120-day download + marker-driven append"
+    source_pkg: fundManageR
+    source_command: "/Users/alexbresler/cronR_jobs/fpds_nightly.sh"
+    lake_root: "~/Desktop/data/fpds"
+    partition_key: "snapshot"
+    partition_value: "current"
+    cadence:
+      cron: "30 23 * * 1-5"
+      timezone: America/New_York
+      max_age_days: 4
+
+  - name: securities_entity_resolution
+    description: "Cross-source entity resolution (CRD/CIK/BD/CUSIP) for securities"
+    source_pkg: fundManageR
+    source_command: "/Library/Frameworks/R.framework/Versions/Current/Resources/bin/Rscript /Users/alexbresler/cronR_jobs/lakes_orchestrator/code/run_schedule.R --lake=securities_entity_resolution"
+    lake_root: "~/Desktop/data/securities"
+    partition_key: "batch"
+    partition_value: "{YYYY-MM}"
+    cadence:
+      cron: "30 4 1-7 * 1"   # 1st Monday of month
+      timezone: America/New_York
+      max_age_days: 35
+    gates:
+      row_floor: 0.8
+
+  - name: sec_adv_full_compilation
+    description: "Full SEC ADV scrape (~44k advisers, ~60min)"
+    source_pkg: fundManageR
+    source_command: "/Library/Frameworks/R.framework/Versions/Current/Resources/bin/Rscript /Users/alexbresler/cronR_jobs/lakes_orchestrator/code/run_schedule.R --lake=sec_adv_full_compilation"
+    lake_root: "~/Desktop/data/sec_adv"
+    partition_key: "batch"
+    partition_value: "{YYYY-MM}"
+    cadence:
+      cron: "30 2 1-7 * 1"
+      timezone: America/New_York
+      max_age_days: 35
+    gates:
+      row_floor: 0.85
+
+  - name: gleif_lei_full
+    description: "GLEIF LEI registry (~3.29M entities, 458MB download)"
+    source_pkg: fundManageR
+    source_command: "/Library/Frameworks/R.framework/Versions/Current/Resources/bin/Rscript /Users/alexbresler/cronR_jobs/lakes_orchestrator/code/run_schedule.R --lake=gleif_lei_full"
+    lake_root: "~/Desktop/data/gleif"
+    partition_key: "batch"
+    partition_value: "{YYYY-MM}"
+    cadence:
+      cron: "0 3 1-7 * 0"    # 1st Sunday of month
+      timezone: America/New_York
+      max_age_days: 35
+    gates:
+      row_floor: 0.9
+
+  - name: sec_nport_quarterly
+    description: "SEC DERA N-PORT 463MB ZIP, ~24M rows"
+    source_pkg: fundManageR
+    source_command: "/Library/Frameworks/R.framework/Versions/Current/Resources/bin/Rscript /Users/alexbresler/cronR_jobs/lakes_orchestrator/code/run_schedule.R --lake=sec_nport_quarterly"
+    lake_root: "~/Desktop/data/sec_filings_lake"
+    partition_key: "batch"
+    partition_value: "{YYYY-MM}"
+    cadence:
+      cron: "0 4 16 * *"     # 16th of month
+      timezone: America/New_York
+      max_age_days: 35
+    gates:
+      row_floor: 0.9

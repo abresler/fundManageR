@@ -131,14 +131,38 @@ run_lake <- function(name, when = Sys.time(), dry_run = FALSE) {
     return(invisible(result))
   }
 
-  # Gate 2: evaluate source_call inside fundManageR namespace + dplyr/purrr
-  df <- tryCatch({
-    expr <- parse(text = spec$source_call)
-    eval(expr, envir = asNamespace(spec$source_pkg %||% "fundManageR"))
-  }, error = function(e) e)
-  if (inherits(df, "error")) {
-    result$error <- sprintf("source_call FAILED: %s", conditionMessage(df))
-    return(invisible(result))
+  # Gate 2: evaluate source_call (R) OR run source_command (shell)
+  if (!is.null(spec$source_command) && nzchar(spec$source_command)) {
+    # Shell-invoked lake (orchestrator-driven). Registry tracks; doesn't parse output.
+    rc <- tryCatch(system(spec$source_command, intern = FALSE), error = function(e) e)
+    if (inherits(rc, "error")) {
+      result$error <- sprintf("source_command FAILED: %s", conditionMessage(rc))
+      return(invisible(result))
+    }
+    if (!is.numeric(rc) || rc != 0) {
+      result$error <- sprintf("source_command exit=%s", as.character(rc))
+      return(invisible(result))
+    }
+    # Shell lake: read parquet back to verify schema/freshness
+    fp_check <- lake_path(spec, when)
+    if (!file.exists(fp_check)) {
+      result$error <- sprintf("source_command succeeded but expected parquet missing: %s", fp_check)
+      return(invisible(result))
+    }
+    df <- tryCatch(arrow::read_parquet(fp_check), error = function(e) e)
+    if (inherits(df, "error")) {
+      result$error <- sprintf("post-command parquet read FAILED: %s", conditionMessage(df))
+      return(invisible(result))
+    }
+  } else {
+    df <- tryCatch({
+      expr <- parse(text = spec$source_call)
+      eval(expr, envir = asNamespace(spec$source_pkg %||% "fundManageR"))
+    }, error = function(e) e)
+    if (inherits(df, "error")) {
+      result$error <- sprintf("source_call FAILED: %s", conditionMessage(df))
+      return(invisible(result))
+    }
   }
   if (!is.data.frame(df) || nrow(df) == 0) {
     result$error <- sprintf("source_call returned empty; refusing write")
@@ -228,8 +252,14 @@ lake_to_cron <- function(spec, rscript = "/Library/Frameworks/R.framework/Versio
   log_dir <- file.path(path.expand(spec$lake_root), "_logs")
   log_fp  <- file.path(log_dir, paste0(spec$name, "_cron.log"))
   caffeinate <- if (grepl("\\* \\* 1-5$", spec$cadence$cron)) "caffeinate -i " else ""
-  sprintf("%s     %s%s -e \"fundManageR::run_lake('%s')\" >> %s 2>&1",
-          spec$cadence$cron, caffeinate, rscript, spec$name, log_fp)
+  if (!is.null(spec$source_command) && nzchar(spec$source_command)) {
+    # Shell-invoked lake: emit the command directly (no R wrap)
+    sprintf("%s     %s%s >> %s 2>&1",
+            spec$cadence$cron, caffeinate, spec$source_command, log_fp)
+  } else {
+    sprintf("%s     %s%s -e \"fundManageR::run_lake('%s')\" >> %s 2>&1",
+            spec$cadence$cron, caffeinate, rscript, spec$name, log_fp)
+  }
 }
 
 #' Emit the full registry's crontab block

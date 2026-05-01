@@ -1290,11 +1290,26 @@ tv_metric_query <-
       mutate(value = value %>% readr::parse_number()) %>%
       pivot_wider(names_from = nameTW, values_from = value)
 
-    data <-
-      df_companies %>%
-      left_join(df_values) %>%
-      suppressMessages() %>%
-      dplyr::select(which(colMeans(is.na(.)) < 1))
+    # Surface silent-empty for regions where text-vs-number partitioning fails
+    # (caught 2026-05-01: global region returns metrics tagged as
+    # 'fundamental_price' even for `name` field, so df_companies is empty
+    # and the inner join produces 0 rows).
+    if (nrow(df_companies) == 0 && nrow(df_values) == 0) {
+      warning(sprintf("[%s] tv_metrics_data: both df_companies and df_values empty after pivot. Region's metric dictionary may not partition into text+number cleanly. Inspect with .parse_tv_metric_url() directly.", region), call. = FALSE)
+      return(tibble::tibble())
+    }
+    if (nrow(df_companies) == 0) {
+      warning(sprintf("[%s] tv_metrics_data: df_companies empty; returning df_values only (no entity-name resolution).", region), call. = FALSE)
+      data <- df_values
+    } else if (nrow(df_values) == 0) {
+      data <- df_companies
+    } else {
+      data <-
+        df_companies %>%
+        left_join(df_values) %>%
+        suppressMessages() %>%
+        dplyr::select(which(colMeans(is.na(.)) < 1))
+    }
 
     data <-
       data %>%
