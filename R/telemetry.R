@@ -92,7 +92,20 @@ read_telemetry <- function(last_n = NULL) {
   rows <- lapply(lines, function(l) {
     p <- tryCatch(jsonlite::fromJSON(l, simplifyVector = TRUE), error = function(e) NULL)
     if (is.null(p)) return(NULL)
-    p$error <- p$error %||% NA_character_
+    # Normalize size-0 fields (from explicit JSON null) to scalar NA so
+    # tibble::as_tibble_row doesn't choke. Each field is single-row scalar.
+    expected <- c("ts", "fn", "n_rows", "duration_ms", "success", "error", "args_hash")
+    for (k in expected) {
+      v <- p[[k]]
+      if (is.null(v) || length(v) == 0) {
+        p[[k]] <- switch(k,
+          ts = NA_character_, fn = NA_character_, args_hash = NA_character_, error = NA_character_,
+          n_rows = NA_integer_,
+          duration_ms = NA_real_,
+          success = NA
+        )
+      }
+    }
     p
   })
   rows <- Filter(Negate(is.null), rows)
