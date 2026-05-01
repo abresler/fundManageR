@@ -804,13 +804,18 @@ tv_metric <-
         filter = filter,
         symbols = symbols,
         columns = metrics,
-        sory = sort,
+        sort = sort,
         options = options,
         range = range
       ) %>%
       toJSON(auto_unbox = TRUE)
 
-    data_query
+    # Force JSON-array encoding for symbols.query.types regardless of length.
+    # toJSON(auto_unbox=TRUE) collapses single-element vectors to scalars,
+    # but TV expects "types":[...]. Repair via post-string surgery so we
+    # don't have to refactor the whole list build.
+    data_query <- gsub('"types":"([^"]+)"', '"types":["\\1"]', data_query)
+    structure(data_query, class = "json")
   }
 
 
@@ -821,19 +826,29 @@ tv_metric <-
     idRegion <-
       url %>% str_replace_all("https://scanner.tradingview.com/|/scan", "")
 
-    requests <-
-      reticulate::import("requests")
-
-    json <-
-      requests$post(url = url, data = data_query)
-
-    json_data <-
-      json$content %>%
-      as.character() %>%
-      jsonlite::fromJSON(flatten = TRUE)
-
-
-    json$close()
+    # Migrated 2026-05-01: was reticulate::import('requests')$post — Python
+    # path was rotting + adds heavy dep. Replaced with httr::POST + retry
+    # + schema-validate via the .tv_with_retry / .tv_safe_fromJSON helpers
+    # already shipped this session.
+    resp <- .tv_with_retry(function() {
+      httr::POST(
+        url,
+        body = data_query,
+        encode = 'raw',
+        httr::add_headers(
+          `User-Agent` = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+          `Content-Type` = 'application/json',
+          Accept = 'application/json',
+          Origin = 'https://www.tradingview.com',
+          Referer = 'https://www.tradingview.com/'
+        )
+      )
+    })
+    json_data <- .tv_safe_fromJSON(resp, expect = c('data'),
+                                   context = paste0('.parse_tv_metric_url[', idRegion, ']'))
+    if (is.null(json_data$data) || length(json_data$data) == 0) {
+      return(tibble::tibble())
+    }
     data <-
       json_data$data %>% as_tibble() %>% unnest(cols = where(is.list))
 
@@ -1190,9 +1205,6 @@ tv_metric_query <-
                range = c(0, 15000000000000)
              ),
            return_message = TRUE) {
-    glue::glue("\n\nWARNING -- this function requires Python and the requests module!!!!\n\n") %>%
-      cat(fill = TRUE)
-
     urls <-
       glue::glue("https://scanner.tradingview.com/{region}/scan")
 
@@ -1250,7 +1262,8 @@ tv_metric_query <-
     }
 
     df_metrics <-
-      tv_regions_metrics(regions = region)
+      tv_regions_metrics(regions = region) %>%
+      dplyr::rename(nameTW = name_tw, typeField = type_field)
 
     data <-
       data %>%
