@@ -13,4 +13,4 @@ Suggests: anytime, countrycode,  curl, dplyr, formattable, ggplot2, glue, httr, 
 VignetteBuilder: knitr
 RoxygenNote: 7.3.3
 Encoding: UTF-8
-Imports: XBRL, anytime, cli, countrycode, curl, dplyr, formattable, furrr, future, ggplot2, glue, hrbrthemes, httr, janitor, jsonlite, lazyeval, listviewer, lubridate, magrittr, memoise, pdftools, plotly, purrr, readr, readxl, reticulate, rio, rvest, stringi, stringr, tabulapdf, testthat, tibble, tidyr, tidytext, tidyverse, timeDate, tis, xlsx, xml2
+Imports: yaml, XBRL, anytime, cli, countrycode, curl, dplyr, formattable, furrr, future, ggplot2, glue, hrbrthemes, httr, janitor, jsonlite, lazyeval, listviewer, lubridate, magrittr, memoise, pdftools, plotly, purrr, readr, readxl, reticulate, rio, rvest, snakecase, stringi, stringr, tabulapdf, testthat, tibble, tidyr, tidytext, tidyverse, timeDate, tis, xlsx, xml2

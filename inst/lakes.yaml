@@ -1,0 +1,114 @@
+# dq Lake Registry — single source of truth.
+# Each lake declares its source function, schema, partition, cadence, and gates.
+# Crontab + sentinel + writer all derive from this file.
+#
+# Author: Alex Bresler · 2026-05-01
+
+lakes:
+
+  - name: market_metainfo
+    description: "TV metric-field dictionary (name, type, region, snapshot)"
+    source_pkg: fundManageR
+    source_call: "tv_metainfo(region = 'america')"   # evaluated in fundManageR namespace
+    lake_root: "~/Desktop/data/securities"
+    partition_key: "snapshot"
+    partition_value: "current"                        # static; overwrites each refresh
+    schema:
+      name_field:         character
+      type_field:         character
+      name_region:        character
+      date_snapshot:      Date
+      datetime_snapshot:  POSIXct
+      slug_suffix_family: character
+    cadence:
+      cron: "8 9 * * 1"                               # Mon 09:08 ET
+      timezone: America/New_York
+      max_age_days: 8
+    gates:
+      liveness_url: "https://scanner.tradingview.com/america/metainfo"
+      row_floor:    0.8
+      snake_case:   true
+    on_failure: "warn_only"
+
+  - name: tv_tickers_by_region
+    description: "TV listed-security universe across 6 regions"
+    source_pkg: fundManageR
+    source_call: |
+      purrr::map_dfr(
+        c('america','germany','india','japan','uk','canada'),
+        function(r) tv_regions_tickers(regions = r) %>% dplyr::mutate(region_pulled = r)
+      )
+    lake_root: "~/Desktop/data/tradingview_lake"
+    partition_key: "batch"
+    partition_value: "{YYYY-MM}"                     # monthly
+    schema:
+      region_securities: character
+      id_exchange:       character
+      id_ticker:         character
+      type_security:     character
+      url_json:          character
+      region_pulled:     character
+    cadence:
+      cron: "0 9 * * 1"                              # Mon 09:00 ET
+      timezone: America/New_York
+      max_age_days: 8
+    gates:
+      liveness_url: "https://scanner.tradingview.com/america/scan"
+      row_floor:    0.8
+      snake_case:   true
+
+  - name: tv_metrics_catalog
+    description: "TV searchable-metric catalog across 6 regions"
+    source_pkg: fundManageR
+    source_call: |
+      purrr::map_dfr(
+        c('america','germany','india','japan','uk','canada'),
+        function(r) tv_regions_metrics(regions = r) %>% dplyr::mutate(region_pulled = r)
+      )
+    lake_root: "~/Desktop/data/tradingview_lake"
+    partition_key: "batch"
+    partition_value: "{YYYY-MM}"
+    schema:
+      region_securities:  character
+      financial_currency: character
+      name_tw:            character
+      base_timeframe:     character
+      type_field:         character
+      is_hh:              logical
+      is_rr:              logical
+      agg:                logical
+      url_json:           character
+      region_pulled:      character
+    cadence:
+      cron: "0 9 * * 1"
+      timezone: America/New_York
+      max_age_days: 8
+    gates:
+      liveness_url: "https://scanner.tradingview.com/america/metainfo"
+      row_floor:    0.8
+      snake_case:   true
+
+  - name: tv_market_events
+    description: "TV economic-calendar releases (rolling 30 days)"
+    source_pkg: fundManageR
+    source_call: "tv_market_events(return_message = FALSE)"
+    lake_root: "~/Desktop/data/tradingview_lake"
+    partition_key: "batch"
+    partition_value: "{YYYY-MM}"
+    schema:
+      date_release:        Date
+      datetime_release:    POSIXct
+      slug_currency:       character
+      name_indicator:      character
+      forecast_data:       numeric
+      actual_data:         numeric
+      previous_data:       numeric
+      rank_importance:     integer
+    cadence:
+      cron: "0 9 * * 1"
+      timezone: America/New_York
+      max_age_days: 8
+    gates:
+      liveness_url: "https://scanner.tradingview.com/america/scan"
+      row_floor:    0.5    # event count varies week-to-week
+      snake_case:   true
