@@ -12962,7 +12962,8 @@ sec_nport_bulk <-
 sec_form_d_bulk <-
   function(year = NULL, quarter = NULL,
            snake_names = TRUE, return_message = TRUE) {
-    if (is.null(year) || is.null(quarter)) {
+    auto_quarter <- is.null(year) || is.null(quarter)
+    if (auto_quarter) {
       # default to prior completed quarter
       d <- Sys.Date()
       qnow <- lubridate::quarter(d)
@@ -12972,10 +12973,28 @@ sec_form_d_bulk <-
     }
     ua <- getOption("fundManageR.sec_user_agent",
                     "SHELDON Research alexbresler@pwcommunications.com")
-    url <- sprintf(
+    form_d_url <- function(y, q) sprintf(
       "https://www.sec.gov/files/structureddata/data/form-d-data-sets/%dq%d_d.zip",
-      year, quarter
+      y, q
     )
+    url <- form_d_url(year, quarter)
+    # SEC publishes each quarter's dataset weeks after quarter close. When the
+    # quarter was auto-derived and the file isn't up yet (HTTP 404 witnessed
+    # 2026-07-13 for 2026q2), step back one more quarter instead of failing.
+    if (auto_quarter) {
+      head_status <- tryCatch(
+        httr::status_code(httr::HEAD(url, httr::user_agent(ua), httr::timeout(20))),
+        error = function(e) NA_integer_
+      )
+      if (identical(head_status, 404L)) {
+        if (quarter == 1) { year <- year - 1; quarter <- 4 } else quarter <- quarter - 1
+        url <- form_d_url(year, quarter)
+        message(sprintf(
+          "sec_form_d_bulk: latest quarter not yet published by SEC; falling back to %dQ%d",
+          year, quarter
+        ))
+      }
+    }
     tmp <- tempfile(fileext = ".zip")
     resp <- httr::GET(url, httr::user_agent(ua),
                       httr::write_disk(tmp, overwrite = TRUE))
