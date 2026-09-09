@@ -42,8 +42,19 @@
         "price_52_week_high_date","price_52_week_low_date",
         # Analyst / HR (2)
         "recommendation_mark","number_of_employees",
-        # Dividend (3)
-        "dividend_yield_recent","dps_common_stock_prim_issue_fy","ex_dividend_date_recent",
+        # Dividend (3). `dividends_yield` NOT `dividend_yield_recent`: the latter is a dead
+        # field name upstream and returns null for EVERY row of every type, which is the sole
+        # cause of `pct_dividend_yield` being NULL across all 390,789 lake rows and of the
+        # standing `dead_column_pct_dividend_yield` WARN in the Liz-UBS lakeguard. Probed live
+        # 2026-09-09: `dividends_yield` returns MO 6.513, KO 2.399 — and, unlike the
+        # common-stock DPS field below, it also populates for FUNDS (SCHD 3.046, VYM 2.220,
+        # JEPI 8.059), which is the income column the ETF half of this scan never had.
+        "dividends_yield","dps_common_stock_prim_issue_fy","ex_dividend_date_recent",
+        # Fund size (3). The `type` filter below deliberately admits "fund", but every size
+        # column requested above is an EQUITY concept: a fund has AUM and NAV, not a market
+        # cap, so 4,071 of 4,602 US-listed funds carried a NULL `amount_market_cap` and could
+        # not be screened on size at all. Probed live: SCHD $112.77B, VYM $83.28B, JEPI $46.06B.
+        "aum","nav","expense_ratio",
         # Earnings calendar (1)
         "earnings_release_next_trading_date_fq",
         # Surprise / growth (2)
@@ -306,9 +317,15 @@
       score_recommendation      = parse_num(df$recommendation_mark      %||% NA),
       count_employees           = parse_num(df$number_of_employees      %||% NA),
       # Dividend
-      pct_dividend_yield        = parse_num(df$dividend_yield_recent    %||% NA),
+      pct_dividend_yield        = parse_num(df$dividends_yield          %||% NA),
       amount_dividend_per_share_fy = parse_num(df$dps_common_stock_prim_issue_fy %||% NA),
       date_ex_dividend          = parse_epoch(df$ex_dividend_date_recent %||% NA),
+      # Fund size. NULL for stocks by construction, which is correct: a stock has a market cap
+      # and a fund does not. Consumers screening on size must coalesce the two rather than
+      # assume `amount_market_cap` covers the universe.
+      amount_aum                = parse_num(df$aum                      %||% NA),
+      amount_nav                = parse_num(df$nav                      %||% NA),
+      pct_expense_ratio         = parse_num(df$expense_ratio            %||% NA),
       # Earnings
       date_earnings_next        = parse_epoch(df$earnings_release_next_trading_date_fq %||% NA),
       pct_eps_surprise          = parse_num(df$eps_surprise_percent_fq  %||% NA),
