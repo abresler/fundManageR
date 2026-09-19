@@ -154,7 +154,17 @@ write_period_pair <- function(period_data, force = FALSE) {
                                    include_exempt = TRUE,
                                    return_message = FALSE,
                                    snake_case = TRUE),
-    error = function(e) { message(sprintf("ERR %s: %s", period_data, conditionMessage(e))); NULL }
+    error = function(e) {
+      if (inherits(e, "adv_feed_content_error")) {
+        # Data-integrity failure (registered/exempt content check failed) —
+        # NEVER swallow this as "[empty]"; it must abort the build loudly
+        # with no parquet written, so the inversion can never land silently
+        # again. Rethrow past this tryCatch's own generic branch.
+        stop(e)
+      }
+      message(sprintf("ERR %s: %s", period_data, conditionMessage(e)))
+      NULL
+    }
   )
   if (is.null(df) || nrow(df) == 0) {
     cat(sprintf("[empty] %s\n", period_data))
@@ -232,7 +242,15 @@ main <- function() {
 
   for (p in periods) {
     res <- tryCatch(write_period_pair(p, force = mode_force),
-                    error = function(e) { message("FAIL ", p, ": ", conditionMessage(e)); NULL })
+                    error = function(e) {
+                      if (inherits(e, "adv_feed_content_error")) {
+                        cat(sprintf("\nFATAL [%s]: %s\n", p, conditionMessage(e)))
+                        cat("Aborting build — a data-integrity check failed. No parquet written for this period. Fix the defect; do not bypass this check.\n")
+                        quit(status = 1, save = "no")
+                      }
+                      message("FAIL ", p, ": ", conditionMessage(e))
+                      NULL
+                    })
   }
   build_manifest()
   cat("[done]\n")

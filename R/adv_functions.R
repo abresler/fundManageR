@@ -8961,7 +8961,13 @@ dictionary_sec_names <-
            return_message = TRUE) {
     base_url <- url %>% basename()
 
-    is_exempt <-
+    # NOTE: filename alone is NOT trusted for the registered/exempt label — SEC has
+    # renamed these bulk files without warning (e.g. Aug 2026: the "-exempt.zip"
+    # file actually contained the wider REGISTERED feed and the plain "ia....zip"
+    # file contained the narrower EXEMPT feed). Kept only as a diagnostic hint;
+    # the authoritative label is assigned downstream in adv_managers_periods_summaries()
+    # from the parsed CONTENT (raw column count / row count — see rawColCount below).
+    is_exempt_by_filename <-
       url %>% str_detect("exempt")
 
     tmp <-
@@ -9064,6 +9070,19 @@ dictionary_sec_names <-
     if (!exists("adv_data") || nrow(adv_data) == 0) {
       return(tibble())
     }
+
+    # Content-derived discriminator, captured BEFORE column renaming/dedup so it
+    # reflects exactly what the SEC CSV shipped (matches the readr column-spec
+    # banner). Registered Investment Advisers (RIA) must complete the FULL Form
+    # ADV Part 1A (Items 1-12 plus Schedules A/B/C/D, including the repeating
+    # Schedule D private-fund/branch/owner sub-sections). Exempt Reporting
+    # Advisers (ERA) file only the abbreviated subset required by Advisers Act
+    # Rule 204-4 (Items 1, 2, 3, 6, 7, 10, 11). That structural gap is a
+    # regulatory fact, not a filename convention, so it survives SEC renaming
+    # the zip files. RIA files also always cover materially more firms than
+    # ERA files nationally, so row count corroborates column width.
+    raw_col_count <- ncol(adv_data)
+    raw_row_count <- nrow(adv_data)
 
     actual_names <-
       .assign_sec_names(data = adv_data)
@@ -9212,8 +9231,10 @@ dictionary_sec_names <-
 
     adv_data <-
       adv_data %>%
-      mutate(isExempt = is_exempt) %>%
-      dplyr::select(isExempt, everything())
+      mutate(isExemptByFilename = is_exempt_by_filename,
+             rawColCount = raw_col_count,
+             rawRowCount = raw_row_count) %>%
+      dplyr::select(isExemptByFilename, rawColCount, rawRowCount, everything())
     to_upper_names <- names(adv_data)[str_detect(names(adv_data),
       "^country|^name|^city|^state|^range[A-Z]|^type[A-Z]")]
     adv_data <-
@@ -9345,9 +9366,94 @@ adv_managers_periods_summaries <-
 
       all_adv_data <-
         all_adv_data %>%
-        dplyr::select(-isExempt) %>%
-        left_join(df_urls) %>%
+        left_join(dplyr::select(df_urls, -isExempt)) %>%
         suppressMessages()
+
+      # --- Content-derived registered/exempt label --------------------------
+      # SEC has renamed these bulk files without warning (Aug 2026: the
+      # "-exempt.zip" file actually held the wider REGISTERED feed while the
+      # plain "ia....zip" file held the narrower EXEMPT feed). The filename is
+      # NEVER trusted as the source of truth. Within a period-pair, whichever
+      # raw file has the larger column count is the Registered Investment
+      # Adviser (RIA) feed: RIAs must complete the entire Form ADV Part 1A
+      # (Items 1-12 + Schedules A-D, including the repeating Schedule D
+      # sub-sections), while Exempt Reporting Advisers (ERA) file only the
+      # abbreviated Rule 204-4 subset (Items 1, 2, 3, 6, 7, 10, 11) — a fixed,
+      # much narrower set of columns. That structural gap is regulatory, not
+      # incidental, so it survives SEC renaming the zip files. Row count
+      # corroborates: nationally there are always more RIAs than ERAs. Both
+      # signals must agree or the build aborts loudly rather than guess.
+      feed_summary <-
+        all_adv_data %>%
+        dplyr::distinct(periodData, urlZip, rawColCount, rawRowCount) %>%
+        dplyr::group_by(periodData) %>%
+        dplyr::mutate(nFeeds = dplyr::n()) %>%
+        dplyr::ungroup()
+
+      paired <- feed_summary %>% dplyr::filter(nFeeds == 2)
+
+      if (nrow(paired) > 0) {
+        period_check <-
+          paired %>%
+          dplyr::group_by(periodData) %>%
+          dplyr::summarise(
+            wider_cols     = max(rawColCount),
+            narrower_cols  = min(rawColCount),
+            wider_rows     = rawRowCount[which.max(rawColCount)],
+            narrower_rows  = rawRowCount[which.min(rawColCount)],
+            .groups = "drop"
+          )
+
+        bad_periods <-
+          period_check %>%
+          dplyr::filter(wider_cols <= narrower_cols | wider_rows <= narrower_rows)
+
+        if (nrow(bad_periods) > 0) {
+          msg <- sprintf(paste0(
+            "ADV feed content check FAILED for period(s) [%s]: the feed with ",
+            "more columns must ALSO have more rows (registered advisers must ",
+            "outnumber and out-column exempt advisers). Got cols %s vs %s, ",
+            "rows %s vs %s. Refusing to guess which feed is which — SEC's feed ",
+            "content or labeling may be corrupted/inverted. No parquet written."),
+            paste(bad_periods$periodData, collapse = ", "),
+            paste(bad_periods$wider_cols, collapse = ","),
+            paste(bad_periods$narrower_cols, collapse = ","),
+            paste(bad_periods$wider_rows, collapse = ","),
+            paste(bad_periods$narrower_rows, collapse = ","))
+          # Typed condition (not a bare stop()) so callers such as
+          # build_adv_panel_lake.R can tell a genuine content-integrity failure
+          # apart from a transient network/parse error and refuse to swallow it.
+          stop(structure(
+            class = c("adv_feed_content_error", "error", "condition"),
+            list(message = msg, call = NULL)
+          ))
+        }
+
+        registered_urls <-
+          paired %>%
+          dplyr::group_by(periodData) %>%
+          dplyr::filter(rawColCount == max(rawColCount)) %>%
+          dplyr::ungroup() %>%
+          dplyr::pull(urlZip)
+
+        all_adv_data <-
+          all_adv_data %>%
+          dplyr::mutate(isExempt = dplyr::if_else(
+            periodData %in% paired$periodData,
+            !(urlZip %in% registered_urls),
+            isExemptByFilename
+          ))
+      } else {
+        all_adv_data <- all_adv_data %>% dplyr::mutate(isExempt = isExemptByFilename)
+      }
+
+      # Unpaired periods (single-feed fetch, e.g. include_exempt = FALSE at the
+      # URL-list level, or one side of a pair failed to download) have no
+      # counterpart to cross-validate against — fall back to the filename hint
+      # for those rows only; already handled by if_else() above.
+      all_adv_data <-
+        all_adv_data %>%
+        dplyr::select(-rawColCount, -rawRowCount, -isExemptByFilename)
 
       all_adv_data <-
         all_adv_data %>%
