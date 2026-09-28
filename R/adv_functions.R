@@ -8936,8 +8936,12 @@ dictionary_sec_names <-
 
 .parse_adv_excel_data <-
   function(file_path = "/Users/alexbresler/Desktop/adv_data/ia080116.xlsx") {
+    # Guess types from the whole sheet (Excel's row limit), not readxl's first 1,000 rows. With the
+    # default, a column blank for 1,000 rows was typed logical: later CRD numbers became TRUE and
+    # SEC file numbers became NA (sec_adv_panel id_crd_firms_acquired / id_sec_firms_acquired,
+    # 22 periods, measured 2026-09-28).
     file_path %>%
-      readxl::read_excel()
+      readxl::read_excel(guess_max = 1048576)
 
   }
 
