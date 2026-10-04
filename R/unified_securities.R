@@ -109,7 +109,10 @@
 .scan_tv <- function(endpoint, cols, filter = NULL, range = c(0L, 50000L)) {
   url <- glue::glue("https://scanner.tradingview.com/{endpoint}/scan") %>% as.character()
 
-  body <- list(columns = as.list(cols), range = as.list(as.integer(range)))
+  # Sort by symbol rather than a financial metric with many missing/tied values.
+  sort_field <- if ("name" %in% cols) "name" else "base_currency"
+  body <- list(columns = as.list(cols), range = as.list(as.integer(range)),
+               sort = list(sortBy = sort_field, sortOrder = "asc"))
   if (!is.null(filter)) body$filter <- filter
 
   resp <- httr::POST(
@@ -161,24 +164,30 @@
     hard_cap <- if (is.na(total)) max_rows else min(max_rows, total)
     if (start >= hard_cap) break
     end <- min(start + page_size, hard_cap)
-    chunk <- tryCatch(
-      .scan_tv(endpoint = endpoint, cols = cols, filter = filter,
-               range = c(start, end)),
-      error = function(e) list(total = 0L, df = tibble::tibble(), err = conditionMessage(e))
-    )
-    if (!is.null(chunk$err)) {
-      if (return_message) message(sprintf("[%s] %s", endpoint, chunk$err))
-      break
-    }
+    chunk <- .scan_tv(endpoint = endpoint, cols = cols, filter = filter,
+                      range = c(start, end))
     if (is.na(total)) total <- chunk$total
+    if (!identical(as.integer(chunk$total), as.integer(total))) {
+      stop(sprintf("[%s] scanner totalCount changed during paging: %d to %d",
+                   endpoint, total, chunk$total))
+    }
     out[[length(out) + 1L]] <- chunk$df
     got <- nrow(chunk$df)
-    if (got == 0L || got < (end - start)) break
+    if (got != end - start) {
+      stop(sprintf("[%s] scanner page %d:%d returned %d of %d rows",
+                   endpoint, start, end, got, end - start))
+    }
     start <- end
   }
   df <- if (length(out)) dplyr::bind_rows(out) else tibble::tibble()
   if (nrow(df)) df <- dplyr::distinct(df, id_security, .keep_all = TRUE)
-  list(total = total %||% 0L, df = df)
+  expected <- min(max_rows, if (is.na(total)) 0L else total)
+  minimum_complete <- floor(expected * 0.99)
+  if (nrow(df) < minimum_complete) {
+    stop(sprintf("[%s] scanner paging incomplete: %d distinct of %d expected rows (totalCount=%d)",
+                 endpoint, nrow(df), expected, total))
+  }
+  list(total = if (is.na(total)) 0L else total, df = df)
 }
 
 #' Normalize a scanner result into the unified snake_case schema
