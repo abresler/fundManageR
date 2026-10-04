@@ -167,16 +167,11 @@
     chunk <- .scan_tv(endpoint = endpoint, cols = cols, filter = filter,
                       range = c(start, end))
     if (is.na(total)) total <- chunk$total
-    if (!identical(as.integer(chunk$total), as.integer(total))) {
-      stop(sprintf("[%s] scanner totalCount changed during paging: %d to %d",
-                   endpoint, total, chunk$total))
-    }
     out[[length(out) + 1L]] <- chunk$df
     got <- nrow(chunk$df)
-    if (got != end - start) {
-      stop(sprintf("[%s] scanner page %d:%d returned %d of %d rows",
-                   endpoint, start, end, got, end - start))
-    }
+    # A short page ends paging; the completeness check below decides whether that is an error.
+    # Stopping on any totalCount drift would drop a whole class over one intraday listing.
+    if (got == 0L || got < (end - start)) break
     start <- end
   }
   df <- if (length(out)) dplyr::bind_rows(out) else tibble::tibble()
@@ -402,7 +397,10 @@ get_unified_securities <- function(asset_classes = c("equity","bond","futures","
       .normalize_unified(df = res$df, asset_class = ac,
                          endpoint = s$endpoint, snapshot_time = snapshot_time)
     },
-    otherwise = tibble::tibble()
+    otherwise = tibble::tibble(),
+    # Surface the per-class stop() (e.g. incomplete paging) in the cron log instead of
+    # silently returning an empty class.
+    quiet = !return_message
   )
 
   out <- purrr::map(asset_classes, fetch_safe) %>%
