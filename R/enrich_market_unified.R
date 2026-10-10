@@ -22,11 +22,18 @@ enrich_market_unified <- function(lake_root = "~/Desktop/data/securities") {
                          "market_unified.zstd.parquet")
   if (!file.exists(src_fp)) stop("market_unified snapshot missing at ", src_fp)
 
-  # Find latest SEC tickers_exchange batch
+  # Find latest SEC tickers_exchange — prefer batch=YYYY-MM/ layout, fall back to root
   te_glob <- Sys.glob(file.path(lake_root, "tickers_exchange", "batch=*",
                                 "tickers_exchange.zstd.parquet"))
-  if (!length(te_glob)) stop("tickers_exchange lake missing — run securities_lake build_batch.R first")
-  te_fp <- sort(te_glob, decreasing = TRUE)[1]
+  te_root <- file.path(lake_root, "tickers_exchange", "tickers_exchange.zstd.parquet")
+  if (length(te_glob)) {
+    te_fp <- sort(te_glob, decreasing = TRUE)[1]
+  } else if (file.exists(te_root)) {
+    te_fp <- te_root
+    message("[enrich_market_unified] tickers_exchange: no batch= partition found, using root path")
+  } else {
+    stop("tickers_exchange lake missing at both batch=*/ and root — run securities_lake build_batch.R")
+  }
 
   out_dir <- file.path(lake_root, "market_unified_enriched", "snapshot=current")
   dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
