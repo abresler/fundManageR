@@ -5,3 +5,5 @@
 /doc/
 /Meta/
 .DS_Store
+.playwright-mcp/
+.claude/scheduled_tasks.lock
