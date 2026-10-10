@@ -6,8 +6,8 @@
 \usage{
 calculate_cash_flow_waterfall_partnership(
   dates = c("2016-09-01", "2017-08-31"),
-  cash_flows = c(-1500000, 105000000),
-  working_capital = 200000,
+  cash_flows = c(-1500000, 1.05e+08),
+  working_capital = 2e+05,
   promote_structure = c("20 over 12", "30 over 20", "50 over 3.5x", "100 over 10x"),
   assign_to_environment = TRUE,
   general_partner_pct = 0.05,

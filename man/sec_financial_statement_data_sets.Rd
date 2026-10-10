@@ -37,6 +37,8 @@ Other SEC EDGAR:
 \code{\link{sec_13f_holdings_bulk}()},
 \code{\link{sec_cik_master}()},
 \code{\link{sec_edgar_quarterly_index}()},
+\code{\link{sec_fails_to_deliver}()},
+\code{\link{sec_nport_bulk}()},
 \code{\link{sec_tickers_exchange}()}
 }
 \concept{SEC EDGAR}

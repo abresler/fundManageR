@@ -6,6 +6,7 @@
 \usage{
 tv_tickers_news(
   tickers = c("FB", "AAPL", "NFLX", "GOOG", "VNO", "EQR", "BXP"),
+  default_exchange = "NASDAQ",
   return_message = TRUE,
   nest_data = FALSE
 )

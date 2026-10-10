@@ -42,7 +42,9 @@ Other SEC EDGAR:
 \code{\link{sec_13f_cusips}()},
 \code{\link{sec_13f_holdings_bulk}()},
 \code{\link{sec_cik_master}()},
+\code{\link{sec_fails_to_deliver}()},
 \code{\link{sec_financial_statement_data_sets}()},
+\code{\link{sec_nport_bulk}()},
 \code{\link{sec_tickers_exchange}()}
 }
 \concept{SEC EDGAR}
