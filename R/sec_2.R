@@ -217,7 +217,8 @@ build_address <-
 munge_tbl <-
   function(data, snake_names = FALSE, unformat = FALSE, convert_case = TRUE,
            amount_digits = 2,
-           include_address = TRUE) {
+           include_address = TRUE,
+           never_num = NULL) {
 
     data <- data %>%
       mutate(across(where(is.character),
@@ -246,6 +247,16 @@ munge_tbl <-
       select(matches("amount|price|value|ratio|count[A-Z]|number|shares")) %>%
       select(-matches("country|county")) %>%
       names()
+
+    # A column NAME is not a type declaration. The pattern above claims anything
+    # containing "number" or "value" is numeric, which is false for identifiers
+    # (accession / phone / CRD numbers) and for categorical text ("value range",
+    # "value list"). parse_number() then silently truncates or NULLs them.
+    # never_num is an opt-out regex; NULL preserves the historical behavior for
+    # every existing caller. See sec_form_d_bulk() for the motivating case.
+    if (!is.null(never_num) && length(to_num) > 0) {
+      to_num <- to_num[!grepl(never_num, to_num, ignore.case = TRUE)]
+    }
 
     if (length(to_num) > 0) {
       data <- data %>%
@@ -13013,9 +13024,35 @@ sec_form_d_bulk <-
                         guess_max = 20000,
                         col_types = readr::cols(.default = readr::col_character()))
       ))
+      # TOTALOFFERINGAMOUNT carries the literal "Indefinite" for offerings with no
+      # stated maximum — 7,389 of 15,734 rows (47%) in 2026Q1. parse_number() turns
+      # that into NA, which reads as "not reported" rather than "declared indefinite".
+      # Keep the column numeric for arithmetic, but record the distinction first.
+      if ("TOTALOFFERINGAMOUNT" %in% names(df)) {
+        df <- df %>%
+          dplyr::mutate(
+            is_offering_amount_indefinite =
+              !is.na(TOTALOFFERINGAMOUNT) &
+              toupper(trimws(TOTALOFFERINGAMOUNT)) == "INDEFINITE"
+          )
+      }
+
       df %>%
         dplyr::mutate(year_quarter = sprintf("%dQ%d", year, quarter)) %>%
-        munge_tbl(snake_names = snake_names)
+        # Form D identifiers and categorical text must survive as character.
+        # Measured against 2026Q1 before this guard existed:
+        #   accessionnumber   0002119377-26-000001 -> 2119377, and 4,070 of
+        #                     15,734 filings (25.9%) collided into a shared key
+        #   states_or_value_list        6,513 non-null -> 0     ("All States")
+        #   aggregatenetassetvaluerange 5,413 non-null -> 246   ("Decline to Disclose")
+        # accessionnumber is the documented primary join key across all six tables.
+        munge_tbl(
+          snake_names = snake_names,
+          never_num = paste0(
+            "accessionnumber|phonenumber|crdnumber|",
+            "states_or_value_list|valuerange"
+          )
+        )
     })
     unlink(outdir, recursive = TRUE)
 
