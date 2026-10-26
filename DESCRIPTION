@@ -11,6 +11,6 @@ License: MIT + file LICENSE
 LazyData: true
 Suggests: anytime, countrycode,  curl, dplyr, formattable, ggplot2, glue, httr, jsonlite, knitr, lazyeval, listviewer, lubridate, magrittr, pdftools, plotly, purrr, readr, readxl, rio, rmarkdown, rvest, stringi, stringr, tibble, tidyr, tidyverse, timeDate, XBRL, xlsx, xml2, testthat, furrr, future, purrrlyr, memoise
 VignetteBuilder: knitr
-RoxygenNote: 7.3.3
 Encoding: UTF-8
 Imports: yaml, XBRL, anytime, cli, countrycode, curl, dplyr, formattable, furrr, future, ggplot2, glue, hrbrthemes, httr, janitor, jsonlite, lazyeval, listviewer, lubridate, magrittr, memoise, pdftools, plotly, purrr, readr, readxl, reticulate, rio, rvest, snakecase, stringi, stringr, tabulapdf, testthat, tibble, tidyr, tidytext, tidyverse, timeDate, tis, xlsx, xml2
+Config/roxygen2/version: 8.1.1
