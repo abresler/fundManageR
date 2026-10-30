@@ -65,8 +65,14 @@
       filter = list(list(left = "type", operation = "in_range",
                          right = list("stock","fund","dr","structured")))
     ),
+    # Government bonds only (Alex, 2026-10-30). Since 2026-10-22 the anonymous `bond` scanner
+    # returns 10 rows of a 168,947 totalCount and nothing past offset 10, and every narrower
+    # filter (exchange, country, name) returns 10 rows too; `global` with type=bond exposes
+    # only the same government set. `bonds` is TradingView's government-bond screener: its
+    # totalCount equals the rows it serves (1,163 on 2026-10-30), so the completeness check
+    # below stays meaningful. Corporate bonds now require a signed-in session.
     bond = list(
-      endpoint = "bond",
+      endpoint = "bonds",
       cols = c("name","close","description","type","exchange","country",
                "coupon","maturity_date","change","bid","ask"),
       filter = NULL
